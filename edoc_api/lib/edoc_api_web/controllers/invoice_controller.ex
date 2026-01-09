@@ -5,6 +5,10 @@ defmodule EdocApiWeb.InvoiceController do
   alias EdocApiWeb.PdfTemplates
 
   def create(conn, params) do
+    require Logger
+    Logger.info("params keys: #{inspect(Map.keys(params))}")
+    Logger.info("items: #{inspect(Map.get(params, "items"))}")
+
     user = conn.assigns.current_user
 
     case Core.get_company_by_user_id(user.id) do
@@ -18,12 +22,30 @@ defmodule EdocApiWeb.InvoiceController do
             |> put_status(:created)
             |> json(%{invoice: invoice_json(invoice)})
 
+          {:error, :items_required} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{error: "items_required"})
+
           {:error, %Ecto.Changeset{} = changeset} ->
             conn
             |> put_status(:unprocessable_entity)
             |> json(%{error: "validation_error", details: errors_to_map(changeset)})
+
+          {:error, other} ->
+            # чтобы не было "тихих" ошибок
+            conn
+            |> put_status(:internal_server_error)
+            |> json(%{error: "internal_error", details: inspect(other)})
         end
     end
+  end
+
+  def index(conn, _params) do
+    user = conn.assigns.current_user
+    invoices = Core.list_invoices_for_user(user.id)
+
+    json(conn, %{invoices: Enum.map(invoices, &invoice_json/1)})
   end
 
   def show(conn, %{"id" => id}) do
@@ -77,6 +99,10 @@ defmodule EdocApiWeb.InvoiceController do
       issue_date: inv.issue_date,
       due_date: inv.due_date,
       currency: inv.currency,
+      vat_rate: inv.vat_rate,
+      subtotal: inv.subtotal,
+      vat: inv.vat,
+      total: inv.total,
       seller_name: inv.seller_name,
       seller_bin_iin: inv.seller_bin_iin,
       seller_address: inv.seller_address,
@@ -84,14 +110,23 @@ defmodule EdocApiWeb.InvoiceController do
       buyer_name: inv.buyer_name,
       buyer_bin_iin: inv.buyer_bin_iin,
       buyer_address: inv.buyer_address,
-      subtotal: inv.subtotal,
-      vat: inv.vat,
-      total: inv.total,
       status: inv.status,
       company_id: inv.company_id,
       user_id: inv.user_id,
+      items: Enum.map(inv.items || [], &item_json/1),
       inserted_at: inv.inserted_at,
       updated_at: inv.updated_at
+    }
+  end
+
+  defp item_json(item) do
+    %{
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      qty: item.qty,
+      unit_price: item.unit_price,
+      amount: item.amount
     }
   end
 

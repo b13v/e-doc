@@ -47,11 +47,11 @@ defmodule EdocApi.Core.Invoice do
     buyer_name
     buyer_bin_iin
     buyer_address
-    total
+    vat_rate
     status
   )a
 
-  @optional_fields ~w(due_date subtotal vat)a
+  @optional_fields ~w(due_date subtotal total vat)a
 
   @allowed_statuses ~w(draft issued paid void)
   @allowed_currencies ~w(KZT USD EUR RUB)
@@ -67,6 +67,9 @@ defmodule EdocApi.Core.Invoice do
     |> put_change(:company_id, company_id)
     |> validate_required(@required_fields ++ [:user_id, :company_id])
     |> normalize_fields()
+    |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
+    |> compute_totals()
+    |> validate_number(:total, greater_than: 0)
     |> validate_inclusion(:status, @allowed_statuses)
     |> validate_inclusion(:currency, @allowed_currencies)
     |> validate_length(:number, min: 1, max: 64)
@@ -120,5 +123,29 @@ defmodule EdocApi.Core.Invoice do
     changeset
     |> validate_length(field, min: 15, max: 34)
     |> validate_format(field, ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/, message: "invalid IBAN format")
+  end
+
+  defp compute_totals(changeset) do
+    subtotal = get_field(changeset, :subtotal)
+    vat_rate = get_field(changeset, :vat_rate)
+
+    if is_struct(subtotal, Decimal) and is_integer(vat_rate) do
+      vat =
+        subtotal
+        |> Decimal.mult(Decimal.new(vat_rate))
+        |> Decimal.div(Decimal.new(100))
+        |> Decimal.round(2)
+
+      total =
+        subtotal
+        |> Decimal.add(vat)
+        |> Decimal.round(2)
+
+      changeset
+      |> put_change(:vat, vat)
+      |> put_change(:total, total)
+    else
+      changeset
+    end
   end
 end

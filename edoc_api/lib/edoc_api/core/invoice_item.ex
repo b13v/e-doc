@@ -22,8 +22,8 @@ defmodule EdocApi.Core.InvoiceItem do
 
   def changeset(item, attrs) do
     item
-    |> cast(attrs, @required ++ @optional)
-    |> validate_required(@required)
+    |> cast(attrs, @required ++ @optional ++ [:invoice_id])
+    |> validate_required(@required ++ [:invoice_id])
     |> validate_number(:qty, greater_than: 0)
   end
 end

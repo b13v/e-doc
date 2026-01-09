@@ -26,7 +26,7 @@ defmodule EdocApiWeb.Router do
 
     get("/company", CompanyController, :show)
     put("/company", CompanyController, :upsert)
-
+    get("/invoices", InvoiceController, :index)
     post("/invoices", InvoiceController, :create)
     get("/invoices/:id", InvoiceController, :show)
 
