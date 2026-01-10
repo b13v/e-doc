@@ -229,22 +229,21 @@ defmodule EdocApi.Core.Company do
   @spec add_warning(Ecto.Changeset.t(), atom(), binary()) :: Ecto.Changeset.t()
   defp add_warning(%Ecto.Changeset{} = changeset, field, message)
        when is_atom(field) and is_binary(message) do
-    # Добавляем "как ошибку", но помечаем validation: :warning
-    # И ПРИНУДИТЕЛЬНО оставляем valid? = true, чтобы Repo.insert/update не блокировался
-    changeset
-    |> add_error(field, message, validation: :warning)
-    |> Map.put(:valid?, true)
+    private = Map.get(changeset, :private, %{})
+    warnings = Map.get(private, :warnings, [])
+
+    Map.put(changeset, :private, %{
+      private
+      | warnings: [%{field: field, message: message} | warnings]
+    })
   end
 
   @spec warnings_from_changeset(Ecto.Changeset.t()) :: map()
   def warnings_from_changeset(%Ecto.Changeset{} = changeset) do
-    changeset.errors
-    |> Enum.filter(fn {_field, {_msg, opts}} ->
-      Keyword.get(opts, :validation) == :warning
-    end)
-    |> Enum.group_by(
-      fn {field, _} -> field end,
-      fn {_field, {msg, _opts}} -> msg end
-    )
+    changeset
+    |> Map.get(:private, %{})
+    |> Map.get(:warnings, [])
+    |> Enum.reverse()
+    |> Enum.group_by(fn %{field: field} -> field end, fn %{message: message} -> message end)
   end
 end

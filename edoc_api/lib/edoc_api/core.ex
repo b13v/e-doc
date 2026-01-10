@@ -240,16 +240,17 @@ defmodule EdocApi.Core do
   # -----InvoiceCounter-------------
   def next_invoice_number!(company_id) do
     Repo.transaction(fn ->
-      counter =
-        Repo.get(InvoiceCounter, company_id) ||
-          %InvoiceCounter{company_id: company_id, next_seq: 1}
-          |> Repo.insert!()
+      # Atomic upsert: insert starts at 2, conflicts increment by 1.
+      # Returned next_seq is the "next" value, so seq = next_seq - 1.
+      %{next_seq: next_seq} =
+        Repo.insert!(
+          %InvoiceCounter{company_id: company_id, next_seq: 2},
+          on_conflict: [inc: [next_seq: 1]],
+          conflict_target: :company_id,
+          returning: [:next_seq]
+        )
 
-      seq = counter.next_seq
-
-      counter
-      |> Ecto.Changeset.change(next_seq: seq + 1)
-      |> Repo.update!()
+      seq = next_seq - 1
 
       # формат: только цифры с ведущими нулями
       String.pad_leading(Integer.to_string(seq), 10, "0")
