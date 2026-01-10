@@ -57,31 +57,7 @@ defmodule EdocApi.Core do
         inv -> Repo.preload(inv, [:items, :company])
       end
 
-    cond do
-      is_nil(invoice) ->
-        {:error, :invoice_not_found}
-
-      invoice.status == "issued" ->
-        {:error, :already_issued}
-
-      invoice.status != "draft" ->
-        {:error, :cannot_issue, %{status: "must be draft to issue"}}
-
-      (invoice.items || []) == [] ->
-        {:error, :cannot_issue, %{items: "must have at least 1 item"}}
-
-      is_nil(invoice.total) or Decimal.compare(invoice.total, Decimal.new("0.00")) != :gt ->
-        {:error, :cannot_issue, %{total: "must be > 0"}}
-
-      true ->
-        invoice
-        |> Ecto.Changeset.change(status: "issued")
-        |> Repo.update()
-        |> case do
-          {:ok, inv} -> {:ok, Repo.preload(inv, [:items, :company])}
-          {:error, cs} -> {:error, cs}
-        end
-    end
+    mark_invoice_issued(invoice)
   end
 
   def create_invoice_for_user(user_id, company_id, attrs) do
@@ -264,17 +240,36 @@ defmodule EdocApi.Core do
   # ------------ Marking-Invoice-issued-------------------
 
   def mark_invoice_issued(invoice) do
-    case invoice.status do
-      "issued" ->
-        {:ok, invoice}
+    invoice =
+      case invoice do
+        nil -> nil
+        inv -> Repo.preload(inv, [:items, :company])
+      end
 
-      "draft" ->
+    cond do
+      is_nil(invoice) ->
+        {:error, :invoice_not_found}
+
+      invoice.status == "issued" ->
+        {:error, :already_issued}
+
+      invoice.status != "draft" ->
+        {:error, :cannot_issue, %{status: "must be draft to issue"}}
+
+      (invoice.items || []) == [] ->
+        {:error, :cannot_issue, %{items: "must have at least 1 item"}}
+
+      is_nil(invoice.total) or Decimal.compare(invoice.total, Decimal.new("0.00")) != :gt ->
+        {:error, :cannot_issue, %{total: "must be > 0"}}
+
+      true ->
         invoice
         |> Ecto.Changeset.change(status: "issued")
         |> Repo.update()
-
-      other ->
-        {:error, {:invalid_status_transition, other}}
+        |> case do
+          {:ok, inv} -> {:ok, Repo.preload(inv, [:items, :company])}
+          {:error, cs} -> {:error, cs}
+        end
     end
   end
 end
