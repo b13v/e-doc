@@ -23,7 +23,25 @@ defmodule EdocApi.Core.InvoiceItem do
   def changeset(item, attrs) do
     item
     |> cast(attrs, @required ++ @optional ++ [:invoice_id])
+    |> compute_amount()
     |> validate_required(@required ++ [:invoice_id])
     |> validate_number(:qty, greater_than: 0)
+    |> validate_number(:unit_price, greater_than: 0)
+  end
+
+  defp compute_amount(changeset) do
+    qty = get_field(changeset, :qty)
+    unit_price = get_field(changeset, :unit_price)
+
+    if is_integer(qty) and is_struct(unit_price, Decimal) do
+      amount =
+        unit_price
+        |> Decimal.mult(Decimal.new(qty))
+        |> Decimal.round(2)
+
+      put_change(changeset, :amount, amount)
+    else
+      changeset
+    end
   end
 end
