@@ -3,12 +3,9 @@ defmodule EdocApiWeb.InvoiceController do
 
   alias EdocApi.Core
   alias EdocApiWeb.PdfTemplates
+  require Logger
 
   def create(conn, params) do
-    require Logger
-    Logger.info("params keys: #{inspect(Map.keys(params))}")
-    Logger.info("items: #{inspect(Map.get(params, "items"))}")
-
     user = conn.assigns.current_user
 
     case Core.get_company_by_user_id(user.id) do
@@ -33,10 +30,11 @@ defmodule EdocApiWeb.InvoiceController do
             |> json(%{error: "validation_error", details: errors_to_map(changeset)})
 
           {:error, other} ->
-            # чтобы не было "тихих" ошибок
+            Logger.error("invoice_create_failed: #{inspect(other)}")
+
             conn
             |> put_status(:internal_server_error)
-            |> json(%{error: "internal_error", details: inspect(other)})
+            |> json(%{error: "internal_error"})
         end
     end
   end

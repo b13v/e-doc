@@ -76,7 +76,6 @@ defmodule EdocApi.Core.Invoice do
     |> validate_bin_iin(:seller_bin_iin)
     |> validate_bin_iin(:buyer_bin_iin)
     |> validate_iban(:seller_iban)
-    |> validate_number(:total, greater_than: 0)
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
   end
 
