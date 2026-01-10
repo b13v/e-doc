@@ -18,6 +18,7 @@ defmodule EdocApi.Core.Company do
     field(:representative_name, :string)
     field(:representative_title, :string)
     field(:basis, :string)
+    field(:warnings, {:array, :map}, virtual: true)
 
     belongs_to(:user, EdocApi.Accounts.User)
 
@@ -229,27 +230,15 @@ defmodule EdocApi.Core.Company do
   @spec add_warning(Ecto.Changeset.t(), atom(), binary()) :: Ecto.Changeset.t()
   defp add_warning(%Ecto.Changeset{} = changeset, field, message)
        when is_atom(field) and is_binary(message) do
-    warnings = get_private(changeset, :warnings, [])
-
-    put_private(changeset, :warnings, [%{field: field, message: message} | warnings])
+    warnings = get_change(changeset, :warnings, [])
+    put_change(changeset, :warnings, [%{field: field, message: message} | warnings])
   end
 
   @spec warnings_from_changeset(Ecto.Changeset.t()) :: map()
   def warnings_from_changeset(%Ecto.Changeset{} = changeset) do
     changeset
-    |> get_private(:warnings, [])
+    |> get_change(:warnings, [])
     |> Enum.reverse()
     |> Enum.group_by(fn %{field: field} -> field end, fn %{message: message} -> message end)
-  end
-
-  defp get_private(%Ecto.Changeset{} = changeset, key, default) when is_atom(key) do
-    changeset
-    |> Map.get(:private, %{})
-    |> Map.get(key, default)
-  end
-
-  defp put_private(%Ecto.Changeset{} = changeset, key, value) when is_atom(key) do
-    private = Map.get(changeset, :private, %{})
-    Map.put(changeset, :private, Map.put(private, key, value))
   end
 end
