@@ -60,6 +60,31 @@ defmodule EdocApiWeb.InvoiceController do
     end
   end
 
+  def issue(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Core.issue_invoice_for_user(user.id, id) do
+      {:ok, invoice} ->
+        json(conn, %{invoice: invoice_json(invoice)})
+
+      {:error, :invoice_not_found} ->
+        conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
+
+      {:error, :already_issued} ->
+        conn |> put_status(:unprocessable_entity) |> json(%{error: "already_issued"})
+
+      {:error, :cannot_issue, details} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "cannot_issue", details: details})
+
+      {:error, %Ecto.Changeset{} = cs} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "validation_error", details: errors_to_map(cs)})
+    end
+  end
+
   def pdf(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     conn = put_layout(conn, false)

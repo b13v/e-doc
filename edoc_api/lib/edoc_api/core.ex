@@ -5,25 +5,12 @@ defmodule EdocApi.Core do
   alias EdocApi.Core.Company
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
+  alias EdocApi.Core.InvoiceCounter
 
   # ----- Companies--------
   def get_company_by_user_id(user_id) when is_binary(user_id) do
     Repo.get_by(Company, user_id: user_id)
   end
-
-  # def upsert_company_for_user(user_id, attrs) when is_binary(user_id) and is_map(attrs) do
-  #   case get_company_by_user_id(user_id) do
-  #     nil ->
-  #       %Company{}
-  #       |> Company.changeset(attrs, user_id)
-  #       |> Repo.insert()
-
-  #     %Company{} = company ->
-  #       company
-  #       |> Company.changeset(attrs, user_id)
-  #       |> Repo.update()
-  #   end
-  # end
 
   def upsert_company_for_user(user_id, attrs) do
     company = get_company_by_user_id(user_id) || %Company{}
@@ -42,18 +29,6 @@ defmodule EdocApi.Core do
   end
 
   # ----- Invoices--------
-  # def get_invoice_for_user(user_id, invoice_id)
-  #     when is_binary(user_id) and is_binary(invoice_id) do
-  #   Repo.get_by(Invoice, id: invoice_id, user_id: user_id)
-  # end
-
-  # def get_invoice_for_user(user_id, invoice_id)
-  #     when is_binary(user_id) and is_binary(invoice_id) do
-  #   Invoice
-  #   |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
-  #   |> preload([:company, :items])
-  #   |> Repo.one()
-  # end
   def get_invoice_for_user(user_id, invoice_id) do
     Invoice
     |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
@@ -72,12 +47,42 @@ defmodule EdocApi.Core do
     |> Repo.preload([:items, :company])
   end
 
-  # def create_invoice_for_user(user_id, company_id, attrs)
-  #     when is_binary(user_id) and is_binary(company_id) and is_map(attrs) do
-  #   %Invoice{}
-  #   |> Invoice.changeset(attrs, user_id, company_id)
-  #   |> Repo.insert()
-  # end
+  def issue_invoice_for_user(user_id, invoice_id) do
+    invoice =
+      Invoice
+      |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
+      |> Repo.one()
+      |> case do
+        nil -> nil
+        inv -> Repo.preload(inv, [:items, :company])
+      end
+
+    cond do
+      is_nil(invoice) ->
+        {:error, :invoice_not_found}
+
+      invoice.status == "issued" ->
+        {:error, :already_issued}
+
+      invoice.status != "draft" ->
+        {:error, :cannot_issue, %{status: "must be draft to issue"}}
+
+      (invoice.items || []) == [] ->
+        {:error, :cannot_issue, %{items: "must have at least 1 item"}}
+
+      is_nil(invoice.total) or Decimal.compare(invoice.total, Decimal.new("0.00")) != :gt ->
+        {:error, :cannot_issue, %{total: "must be > 0"}}
+
+      true ->
+        invoice
+        |> Ecto.Changeset.change(status: "issued")
+        |> Repo.update()
+        |> case do
+          {:ok, inv} -> {:ok, Repo.preload(inv, [:items, :company])}
+          {:error, cs} -> {:error, cs}
+        end
+    end
+  end
 
   def create_invoice_for_user(user_id, company_id, attrs) do
     items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
@@ -89,10 +94,38 @@ defmodule EdocApi.Core do
 
       {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
 
+      # ✅ AUTONUMBER: если number не передан — генерим только цифры
+
+      raw_number = Map.get(attrs, "number") || Map.get(attrs, :number)
+
+      number =
+        cond do
+          is_nil(raw_number) ->
+            next_invoice_number!(company_id)
+
+          is_binary(raw_number) and String.trim(raw_number) == "" ->
+            next_invoice_number!(company_id)
+
+          true ->
+            raw_number
+        end
+
+      # ---- SELLER from Company-----
+      company = Repo.get!(Company, company_id)
+
+      seller_attrs = %{
+        "seller_name" => company.name,
+        "seller_bin_iin" => company.bin_iin,
+        "seller_address" => format_company_address(company),
+        "seller_iban" => company.iban
+      }
+
       invoice_attrs =
         attrs
         |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+        |> Map.merge(seller_attrs)
         |> Map.put("subtotal", subtotal)
+        |> Map.put("number", number)
 
       invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
@@ -191,4 +224,56 @@ defmodule EdocApi.Core do
   end
 
   defp parse_decimal(_), do: Decimal.new("0.00")
+
+  defp format_company_address(%Company{} = c) do
+    city = (c.city || "") |> String.trim()
+    addr = (c.address || "") |> String.trim()
+
+    cond do
+      city != "" and addr != "" -> "г. #{city}, #{addr}"
+      addr != "" -> addr
+      city != "" -> "г. #{city}"
+      true -> ""
+    end
+  end
+
+  # -----InvoiceCounter-------------
+  def next_invoice_number!(company_id) do
+    Repo.transaction(fn ->
+      counter =
+        Repo.get(InvoiceCounter, company_id) ||
+          %InvoiceCounter{company_id: company_id, next_seq: 1}
+          |> Repo.insert!()
+
+      seq = counter.next_seq
+
+      counter
+      |> Ecto.Changeset.change(next_seq: seq + 1)
+      |> Repo.update!()
+
+      # формат: только цифры с ведущими нулями
+      String.pad_leading(Integer.to_string(seq), 10, "0")
+    end)
+    |> case do
+      {:ok, number} -> number
+      {:error, reason} -> raise "invoice number generation failed: #{inspect(reason)}"
+    end
+  end
+
+  # ------------ Marking-Invoice-issued-------------------
+
+  def mark_invoice_issued(invoice) do
+    case invoice.status do
+      "issued" ->
+        {:ok, invoice}
+
+      "draft" ->
+        invoice
+        |> Ecto.Changeset.change(status: "issued")
+        |> Repo.update()
+
+      other ->
+        {:error, {:invalid_status_transition, other}}
+    end
+  end
 end

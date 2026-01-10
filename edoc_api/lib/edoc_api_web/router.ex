@@ -31,6 +31,7 @@ defmodule EdocApiWeb.Router do
     get("/invoices/:id", InvoiceController, :show)
 
     get("/invoices/:id/pdf", InvoiceController, :pdf)
+    post("/invoices/:id/issue", InvoiceController, :issue)
     # get "/invoices/:id/pdf/download", InvoiceController, :download_pdf
   end
 

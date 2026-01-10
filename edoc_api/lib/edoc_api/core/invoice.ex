@@ -36,7 +36,6 @@ defmodule EdocApi.Core.Invoice do
   end
 
   @required_fields ~w(
-    number
     service_name
     issue_date
     currency
@@ -48,16 +47,15 @@ defmodule EdocApi.Core.Invoice do
     buyer_bin_iin
     buyer_address
     vat_rate
-    status
-  )a
+    )a
 
-  @optional_fields ~w(due_date subtotal total vat)a
+  @optional_fields ~w(number due_date subtotal total vat status)a
 
   @allowed_statuses ~w(draft issued paid void)
   @allowed_currencies ~w(KZT USD EUR RUB)
 
   @doc """
-  Variant B: user_id/company_id не принимаем из attrs.
+  user_id/company_id не принимаем из attrs.
   Их ставим из current_user/company.
   """
   def changeset(invoice, attrs, user_id, company_id) do
@@ -67,12 +65,13 @@ defmodule EdocApi.Core.Invoice do
     |> put_change(:company_id, company_id)
     |> validate_required(@required_fields ++ [:user_id, :company_id])
     |> normalize_fields()
+    |> put_default(:status, "draft")
     |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
     |> compute_totals()
     |> validate_number(:total, greater_than: 0)
     |> validate_inclusion(:status, @allowed_statuses)
     |> validate_inclusion(:currency, @allowed_currencies)
-    |> validate_length(:number, min: 1, max: 64)
+    |> validate_number_optional()
     |> validate_length(:service_name, min: 3, max: 255)
     |> validate_bin_iin(:seller_bin_iin)
     |> validate_bin_iin(:buyer_bin_iin)
@@ -97,7 +96,11 @@ defmodule EdocApi.Core.Invoice do
   end
 
   defp trim_nil(nil), do: nil
-  defp trim_nil(v) when is_binary(v), do: String.trim(v)
+  # defp trim_nil(v) when is_binary(v), do: String.trim(v)
+  defp trim_nil(v) when is_binary(v) do
+    v = String.trim(v)
+    if v == "", do: nil, else: v
+  end
 
   defp digits_only(nil), do: nil
   defp digits_only(v) when is_binary(v), do: String.replace(v, ~r/\D+/, "")
@@ -123,6 +126,22 @@ defmodule EdocApi.Core.Invoice do
     changeset
     |> validate_length(field, min: 15, max: 34)
     |> validate_format(field, ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/, message: "invalid IBAN format")
+  end
+
+  defp validate_number_optional(changeset) do
+    case get_field(changeset, :number) do
+      nil -> changeset
+      "" -> add_error(changeset, :number, "can't be blank")
+      _ -> validate_length(changeset, :number, min: 1, max: 32)
+    end
+  end
+
+  defp put_default(changeset, field, value) do
+    case get_field(changeset, field) do
+      nil -> put_change(changeset, field, value)
+      "" -> put_change(changeset, field, value)
+      _ -> changeset
+    end
   end
 
   defp compute_totals(changeset) do
