@@ -56,6 +56,33 @@ Routes live in `edoc_api/lib/edoc_api_web/router.ex` and auth is enforced by `Ed
 - `EdocApi.Accounts` → `EdocApi.Accounts.User` + `EdocApi.Repo` + Argon2
 - `EdocApi.Auth.Token` → Joken (JWT)
 
+### Domain Boundaries (schema vs context vs service)
+- Invoices
+  - Schema: `EdocApi.Core.Invoice` (`edoc_api/lib/edoc_api/core/invoice.ex`), `EdocApi.Core.InvoiceItem` (`edoc_api/lib/edoc_api/core/invoice_item.ex`), `EdocApi.Core.InvoiceCounter` (`edoc_api/lib/edoc_api/core/invoice_counter.ex`)
+  - Context: `EdocApi.Core` (`edoc_api/lib/edoc_api/core.ex`)
+  - Service: `EdocApi.Pdf` (`edoc_api/lib/edoc_api/pdf.ex`) + `EdocApiWeb.PdfTemplates` (`edoc_api/lib/edoc_api_web/pdf_templates.ex`)
+- Companies
+  - Schema: `EdocApi.Core.Company` (`edoc_api/lib/edoc_api/core/company.ex`)
+  - Context: `EdocApi.Core` (`edoc_api/lib/edoc_api/core.ex`)
+  - Service: none (normalization/validation lives in schema)
+- Banks & Company Bank Accounts
+  - Schema: `EdocApi.Core.Bank` (`edoc_api/lib/edoc_api/core/bank.ex`), `EdocApi.Core.CompanyBankAccount` (`edoc_api/lib/edoc_api/core/company_bank_account.ex`)
+  - Context: `EdocApi.Core` (`edoc_api/lib/edoc_api/core.ex`)
+  - Service: none
+- Reference Dictionaries (KBE/KNP)
+  - Schema: `EdocApi.Core.KbeCode` (`edoc_api/lib/edoc_api/core/kbe_code.ex`), `EdocApi.Core.KnpCode` (`edoc_api/lib/edoc_api/core/knp_code.ex`)
+  - Context: `EdocApi.Core` (`edoc_api/lib/edoc_api/core.ex`)
+  - Service: none
+
+### Web Layer Business Logic (to isolate)
+- `EdocApiWeb.InvoiceController` (`edoc_api/lib/edoc_api_web/controllers/invoice_controller.ex`)
+  - `invoice_json/1`, `item_json/1` are presentation/serialization concerns.
+  - `pdf/2` invokes HTML rendering; consider moving PDF orchestration to a domain service.
+- `EdocApiWeb.CompanyBankAccountController` (`edoc_api/lib/edoc_api_web/controllers/company_bank_account_controller.ex`)
+  - `bank_account_json/1` is response shaping.
+- `EdocApiWeb.DictController` (`edoc_api/lib/edoc_api_web/controllers/dict_controller.ex`)
+  - `bank_json/1`, `code_json/1` are response shaping.
+
 ### Data Models (Ecto Schemas)
 - `EdocApi.Accounts.User` (`edoc_api/lib/edoc_api/accounts/user.ex`)
 - `EdocApi.Core.Company` (`edoc_api/lib/edoc_api/core/company.ex`)
