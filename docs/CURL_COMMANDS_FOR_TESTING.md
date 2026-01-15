@@ -26,8 +26,8 @@ echo "$TOKEN"
 
 ## 3) List banks (get `BANK_ID`)
 ```bash
-curl -X GET "http://localhost:4000/v1/dicts/banks" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+curl -s http://localhost:4000/v1/dicts/banks \
+  -H "authorization: Bearer $TOKEN" | jq .
 ```
 
 ## 4) List KBE codes (get `KBE_ID`)
