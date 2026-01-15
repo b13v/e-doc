@@ -50,7 +50,7 @@ defmodule EdocApi.Core.Invoice do
     vat_rate
     )a
 
-  @optional_fields ~w(number due_date subtotal total vat status)a
+  @optional_fields ~w(number due_date subtotal total vat status bank_account_id)a
 
   @allowed_statuses ~w(draft issued paid void)
   @allowed_currencies ~w(KZT USD EUR RUB)

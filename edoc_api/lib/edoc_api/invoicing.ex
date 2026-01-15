@@ -6,6 +6,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.InvoiceCounter
+  alias EdocApi.Core.CompanyBankAccount
 
   def get_invoice_for_user(user_id, invoice_id) do
     Invoice
@@ -40,6 +41,7 @@ defmodule EdocApi.Invoicing do
 
   def create_invoice_for_user(user_id, company_id, attrs) do
     items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
+    bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
 
     Repo.transaction(fn ->
       if items_attrs == [] do
@@ -63,14 +65,26 @@ defmodule EdocApi.Invoicing do
             raw_number
         end
 
-      # ---- SELLER from Company-----
+      # ---- SELLER from Company / Bank Account -----
       company = Repo.get!(Company, company_id)
+
+      bank_account =
+        case bank_account_id do
+          nil ->
+            nil
+
+          id ->
+            case Repo.get(CompanyBankAccount, id) do
+              %CompanyBankAccount{company_id: ^company_id} = acc -> acc
+              _ -> Repo.rollback({:error, :bank_account_not_found})
+            end
+        end
 
       seller_attrs = %{
         "seller_name" => company.name,
         "seller_bin_iin" => company.bin_iin,
         "seller_address" => format_company_address(company),
-        "seller_iban" => company.iban
+        "seller_iban" => (bank_account && bank_account.iban) || company.iban
       }
 
       invoice_attrs =
@@ -79,6 +93,7 @@ defmodule EdocApi.Invoicing do
         |> Map.merge(seller_attrs)
         |> Map.put("subtotal", subtotal)
         |> Map.put("number", number)
+        |> maybe_put_bank_account_id(bank_account)
 
       invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
@@ -105,6 +120,7 @@ defmodule EdocApi.Invoicing do
     |> case do
       {:ok, invoice} -> {:ok, invoice}
       {:error, {:error, :items_required}} -> {:error, :items_required}
+      {:error, {:error, :bank_account_not_found}} -> {:error, :bank_account_not_found}
       {:error, {:error, %Ecto.Changeset{} = cs}} -> {:error, cs}
       {:error, other} -> {:error, other}
     end
@@ -181,6 +197,11 @@ defmodule EdocApi.Invoicing do
   end
 
   defp parse_decimal(_), do: Decimal.new("0.00")
+
+  defp maybe_put_bank_account_id(attrs, nil), do: attrs
+
+  defp maybe_put_bank_account_id(attrs, %CompanyBankAccount{id: id}),
+    do: Map.put(attrs, "bank_account_id", id)
 
   defp format_company_address(%Company{} = c) do
     city = (c.city || "") |> String.trim()

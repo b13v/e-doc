@@ -25,6 +25,9 @@ defmodule EdocApiWeb.InvoiceController do
           {:error, :items_required} ->
             ErrorMapper.unprocessable(conn, "items_required")
 
+          {:error, :bank_account_not_found} ->
+            ErrorMapper.unprocessable(conn, "bank_account_not_found")
+
           {:error, %Ecto.Changeset{} = changeset} ->
             ErrorMapper.validation(conn, changeset)
 
