@@ -4,12 +4,13 @@ Replace ALL CAPS placeholders.
 
 ## 1) Signup (get token)
 ```bash
-curl -X POST "http://localhost:4000/v1/auth/signup" \
+TOKEN=$(curl -X POST "http://localhost:4000/v1/auth/signup" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "USER_EMAIL",
     "password": "USER_PASSWORD"
-  }'
+  }' | jq -r .access_token)
+echo "$TOKEN"
 ```
 
 ## 2) Login (get token)
