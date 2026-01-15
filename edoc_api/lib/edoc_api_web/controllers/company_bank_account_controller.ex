@@ -2,12 +2,14 @@ defmodule EdocApiWeb.CompanyBankAccountController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Payments
+  alias EdocApiWeb.Serializers.BankAccountSerializer
+  alias EdocApiWeb.Serializers.ErrorSerializer
 
   def index(conn, _params) do
     user = conn.assigns.current_user
     accounts = Payments.list_company_bank_accounts_for_user(user.id)
 
-    json(conn, %{bank_accounts: Enum.map(accounts, &bank_account_json/1)})
+    json(conn, %{bank_accounts: Enum.map(accounts, &BankAccountSerializer.to_map/1)})
   end
 
   def create(conn, params) do
@@ -15,7 +17,7 @@ defmodule EdocApiWeb.CompanyBankAccountController do
 
     case Payments.create_company_bank_account_for_user(user.id, params) do
       {:ok, acc} ->
-        conn |> put_status(:created) |> json(%{bank_account: bank_account_json(acc)})
+        conn |> put_status(:created) |> json(%{bank_account: BankAccountSerializer.to_map(acc)})
 
       {:error, :company_required} ->
         conn |> put_status(:unprocessable_entity) |> json(%{error: "company_required"})
@@ -23,28 +25,7 @@ defmodule EdocApiWeb.CompanyBankAccountController do
       {:error, %Ecto.Changeset{} = cs} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: errors_to_map(cs)})
+        |> json(%{error: "validation_error", details: ErrorSerializer.errors_to_map(cs)})
     end
-  end
-
-  defp bank_account_json(a) do
-    %{
-      id: a.id,
-      label: a.label,
-      iban: a.iban,
-      is_default: a.is_default,
-      bank: a.bank && %{id: a.bank.id, name: a.bank.name, bic: a.bank.bic},
-      kbe: a.kbe_code && %{id: a.kbe_code.id, code: a.kbe_code.code},
-      knp: a.knp_code && %{id: a.knp_code.id, code: a.knp_code.code}
-    }
-  end
-
-  # можно вынести в общий helper (у тебя он уже есть в InvoiceController)
-  defp errors_to_map(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {k, v}, acc ->
-        String.replace(acc, "%{#{k}}", to_string(v))
-      end)
-    end)
   end
 end

@@ -4,6 +4,8 @@ defmodule EdocApiWeb.InvoiceController do
   alias EdocApi.Companies
   alias EdocApi.Invoicing
   alias EdocApiWeb.PdfTemplates
+  alias EdocApiWeb.Serializers.ErrorSerializer
+  alias EdocApiWeb.Serializers.InvoiceSerializer
   require Logger
 
   def create(conn, params) do
@@ -18,7 +20,7 @@ defmodule EdocApiWeb.InvoiceController do
           {:ok, invoice} ->
             conn
             |> put_status(:created)
-            |> json(%{invoice: invoice_json(invoice)})
+            |> json(%{invoice: InvoiceSerializer.to_map(invoice)})
 
           {:error, :items_required} ->
             conn
@@ -28,7 +30,10 @@ defmodule EdocApiWeb.InvoiceController do
           {:error, %Ecto.Changeset{} = changeset} ->
             conn
             |> put_status(:unprocessable_entity)
-            |> json(%{error: "validation_error", details: errors_to_map(changeset)})
+            |> json(%{
+              error: "validation_error",
+              details: ErrorSerializer.errors_to_map(changeset)
+            })
 
           {:error, other} ->
             Logger.error("invoice_create_failed: #{inspect(other)}")
@@ -44,7 +49,7 @@ defmodule EdocApiWeb.InvoiceController do
     user = conn.assigns.current_user
     invoices = Invoicing.list_invoices_for_user(user.id)
 
-    json(conn, %{invoices: Enum.map(invoices, &invoice_json/1)})
+    json(conn, %{invoices: Enum.map(invoices, &InvoiceSerializer.to_map/1)})
   end
 
   def show(conn, %{"id" => id}) do
@@ -55,7 +60,7 @@ defmodule EdocApiWeb.InvoiceController do
         conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
 
       invoice ->
-        json(conn, %{invoice: invoice_json(invoice)})
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
     end
   end
 
@@ -64,7 +69,7 @@ defmodule EdocApiWeb.InvoiceController do
 
     case Invoicing.issue_invoice_for_user(user.id, id) do
       {:ok, invoice} ->
-        json(conn, %{invoice: invoice_json(invoice)})
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
 
       {:error, :invoice_not_found} ->
         conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
@@ -80,7 +85,7 @@ defmodule EdocApiWeb.InvoiceController do
       {:error, %Ecto.Changeset{} = cs} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: errors_to_map(cs)})
+        |> json(%{error: "validation_error", details: ErrorSerializer.errors_to_map(cs)})
     end
   end
 
@@ -111,54 +116,5 @@ defmodule EdocApiWeb.InvoiceController do
             |> json(%{error: "pdf_generation_failed", reason: inspect(reason)})
         end
     end
-  end
-
-  # -------- helpers --------
-
-  defp invoice_json(inv) do
-    %{
-      id: inv.id,
-      number: inv.number,
-      service_name: inv.service_name,
-      issue_date: inv.issue_date,
-      due_date: inv.due_date,
-      currency: inv.currency,
-      vat_rate: inv.vat_rate,
-      subtotal: inv.subtotal,
-      vat: inv.vat,
-      total: inv.total,
-      seller_name: inv.seller_name,
-      seller_bin_iin: inv.seller_bin_iin,
-      seller_address: inv.seller_address,
-      seller_iban: inv.seller_iban,
-      buyer_name: inv.buyer_name,
-      buyer_bin_iin: inv.buyer_bin_iin,
-      buyer_address: inv.buyer_address,
-      status: inv.status,
-      company_id: inv.company_id,
-      user_id: inv.user_id,
-      items: Enum.map(inv.items || [], &item_json/1),
-      inserted_at: inv.inserted_at,
-      updated_at: inv.updated_at
-    }
-  end
-
-  defp item_json(item) do
-    %{
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      qty: item.qty,
-      unit_price: item.unit_price,
-      amount: item.amount
-    }
-  end
-
-  defp errors_to_map(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {k, v}, acc ->
-        String.replace(acc, "%{#{k}}", to_string(v))
-      end)
-    end)
   end
 end
