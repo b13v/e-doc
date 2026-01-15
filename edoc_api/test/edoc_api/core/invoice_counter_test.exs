@@ -1,7 +1,7 @@
-defmodule EdocApi.Core.InvoiceCounterTest do
+defmodule EdocApi.Invoicing.InvoiceCounterTest do
   use EdocApi.DataCase, async: true
 
-  alias EdocApi.Core
+  alias EdocApi.Invoicing
 
   import EdocApi.TestFixtures
 
@@ -9,8 +9,8 @@ defmodule EdocApi.Core.InvoiceCounterTest do
     user = create_user!()
     company = create_company!(user)
 
-    assert Core.next_invoice_number!(company.id) == "0000000001"
-    assert Core.next_invoice_number!(company.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company.id) == "0000000001"
+    assert Invoicing.next_invoice_number!(company.id) == "0000000002"
   end
 
   test "sequences are independent per company" do
@@ -20,8 +20,8 @@ defmodule EdocApi.Core.InvoiceCounterTest do
     user_two = create_user!()
     company_two = create_company!(user_two)
 
-    assert Core.next_invoice_number!(company_one.id) == "0000000001"
-    assert Core.next_invoice_number!(company_two.id) == "0000000001"
-    assert Core.next_invoice_number!(company_one.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company_one.id) == "0000000001"
+    assert Invoicing.next_invoice_number!(company_two.id) == "0000000001"
+    assert Invoicing.next_invoice_number!(company_one.id) == "0000000002"
   end
 end

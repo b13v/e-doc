@@ -1,6 +1,7 @@
 defmodule EdocApi.TestFixtures do
   alias EdocApi.Accounts
-  alias EdocApi.Core
+  alias EdocApi.Companies
+  alias EdocApi.Invoicing
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.Bank
@@ -45,7 +46,7 @@ defmodule EdocApi.TestFixtures do
 
   def create_company!(user, attrs \\ %{}) do
     attrs = ensure_company_payment_refs(attrs)
-    {:ok, company, _warnings} = Core.upsert_company_for_user(user.id, company_attrs(attrs))
+    {:ok, company, _warnings} = Companies.upsert_company_for_user(user.id, company_attrs(attrs))
     company
   end
 
@@ -68,7 +69,7 @@ defmodule EdocApi.TestFixtures do
   end
 
   def create_invoice_with_items!(user, company, attrs \\ %{}) do
-    {:ok, invoice} = Core.create_invoice_for_user(user.id, company.id, invoice_attrs(attrs))
+    {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, invoice_attrs(attrs))
     invoice
   end
 

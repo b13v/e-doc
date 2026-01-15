@@ -1,11 +1,11 @@
 defmodule EdocApiWeb.CompanyBankAccountController do
   use EdocApiWeb, :controller
 
-  alias EdocApi.Core
+  alias EdocApi.Payments
 
   def index(conn, _params) do
     user = conn.assigns.current_user
-    accounts = Core.list_company_bank_accounts_for_user(user.id)
+    accounts = Payments.list_company_bank_accounts_for_user(user.id)
 
     json(conn, %{bank_accounts: Enum.map(accounts, &bank_account_json/1)})
   end
@@ -13,7 +13,7 @@ defmodule EdocApiWeb.CompanyBankAccountController do
   def create(conn, params) do
     user = conn.assigns.current_user
 
-    case Core.create_company_bank_account_for_user(user.id, params) do
+    case Payments.create_company_bank_account_for_user(user.id, params) do
       {:ok, acc} ->
         conn |> put_status(:created) |> json(%{bank_account: bank_account_json(acc)})
 

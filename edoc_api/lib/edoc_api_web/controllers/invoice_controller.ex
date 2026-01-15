@@ -1,19 +1,20 @@
 defmodule EdocApiWeb.InvoiceController do
   use EdocApiWeb, :controller
 
-  alias EdocApi.Core
+  alias EdocApi.Companies
+  alias EdocApi.Invoicing
   alias EdocApiWeb.PdfTemplates
   require Logger
 
   def create(conn, params) do
     user = conn.assigns.current_user
 
-    case Core.get_company_by_user_id(user.id) do
+    case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn |> put_status(:unprocessable_entity) |> json(%{error: "company_required"})
 
       company ->
-        case Core.create_invoice_for_user(user.id, company.id, params) do
+        case Invoicing.create_invoice_for_user(user.id, company.id, params) do
           {:ok, invoice} ->
             conn
             |> put_status(:created)
@@ -41,7 +42,7 @@ defmodule EdocApiWeb.InvoiceController do
 
   def index(conn, _params) do
     user = conn.assigns.current_user
-    invoices = Core.list_invoices_for_user(user.id)
+    invoices = Invoicing.list_invoices_for_user(user.id)
 
     json(conn, %{invoices: Enum.map(invoices, &invoice_json/1)})
   end
@@ -49,7 +50,7 @@ defmodule EdocApiWeb.InvoiceController do
   def show(conn, %{"id" => id}) do
     user = conn.assigns.current_user
 
-    case Core.get_invoice_for_user(user.id, id) do
+    case Invoicing.get_invoice_for_user(user.id, id) do
       nil ->
         conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
 
@@ -61,7 +62,7 @@ defmodule EdocApiWeb.InvoiceController do
   def issue(conn, %{"id" => id}) do
     user = conn.assigns.current_user
 
-    case Core.issue_invoice_for_user(user.id, id) do
+    case Invoicing.issue_invoice_for_user(user.id, id) do
       {:ok, invoice} ->
         json(conn, %{invoice: invoice_json(invoice)})
 
@@ -87,7 +88,7 @@ defmodule EdocApiWeb.InvoiceController do
     user = conn.assigns.current_user
     conn = put_layout(conn, false)
 
-    case Core.get_invoice_for_user(user.id, id) do
+    case Invoicing.get_invoice_for_user(user.id, id) do
       nil ->
         conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
 

@@ -1,12 +1,12 @@
 defmodule EdocApiWeb.CompanyController do
   use EdocApiWeb, :controller
 
-  alias EdocApi.Core
+  alias EdocApi.Companies
 
   def show(conn, _params) do
     user = conn.assigns.current_user
 
-    case Core.get_company_by_user_id(user.id) do
+    case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn |> put_status(:not_found) |> json(%{error: "company_not_found"})
 
@@ -27,7 +27,7 @@ defmodule EdocApiWeb.CompanyController do
     #     |> put_status(:unprocessable_entity)
     #     |> json(%{error: "validation_error", details: errors_to_map(changeset)})
     # end
-    case Core.upsert_company_for_user(user.id, params) do
+    case Companies.upsert_company_for_user(user.id, params) do
       {:ok, company, warnings} ->
         json(conn, %{company: company_json(company), warnings: warnings})
 
