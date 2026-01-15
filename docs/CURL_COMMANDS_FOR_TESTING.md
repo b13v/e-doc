@@ -32,8 +32,8 @@ curl -s http://localhost:4000/v1/dicts/banks \
 
 ## 4) List KBE codes (get `KBE_ID`)
 ```bash
-curl -X GET "http://localhost:4000/v1/dicts/kbe" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+ curl -s "http://localhost:4000/v1/dicts/kbe" \
+  -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ## 5) List KNP codes (get `KNP_ID`)
