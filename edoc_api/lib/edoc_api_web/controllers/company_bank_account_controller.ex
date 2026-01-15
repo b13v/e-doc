@@ -2,8 +2,8 @@ defmodule EdocApiWeb.CompanyBankAccountController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Payments
+  alias EdocApiWeb.ErrorMapper
   alias EdocApiWeb.Serializers.BankAccountSerializer
-  alias EdocApiWeb.Serializers.ErrorSerializer
 
   def index(conn, _params) do
     user = conn.assigns.current_user
@@ -20,12 +20,10 @@ defmodule EdocApiWeb.CompanyBankAccountController do
         conn |> put_status(:created) |> json(%{bank_account: BankAccountSerializer.to_map(acc)})
 
       {:error, :company_required} ->
-        conn |> put_status(:unprocessable_entity) |> json(%{error: "company_required"})
+        ErrorMapper.unprocessable(conn, "company_required")
 
       {:error, %Ecto.Changeset{} = cs} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: ErrorSerializer.errors_to_map(cs)})
+        ErrorMapper.validation(conn, cs)
     end
   end
 end

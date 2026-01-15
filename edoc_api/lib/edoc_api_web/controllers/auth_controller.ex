@@ -3,7 +3,7 @@ defmodule EdocApiWeb.AuthController do
 
   alias EdocApi.Accounts
   alias EdocApi.Auth.Token
-  alias EdocApiWeb.Serializers.ErrorSerializer
+  alias EdocApiWeb.ErrorMapper
 
   def signup(conn, params) do
     with {:ok, user} <- Accounts.register_user(params),
@@ -14,14 +14,10 @@ defmodule EdocApiWeb.AuthController do
       })
     else
       {:error, %Ecto.Changeset{} = changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: ErrorSerializer.errors_to_map(changeset)})
+        ErrorMapper.validation(conn, changeset)
 
       {:error, reason} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "signup_failed", reason: inspect(reason)})
+        ErrorMapper.unprocessable(conn, "signup_failed", %{reason: inspect(reason)})
     end
   end
 
@@ -34,14 +30,10 @@ defmodule EdocApiWeb.AuthController do
       })
     else
       {:error, :invalid_credentials} ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "invalid_credentials"})
+        ErrorMapper.unauthorized(conn, "invalid_credentials")
 
       _ ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "login_failed"})
+        ErrorMapper.unprocessable(conn, "login_failed")
     end
   end
 end
