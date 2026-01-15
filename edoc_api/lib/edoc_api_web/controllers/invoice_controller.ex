@@ -3,7 +3,7 @@ defmodule EdocApiWeb.InvoiceController do
 
   alias EdocApi.Companies
   alias EdocApi.Invoicing
-  alias EdocApiWeb.PdfTemplates
+  alias EdocApi.Documents.InvoicePdf
   alias EdocApiWeb.Serializers.ErrorSerializer
   alias EdocApiWeb.Serializers.InvoiceSerializer
   require Logger
@@ -98,9 +98,7 @@ defmodule EdocApiWeb.InvoiceController do
         conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
 
       invoice ->
-        html = PdfTemplates.invoice_html(invoice)
-
-        case EdocApi.Pdf.html_to_pdf(html) do
+        case InvoicePdf.render(invoice) do
           {:ok, pdf_binary} ->
             conn
             |> put_resp_content_type("application/pdf")
