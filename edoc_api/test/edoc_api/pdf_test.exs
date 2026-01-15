@@ -3,6 +3,7 @@ defmodule EdocApi.PdfTest do
 
   alias EdocApi.Pdf
   alias EdocApiWeb.PdfTemplates
+  alias EdocApi.Repo
 
   import EdocApi.TestFixtures
 
@@ -10,7 +11,11 @@ defmodule EdocApi.PdfTest do
     test "generates a PDF from invoice html" do
       user = create_user!()
       company = create_company!(user)
-      invoice = create_invoice_with_items!(user, company)
+
+      invoice =
+        user
+        |> create_invoice_with_items!(company)
+        |> Repo.preload(company: [:bank, :kbe_code, :knp_code])
 
       html = PdfTemplates.invoice_html(invoice)
 

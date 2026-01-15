@@ -6,6 +6,8 @@ defmodule EdocApi.Core do
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.InvoiceCounter
+  alias EdocApi.Core.{Bank, KbeCode, KnpCode}
+  alias EdocApi.Core.CompanyBankAccount
 
   # ----- Companies--------
   def get_company_by_user_id(user_id) when is_binary(user_id) do
@@ -28,6 +30,37 @@ defmodule EdocApi.Core do
     end
   end
 
+  # ----- Company bank accounts -----
+  def list_company_bank_accounts_for_user(user_id) do
+    case get_company_by_user_id(user_id) do
+      nil ->
+        []
+
+      company ->
+        CompanyBankAccount
+        |> where([a], a.company_id == ^company.id)
+        |> order_by([a], desc: a.is_default, asc: a.label)
+        |> Repo.all()
+        |> Repo.preload([:bank, :kbe_code, :knp_code])
+    end
+  end
+
+  def create_company_bank_account_for_user(user_id, attrs) do
+    case get_company_by_user_id(user_id) do
+      nil ->
+        {:error, :company_required}
+
+      company ->
+        %CompanyBankAccount{}
+        |> CompanyBankAccount.changeset(attrs, company.id)
+        |> Repo.insert()
+        |> case do
+          {:ok, acc} -> {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
+          {:error, cs} -> {:error, cs}
+        end
+    end
+  end
+
   # ----- Invoices--------
   def get_invoice_for_user(user_id, invoice_id) do
     Invoice
@@ -35,7 +68,7 @@ defmodule EdocApi.Core do
     |> Repo.one()
     |> case do
       nil -> nil
-      invoice -> Repo.preload(invoice, [:items, :company])
+      invoice -> preload_invoice(invoice)
     end
   end
 
@@ -44,7 +77,7 @@ defmodule EdocApi.Core do
     |> where([i], i.user_id == ^user_id)
     |> order_by([i], desc: i.inserted_at)
     |> Repo.all()
-    |> Repo.preload([:items, :company])
+    |> Repo.preload([:items, company: [:bank, :kbe_code, :knp_code]])
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
@@ -54,7 +87,7 @@ defmodule EdocApi.Core do
       |> Repo.one()
       |> case do
         nil -> nil
-        inv -> Repo.preload(inv, [:items, :company])
+        inv -> preload_invoice(inv)
       end
 
     mark_invoice_issued(invoice)
@@ -131,6 +164,10 @@ defmodule EdocApi.Core do
       {:error, {:error, %Ecto.Changeset{} = cs}} -> {:error, cs}
       {:error, other} -> {:error, other}
     end
+  end
+
+  defp preload_invoice(invoice) do
+    Repo.preload(invoice, [:items, company: [:bank, :kbe_code, :knp_code]])
   end
 
   defp prepare_items_and_subtotal!(items_attrs) when is_list(items_attrs) do
@@ -271,5 +308,18 @@ defmodule EdocApi.Core do
           {:error, cs} -> {:error, cs}
         end
     end
+  end
+
+  # ----- Dicts -----
+  def list_banks do
+    Bank |> order_by([b], asc: b.name) |> Repo.all()
+  end
+
+  def list_kbe_codes do
+    KbeCode |> order_by([k], asc: k.code) |> Repo.all()
+  end
+
+  def list_knp_codes do
+    KnpCode |> order_by([k], asc: k.code) |> Repo.all()
   end
 end

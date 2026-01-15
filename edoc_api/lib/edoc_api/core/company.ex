@@ -11,7 +11,7 @@ defmodule EdocApi.Core.Company do
     field(:bin_iin, :string)
     field(:city, :string)
     field(:address, :string)
-    field(:bank, :string)
+    field(:bank_name, :string)
     field(:iban, :string)
     field(:email, :string)
     field(:phone, :string)
@@ -20,7 +20,11 @@ defmodule EdocApi.Core.Company do
     field(:basis, :string)
     field(:warnings, {:array, :map}, virtual: true)
 
+    has_many(:bank_accounts, EdocApi.Core.CompanyBankAccount)
     belongs_to(:user, EdocApi.Accounts.User)
+    belongs_to(:bank, EdocApi.Core.Bank)
+    belongs_to(:kbe_code, EdocApi.Core.KbeCode)
+    belongs_to(:knp_code, EdocApi.Core.KnpCode)
 
     timestamps(type: :utc_datetime)
   end
@@ -31,7 +35,10 @@ defmodule EdocApi.Core.Company do
     bin_iin
     city
     address
-    bank
+    bank_name
+    bank_id
+    kbe_code_id
+    knp_code_id
     iban
     phone
     representative_name
@@ -68,7 +75,7 @@ defmodule EdocApi.Core.Company do
     |> update_change(:email, &normalize_email/1)
     |> update_change(:city, &normalize_trim/1)
     |> update_change(:address, &normalize_trim/1)
-    |> update_change(:bank, &normalize_trim/1)
+    |> update_change(:bank_name, &normalize_trim/1)
     |> update_change(:name, &normalize_trim/1)
     |> update_change(:representative_name, &normalize_trim/1)
     |> update_change(:representative_title, &normalize_trim/1)

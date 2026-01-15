@@ -31,6 +31,7 @@ defmodule EdocApi.Core.Invoice do
     has_many(:items, EdocApi.Core.InvoiceItem, on_replace: :delete)
     belongs_to(:company, EdocApi.Core.Company)
     belongs_to(:user, EdocApi.Accounts.User)
+    belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
 
     timestamps(type: :utc_datetime)
   end

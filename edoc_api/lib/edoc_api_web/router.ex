@@ -33,6 +33,11 @@ defmodule EdocApiWeb.Router do
     get("/invoices/:id/pdf", InvoiceController, :pdf)
     post("/invoices/:id/issue", InvoiceController, :issue)
     # get "/invoices/:id/pdf/download", InvoiceController, :download_pdf
+    get("/dicts/banks", DictController, :banks)
+    get("/dicts/kbe", DictController, :kbe)
+    get("/dicts/knp", DictController, :knp)
+    get("/company/bank-accounts", CompanyBankAccountController, :index)
+    post("/company/bank-accounts", CompanyBankAccountController, :create)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

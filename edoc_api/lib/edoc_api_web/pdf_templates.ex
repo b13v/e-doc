@@ -267,6 +267,14 @@ defmodule EdocApiWeb.PdfTemplates do
           </head>
           <body>
           <% c = @invoice.company || %{} %>
+          <% bank = c && c.bank %>
+          <% kbe = c && c.kbe_code %>
+          <% knp = c && c.knp_code %>
+
+          <% bank_name = (c && c.bank_name) || (bank && bank.name) || "—" %>
+          <% bank_bic  = (bank && bank.bic) || "—" %>
+          <% kbe_code  = (kbe && kbe.code) || "—" %>
+          <% knp_code  = (knp && knp.code) || "—" %>
           <% items = @invoice.items || [] %>
           <% items_count = length(items) %>
           <!-- ВНИМАНИЕ -->
@@ -276,15 +284,43 @@ defmodule EdocApiWeb.PdfTemplates do
             </div>
 
             <!-- ПЛАТЕЖНОЕ ПОРУЧЕНИЕ -->
-            <div class="box small">
-              <strong>Бенефициар:</strong><br/>
-                <%= c.name || @invoice.seller_name %><br/>
-                БИН: <%= c.bin_iin || @invoice.seller_bin_iin %><br/>
-                IBAN: <%= c.iban || @invoice.seller_iban %><br/>
-                <%= if c.bank, do: "Банк: #{c.bank}" %>
-                <%= if c.phone, do: "Тел.: #{c.phone}" %>
-                <%= if c.email, do: "Email: #{c.email}" %>
-             </div>
+            <!-- БЕНЕФИЦИАР (как в банковском счёте) -->
+             <table style="width:100%; border-collapse: collapse; margin-bottom: 12px;" class="small">
+               <tr>
+                 <td style="border:1px solid #000; padding:6px;" colspan="1">
+                   <strong>Бенефициар:</strong><br/>
+                   <%= c.name || @invoice.seller_name %><br/>
+                   БИН: <%= c.bin_iin || @invoice.seller_bin_iin %>
+                 </td>
+
+                 <td style="border:1px solid #000; padding:6px;">
+                   <strong>ИИК</strong><br/>
+                   <%= c.iban || @invoice.seller_iban %>
+                 </td>
+
+                 <td style="border:1px solid #000; padding:6px; width:60px;">
+                   <strong>КБе</strong><br/>
+                   <%= kbe_code %>
+                 </td>
+               </tr>
+
+               <tr>
+                 <td style="border:1px solid #000; padding:6px;">
+                   <strong>Банк бенефициара:</strong><br/>
+                   <%= bank_name %>
+                 </td>
+
+                 <td style="border:1px solid #000; padding:6px;">
+                   <strong>БИК</strong><br/>
+                   <%= bank_bic %>
+                 </td>
+
+                 <td style="border:1px solid #000; padding:6px;">
+                   <strong>КНП</strong><br/>
+                   <%= knp_code %>
+                 </td>
+               </tr>
+             </table>
 
             <!-- ЗАГОЛОВОК -->
             <h1>Счет на оплату № <%= @invoice.number %> от <%= fmt_date(@invoice.issue_date) %></h1>

@@ -3,6 +3,9 @@ defmodule EdocApi.TestFixtures do
   alias EdocApi.Core
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
+  alias EdocApi.Core.Bank
+  alias EdocApi.Core.KbeCode
+  alias EdocApi.Core.KnpCode
   alias EdocApi.Repo
 
   def unique_email do
@@ -28,7 +31,7 @@ defmodule EdocApi.TestFixtures do
         "bin_iin" => "123456789012",
         "city" => "Almaty",
         "address" => "Some Street 1",
-        "bank" => "KZ Bank",
+        "bank_name" => "KZ Bank",
         "iban" => "KZ123456789012345678",
         "phone" => "+7 (777) 123 45 67",
         "representative_name" => "John Doe",
@@ -41,6 +44,7 @@ defmodule EdocApi.TestFixtures do
   end
 
   def create_company!(user, attrs \\ %{}) do
+    attrs = ensure_company_payment_refs(attrs)
     {:ok, company, _warnings} = Core.upsert_company_for_user(user.id, company_attrs(attrs))
     company
   end
@@ -103,5 +107,58 @@ defmodule EdocApi.TestFixtures do
     }
 
     Repo.insert!(struct(base, overrides))
+  end
+
+  defp ensure_company_payment_refs(attrs) do
+    attrs = Map.new(attrs)
+
+    attrs =
+      if Map.has_key?(attrs, "bank_id") or Map.has_key?(attrs, :bank_id) do
+        attrs
+      else
+        bank = create_bank!()
+        attrs |> Map.put("bank_id", bank.id) |> Map.put_new("bank_name", bank.name)
+      end
+
+    attrs =
+      if Map.has_key?(attrs, "kbe_code_id") or Map.has_key?(attrs, :kbe_code_id) do
+        attrs
+      else
+        kbe = create_kbe_code!()
+        Map.put(attrs, "kbe_code_id", kbe.id)
+      end
+
+    if Map.has_key?(attrs, "knp_code_id") or Map.has_key?(attrs, :knp_code_id) do
+      attrs
+    else
+      knp = create_knp_code!()
+      Map.put(attrs, "knp_code_id", knp.id)
+    end
+  end
+
+  defp create_bank! do
+    suffix = Integer.to_string(System.unique_integer([:positive]))
+    bic = "BIC#{String.slice(suffix, 0, 8)}"
+    Repo.insert!(%Bank{name: "Test Bank #{suffix}", bic: bic})
+  end
+
+  defp create_kbe_code! do
+    code =
+      System.unique_integer([:positive])
+      |> rem(100)
+      |> Integer.to_string()
+      |> String.pad_leading(2, "0")
+
+    Repo.insert!(%KbeCode{code: code, description: "Test KBE #{code}"})
+  end
+
+  defp create_knp_code! do
+    code =
+      System.unique_integer([:positive])
+      |> rem(1000)
+      |> Integer.to_string()
+      |> String.pad_leading(3, "0")
+
+    Repo.insert!(%KnpCode{code: code, description: "Test KNP #{code}"})
   end
 end
