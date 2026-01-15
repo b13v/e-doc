@@ -23,7 +23,7 @@ defmodule EdocApi.Invoicing do
     |> where([i], i.user_id == ^user_id)
     |> order_by([i], desc: i.inserted_at)
     |> Repo.all()
-    |> Repo.preload([:items, company: [:bank, :kbe_code, :knp_code]])
+    |> Repo.preload([:items, :bank_account, company: [:bank, :kbe_code, :knp_code]])
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
@@ -115,7 +115,7 @@ defmodule EdocApi.Invoicing do
         end
       end)
 
-      Repo.preload(invoice, [:items, :company])
+      preload_invoice(invoice)
     end)
     |> case do
       {:ok, invoice} -> {:ok, invoice}
@@ -127,7 +127,11 @@ defmodule EdocApi.Invoicing do
   end
 
   defp preload_invoice(invoice) do
-    Repo.preload(invoice, [:items, company: [:bank, :kbe_code, :knp_code]])
+    Repo.preload(invoice, [
+      :items,
+      bank_account: [:bank, :kbe_code, :knp_code],
+      company: [:bank, :kbe_code, :knp_code]
+    ])
   end
 
   defp prepare_items_and_subtotal!(items_attrs) when is_list(items_attrs) do

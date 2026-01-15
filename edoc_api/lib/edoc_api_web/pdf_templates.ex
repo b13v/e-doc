@@ -225,6 +225,9 @@ defmodule EdocApiWeb.PdfTemplates do
     end
   end
 
+  defp assoc_loaded(%Ecto.Association.NotLoaded{}), do: nil
+  defp assoc_loaded(value), do: value
+
   # HEEx шаблон
   defp invoice(assigns) do
     ~H"""
@@ -266,15 +269,17 @@ defmodule EdocApiWeb.PdfTemplates do
             </style>
           </head>
           <body>
-          <% c = @invoice.company || %{} %>
-          <% bank = c && c.bank %>
-          <% kbe = c && c.kbe_code %>
-          <% knp = c && c.knp_code %>
+          <% c = assoc_loaded(@invoice.company) || %{} %>
+          <% acc = assoc_loaded(@invoice.bank_account) %>
+          <% bank = acc && acc.bank || (c && c.bank) %>
+          <% kbe = acc && acc.kbe_code || (c && c.kbe_code) %>
+          <% knp = acc && acc.knp_code || (c && c.knp_code) %>
 
-          <% bank_name = (c && c.bank_name) || (bank && bank.name) || "—" %>
+          <% bank_name = (bank && bank.name) || (c && c.bank_name) || "—" %>
           <% bank_bic  = (bank && bank.bic) || "—" %>
           <% kbe_code  = (kbe && kbe.code) || "—" %>
           <% knp_code  = (knp && knp.code) || "—" %>
+          <% iban = (acc && acc.iban) || (c && c.iban) || @invoice.seller_iban %>
           <% items = @invoice.items || [] %>
           <% items_count = length(items) %>
           <!-- ВНИМАНИЕ -->
@@ -295,7 +300,7 @@ defmodule EdocApiWeb.PdfTemplates do
 
                  <td style="border:1px solid #000; padding:6px;">
                    <strong>ИИК</strong><br/>
-                   <%= c.iban || @invoice.seller_iban %>
+                   <%= iban %>
                  </td>
 
                  <td style="border:1px solid #000; padding:6px; width:60px;">
