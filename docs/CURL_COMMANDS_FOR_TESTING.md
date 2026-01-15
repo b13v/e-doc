@@ -38,8 +38,8 @@ curl -s http://localhost:4000/v1/dicts/banks \
 
 ## 5) List KNP codes (get `KNP_ID`)
 ```bash
-curl -X GET "http://localhost:4000/v1/dicts/knp" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+curl -s "http://localhost:4000/v1/dicts/knp" \
+  -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ## 6) Upsert company (required before invoices)
