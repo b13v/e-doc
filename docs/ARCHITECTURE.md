@@ -28,6 +28,34 @@ Routes live in `edoc_api/lib/edoc_api_web/router.ex` and auth is enforced by `Ed
 - PDF generation: `EdocApi.Pdf` (`edoc_api/lib/edoc_api/pdf.ex`) + HTML template `EdocApiWeb.PdfTemplates`
 - Auth / JWT: `EdocApi.Auth.Token` (`edoc_api/lib/edoc_api/auth/token.ex`)
 
+### Core Domain (by subdomain)
+- Invoicing
+  - `EdocApi.Core` (`edoc_api/lib/edoc_api/core.ex`): invoice creation/issuing rules, invoice listing
+  - `EdocApi.Core.Invoice` (`edoc_api/lib/edoc_api/core/invoice.ex`): invoice schema + totals/status/currency/VAT validation
+  - `EdocApi.Core.InvoiceItem` (`edoc_api/lib/edoc_api/core/invoice_item.ex`): line items schema + amount computation
+  - `EdocApi.Core.InvoiceCounter` (`edoc_api/lib/edoc_api/core/invoice_counter.ex`): per-company numbering sequence
+- Companies
+  - `EdocApi.Core.Company` (`edoc_api/lib/edoc_api/core/company.ex`): company schema + validation/normalization + warnings
+- Payments & Banking
+  - `EdocApi.Core.Bank` (`edoc_api/lib/edoc_api/core/bank.ex`): bank dictionary (name/BIC)
+  - `EdocApi.Core.KbeCode` (`edoc_api/lib/edoc_api/core/kbe_code.ex`): KBE code dictionary
+  - `EdocApi.Core.KnpCode` (`edoc_api/lib/edoc_api/core/knp_code.ex`): KNP code dictionary
+  - `EdocApi.Core.CompanyBankAccount` (`edoc_api/lib/edoc_api/core/company_bank_account.ex`): company bank accounts (IBAN, bank/KBE/KNP refs, default flag)
+- Identity & Auth
+  - `EdocApi.Accounts` (`edoc_api/lib/edoc_api/accounts.ex`): registration/auth service layer
+  - `EdocApi.Accounts.User` (`edoc_api/lib/edoc_api/accounts/user.ex`): user schema + password hashing/validation
+  - `EdocApi.Auth.Token` (`edoc_api/lib/edoc_api/auth/token.ex`): JWT issuance/verification rules
+- Document Rendering
+  - `EdocApi.Pdf` (`edoc_api/lib/edoc_api/pdf.ex`): PDF generation service
+  - `EdocApiWeb.PdfTemplates` (`edoc_api/lib/edoc_api_web/pdf_templates.ex`): invoice HTML template (used by PDF)
+
+### Domain Dependency Map (high level)
+- Web controllers → `EdocApi.Core` / `EdocApi.Accounts` / `EdocApi.Auth.Token`
+- `EdocApi.Core` → Ecto schemas (`Company`, `Invoice`, `InvoiceItem`, `InvoiceCounter`, `Bank`, `KbeCode`, `KnpCode`, `CompanyBankAccount`)
+- `EdocApi.Core` → `EdocApi.Repo` (persistence) and `EdocApi.Pdf`/`EdocApiWeb.PdfTemplates` for PDF rendering
+- `EdocApi.Accounts` → `EdocApi.Accounts.User` + `EdocApi.Repo` + Argon2
+- `EdocApi.Auth.Token` → Joken (JWT)
+
 ### Data Models (Ecto Schemas)
 - `EdocApi.Accounts.User` (`edoc_api/lib/edoc_api/accounts/user.ex`)
 - `EdocApi.Core.Company` (`edoc_api/lib/edoc_api/core/company.ex`)
