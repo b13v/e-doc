@@ -45,7 +45,7 @@ curl -s "http://localhost:4000/v1/dicts/knp" \
 ## 6) Upsert company (required before invoices)
 ```bash
 curl -X PUT "http://localhost:4000/v1/company" \
-  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Acme LLC",
