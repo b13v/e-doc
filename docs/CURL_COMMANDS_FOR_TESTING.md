@@ -69,7 +69,7 @@ curl -X PUT "http://localhost:4000/v1/company" \
 ## 7) Create company bank account
 ```bash
 curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
-  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "label": "Main account",
@@ -84,13 +84,13 @@ curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
 ## 8) List company bank accounts (get `BANK_ACCOUNT_ID`)
 ```bash
 curl -X GET "http://localhost:4000/v1/company/bank-accounts" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 9) Create invoice (with bank account selection)
 ```bash
 curl -X POST "http://localhost:4000/v1/invoices" \
-  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "service_name": "Consulting",
@@ -112,12 +112,12 @@ curl -X POST "http://localhost:4000/v1/invoices" \
 ## 10) Issue invoice
 ```bash
 curl -X POST "http://localhost:4000/v1/invoices/INVOICE_ID/issue" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 11) Download PDF
 ```bash
 curl -X GET "http://localhost:4000/v1/invoices/INVOICE_ID/pdf" \
-  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -o invoice.pdf
 ```
