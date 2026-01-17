@@ -4,6 +4,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Repo
   alias EdocApi.Core.Company
   alias EdocApi.Core.Invoice
+  alias EdocApi.Core.InvoiceBankSnapshot
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.InvoiceCounter
   alias EdocApi.Core.CompanyBankAccount
@@ -23,20 +24,36 @@ defmodule EdocApi.Invoicing do
     |> where([i], i.user_id == ^user_id)
     |> order_by([i], desc: i.inserted_at)
     |> Repo.all()
-    |> Repo.preload([:items, :bank_account, company: [:bank, :kbe_code, :knp_code]])
+    |> Repo.preload([
+      :items,
+      :bank_snapshot,
+      bank_account: [:bank, :kbe_code, :knp_code],
+      company: [:bank, :kbe_code, :knp_code]
+    ])
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
-    invoice =
-      Invoice
-      |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
-      |> Repo.one()
-      |> case do
-        nil -> nil
-        inv -> preload_invoice(inv)
-      end
+    Repo.transaction(fn ->
+      invoice =
+        Invoice
+        |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
+        |> Repo.one()
+        |> case do
+          nil -> Repo.rollback({:error, :invoice_not_found})
+          inv -> preload_invoice(inv)
+        end
 
-    mark_invoice_issued(invoice)
+      case do_issue_invoice(invoice) do
+        {:ok, inv} -> inv
+        {:error, reason} -> Repo.rollback({:error, reason})
+        {:error, reason, details} -> Repo.rollback({:error, reason, details})
+      end
+    end)
+    |> case do
+      {:ok, invoice} -> {:ok, invoice}
+      {:error, {:error, reason}} -> {:error, reason}
+      {:error, {:error, reason, details}} -> {:error, reason, details}
+    end
   end
 
   def create_invoice_for_user(user_id, company_id, attrs) do
@@ -129,6 +146,7 @@ defmodule EdocApi.Invoicing do
   defp preload_invoice(invoice) do
     Repo.preload(invoice, [
       :items,
+      :bank_snapshot,
       bank_account: [:bank, :kbe_code, :knp_code],
       company: [:bank, :kbe_code, :knp_code]
     ])
@@ -245,15 +263,33 @@ defmodule EdocApi.Invoicing do
 
   # ------------ Marking-Invoice-issued-------------------
   def mark_invoice_issued(invoice) do
-    invoice =
-      case invoice do
-        nil -> nil
-        inv -> preload_invoice(inv)
-      end
+    Repo.transaction(fn ->
+      invoice =
+        case invoice do
+          nil -> Repo.rollback({:error, :invoice_not_found})
+          inv -> preload_invoice(inv)
+        end
 
+      case do_issue_invoice(invoice) do
+        {:ok, inv} -> inv
+        {:error, reason} -> Repo.rollback({:error, reason})
+        {:error, reason, details} -> Repo.rollback({:error, reason, details})
+      end
+    end)
+    |> case do
+      {:ok, inv} -> {:ok, inv}
+      {:error, {:error, reason}} -> {:error, reason}
+      {:error, {:error, reason, details}} -> {:error, reason, details}
+    end
+  end
+
+  defp do_issue_invoice(invoice) do
     cond do
       is_nil(invoice) ->
         {:error, :invoice_not_found}
+
+      not is_nil(invoice.bank_snapshot) ->
+        {:error, :already_issued}
 
       invoice.status == "issued" ->
         {:error, :already_issued}
@@ -268,12 +304,84 @@ defmodule EdocApi.Invoicing do
         {:error, :cannot_issue, %{total: "must be > 0"}}
 
       true ->
-        invoice
-        |> Ecto.Changeset.change(status: "issued")
-        |> Repo.update()
-        |> case do
-          {:ok, inv} -> {:ok, Repo.preload(inv, [:items, :company])}
-          {:error, cs} -> {:error, cs}
+        with {:ok, bank_account} <- select_bank_account(invoice),
+             {:ok, _snap} <- create_bank_snapshot(invoice, bank_account),
+             {:ok, inv} <- update_invoice_status(invoice, "issued") do
+          {:ok, preload_invoice(inv)}
+        end
+    end
+  end
+
+  defp update_invoice_status(invoice, status) do
+    invoice
+    |> Ecto.Changeset.change(status: status)
+    |> Repo.update()
+  end
+
+  defp select_bank_account(invoice) do
+    invoice_company_id = invoice.company_id
+
+    case invoice.bank_account do
+      %CompanyBankAccount{} = acc ->
+        {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
+
+      _ ->
+        case invoice.bank_account_id do
+          nil ->
+            CompanyBankAccount
+            |> where([a], a.company_id == ^invoice_company_id and a.is_default == true)
+            |> order_by([a], desc: a.inserted_at)
+            |> limit(1)
+            |> Repo.one()
+            |> case do
+              nil -> {:error, :bank_account_required}
+              acc -> {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
+            end
+
+          id ->
+            case Repo.get(CompanyBankAccount, id) do
+              %CompanyBankAccount{company_id: ^invoice_company_id} = acc ->
+                {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
+
+              _ ->
+                {:error, :bank_account_not_found}
+            end
+        end
+    end
+  end
+
+  defp create_bank_snapshot(invoice, %CompanyBankAccount{} = acc) do
+    bank = acc.bank
+    kbe = acc.kbe_code
+    knp = acc.knp_code
+
+    attrs = %{
+      "invoice_id" => invoice.id,
+      "bank_name" => bank && bank.name,
+      "bic" => bank && bank.bic,
+      "iban" => acc.iban,
+      "kbe" => kbe && kbe.code,
+      "knp" => knp && knp.code
+    }
+
+    %InvoiceBankSnapshot{}
+    |> InvoiceBankSnapshot.changeset(attrs)
+    |> Repo.insert()
+    |> case do
+      {:ok, snap} ->
+        {:ok, snap}
+
+      {:error, %Ecto.Changeset{} = cs} ->
+        case Keyword.get(cs.errors, :invoice_id) do
+          {_, opts} when is_list(opts) ->
+            if Keyword.get(opts, :constraint) == :unique do
+              {:error, :already_issued}
+            else
+              {:error, cs}
+            end
+
+          _ ->
+            {:error, cs}
         end
     end
   end

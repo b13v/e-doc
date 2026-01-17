@@ -7,6 +7,7 @@ defmodule EdocApi.TestFixtures do
   alias EdocApi.Core.Bank
   alias EdocApi.Core.KbeCode
   alias EdocApi.Core.KnpCode
+  alias EdocApi.Core.CompanyBankAccount
   alias EdocApi.Repo
 
   def unique_email do
@@ -110,6 +111,36 @@ defmodule EdocApi.TestFixtures do
     Repo.insert!(struct(base, overrides))
   end
 
+  def create_company_bank_account!(company, overrides \\ %{}) do
+    overrides = Map.new(overrides)
+
+    bank_id =
+      Map.get(overrides, "bank_id") || Map.get(overrides, :bank_id) || create_bank!().id
+
+    kbe_code_id =
+      Map.get(overrides, "kbe_code_id") || Map.get(overrides, :kbe_code_id) ||
+        create_kbe_code!().id
+
+    knp_code_id =
+      Map.get(overrides, "knp_code_id") || Map.get(overrides, :knp_code_id) ||
+        create_knp_code!().id
+
+    attrs =
+      %{
+        "label" => "Main account",
+        "iban" => unique_iban(),
+        "bank_id" => bank_id,
+        "kbe_code_id" => kbe_code_id,
+        "knp_code_id" => knp_code_id,
+        "is_default" => true
+      }
+      |> Map.merge(overrides)
+
+    %CompanyBankAccount{}
+    |> CompanyBankAccount.changeset(attrs, company.id)
+    |> Repo.insert!()
+  end
+
   defp ensure_company_payment_refs(attrs) do
     attrs = Map.new(attrs)
 
@@ -161,5 +192,10 @@ defmodule EdocApi.TestFixtures do
       |> String.pad_leading(3, "0")
 
     Repo.insert!(%KnpCode{code: code, description: "Test KNP #{code}"})
+  end
+
+  defp unique_iban do
+    suffix = Integer.to_string(System.unique_integer([:positive]))
+    "KZ00TEST#{suffix}"
   end
 end

@@ -271,15 +271,17 @@ defmodule EdocApiWeb.PdfTemplates do
           <body>
           <% c = assoc_loaded(@invoice.company) || %{} %>
           <% acc = assoc_loaded(@invoice.bank_account) %>
+          <% snap = assoc_loaded(@invoice.bank_snapshot) %>
+          <% issued = @invoice.status == "issued" %>
           <% bank = acc && acc.bank || (c && c.bank) %>
           <% kbe = acc && acc.kbe_code || (c && c.kbe_code) %>
           <% knp = acc && acc.knp_code || (c && c.knp_code) %>
 
-          <% bank_name = (bank && bank.name) || (c && c.bank_name) || "—" %>
-          <% bank_bic  = (bank && bank.bic) || "—" %>
-          <% kbe_code  = (kbe && kbe.code) || "—" %>
-          <% knp_code  = (knp && knp.code) || "—" %>
-          <% iban = (acc && acc.iban) || (c && c.iban) || @invoice.seller_iban %>
+          <% bank_name = if issued, do: (snap && snap.bank_name) || "—", else: (bank && bank.name) || (c && c.bank_name) || "—" %>
+          <% bank_bic  = if issued, do: (snap && snap.bic) || "—", else: (bank && bank.bic) || "—" %>
+          <% kbe_code  = if issued, do: (snap && snap.kbe) || "—", else: (kbe && kbe.code) || "—" %>
+          <% knp_code  = if issued, do: (snap && snap.knp) || "—", else: (knp && knp.code) || "—" %>
+          <% iban = if issued, do: (snap && snap.iban) || "—", else: (acc && acc.iban) || (c && c.iban) || @invoice.seller_iban %>
           <% items = @invoice.items || [] %>
           <% items_count = length(items) %>
           <!-- ВНИМАНИЕ -->

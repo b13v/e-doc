@@ -8,6 +8,7 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
     test "issues a draft invoice with items and positive total" do
       user = create_user!()
       company = create_company!(user)
+      create_company_bank_account!(company)
       invoice = create_invoice_with_items!(user, company)
 
       assert invoice.status == "draft"

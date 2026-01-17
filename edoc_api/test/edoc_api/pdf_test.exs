@@ -11,6 +11,7 @@ defmodule EdocApi.PdfTest do
     test "generates a PDF from invoice html" do
       user = create_user!()
       company = create_company!(user)
+      create_company_bank_account!(company)
 
       invoice =
         user

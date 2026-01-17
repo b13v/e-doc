@@ -70,6 +70,12 @@ defmodule EdocApiWeb.InvoiceController do
       {:error, :already_issued} ->
         ErrorMapper.unprocessable(conn, "already_issued")
 
+      {:error, :bank_account_required} ->
+        ErrorMapper.unprocessable(conn, "bank_account_required")
+
+      {:error, :bank_account_not_found} ->
+        ErrorMapper.unprocessable(conn, "bank_account_not_found")
+
       {:error, :cannot_issue, details} ->
         ErrorMapper.unprocessable(conn, "cannot_issue", details)
 
