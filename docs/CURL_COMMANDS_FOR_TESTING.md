@@ -42,7 +42,13 @@ curl -s "http://localhost:4000/v1/dicts/knp" \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
-## 6) Upsert company (required before invoices)
+## 6) List of Company contracts (get `CONTRACT_ID`)
+```bash
+curl -s "http://localhost:4000/v1/contracts" \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+## 7) Upsert company (required before invoices)
 ```bash
 curl -X PUT "http://localhost:4000/v1/company" \
   -H "Authorization: Bearer $TOKEN" \
@@ -66,7 +72,7 @@ curl -X PUT "http://localhost:4000/v1/company" \
   }'
 ```
 
-## 7) Create company bank account
+## 8) Create company bank account
 ```bash
 curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
   -H "Authorization: Bearer $TOKEN" \
@@ -81,13 +87,13 @@ curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
   }'
 ```
 
-## 8) List company bank accounts (get `BANK_ACCOUNT_ID`)
+## 9) List company bank accounts (get `BANK_ACCOUNT_ID`)
 ```bash
 curl -X GET "http://localhost:4000/v1/company/bank-accounts" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## 9) Create invoice (with bank account selection)
+## 10) Create invoice (with bank account selection)
 ```bash
 curl -X POST "http://localhost:4000/v1/invoices" \
   -H "Authorization: Bearer $TOKEN" \
@@ -109,13 +115,13 @@ curl -X POST "http://localhost:4000/v1/invoices" \
   }'
 ```
 
-## 10) Issue invoice
+## 11) Issue invoice
 ```bash
 curl -X POST "http://localhost:4000/v1/invoices/INVOICE_ID/issue" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## 11) Download PDF
+## 12) Download PDF
 ```bash
 curl -X GET "http://localhost:4000/v1/invoices/INVOICE_ID/pdf" \
   -H "Authorization: Bearer $TOKEN" \
