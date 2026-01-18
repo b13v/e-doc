@@ -29,6 +29,9 @@ defmodule EdocApiWeb.Router do
     get("/invoices", InvoiceController, :index)
     post("/invoices", InvoiceController, :create)
     get("/invoices/:id", InvoiceController, :show)
+    get("/contracts", ContractController, :index)
+    post("/contracts", ContractController, :create)
+    get("/contracts/:id", ContractController, :show)
 
     get("/invoices/:id/pdf", InvoiceController, :pdf)
     post("/invoices/:id/issue", InvoiceController, :issue)

@@ -27,6 +27,7 @@ defmodule EdocApi.Invoicing do
     |> Repo.preload([
       :items,
       :bank_snapshot,
+      :contract,
       bank_account: [:bank, :kbe_code, :knp_code],
       company: [:bank, :kbe_code, :knp_code]
     ])
@@ -147,6 +148,7 @@ defmodule EdocApi.Invoicing do
     Repo.preload(invoice, [
       :items,
       :bank_snapshot,
+      :contract,
       bank_account: [:bank, :kbe_code, :knp_code],
       company: [:bank, :kbe_code, :knp_code]
     ])

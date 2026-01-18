@@ -272,6 +272,7 @@ defmodule EdocApiWeb.PdfTemplates do
           <% c = assoc_loaded(@invoice.company) || %{} %>
           <% acc = assoc_loaded(@invoice.bank_account) %>
           <% snap = assoc_loaded(@invoice.bank_snapshot) %>
+          <% contract = assoc_loaded(@invoice.contract) %>
           <% issued = @invoice.status == "issued" %>
           <% bank = acc && acc.bank || (c && c.bank) %>
           <% kbe = acc && acc.kbe_code || (c && c.kbe_code) %>
@@ -351,8 +352,14 @@ defmodule EdocApiWeb.PdfTemplates do
                 </td>
                 </tr>
                 <tr>
-                <td><strong>Договор:</strong></td>
-                <td>Счет на оплату № <%= @invoice.number %> от <%= fmt_date(@invoice.issue_date) %></td>
+                <td><strong>Основание:</strong></td>
+                <td>
+                <%= if contract do %>
+                  Договор № <%= contract.number %> от <%= fmt_date(contract.date) %>
+                <% else %>
+                  Без договора
+                <% end %>
+                </td>
                 </tr>
                 <tr>
                 <td><strong>Дата окончания:</strong></td>

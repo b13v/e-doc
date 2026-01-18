@@ -2,6 +2,7 @@ defmodule EdocApi.TestFixtures do
   alias EdocApi.Accounts
   alias EdocApi.Companies
   alias EdocApi.Invoicing
+  alias EdocApi.Core.Contract
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.Bank
@@ -72,6 +73,24 @@ defmodule EdocApi.TestFixtures do
   def create_invoice_with_items!(user, company, attrs \\ %{}) do
     {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, invoice_attrs(attrs))
     invoice
+  end
+
+  def create_contract!(company, attrs \\ %{}) do
+    number = "C-#{System.unique_integer([:positive])}"
+
+    attrs =
+      Map.merge(
+        %{
+          "number" => number,
+          "date" => Date.utc_today(),
+          "company_id" => company.id
+        },
+        attrs
+      )
+
+    %Contract{}
+    |> Contract.changeset(attrs)
+    |> Repo.insert!()
   end
 
   def insert_invoice!(user, company, overrides \\ %{}) do

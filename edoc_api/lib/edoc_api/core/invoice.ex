@@ -2,6 +2,9 @@ defmodule EdocApi.Core.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Repo
+  alias EdocApi.Core.Contract
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -32,6 +35,7 @@ defmodule EdocApi.Core.Invoice do
     belongs_to(:company, EdocApi.Core.Company)
     belongs_to(:user, EdocApi.Accounts.User)
     belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
+    belongs_to(:contract, EdocApi.Core.Contract)
     has_one(:bank_snapshot, EdocApi.Core.InvoiceBankSnapshot)
 
     timestamps(type: :utc_datetime)
@@ -51,7 +55,7 @@ defmodule EdocApi.Core.Invoice do
     vat_rate
     )a
 
-  @optional_fields ~w(number due_date subtotal total vat status bank_account_id)a
+  @optional_fields ~w(number due_date subtotal total vat status bank_account_id contract_id)a
 
   @allowed_statuses ~w(draft issued paid void)
   @allowed_currencies ~w(KZT USD EUR RUB)
@@ -79,6 +83,8 @@ defmodule EdocApi.Core.Invoice do
     |> validate_bin_iin(:buyer_bin_iin)
     |> validate_iban(:seller_iban)
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
+    |> foreign_key_constraint(:contract_id)
+    |> prepare_changes(&validate_contract_ownership/1)
   end
 
   defp normalize_fields(changeset) do
@@ -134,6 +140,23 @@ defmodule EdocApi.Core.Invoice do
       nil -> changeset
       "" -> add_error(changeset, :number, "can't be blank")
       _ -> validate_length(changeset, :number, min: 1, max: 32)
+    end
+  end
+
+  defp validate_contract_ownership(changeset) do
+    contract_id = get_change(changeset, :contract_id)
+    company_id = get_field(changeset, :company_id)
+
+    cond do
+      is_nil(contract_id) or is_nil(company_id) ->
+        changeset
+
+      true ->
+        case Repo.get(Contract, contract_id) do
+          %Contract{company_id: ^company_id} -> changeset
+          %Contract{} -> add_error(changeset, :contract_id, "does not belong to company")
+          nil -> add_error(changeset, :contract_id, "not found")
+        end
     end
   end
 
