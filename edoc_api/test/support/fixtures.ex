@@ -214,7 +214,11 @@ defmodule EdocApi.TestFixtures do
   end
 
   defp unique_iban do
-    suffix = Integer.to_string(System.unique_integer([:positive]))
-    "KZ00TEST#{suffix}"
+    suffix =
+      System.unique_integer([:positive])
+      |> Integer.to_string()
+      |> String.pad_leading(11, "0")
+
+    "KZ00#{suffix}"
   end
 end

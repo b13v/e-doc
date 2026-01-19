@@ -2,6 +2,8 @@ defmodule EdocApi.Core.CompanyBankAccount do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Validators.Iban
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -27,11 +29,8 @@ defmodule EdocApi.Core.CompanyBankAccount do
     |> put_change(:company_id, company_id)
     |> validate_required(@required ++ [:company_id])
     |> update_change(:label, &String.trim/1)
-    |> update_change(:iban, &normalize_iban/1)
-    |> validate_format(:iban, ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/, message: "invalid IBAN")
+    |> update_change(:iban, &Iban.normalize/1)
+    |> Iban.validate(:iban)
     |> unique_constraint(:iban, name: :company_bank_accounts_company_id_iban_index)
   end
-
-  defp normalize_iban(nil), do: nil
-  defp normalize_iban(v), do: v |> String.replace(~r/\s+/, "") |> String.upcase()
 end

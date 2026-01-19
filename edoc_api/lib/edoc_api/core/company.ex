@@ -2,6 +2,8 @@ defmodule EdocApi.Core.Company do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Validators.{BinIin, Iban}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -58,8 +60,8 @@ defmodule EdocApi.Core.Company do
     |> put_change(:user_id, user_id)
     |> validate_required(@required_fields ++ [:user_id])
     |> normalize_fields()
-    |> validate_bin_iin()
-    |> validate_iban()
+    |> BinIin.validate(:bin_iin)
+    |> Iban.validate(:iban)
     |> validate_email()
     |> validate_phone()
   end
@@ -70,8 +72,8 @@ defmodule EdocApi.Core.Company do
 
   defp normalize_fields(changeset) do
     changeset
-    |> update_change(:bin_iin, &normalize_digits/1)
-    |> update_change(:iban, &normalize_iban/1)
+    |> update_change(:bin_iin, &BinIin.normalize/1)
+    |> update_change(:iban, &Iban.normalize/1)
     |> update_change(:email, &normalize_email/1)
     |> update_change(:city, &normalize_trim/1)
     |> update_change(:address, &normalize_trim/1)
@@ -82,16 +84,6 @@ defmodule EdocApi.Core.Company do
     |> update_change(:basis, &normalize_trim/1)
     |> maybe_normalize_phone()
   end
-
-  defp normalize_digits(nil), do: nil
-
-  defp normalize_digits(value) when is_binary(value),
-    do: value |> String.replace(~r/\D+/, "")
-
-  defp normalize_iban(nil), do: nil
-
-  defp normalize_iban(value) when is_binary(value),
-    do: value |> String.replace(~r/\s+/, "") |> String.upcase()
 
   defp normalize_email(nil), do: nil
 
@@ -104,22 +96,6 @@ defmodule EdocApi.Core.Company do
   # -------------------------
   # Validations
   # -------------------------
-
-  defp validate_bin_iin(changeset) do
-    changeset
-    |> validate_length(:bin_iin, is: 12)
-    |> validate_format(:bin_iin, ~r/^\d{12}$/, message: "must contain exactly 12 digits")
-  end
-
-  defp validate_iban(changeset) do
-    changeset
-    |> validate_length(:iban, min: 15, max: 34)
-    |> validate_format(
-      :iban,
-      ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/,
-      message: "invalid IBAN format"
-    )
-  end
 
   defp validate_email(changeset) do
     case get_change(changeset, :email) do

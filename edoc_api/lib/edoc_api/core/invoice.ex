@@ -4,6 +4,7 @@ defmodule EdocApi.Core.Invoice do
 
   alias EdocApi.Repo
   alias EdocApi.Core.Contract
+  alias EdocApi.Validators.{BinIin, Iban}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -79,9 +80,9 @@ defmodule EdocApi.Core.Invoice do
     |> validate_inclusion(:currency, @allowed_currencies)
     |> validate_number_optional()
     |> validate_length(:service_name, min: 3, max: 255)
-    |> validate_bin_iin(:seller_bin_iin)
-    |> validate_bin_iin(:buyer_bin_iin)
-    |> validate_iban(:seller_iban)
+    |> BinIin.validate(:seller_bin_iin)
+    |> BinIin.validate(:buyer_bin_iin)
+    |> Iban.validate(:seller_iban)
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
     |> foreign_key_constraint(:contract_id)
     |> prepare_changes(&validate_contract_ownership/1)
@@ -95,11 +96,11 @@ defmodule EdocApi.Core.Invoice do
     |> update_change(:status, &normalize_status/1)
     |> update_change(:seller_name, &trim_nil/1)
     |> update_change(:seller_address, &trim_nil/1)
-    |> update_change(:seller_bin_iin, &digits_only/1)
-    |> update_change(:seller_iban, &normalize_iban/1)
+    |> update_change(:seller_bin_iin, &BinIin.normalize/1)
+    |> update_change(:seller_iban, &Iban.normalize/1)
     |> update_change(:buyer_name, &trim_nil/1)
     |> update_change(:buyer_address, &trim_nil/1)
-    |> update_change(:buyer_bin_iin, &digits_only/1)
+    |> update_change(:buyer_bin_iin, &BinIin.normalize/1)
   end
 
   defp trim_nil(nil), do: nil
@@ -109,31 +110,11 @@ defmodule EdocApi.Core.Invoice do
     if v == "", do: nil, else: v
   end
 
-  defp digits_only(nil), do: nil
-  defp digits_only(v) when is_binary(v), do: String.replace(v, ~r/\D+/, "")
-
-  defp normalize_iban(nil), do: nil
-
-  defp normalize_iban(v) when is_binary(v),
-    do: v |> String.replace(~r/\s+/, "") |> String.upcase()
-
   defp normalize_currency(nil), do: nil
   defp normalize_currency(v) when is_binary(v), do: v |> String.trim() |> String.upcase()
 
   defp normalize_status(nil), do: nil
   defp normalize_status(v) when is_binary(v), do: v |> String.trim() |> String.downcase()
-
-  defp validate_bin_iin(changeset, field) do
-    changeset
-    |> validate_length(field, is: 12)
-    |> validate_format(field, ~r/^\d{12}$/, message: "must contain exactly 12 digits")
-  end
-
-  defp validate_iban(changeset, field) do
-    changeset
-    |> validate_length(field, min: 15, max: 34)
-    |> validate_format(field, ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/, message: "invalid IBAN format")
-  end
 
   defp validate_number_optional(changeset) do
     case get_field(changeset, :number) do
