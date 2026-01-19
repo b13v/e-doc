@@ -77,7 +77,7 @@ curl -X PUT "http://localhost:4000/v1/company" \
     "representative_title": "Director",
     "basis": "Charter",
     "email": "info@example.com"
-  }'
+  }' | jq .
 ```
 
 ## 9) Create company bank account
@@ -92,13 +92,13 @@ curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
     "kbe_code_id": "KBE_ID",
     "knp_code_id": "KNP_ID",
     "is_default": true
-  }'
+  }' | jq .
 ```
 
 ## 10) List company bank accounts (get `BANK_ACCOUNT_ID`)
 ```bash
 curl -s "http://localhost:4000/v1/company/bank-accounts" \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ## 11) Create invoice (with bank account selection)
@@ -109,24 +109,26 @@ curl -X POST "http://localhost:4000/v1/invoices" \
   -d '{
     "service_name": "Consulting",
     "issue_date": "2026-01-15",
+    "due_date": "2026-02-01",
     "currency": "KZT",
     "buyer_name": "Buyer LLC",
     "buyer_bin_iin": "123456789012",
     "buyer_address": "Almaty, Abay Ave 10",
     "vat_rate": 0,
+    "contract_id": "CONTRACT_ID",
     "bank_account_id": "BANK_ACCOUNT_ID",
     "kbe_code_id": "KBE_ID",
     "knp_code_id": "KNP_ID",
     "items": [
       {"name": "Service A", "qty": 2, "unit_price": "1000.00"}
     ]
-  }'
+  }' | jq .
 ```
 
 ## 12) Issue invoice
 ```bash
 curl -X POST "http://localhost:4000/v1/invoices/INVOICE_ID/issue" \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
 ## 13) Download PDF
