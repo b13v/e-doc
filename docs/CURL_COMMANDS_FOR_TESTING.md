@@ -97,7 +97,7 @@ curl -X POST "http://localhost:4000/v1/company/bank-accounts" \
 
 ## 10) List company bank accounts (get `BANK_ACCOUNT_ID`)
 ```bash
-curl -X GET "http://localhost:4000/v1/company/bank-accounts" \
+curl -s "http://localhost:4000/v1/company/bank-accounts" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
