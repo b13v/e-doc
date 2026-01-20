@@ -77,6 +77,8 @@ defmodule EdocApi.Core.Invoice do
     |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
     |> compute_totals()
     |> validate_number(:total, greater_than: 0)
+    |> validate_number(:subtotal, greater_than_or_equal_to: 0)
+    |> validate_number(:vat, greater_than_or_equal_to: 0)
     |> validate_inclusion(:status, @allowed_statuses)
     |> validate_inclusion(:currency, @allowed_currencies)
     |> validate_number_optional()
