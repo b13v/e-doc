@@ -3,7 +3,7 @@ defmodule EdocApi.Core.Invoice do
   import Ecto.Changeset
 
   alias EdocApi.Repo
-  alias EdocApi.Core.Contract
+  alias EdocApi.Core.{Contract, CompanyBankAccount}
   alias EdocApi.InvoiceStatus
   alias EdocApi.Validators.{BinIin, Iban}
 
@@ -87,6 +87,7 @@ defmodule EdocApi.Core.Invoice do
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
     |> foreign_key_constraint(:contract_id)
     |> prepare_changes(&validate_contract_ownership/1)
+    |> prepare_changes(&validate_bank_account_ownership/1)
   end
 
   defp normalize_fields(changeset) do
@@ -138,6 +139,28 @@ defmodule EdocApi.Core.Invoice do
           %Contract{company_id: ^company_id} -> changeset
           %Contract{} -> add_error(changeset, :contract_id, "does not belong to company")
           nil -> add_error(changeset, :contract_id, "not found")
+        end
+    end
+  end
+
+  defp validate_bank_account_ownership(changeset) do
+    bank_account_id = get_change(changeset, :bank_account_id)
+    company_id = get_field(changeset, :company_id)
+
+    cond do
+      is_nil(bank_account_id) or is_nil(company_id) ->
+        changeset
+
+      true ->
+        case Repo.get(CompanyBankAccount, bank_account_id) do
+          %CompanyBankAccount{company_id: ^company_id} ->
+            changeset
+
+          %CompanyBankAccount{} ->
+            add_error(changeset, :bank_account_id, "does not belong to company")
+
+          nil ->
+            add_error(changeset, :bank_account_id, "not found")
         end
     end
   end

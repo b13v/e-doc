@@ -87,16 +87,11 @@ defmodule EdocApi.Invoicing do
       # ---- SELLER from Company / Bank Account -----
       company = Repo.get!(Company, company_id)
 
+      # Fetch bank account if provided (ownership validation happens at changeset level)
       bank_account =
         case bank_account_id do
-          nil ->
-            nil
-
-          id ->
-            case Repo.get(CompanyBankAccount, id) do
-              %CompanyBankAccount{company_id: ^company_id} = acc -> acc
-              _ -> Repo.rollback({:error, :bank_account_not_found})
-            end
+          nil -> nil
+          id -> Repo.get(CompanyBankAccount, id)
         end
 
       seller_attrs = %{
