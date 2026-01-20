@@ -8,6 +8,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.InvoiceCounter
   alias EdocApi.Core.CompanyBankAccount
+  alias EdocApi.InvoiceStatus
 
   def get_invoice_for_user(user_id, invoice_id) do
     Invoice
@@ -293,10 +294,10 @@ defmodule EdocApi.Invoicing do
       not is_nil(invoice.bank_snapshot) ->
         {:error, :already_issued}
 
-      invoice.status == "issued" ->
+      InvoiceStatus.is_issued?(invoice) ->
         {:error, :already_issued}
 
-      invoice.status != "draft" ->
+      not InvoiceStatus.can_issue?(invoice) ->
         {:error, :cannot_issue, %{status: "must be draft to issue"}}
 
       (invoice.items || []) == [] ->
@@ -308,7 +309,7 @@ defmodule EdocApi.Invoicing do
       true ->
         with {:ok, bank_account} <- select_bank_account(invoice),
              {:ok, _snap} <- create_bank_snapshot(invoice, bank_account),
-             {:ok, inv} <- update_invoice_status(invoice, "issued") do
+             {:ok, inv} <- update_invoice_status(invoice, InvoiceStatus.issued()) do
           {:ok, preload_invoice(inv)}
         end
     end

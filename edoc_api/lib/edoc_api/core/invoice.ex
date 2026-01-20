@@ -4,6 +4,7 @@ defmodule EdocApi.Core.Invoice do
 
   alias EdocApi.Repo
   alias EdocApi.Core.Contract
+  alias EdocApi.InvoiceStatus
   alias EdocApi.Validators.{BinIin, Iban}
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -58,7 +59,7 @@ defmodule EdocApi.Core.Invoice do
 
   @optional_fields ~w(number due_date subtotal total vat status bank_account_id contract_id)a
 
-  @allowed_statuses ~w(draft issued paid void)
+  @allowed_statuses InvoiceStatus.all()
   @allowed_currencies ~w(KZT USD EUR RUB)
 
   @doc """
@@ -72,7 +73,7 @@ defmodule EdocApi.Core.Invoice do
     |> put_change(:company_id, company_id)
     |> validate_required(@required_fields ++ [:user_id, :company_id])
     |> normalize_fields()
-    |> put_default(:status, "draft")
+    |> put_default(:status, InvoiceStatus.default())
     |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
     |> compute_totals()
     |> validate_number(:total, greater_than: 0)

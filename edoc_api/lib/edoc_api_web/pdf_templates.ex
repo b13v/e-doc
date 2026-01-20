@@ -1,6 +1,8 @@
 defmodule EdocApiWeb.PdfTemplates do
   use Phoenix.Component
 
+  alias EdocApi.InvoiceStatus
+
   # Возвращает HTML строкой (готово для wkhtmltopdf)
   def invoice_html(invoice) do
     assigns = %{invoice: invoice}
@@ -273,7 +275,7 @@ defmodule EdocApiWeb.PdfTemplates do
           <% acc = assoc_loaded(@invoice.bank_account) %>
           <% snap = assoc_loaded(@invoice.bank_snapshot) %>
           <% contract = assoc_loaded(@invoice.contract) %>
-          <% issued = @invoice.status == "issued" %>
+          <% issued = InvoiceStatus.is_issued?(@invoice) %>
           <% bank = acc && acc.bank || (c && c.bank) %>
           <% kbe = acc && acc.kbe_code || (c && c.kbe_code) %>
           <% knp = acc && acc.knp_code || (c && c.knp_code) %>
