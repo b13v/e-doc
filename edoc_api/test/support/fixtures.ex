@@ -27,6 +27,8 @@ defmodule EdocApi.TestFixtures do
   end
 
   def company_attrs(overrides \\ %{}) do
+    # NOTE: bank_name, iban, bank_id, kbe_code_id, knp_code_id are deprecated
+    # Use create_company_bank_account! instead
     Map.merge(
       %{
         "name" => "Acme LLC",
@@ -34,8 +36,6 @@ defmodule EdocApi.TestFixtures do
         "bin_iin" => "123456789012",
         "city" => "Almaty",
         "address" => "Some Street 1",
-        "bank_name" => "KZ Bank",
-        "iban" => "KZ123456789012345678",
         "phone" => "+7 (777) 123 45 67",
         "representative_name" => "John Doe",
         "representative_title" => "Director",
@@ -71,8 +71,25 @@ defmodule EdocApi.TestFixtures do
   end
 
   def create_invoice_with_items!(user, company, attrs \\ %{}) do
+    # Ensure company has a bank account
+    _bank_account = ensure_company_has_bank_account(company)
+
     {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, invoice_attrs(attrs))
     invoice
+  end
+
+  defp ensure_company_has_bank_account(company) do
+    import Ecto.Query
+
+    existing =
+      CompanyBankAccount
+      |> where([a], a.company_id == ^company.id)
+      |> Repo.one()
+
+    case existing do
+      nil -> create_company_bank_account!(company)
+      account -> account
+    end
   end
 
   def create_contract!(company, attrs \\ %{}) do
@@ -94,6 +111,9 @@ defmodule EdocApi.TestFixtures do
   end
 
   def insert_invoice!(user, company, overrides \\ %{}) do
+    # Get or create a bank account for the company
+    bank_account = ensure_company_has_bank_account(company)
+
     base = %Invoice{
       number: "0000000001",
       service_name: "Consulting",
@@ -102,7 +122,7 @@ defmodule EdocApi.TestFixtures do
       seller_name: company.name,
       seller_bin_iin: company.bin_iin,
       seller_address: company.address,
-      seller_iban: company.iban,
+      seller_iban: bank_account.iban,
       buyer_name: "Buyer LLC",
       buyer_bin_iin: "123456789012",
       buyer_address: "Buyer Address",
@@ -112,7 +132,8 @@ defmodule EdocApi.TestFixtures do
       total: Decimal.new("100.00"),
       status: "draft",
       company_id: company.id,
-      user_id: user.id
+      user_id: user.id,
+      bank_account_id: bank_account.id
     }
 
     Repo.insert!(struct(base, overrides))
@@ -200,7 +221,14 @@ defmodule EdocApi.TestFixtures do
       |> Integer.to_string()
       |> String.pad_leading(2, "0")
 
-    Repo.insert!(%KbeCode{code: code, description: "Test KBE #{code}"})
+    # Return existing code or create new one
+    case Repo.get_by(KbeCode, code: code) do
+      nil ->
+        Repo.insert!(%KbeCode{code: code, description: "Test KBE #{code}"})
+
+      existing ->
+        existing
+    end
   end
 
   defp create_knp_code! do
@@ -210,7 +238,14 @@ defmodule EdocApi.TestFixtures do
       |> Integer.to_string()
       |> String.pad_leading(3, "0")
 
-    Repo.insert!(%KnpCode{code: code, description: "Test KNP #{code}"})
+    # Return existing code or create new one
+    case Repo.get_by(KnpCode, code: code) do
+      nil ->
+        Repo.insert!(%KnpCode{code: code, description: "Test KNP #{code}"})
+
+      existing ->
+        existing
+    end
   end
 
   defp unique_iban do

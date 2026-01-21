@@ -88,18 +88,34 @@ defmodule EdocApi.Invoicing do
       # ---- SELLER from Company / Bank Account -----
       company = Repo.get!(Company, company_id)
 
-      # Fetch bank account if provided (ownership validation happens at changeset level)
+      # Get bank account (explicit or default)
       bank_account =
         case bank_account_id do
-          nil -> nil
-          id -> Repo.get(CompanyBankAccount, id)
+          nil ->
+            # Try to get default bank account
+            CompanyBankAccount
+            |> where([a], a.company_id == ^company_id and a.is_default == true)
+            |> order_by([a], desc: a.inserted_at)
+            |> limit(1)
+            |> Repo.one()
+
+          id ->
+            Repo.get(CompanyBankAccount, id)
         end
+
+      # Require a bank account - no more fallback to company.iban
+      RepoHelpers.check_or_abort(
+        bank_account != nil,
+        :bank_account_required
+      )
+
+      bank_account = Repo.preload(bank_account, [:bank, :kbe_code, :knp_code])
 
       seller_attrs = %{
         "seller_name" => company.name,
         "seller_bin_iin" => company.bin_iin,
         "seller_address" => format_company_address(company),
-        "seller_iban" => (bank_account && bank_account.iban) || company.iban
+        "seller_iban" => bank_account.iban
       }
 
       invoice_attrs =

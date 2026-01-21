@@ -12,6 +12,9 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
       company_b = create_company!(other_user)
       contract = create_contract!(company_a)
 
+      # Company B needs a bank account to create invoices
+      create_company_bank_account!(company_b)
+
       attrs = invoice_attrs(%{"contract_id" => contract.id})
 
       assert {:error, %Ecto.Changeset{} = cs} =
@@ -24,6 +27,9 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
       user = create_user!()
       company = create_company!(user)
       contract = create_contract!(company)
+
+      # Company needs a bank account to create invoices
+      create_company_bank_account!(company)
 
       attrs = invoice_attrs(%{"contract_id" => contract.id})
 

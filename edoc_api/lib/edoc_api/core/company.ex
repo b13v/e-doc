@@ -37,18 +37,14 @@ defmodule EdocApi.Core.Company do
     bin_iin
     city
     address
-    bank_name
-    bank_id
-    kbe_code_id
-    knp_code_id
-    iban
     phone
     representative_name
     representative_title
     basis
   )a
 
-  @optional_fields ~w(email)a
+  @optional_fields ~w(email bank_name bank_id kbe_code_id knp_code_id iban)a
+  @deprecated_fields ~w(bank_name bank_id kbe_code_id knp_code_id iban)a
 
   @doc """
   Variant B (recommended): user_id is NOT accepted from attrs.
@@ -59,11 +55,32 @@ defmodule EdocApi.Core.Company do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> put_change(:user_id, user_id)
     |> validate_required(@required_fields ++ [:user_id])
+    |> warn_deprecated_fields()
     |> normalize_fields()
     |> BinIin.validate(:bin_iin)
     |> Iban.validate(:iban)
     |> validate_email()
     |> validate_phone()
+  end
+
+  # -------------------------
+  # Deprecation Warnings
+  # -------------------------
+
+  defp warn_deprecated_fields(changeset) do
+    Enum.reduce(@deprecated_fields, changeset, fn field, cs ->
+      case get_change(cs, field) do
+        nil ->
+          cs
+
+        _value ->
+          add_warning(
+            cs,
+            field,
+            "DEPRECATED: Use company_bank_accounts table instead of company.#{field}"
+          )
+      end
+    end)
   end
 
   # -------------------------
