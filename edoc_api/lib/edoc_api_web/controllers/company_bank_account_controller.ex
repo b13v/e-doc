@@ -5,7 +5,7 @@ defmodule EdocApiWeb.CompanyBankAccountController do
   alias EdocApi.Repo
   alias EdocApi.Core.KbeCode
   alias EdocApi.Core.KnpCode
-  alias EdocApiWeb.ErrorMapper
+  alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
   alias EdocApiWeb.Serializers.BankAccountSerializer
 
   def index(conn, _params) do
@@ -18,22 +18,25 @@ defmodule EdocApiWeb.CompanyBankAccountController do
   def create(conn, params) do
     user = conn.assigns.current_user
 
-    with {:ok, params} <- normalize_kbe_knp_ids(params),
-         {:ok, acc} <- Payments.create_company_bank_account_for_user(user.id, params) do
-      conn |> put_status(:created) |> json(%{bank_account: BankAccountSerializer.to_map(acc)})
-    else
-      {:error, :invalid_kbe_code} ->
-        ErrorMapper.unprocessable(conn, "invalid_kbe_code")
+    result =
+      with {:ok, params} <- normalize_kbe_knp_ids(params),
+           {:ok, acc} <- Payments.create_company_bank_account_for_user(user.id, params) do
+        {:ok, acc}
+      end
 
-      {:error, :invalid_knp_code} ->
-        ErrorMapper.unprocessable(conn, "invalid_knp_code")
+    error_map = %{
+      invalid_kbe_code: &ErrorMapper.unprocessable(&1, "invalid_kbe_code"),
+      invalid_knp_code: &ErrorMapper.unprocessable(&1, "invalid_knp_code")
+    }
 
-      {:error, :company_required} ->
-        ErrorMapper.unprocessable(conn, "company_required")
-
-      {:error, %Ecto.Changeset{} = cs} ->
-        ErrorMapper.validation(conn, cs)
-    end
+    ControllerHelpers.handle_common_result(
+      conn,
+      result,
+      fn conn, acc ->
+        conn |> put_status(:created) |> json(%{bank_account: BankAccountSerializer.to_map(acc)})
+      end,
+      error_map
+    )
   end
 
   defp normalize_kbe_knp_ids(params) do

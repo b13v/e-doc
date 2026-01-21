@@ -2,6 +2,7 @@ defmodule EdocApi.Invoicing do
   import Ecto.Query, warn: false
 
   alias EdocApi.Repo
+  alias EdocApi.RepoHelpers
   alias EdocApi.Core.Company
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceBankSnapshot
@@ -35,26 +36,28 @@ defmodule EdocApi.Invoicing do
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
-    Repo.transaction(fn ->
+    RepoHelpers.transaction(fn ->
       invoice =
         Invoice
         |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
         |> Repo.one()
-        |> case do
-          nil -> Repo.rollback({:error, :invoice_not_found})
-          inv -> preload_invoice(inv)
-        end
+
+      unless invoice do
+        RepoHelpers.abort(:invoice_not_found)
+      end
+
+      invoice = preload_invoice(invoice)
 
       case do_issue_invoice(invoice) do
-        {:ok, inv} -> inv
-        {:error, reason} -> Repo.rollback({:error, reason})
-        {:error, reason, details} -> Repo.rollback({:error, reason, details})
+        {:ok, inv} -> {:ok, inv}
+        {:error, reason} -> RepoHelpers.abort(reason)
+        {:error, reason, details} -> RepoHelpers.abort({reason, details})
       end
     end)
     |> case do
       {:ok, invoice} -> {:ok, invoice}
-      {:error, {:error, reason}} -> {:error, reason}
-      {:error, {:error, reason, details}} -> {:error, reason, details}
+      {:error, {reason, details}} -> {:error, reason, details}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -62,10 +65,8 @@ defmodule EdocApi.Invoicing do
     items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
     bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
 
-    Repo.transaction(fn ->
-      if items_attrs == [] do
-        Repo.rollback({:error, :items_required})
-      end
+    RepoHelpers.transaction(fn ->
+      RepoHelpers.check_or_abort(items_attrs != [], :items_required)
 
       {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
 
@@ -111,33 +112,18 @@ defmodule EdocApi.Invoicing do
 
       invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
-      invoice =
-        case Repo.insert(invoice_changeset) do
-          {:ok, inv} -> inv
-          {:error, cs} -> Repo.rollback({:error, cs})
-        end
+      {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
 
-      prepared_items
-      |> Enum.each(fn item_attrs ->
+      Enum.each(prepared_items, fn item_attrs ->
         cs =
           %InvoiceItem{}
           |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
 
-        case Repo.insert(cs) do
-          {:ok, _} -> :ok
-          {:error, cs} -> Repo.rollback({:error, cs})
-        end
+        RepoHelpers.insert_or_abort(cs)
       end)
 
-      preload_invoice(invoice)
+      {:ok, preload_invoice(invoice)}
     end)
-    |> case do
-      {:ok, invoice} -> {:ok, invoice}
-      {:error, {:error, :items_required}} -> {:error, :items_required}
-      {:error, {:error, :bank_account_not_found}} -> {:error, :bank_account_not_found}
-      {:error, {:error, %Ecto.Changeset{} = cs}} -> {:error, cs}
-      {:error, other} -> {:error, other}
-    end
   end
 
   defp preload_invoice(invoice) do
@@ -261,23 +247,23 @@ defmodule EdocApi.Invoicing do
 
   # ------------ Marking-Invoice-issued-------------------
   def mark_invoice_issued(invoice) do
-    Repo.transaction(fn ->
-      invoice =
-        case invoice do
-          nil -> Repo.rollback({:error, :invoice_not_found})
-          inv -> preload_invoice(inv)
-        end
+    RepoHelpers.transaction(fn ->
+      unless invoice do
+        RepoHelpers.abort(:invoice_not_found)
+      end
+
+      invoice = preload_invoice(invoice)
 
       case do_issue_invoice(invoice) do
-        {:ok, inv} -> inv
-        {:error, reason} -> Repo.rollback({:error, reason})
-        {:error, reason, details} -> Repo.rollback({:error, reason, details})
+        {:ok, inv} -> {:ok, inv}
+        {:error, reason} -> RepoHelpers.abort(reason)
+        {:error, reason, details} -> RepoHelpers.abort({reason, details})
       end
     end)
     |> case do
       {:ok, inv} -> {:ok, inv}
-      {:error, {:error, reason}} -> {:error, reason}
-      {:error, {:error, reason, details}} -> {:error, reason, details}
+      {:error, {reason, details}} -> {:error, reason, details}
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -2,11 +2,10 @@ defmodule EdocApiWeb.InvoiceController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Companies
-  alias EdocApiWeb.ErrorMapper
+  alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
   alias EdocApi.Invoicing
   alias EdocApi.Documents.InvoicePdf
   alias EdocApiWeb.Serializers.InvoiceSerializer
-  require Logger
 
   def create(conn, params) do
     user = conn.assigns.current_user
@@ -16,25 +15,13 @@ defmodule EdocApiWeb.InvoiceController do
         ErrorMapper.unprocessable(conn, "company_required")
 
       company ->
-        case Invoicing.create_invoice_for_user(user.id, company.id, params) do
-          {:ok, invoice} ->
-            conn
-            |> put_status(:created)
-            |> json(%{invoice: InvoiceSerializer.to_map(invoice)})
+        result = Invoicing.create_invoice_for_user(user.id, company.id, params)
 
-          {:error, :items_required} ->
-            ErrorMapper.unprocessable(conn, "items_required")
-
-          {:error, :bank_account_not_found} ->
-            ErrorMapper.unprocessable(conn, "bank_account_not_found")
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            ErrorMapper.validation(conn, changeset)
-
-          {:error, other} ->
-            Logger.error("invoice_create_failed: #{inspect(other)}")
-            ErrorMapper.internal(conn)
-        end
+        ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+          conn
+          |> put_status(:created)
+          |> json(%{invoice: InvoiceSerializer.to_map(invoice)})
+        end)
     end
   end
 
@@ -59,29 +46,11 @@ defmodule EdocApiWeb.InvoiceController do
 
   def issue(conn, %{"id" => id}) do
     user = conn.assigns.current_user
+    result = Invoicing.issue_invoice_for_user(user.id, id)
 
-    case Invoicing.issue_invoice_for_user(user.id, id) do
-      {:ok, invoice} ->
-        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
-
-      {:error, :invoice_not_found} ->
-        ErrorMapper.not_found(conn, "invoice_not_found")
-
-      {:error, :already_issued} ->
-        ErrorMapper.unprocessable(conn, "already_issued")
-
-      {:error, :bank_account_required} ->
-        ErrorMapper.unprocessable(conn, "bank_account_required")
-
-      {:error, :bank_account_not_found} ->
-        ErrorMapper.unprocessable(conn, "bank_account_not_found")
-
-      {:error, :cannot_issue, details} ->
-        ErrorMapper.unprocessable(conn, "cannot_issue", details)
-
-      {:error, %Ecto.Changeset{} = cs} ->
-        ErrorMapper.validation(conn, cs)
-    end
+    ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+      json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+    end)
   end
 
   def pdf(conn, %{"id" => id}) do
@@ -93,8 +62,18 @@ defmodule EdocApiWeb.InvoiceController do
         ErrorMapper.not_found(conn, "invoice_not_found")
 
       invoice ->
-        case InvoicePdf.render(invoice) do
-          {:ok, pdf_binary} ->
+        result = InvoicePdf.render(invoice)
+
+        error_map = %{
+          pdf_generation_failed: fn conn, details ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed", details)
+          end
+        }
+
+        ControllerHelpers.handle_result(
+          conn,
+          result,
+          fn conn, pdf_binary ->
             conn
             |> put_resp_content_type("application/pdf")
             |> put_resp_header(
@@ -102,10 +81,9 @@ defmodule EdocApiWeb.InvoiceController do
               ~s(inline; filename="invoice-#{invoice.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
-
-          {:error, reason} ->
-            ErrorMapper.unprocessable(conn, "pdf_generation_failed", %{reason: inspect(reason)})
-        end
+          end,
+          error_map
+        )
     end
   end
 end

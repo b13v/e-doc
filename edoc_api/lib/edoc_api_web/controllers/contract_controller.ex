@@ -2,7 +2,7 @@ defmodule EdocApiWeb.ContractController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Core
-  alias EdocApiWeb.ErrorMapper
+  alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
 
   def index(conn, _params) do
     user = conn.assigns.current_user
@@ -15,29 +15,30 @@ defmodule EdocApiWeb.ContractController do
     user = conn.assigns.current_user
     attrs = Map.get(params, "contract", params)
 
-    case Core.create_contract_for_user(user, attrs) do
-      {:ok, contract} ->
-        conn
-        |> put_status(:created)
-        |> render(:show, contract: contract)
+    result = Core.create_contract_for_user(user, attrs)
 
-      {:error, :company_required} ->
-        ErrorMapper.unprocessable(conn, "company_required")
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        ErrorMapper.validation(conn, changeset)
-    end
+    ControllerHelpers.handle_common_result(conn, result, fn conn, contract ->
+      conn
+      |> put_status(:created)
+      |> render(:show, contract: contract)
+    end)
   end
 
   def show(conn, %{"id" => id}) do
     user = conn.assigns.current_user
+    result = Core.get_contract_for_user(user, id)
 
-    case Core.get_contract_for_user(user, id) do
-      {:ok, contract} ->
+    error_map = %{
+      not_found: &ErrorMapper.not_found(&1, "contract_not_found")
+    }
+
+    ControllerHelpers.handle_result(
+      conn,
+      result,
+      fn conn, contract ->
         render(conn, :show, contract: contract)
-
-      {:error, :not_found} ->
-        ErrorMapper.not_found(conn, "contract_not_found")
-    end
+      end,
+      error_map
+    )
   end
 end
