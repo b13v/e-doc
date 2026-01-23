@@ -14,10 +14,22 @@ defmodule EdocApiWeb.ErrorMapper do
     |> Controller.json(body)
   end
 
+  def bad_request(conn, code) when is_binary(code) do
+    conn
+    |> put_status(:bad_request)
+    |> Controller.json(%{error: code})
+  end
+
   def not_found(conn, code) when is_binary(code) do
     conn
     |> put_status(:not_found)
     |> Controller.json(%{error: code})
+  end
+
+  def already_issued(conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> Controller.json(%{error: "invoice_already_issued"})
   end
 
   def unauthorized(conn, code \\ "unauthorized") when is_binary(code) do

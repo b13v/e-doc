@@ -44,6 +44,15 @@ defmodule EdocApiWeb.InvoiceController do
     end
   end
 
+  def update(conn, %{"id" => id} = params) do
+    user = conn.assigns.current_user
+    result = Invoicing.update_invoice_for_user(user.id, id, params)
+
+    ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+      json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+    end)
+  end
+
   def issue(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     result = Invoicing.issue_invoice_for_user(user.id, id)

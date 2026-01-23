@@ -29,6 +29,7 @@ defmodule EdocApiWeb.Router do
     get("/invoices", InvoiceController, :index)
     post("/invoices", InvoiceController, :create)
     get("/invoices/:id", InvoiceController, :show)
+    put("/invoices/:id", InvoiceController, :update)
     get("/contracts", ContractController, :index)
     post("/contracts", ContractController, :create)
     get("/contracts/:id", ContractController, :show)
@@ -41,6 +42,7 @@ defmodule EdocApiWeb.Router do
     get("/dicts/knp", DictController, :knp)
     get("/company/bank-accounts", CompanyBankAccountController, :index)
     post("/company/bank-accounts", CompanyBankAccountController, :create)
+    put("/company/bank-accounts/:id/set-default", CompanyBankAccountController, :set_default)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

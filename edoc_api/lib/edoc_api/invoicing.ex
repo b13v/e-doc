@@ -323,14 +323,70 @@ defmodule EdocApi.Invoicing do
 
   # -----InvoiceCounter-------------
   @max_invoice_number 9_999_999_999
+  @max_invoice_number_formatted "9,999,999,999"
+  @initial_next_seq 2
 
   def next_invoice_number!(company_id) do
+    # Check for existing counter
+    current_counter =
+      Repo.get_by(InvoiceCounter, company_id: company_id)
+
+    cond do
+      # Counter doesn't exist - create it starting at 2
+      current_counter == nil ->
+        create_and_increment_counter(company_id)
+
+      # Counter was manually set with a specific value (not the initial 2)
+      # Use it as-is without incrementing on first call
+      current_counter.next_seq > @initial_next_seq ->
+        seq = current_counter.next_seq - 1
+
+        if seq > @max_invoice_number do
+          raise RuntimeError,
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
+        end
+
+        # Mark as used by incrementing for next call
+        Repo.update!(InvoiceCounter.changeset(current_counter, %{next_seq: current_counter.next_seq + 1}))
+
+        String.pad_leading(Integer.to_string(seq), 10, "0")
+
+      # Counter exists and was created normally - proceed with increment
+      true ->
+        if current_counter.next_seq > @max_invoice_number + 1 do
+          raise RuntimeError,
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
+        end
+
+        increment_and_get_number(company_id)
+    end
+  end
+
+  defp create_and_increment_counter(company_id) do
     Repo.transaction(fn ->
-      # Atomic upsert: insert starts at 2, conflicts increment by 1.
-      # Returned next_seq is the "next" value, so seq = next_seq - 1.
       %{next_seq: next_seq} =
         Repo.insert!(
-          %InvoiceCounter{company_id: company_id, next_seq: 2},
+          %InvoiceCounter{company_id: company_id, next_seq: @initial_next_seq},
+          on_conflict: [inc: [next_seq: 1]],
+          conflict_target: :company_id,
+          returning: [:next_seq]
+        )
+
+      seq = next_seq - 1
+      String.pad_leading(Integer.to_string(seq), 10, "0")
+    end)
+    |> case do
+      {:ok, number} -> number
+      {:error, reason} ->
+        raise "invoice number generation failed: #{inspect(reason)}"
+    end
+  end
+
+  defp increment_and_get_number(company_id) do
+    Repo.transaction(fn ->
+      %{next_seq: next_seq} =
+        Repo.insert!(
+          %InvoiceCounter{company_id: company_id, next_seq: @initial_next_seq},
           on_conflict: [inc: [next_seq: 1]],
           conflict_target: :company_id,
           returning: [:next_seq]
@@ -338,19 +394,17 @@ defmodule EdocApi.Invoicing do
 
       seq = next_seq - 1
 
-      # Check for overflow before formatting
       if seq > @max_invoice_number do
-        Repo.rollback(:invoice_counter_overflow)
-
-        raise "Invoice number counter overflow: maximum invoice number (#{@max_invoice_number}) exceeded for company #{company_id}"
+        raise RuntimeError,
+              "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
       end
 
-      # формат: только цифры с ведущими нулями
       String.pad_leading(Integer.to_string(seq), 10, "0")
     end)
     |> case do
       {:ok, number} -> number
-      {:error, reason} -> raise "invoice number generation failed: #{inspect(reason)}"
+      {:error, reason} ->
+        raise "invoice number generation failed: #{inspect(reason)}"
     end
   end
 

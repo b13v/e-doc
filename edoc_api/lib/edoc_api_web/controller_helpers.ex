@@ -89,7 +89,7 @@ defmodule EdocApiWeb.ControllerHelpers do
       items_required: &ErrorMapper.unprocessable(&1, "items_required"),
       bank_account_not_found: &ErrorMapper.unprocessable(&1, "bank_account_not_found"),
       bank_account_required: &ErrorMapper.unprocessable(&1, "bank_account_required"),
-      already_issued: &ErrorMapper.unprocessable(&1, "already_issued"),
+      invoice_already_issued: &ErrorMapper.already_issued/1,
       invoice_not_found: &ErrorMapper.not_found(&1, "invoice_not_found"),
       cannot_issue: fn conn, details ->
         ErrorMapper.unprocessable(conn, "cannot_issue", details)

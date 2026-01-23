@@ -1,6 +1,7 @@
 defmodule EdocApi.Core.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   alias EdocApi.Repo
   alias EdocApi.Core.{Contract, CompanyBankAccount}
@@ -137,10 +138,15 @@ defmodule EdocApi.Core.Invoice do
         changeset
 
       true ->
-        case Repo.get(Contract, contract_id) do
-          %Contract{company_id: ^company_id} -> changeset
-          %Contract{} -> add_error(changeset, :contract_id, "does not belong to company")
-          nil -> add_error(changeset, :contract_id, "not found")
+        query =
+          from(c in Contract,
+            where: c.id == ^contract_id and c.company_id == ^company_id,
+            select: count(c.id)
+          )
+
+        case Repo.one(query) do
+          0 -> add_error(changeset, :contract_id, "does not belong to company")
+          _count -> changeset
         end
     end
   end
@@ -154,15 +160,15 @@ defmodule EdocApi.Core.Invoice do
         changeset
 
       true ->
-        case Repo.get(CompanyBankAccount, bank_account_id) do
-          %CompanyBankAccount{company_id: ^company_id} ->
-            changeset
+        query =
+          from(a in CompanyBankAccount,
+            where: a.id == ^bank_account_id and a.company_id == ^company_id,
+            select: count(a.id)
+          )
 
-          %CompanyBankAccount{} ->
-            add_error(changeset, :bank_account_id, "does not belong to company")
-
-          nil ->
-            add_error(changeset, :bank_account_id, "not found")
+        case Repo.one(query) do
+          0 -> add_error(changeset, :bank_account_id, "does not belong to company")
+          _count -> changeset
         end
     end
   end

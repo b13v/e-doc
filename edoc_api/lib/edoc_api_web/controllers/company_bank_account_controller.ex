@@ -39,6 +39,25 @@ defmodule EdocApiWeb.CompanyBankAccountController do
     )
   end
 
+  def set_default(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+    bank_account_id = id
+
+    error_map = %{
+      company_required: &ErrorMapper.bad_request(&1, "company_required"),
+      bank_account_not_found: &ErrorMapper.not_found(&1, "bank_account_not_found")
+    }
+
+    ControllerHelpers.handle_result(
+      conn,
+      Payments.set_default_bank_account(user.id, bank_account_id),
+      fn conn, acc ->
+        json(conn, %{bank_account: BankAccountSerializer.to_map(acc)})
+      end,
+      error_map
+    )
+  end
+
   defp normalize_kbe_knp_ids(params) do
     with {:ok, params} <- normalize_code_id(params, "kbe_code_id", KbeCode, :invalid_kbe_code),
          {:ok, params} <- normalize_code_id(params, "knp_code_id", KnpCode, :invalid_knp_code) do
