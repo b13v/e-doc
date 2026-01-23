@@ -1,6 +1,9 @@
 defmodule EdocApi.TestFixtures do
+  import Ecto.Query
+
   alias EdocApi.Accounts
   alias EdocApi.Companies
+  alias EdocApi.Payments
   alias EdocApi.Invoicing
   alias EdocApi.Core.Contract
   alias EdocApi.Core.Invoice
@@ -83,12 +86,30 @@ defmodule EdocApi.TestFixtures do
 
     existing =
       CompanyBankAccount
-      |> where([a], a.company_id == ^company.id)
+      |> where([a], a.company_id == ^company.id and a.is_default == true)
       |> Repo.one()
 
     case existing do
-      nil -> create_company_bank_account!(company)
-      account -> account
+      nil ->
+        # Try to find any bank account for this company
+        any_account =
+          CompanyBankAccount
+          |> where([a], a.company_id == ^company.id)
+          |> Repo.one()
+
+        case any_account do
+          nil ->
+            account = create_company_bank_account!(company)
+            # Set as default since it's the only account - returns the updated account
+            Payments.set_default_bank_account_for_company!(company.id, account.id)
+
+          account ->
+            # Found an account but it's not default - set it as default
+            Payments.set_default_bank_account_for_company!(company.id, account.id)
+        end
+
+      account ->
+        account
     end
   end
 
@@ -165,6 +186,17 @@ defmodule EdocApi.TestFixtures do
       Map.get(overrides, "knp_code_id") || Map.get(overrides, :knp_code_id) ||
         create_knp_code!().id
 
+    existing_accounts_count =
+      from(a in CompanyBankAccount, where: a.company_id == ^company.id)
+      |> Repo.aggregate(:count)
+
+    is_default =
+      case Map.get(overrides, "is_default") do
+        nil when existing_accounts_count == 0 -> true
+        nil -> false
+        val -> val
+      end
+
     attrs =
       %{
         "label" => "Main account",
@@ -172,7 +204,7 @@ defmodule EdocApi.TestFixtures do
         "bank_id" => bank_id,
         "kbe_code_id" => kbe_code_id,
         "knp_code_id" => knp_code_id,
-        "is_default" => true
+        "is_default" => is_default
       }
       |> Map.merge(overrides)
 

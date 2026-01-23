@@ -3,6 +3,7 @@ defmodule EdocApi.Invoicing do
 
   alias EdocApi.Repo
   alias EdocApi.RepoHelpers
+  alias EdocApi.Currencies
   alias EdocApi.Core.Company
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceBankSnapshot
@@ -89,25 +90,7 @@ defmodule EdocApi.Invoicing do
       company = Repo.get!(Company, company_id)
 
       # Get bank account (explicit or default)
-      bank_account =
-        case bank_account_id do
-          nil ->
-            # Try to get default bank account
-            CompanyBankAccount
-            |> where([a], a.company_id == ^company_id and a.is_default == true)
-            |> order_by([a], desc: a.inserted_at)
-            |> limit(1)
-            |> Repo.one()
-
-          id ->
-            Repo.get(CompanyBankAccount, id)
-        end
-
-      # Require a bank account - no more fallback to company.iban
-      RepoHelpers.check_or_abort(
-        bank_account != nil,
-        :bank_account_required
-      )
+      bank_account = get_bank_account_for_invoice(company_id, bank_account_id)
 
       bank_account = Repo.preload(bank_account, [:bank, :kbe_code, :knp_code])
 
@@ -142,6 +125,78 @@ defmodule EdocApi.Invoicing do
     end)
   end
 
+  def update_invoice_for_user(user_id, invoice_id, attrs) do
+    RepoHelpers.transaction(fn ->
+      invoice =
+        Invoice
+        |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
+        |> Repo.one()
+
+      unless invoice do
+        RepoHelpers.abort(:invoice_not_found)
+      end
+
+      # Only allow updates on draft invoices
+      unless InvoiceStatus.is_draft?(invoice) do
+        RepoHelpers.abort(:invoice_already_issued)
+      end
+
+      items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
+      bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
+
+      # Handle bank account if specified
+      bank_account =
+        case bank_account_id do
+          nil -> nil
+          _id -> get_bank_account_for_invoice(invoice.company_id, bank_account_id)
+        end
+
+      if bank_account_id && bank_account == nil do
+        RepoHelpers.abort(:bank_account_not_found)
+      end
+
+      # Handle items if provided
+      new_subtotal =
+        if items_attrs != [] do
+          RepoHelpers.check_or_abort(items_attrs != [], :items_required)
+          {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
+
+          # Delete existing items
+          InvoiceItem
+          |> where([ii], ii.invoice_id == ^invoice_id)
+          |> Repo.delete_all()
+
+          # Insert new items
+          Enum.each(prepared_items, fn item_attrs ->
+            cs =
+              %InvoiceItem{}
+              |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
+
+            RepoHelpers.insert_or_abort(cs)
+          end)
+
+          subtotal
+        end
+
+      # Build changeset with original user_id and company_id
+      invoice_attrs =
+        attrs
+        |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+        |> maybe_put_subtotal(new_subtotal)
+
+      invoice_changeset =
+        Invoice.changeset(invoice, invoice_attrs, user_id, invoice.company_id)
+
+      {:ok, invoice} = RepoHelpers.update_or_abort(invoice_changeset)
+      {:ok, preload_invoice(invoice)}
+    end)
+    |> case do
+      {:ok, invoice} -> {:ok, invoice}
+      {:error, {reason, details}} -> {:error, reason, details}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   defp preload_invoice(invoice) do
     Repo.preload(invoice, [
       :items,
@@ -152,9 +207,26 @@ defmodule EdocApi.Invoicing do
     ])
   end
 
+  defp get_bank_account_for_invoice(company_id, nil) do
+    case CompanyBankAccount.get_default_account(company_id) do
+      nil -> RepoHelpers.abort(:bank_account_required)
+      acc -> acc
+    end
+  end
+
+  defp get_bank_account_for_invoice(company_id, bank_account_id) do
+    case Repo.get(CompanyBankAccount, bank_account_id) do
+      %CompanyBankAccount{company_id: ^company_id} = acc ->
+        acc
+
+      _ ->
+        RepoHelpers.abort(:bank_account_not_found)
+    end
+  end
+
   defp prepare_items_and_subtotal!(items_attrs) when is_list(items_attrs) do
     {items, subtotal} =
-      Enum.reduce(items_attrs, {[], Decimal.new("0.00")}, fn raw, {acc, sum} ->
+      Enum.reduce(items_attrs, {[], zero_decimal()}, fn raw, {acc, sum} ->
         m = normalize_map_keys(raw)
 
         qty = parse_int(Map.get(m, "qty", 1))
@@ -163,7 +235,7 @@ defmodule EdocApi.Invoicing do
         amount =
           unit_price
           |> Decimal.mult(Decimal.new(qty))
-          |> Decimal.round(2)
+          |> Currencies.round_default()
 
         item = %{
           "code" => Map.get(m, "code"),
@@ -176,7 +248,7 @@ defmodule EdocApi.Invoicing do
         {[item | acc], Decimal.add(sum, amount)}
       end)
 
-    {Enum.reverse(items), Decimal.round(subtotal, 2)}
+    {Enum.reverse(items), Currencies.round_default(subtotal)}
   end
 
   defp normalize_map_keys(map) when is_map(map) do
@@ -202,7 +274,7 @@ defmodule EdocApi.Invoicing do
   defp parse_decimal(v) when is_integer(v), do: Decimal.new(v)
 
   defp parse_decimal(v) when is_float(v),
-    do: v |> :erlang.float_to_binary(decimals: 2) |> Decimal.new()
+    do: v |> :erlang.float_to_binary(decimals: Currencies.default_precision()) |> Decimal.new()
 
   defp parse_decimal(v) when is_binary(v) do
     v =
@@ -214,16 +286,28 @@ defmodule EdocApi.Invoicing do
 
     case Decimal.parse(v) do
       {d, ""} -> d
-      _ -> Decimal.new("0.00")
+      _ -> Decimal.new("0.#{String.duplicate("0", Currencies.default_precision())}")
     end
   end
 
-  defp parse_decimal(_), do: Decimal.new("0.00")
+  defp parse_decimal(_), do: zero_decimal()
+
+  defp maybe_put_subtotal(attrs, nil), do: attrs
+
+  defp maybe_put_subtotal(attrs, subtotal) when is_binary(subtotal),
+    do: Map.put(attrs, "subtotal", subtotal)
+
+  defp maybe_put_subtotal(attrs, %Decimal{} = subtotal),
+    do: Map.put(attrs, "subtotal", Decimal.to_string(subtotal))
 
   defp maybe_put_bank_account_id(attrs, nil), do: attrs
 
   defp maybe_put_bank_account_id(attrs, %CompanyBankAccount{id: id}),
     do: Map.put(attrs, "bank_account_id", id)
+
+  defp zero_decimal do
+    Decimal.new("0.#{String.duplicate("0", Currencies.default_precision())}")
+  end
 
   defp format_company_address(%Company{} = c) do
     city = (c.city || "") |> String.trim()
@@ -238,6 +322,8 @@ defmodule EdocApi.Invoicing do
   end
 
   # -----InvoiceCounter-------------
+  @max_invoice_number 9_999_999_999
+
   def next_invoice_number!(company_id) do
     Repo.transaction(fn ->
       # Atomic upsert: insert starts at 2, conflicts increment by 1.
@@ -251,6 +337,13 @@ defmodule EdocApi.Invoicing do
         )
 
       seq = next_seq - 1
+
+      # Check for overflow before formatting
+      if seq > @max_invoice_number do
+        Repo.rollback(:invoice_counter_overflow)
+
+        raise "Invoice number counter overflow: maximum invoice number (#{@max_invoice_number}) exceeded for company #{company_id}"
+      end
 
       # формат: только цифры с ведущими нулями
       String.pad_leading(Integer.to_string(seq), 10, "0")
@@ -300,7 +393,7 @@ defmodule EdocApi.Invoicing do
       (invoice.items || []) == [] ->
         {:error, :cannot_issue, %{items: "must have at least 1 item"}}
 
-      is_nil(invoice.total) or Decimal.compare(invoice.total, Decimal.new("0.00")) != :gt ->
+      is_nil(invoice.total) or Decimal.compare(invoice.total, zero_decimal()) != :gt ->
         {:error, :cannot_issue, %{total: "must be > 0"}}
 
       true ->
@@ -328,12 +421,7 @@ defmodule EdocApi.Invoicing do
       _ ->
         case invoice.bank_account_id do
           nil ->
-            CompanyBankAccount
-            |> where([a], a.company_id == ^invoice_company_id and a.is_default == true)
-            |> order_by([a], desc: a.inserted_at)
-            |> limit(1)
-            |> Repo.one()
-            |> case do
+            case CompanyBankAccount.get_default_account(invoice_company_id) do
               nil -> {:error, :bank_account_required}
               acc -> {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
             end
