@@ -6,7 +6,8 @@ defmodule EdocApi.Core.Invoice do
   alias EdocApi.Repo
   alias EdocApi.Core.{Contract, CompanyBankAccount}
   alias EdocApi.InvoiceStatus
-  alias EdocApi.Validators.{BinIin, Iban}
+  alias EdocApi.Validators.{BinIin, Iban, String}
+  alias EdocApi.{Currencies, VatRates}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -51,17 +52,15 @@ defmodule EdocApi.Core.Invoice do
     seller_name
     seller_bin_iin
     seller_address
-    seller_iban
     buyer_name
     buyer_bin_iin
     buyer_address
     vat_rate
     )a
 
-  @optional_fields ~w(number due_date subtotal total vat status bank_account_id contract_id)a
+  @optional_fields ~w(number due_date subtotal total vat status bank_account_id contract_id seller_iban)a
 
   @allowed_statuses InvoiceStatus.all()
-  @allowed_currencies ~w(KZT USD EUR RUB)
 
   @doc """
   user_id/company_id не принимаем из attrs.
@@ -75,13 +74,13 @@ defmodule EdocApi.Core.Invoice do
     |> validate_required(@required_fields ++ [:user_id, :company_id])
     |> normalize_fields()
     |> put_default(:status, InvoiceStatus.default())
-    |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
+    |> VatRates.validate_rate(:vat_rate, "KZ")
     |> compute_totals()
     |> validate_number(:total, greater_than: 0)
     |> validate_number(:subtotal, greater_than_or_equal_to: 0)
     |> validate_number(:vat, greater_than_or_equal_to: 0)
     |> validate_inclusion(:status, @allowed_statuses)
-    |> validate_inclusion(:currency, @allowed_currencies)
+    |> validate_inclusion(:currency, Currencies.supported_currencies())
     |> validate_number_optional()
     |> validate_length(:service_name, min: 3, max: 255)
     |> BinIin.validate(:seller_bin_iin)
@@ -91,35 +90,23 @@ defmodule EdocApi.Core.Invoice do
     |> foreign_key_constraint(:contract_id)
     |> prepare_changes(&validate_contract_ownership/1)
     |> prepare_changes(&validate_bank_account_ownership/1)
+    |> prepare_changes(&derive_seller_iban_from_bank_account/1)
   end
 
   defp normalize_fields(changeset) do
     changeset
-    |> update_change(:number, &trim_nil/1)
-    |> update_change(:service_name, &trim_nil/1)
-    |> update_change(:currency, &normalize_currency/1)
-    |> update_change(:status, &normalize_status/1)
-    |> update_change(:seller_name, &trim_nil/1)
-    |> update_change(:seller_address, &trim_nil/1)
+    |> update_change(:number, &String.normalize/1)
+    |> update_change(:service_name, &String.normalize/1)
+    |> update_change(:currency, &String.upcase/1)
+    |> update_change(:status, &String.downcase/1)
+    |> update_change(:seller_name, &String.normalize/1)
+    |> update_change(:seller_address, &String.normalize/1)
     |> update_change(:seller_bin_iin, &BinIin.normalize/1)
     |> update_change(:seller_iban, &Iban.normalize/1)
-    |> update_change(:buyer_name, &trim_nil/1)
-    |> update_change(:buyer_address, &trim_nil/1)
+    |> update_change(:buyer_name, &String.normalize/1)
+    |> update_change(:buyer_address, &String.normalize/1)
     |> update_change(:buyer_bin_iin, &BinIin.normalize/1)
   end
-
-  defp trim_nil(nil), do: nil
-  # defp trim_nil(v) when is_binary(v), do: String.trim(v)
-  defp trim_nil(v) when is_binary(v) do
-    v = String.trim(v)
-    if v == "", do: nil, else: v
-  end
-
-  defp normalize_currency(nil), do: nil
-  defp normalize_currency(v) when is_binary(v), do: v |> String.trim() |> String.upcase()
-
-  defp normalize_status(nil), do: nil
-  defp normalize_status(v) when is_binary(v), do: v |> String.trim() |> String.downcase()
 
   defp validate_number_optional(changeset) do
     case get_field(changeset, :number) do
@@ -173,6 +160,26 @@ defmodule EdocApi.Core.Invoice do
     end
   end
 
+  defp derive_seller_iban_from_bank_account(changeset) do
+    bank_account_id =
+      get_change(changeset, :bank_account_id) || get_field(changeset, :bank_account_id)
+
+    cond do
+      is_nil(bank_account_id) ->
+        changeset
+
+      true ->
+        case Repo.get(CompanyBankAccount, bank_account_id) do
+          %CompanyBankAccount{iban: iban} ->
+            put_change(changeset, :seller_iban, iban)
+
+          _ ->
+            # Bank account not found - let other validations handle the error
+            changeset
+        end
+    end
+  end
+
   defp put_default(changeset, field, value) do
     case get_field(changeset, field) do
       nil -> put_change(changeset, field, value)
@@ -184,18 +191,11 @@ defmodule EdocApi.Core.Invoice do
   defp compute_totals(changeset) do
     subtotal = get_field(changeset, :subtotal)
     vat_rate = get_field(changeset, :vat_rate)
+    currency = get_field(changeset, :currency) || "KZT"
 
     if is_struct(subtotal, Decimal) and is_integer(vat_rate) do
-      vat =
-        subtotal
-        |> Decimal.mult(Decimal.new(vat_rate))
-        |> Decimal.div(Decimal.new(100))
-        |> Decimal.round(2)
-
-      total =
-        subtotal
-        |> Decimal.add(vat)
-        |> Decimal.round(2)
+      vat = VatRates.calculate_vat(subtotal, vat_rate, currency)
+      total = VatRates.calculate_total(subtotal, vat, currency)
 
       changeset
       |> put_change(:vat, vat)

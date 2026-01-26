@@ -120,14 +120,13 @@ defmodule EdocApi.TestFixtures do
       Map.merge(
         %{
           "number" => number,
-          "date" => Date.utc_today(),
-          "company_id" => company.id
+          "date" => Date.utc_today()
         },
         attrs
       )
 
     %Contract{}
-    |> Contract.changeset(attrs)
+    |> Contract.changeset(attrs, company.id)
     |> Repo.insert!()
   end
 

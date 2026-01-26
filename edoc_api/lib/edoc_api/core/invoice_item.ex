@@ -17,16 +17,17 @@ defmodule EdocApi.Core.InvoiceItem do
     timestamps(type: :utc_datetime)
   end
 
-  @required ~w(name qty unit_price amount)a
-  @optional ~w(code)a
+  @required ~w(name qty unit_price)a
+  @optional ~w(code amount)a
 
   def changeset(item, attrs) do
     item
     |> cast(attrs, @required ++ @optional ++ [:invoice_id])
-    |> compute_amount()
     |> validate_required(@required ++ [:invoice_id])
     |> validate_number(:qty, greater_than: 0)
     |> validate_number(:unit_price, greater_than: 0)
+    |> compute_amount()
+    |> validate_number(:amount, greater_than: 0)
   end
 
   defp compute_amount(changeset) do

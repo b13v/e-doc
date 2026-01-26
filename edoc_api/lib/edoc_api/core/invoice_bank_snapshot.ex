@@ -2,6 +2,8 @@ defmodule EdocApi.Core.InvoiceBankSnapshot do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Validators.Iban
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -24,5 +26,6 @@ defmodule EdocApi.Core.InvoiceBankSnapshot do
     |> cast(attrs, @required)
     |> validate_required(@required)
     |> unique_constraint(:invoice_id, name: :invoice_bank_snapshots_invoice_id_index)
+    |> Iban.validate(:iban)
   end
 end

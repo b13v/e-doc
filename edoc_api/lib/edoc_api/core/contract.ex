@@ -16,13 +16,18 @@ defmodule EdocApi.Core.Contract do
     timestamps(type: :utc_datetime)
   end
 
-  @required_fields ~w(number date company_id)a
+  @required_fields ~w(number date)a
   @optional_fields ~w(title)a
 
-  def changeset(contract, attrs) do
+  @doc """
+  company_id is NOT accepted from attrs.
+  It must be passed explicitly from the authenticated user context.
+  """
+  def changeset(contract, attrs, company_id) do
     contract
     |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
+    |> put_change(:company_id, company_id)
+    |> validate_required(@required_fields ++ [:company_id])
     |> unique_constraint(:number, name: :contracts_company_id_number_index)
   end
 end

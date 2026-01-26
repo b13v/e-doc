@@ -326,15 +326,35 @@ defmodule EdocApi.Invoicing do
   @max_invoice_number_formatted "9,999,999,999"
   @initial_next_seq 2
 
-  def next_invoice_number!(company_id) do
+  @doc """
+  Generates the next invoice number for a company.
+
+  ## Parameters
+    - company_id: The company ID
+    - sequence_name: Optional sequence name (default: "default")
+      Can be used for separate sequences by currency, department, etc.
+      Valid values: "default", "KZT", "USD", "EUR", "RUB"
+
+  ## Examples
+
+      iex> Invoicing.next_invoice_number!(company_id)
+      "0000000001"
+
+      iex> Invoicing.next_invoice_number!(company_id, "USD")
+      "0000000001"
+
+  """
+  def next_invoice_number!(company_id, sequence_name \\ "default") do
+    sequence_name = normalize_sequence_name(sequence_name)
+
     # Check for existing counter
     current_counter =
-      Repo.get_by(InvoiceCounter, company_id: company_id)
+      Repo.get_by(InvoiceCounter, company_id: company_id, sequence_name: sequence_name)
 
     cond do
       # Counter doesn't exist - create it starting at 2
       current_counter == nil ->
-        create_and_increment_counter(company_id)
+        create_and_increment_counter(company_id, sequence_name)
 
       # Counter was manually set with a specific value (not the initial 2)
       # Use it as-is without incrementing on first call
@@ -343,52 +363,100 @@ defmodule EdocApi.Invoicing do
 
         if seq > @max_invoice_number do
           raise RuntimeError,
-                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
         end
 
         # Mark as used by incrementing for next call
-        Repo.update!(InvoiceCounter.changeset(current_counter, %{next_seq: current_counter.next_seq + 1}))
+        Repo.update!(
+          InvoiceCounter.changeset(current_counter, %{next_seq: current_counter.next_seq + 1})
+        )
 
-        String.pad_leading(Integer.to_string(seq), 10, "0")
+        format_invoice_number(seq, sequence_name)
 
       # Counter exists and was created normally - proceed with increment
       true ->
         if current_counter.next_seq > @max_invoice_number + 1 do
           raise RuntimeError,
-                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
         end
 
-        increment_and_get_number(company_id)
+        increment_and_get_number(company_id, sequence_name)
     end
   end
 
-  defp create_and_increment_counter(company_id) do
+  @doc """
+  Formats an invoice number according to the sequence type.
+
+  For currency-specific sequences, adds a prefix.
+  For default sequence, uses the standard 10-digit format.
+
+  ## Examples
+
+      iex> Invoicing.format_invoice_number(123, "default")
+      "0000000123"
+
+      iex> Invoicing.format_invoice_number(456, "USD")
+      "USD-0000000456"
+
+  """
+  def format_invoice_number(seq, sequence_name \\ "default") do
+    if sequence_name == "default" do
+      String.pad_leading(Integer.to_string(seq), 10, "0")
+    else
+      "#{sequence_name}-#{String.pad_leading(Integer.to_string(seq), 10, "0")}"
+    end
+  end
+
+  # Normalize sequence name to uppercase and validate
+  defp normalize_sequence_name(sequence_name) when is_binary(sequence_name) do
+    normalized = String.upcase(String.trim(sequence_name))
+
+    if normalized in InvoiceCounter.valid_sequence_names() do
+      normalized
+    else
+      "default"
+    end
+  end
+
+  defp normalize_sequence_name(_), do: "default"
+
+  defp create_and_increment_counter(company_id, sequence_name) do
     Repo.transaction(fn ->
       %{next_seq: next_seq} =
         Repo.insert!(
-          %InvoiceCounter{company_id: company_id, next_seq: @initial_next_seq},
+          %InvoiceCounter{
+            company_id: company_id,
+            sequence_name: sequence_name,
+            next_seq: @initial_next_seq
+          },
           on_conflict: [inc: [next_seq: 1]],
-          conflict_target: :company_id,
+          conflict_target: [:company_id, :sequence_name],
           returning: [:next_seq]
         )
 
       seq = next_seq - 1
-      String.pad_leading(Integer.to_string(seq), 10, "0")
+      format_invoice_number(seq, sequence_name)
     end)
     |> case do
-      {:ok, number} -> number
+      {:ok, number} ->
+        number
+
       {:error, reason} ->
         raise "invoice number generation failed: #{inspect(reason)}"
     end
   end
 
-  defp increment_and_get_number(company_id) do
+  defp increment_and_get_number(company_id, sequence_name) do
     Repo.transaction(fn ->
       %{next_seq: next_seq} =
         Repo.insert!(
-          %InvoiceCounter{company_id: company_id, next_seq: @initial_next_seq},
+          %InvoiceCounter{
+            company_id: company_id,
+            sequence_name: sequence_name,
+            next_seq: @initial_next_seq
+          },
           on_conflict: [inc: [next_seq: 1]],
-          conflict_target: :company_id,
+          conflict_target: [:company_id, :sequence_name],
           returning: [:next_seq]
         )
 
@@ -396,13 +464,15 @@ defmodule EdocApi.Invoicing do
 
       if seq > @max_invoice_number do
         raise RuntimeError,
-              "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}"
+              "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
       end
 
-      String.pad_leading(Integer.to_string(seq), 10, "0")
+      format_invoice_number(seq, sequence_name)
     end)
     |> case do
-      {:ok, number} -> number
+      {:ok, number} ->
+        number
+
       {:error, reason} ->
         raise "invoice number generation failed: #{inspect(reason)}"
     end

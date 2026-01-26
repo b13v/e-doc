@@ -7,8 +7,44 @@ defmodule EdocApi.Currencies do
   """
 
   # Default currency precision (KZT - Kazakhstani Tenge)
-  # According to audit recommendations, this should be configurable
   @default_precision 2
+
+  # Supported currencies for the application
+  @supported_currencies ~w(KZT USD EUR RUB)
+
+  @doc """
+  Returns the list of supported currency codes.
+
+  ## Examples
+
+      iex> EdocApi.Currencies.supported_currencies()
+      ["KZT", "USD", "EUR", "RUB"]
+
+  """
+  @spec supported_currencies() :: [String.t()]
+  def supported_currencies, do: @supported_currencies
+
+  @doc """
+  Checks if a currency code is supported.
+
+  ## Examples
+
+      iex> EdocApi.Currencies.supported?("KZT")
+      true
+
+      iex> EdocApi.Currencies.supported?("GBP")
+      false
+
+  """
+  @spec supported?(String.t() | atom()) :: boolean()
+  def supported?(currency) do
+    code = to_string_code(currency)
+    code in @supported_currencies
+  end
+
+  # Private helper to normalize currency code to string
+  defp to_string_code(code) when is_atom(code), do: Atom.to_string(code) |> String.upcase()
+  defp to_string_code(code) when is_binary(code), do: String.upcase(code)
 
   @doc """
   Returns the decimal precision for the given currency code.

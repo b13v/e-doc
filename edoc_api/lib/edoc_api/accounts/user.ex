@@ -2,6 +2,8 @@ defmodule EdocApi.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Validators.Email
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -19,16 +21,13 @@ defmodule EdocApi.Accounts.User do
   def registration_changeset(user, attrs) do
     user
     |> cast(attrs, [:email, :password])
-    |> update_change(:email, &normalize_email/1)
+    |> update_change(:email, &Email.normalize/1)
     |> validate_required([:email, :password])
-    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
+    |> Email.validate_required(:email)
     |> validate_length(:password, min: 8, max: 72)
     |> unique_constraint(:email)
     |> put_password_hash()
   end
-
-  defp normalize_email(nil), do: ""
-  defp normalize_email(email), do: email |> String.trim() |> String.downcase()
 
   defp put_password_hash(changeset) do
     case get_change(changeset, :password) do

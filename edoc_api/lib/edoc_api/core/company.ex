@@ -2,7 +2,7 @@ defmodule EdocApi.Core.Company do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias EdocApi.Validators.{BinIin, Iban}
+  alias EdocApi.Validators.{BinIin, Email, String}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -13,8 +13,6 @@ defmodule EdocApi.Core.Company do
     field(:bin_iin, :string)
     field(:city, :string)
     field(:address, :string)
-    field(:bank_name, :string)
-    field(:iban, :string)
     field(:email, :string)
     field(:phone, :string)
     field(:representative_name, :string)
@@ -24,9 +22,6 @@ defmodule EdocApi.Core.Company do
 
     has_many(:bank_accounts, EdocApi.Core.CompanyBankAccount)
     belongs_to(:user, EdocApi.Accounts.User)
-    belongs_to(:bank, EdocApi.Core.Bank)
-    belongs_to(:kbe_code, EdocApi.Core.KbeCode)
-    belongs_to(:knp_code, EdocApi.Core.KnpCode)
 
     timestamps(type: :utc_datetime)
   end
@@ -43,8 +38,7 @@ defmodule EdocApi.Core.Company do
     basis
   )a
 
-  @optional_fields ~w(email bank_name bank_id kbe_code_id knp_code_id iban)a
-  @deprecated_fields ~w(bank_name bank_id kbe_code_id knp_code_id iban)a
+  @optional_fields ~w(email)a
 
   @doc """
   Variant B (recommended): user_id is NOT accepted from attrs.
@@ -55,32 +49,10 @@ defmodule EdocApi.Core.Company do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> put_change(:user_id, user_id)
     |> validate_required(@required_fields ++ [:user_id])
-    |> warn_deprecated_fields()
     |> normalize_fields()
     |> BinIin.validate(:bin_iin)
-    |> Iban.validate(:iban)
-    |> validate_email()
+    |> Email.validate(:email)
     |> validate_phone()
-  end
-
-  # -------------------------
-  # Deprecation Warnings
-  # -------------------------
-
-  defp warn_deprecated_fields(changeset) do
-    Enum.reduce(@deprecated_fields, changeset, fn field, cs ->
-      case get_change(cs, field) do
-        nil ->
-          cs
-
-        _value ->
-          add_warning(
-            cs,
-            field,
-            "DEPRECATED: Use company_bank_accounts table instead of company.#{field}"
-          )
-      end
-    end)
   end
 
   # -------------------------
@@ -90,44 +62,19 @@ defmodule EdocApi.Core.Company do
   defp normalize_fields(changeset) do
     changeset
     |> update_change(:bin_iin, &BinIin.normalize/1)
-    |> update_change(:iban, &Iban.normalize/1)
-    |> update_change(:email, &normalize_email/1)
-    |> update_change(:city, &normalize_trim/1)
-    |> update_change(:address, &normalize_trim/1)
-    |> update_change(:bank_name, &normalize_trim/1)
-    |> update_change(:name, &normalize_trim/1)
-    |> update_change(:representative_name, &normalize_trim/1)
-    |> update_change(:representative_title, &normalize_trim/1)
-    |> update_change(:basis, &normalize_trim/1)
+    |> update_change(:email, &Email.normalize/1)
+    |> update_change(:city, &String.normalize/1)
+    |> update_change(:address, &String.normalize/1)
+    |> update_change(:name, &String.normalize/1)
+    |> update_change(:representative_name, &String.normalize/1)
+    |> update_change(:representative_title, &String.normalize/1)
+    |> update_change(:basis, &String.normalize/1)
     |> maybe_normalize_phone()
   end
-
-  defp normalize_email(nil), do: nil
-
-  defp normalize_email(value) when is_binary(value),
-    do: value |> String.trim() |> String.downcase()
-
-  defp normalize_trim(nil), do: nil
-  defp normalize_trim(value) when is_binary(value), do: String.trim(value)
 
   # -------------------------
   # Validations
   # -------------------------
-
-  defp validate_email(changeset) do
-    case get_change(changeset, :email) do
-      nil ->
-        changeset
-
-      _ ->
-        validate_format(
-          changeset,
-          :email,
-          ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
-          message: "invalid email"
-        )
-    end
-  end
 
   # -------------------------
   # Phone (soft validation)
@@ -139,7 +86,7 @@ defmodule EdocApi.Core.Company do
         changeset
 
       phone when is_binary(phone) ->
-        phone = String.trim(phone)
+        phone = Elixir.String.trim(phone)
 
         case normalize_kz_mobile_phone(phone) do
           {:ok, formatted} -> put_change(changeset, :phone, formatted)
@@ -186,17 +133,17 @@ defmodule EdocApi.Core.Company do
   # и только для мобильных KZ: 7xx
 
   defp normalize_kz_mobile_phone(input) when is_binary(input) do
-    digits = String.replace(input, ~r/\D+/, "")
+    digits = Elixir.String.replace(input, ~r/\D+/, "")
 
     normalized_digits =
       cond do
-        String.length(digits) == 11 and String.starts_with?(digits, "8") ->
-          "7" <> String.slice(digits, 1, 10)
+        Elixir.String.length(digits) == 11 and Elixir.String.starts_with?(digits, "8") ->
+          "7" <> Elixir.String.slice(digits, 1, 10)
 
-        String.length(digits) == 11 and String.starts_with?(digits, "7") ->
+        Elixir.String.length(digits) == 11 and Elixir.String.starts_with?(digits, "7") ->
           digits
 
-        String.length(digits) == 10 ->
+        Elixir.String.length(digits) == 10 ->
           "7" <> digits
 
         true ->
@@ -204,7 +151,7 @@ defmodule EdocApi.Core.Company do
       end
 
     with "7" <> rest <- normalized_digits,
-         true <- String.length(rest) == 10,
+         true <- Elixir.String.length(rest) == 10,
          <<code::binary-size(3), mid::binary-size(3), a::binary-size(2), b::binary-size(2)>> <-
            rest,
          true <- mobile_kz_code?(code) do

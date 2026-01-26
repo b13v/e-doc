@@ -52,10 +52,9 @@ defmodule EdocApi.Core do
 
       %Company{id: company_id} ->
         attrs = attrs || %{}
-        attrs = Map.put(attrs, "company_id", company_id)
 
         %Contract{}
-        |> Contract.changeset(attrs)
+        |> Contract.changeset(attrs, company_id)
         |> Repo.insert()
     end
   end
