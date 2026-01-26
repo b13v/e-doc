@@ -9,17 +9,17 @@ defmodule EdocApi.VatRates do
 
   | Country | Standard Rate | Notes |
   |---------|---------------|-------|
-  | KZ      | 12%           | Changed from 16% to 12% in 2024 |
+  | KZ      | 16%           | Kazakhstan |
   | RU      | 20%           | Russia |
   | DEFAULT | 16%           | Fallback for unknown countries |
 
   ## Examples
 
       iex> VatRates.for_country("KZ")
-      [0, 12]
+      [0, 16]
 
       iex> VatRates.standard_rate("KZ")
-      12
+      16
 
       iex> VatRates.validate_rate(changeset, :vat_rate, "KZ")
 
@@ -30,12 +30,12 @@ defmodule EdocApi.VatRates do
   # VAT rates by country code (ISO 3166-1 alpha-2)
   # Each list includes zero-rated (0) and the standard rate(s)
   @rates %{
-    # Kazakhstan - changed from 16% to 12% effective 2024
-    "KZ" => [0, 12],
+    # Kazakhstan
+    "KZ" => [0, 16],
     # Russia - 20% standard rate
     "RU" => [0, 20],
     # Default fallback
-    "DEFAULT" => [0, 12]
+    "DEFAULT" => [0, 16]
   }
 
   # Default country code for operations
@@ -50,13 +50,13 @@ defmodule EdocApi.VatRates do
   ## Examples
 
       iex> EdocApi.VatRates.for_country("KZ")
-      [0, 12]
+      [0, 16]
 
       iex> EdocApi.VatRates.for_country("RU")
       [0, 20]
 
       iex> EdocApi.VatRates.for_country("UNKNOWN")
-      [0, 12]
+      [0, 16]
 
   """
   @spec for_country(country_code()) :: [vat_rate()]
@@ -71,7 +71,7 @@ defmodule EdocApi.VatRates do
   ## Examples
 
       iex> EdocApi.VatRates.standard_rate("KZ")
-      12
+      16
 
       iex> EdocApi.VatRates.standard_rate("RU")
       20
@@ -82,7 +82,7 @@ defmodule EdocApi.VatRates do
     country_code
     |> for_country()
     |> Enum.filter(&(&1 > 0))
-    |> List.first(12)
+    |> List.first(16)
   end
 
   @doc """
@@ -108,10 +108,10 @@ defmodule EdocApi.VatRates do
 
   ## Examples
 
-      iex> EdocApi.VatRates.valid_rate?(12, "KZ")
+      iex> EdocApi.VatRates.valid_rate?(16, "KZ")
       true
 
-      iex> EdocApi.VatRates.valid_rate?(16, "KZ")
+      iex> EdocApi.VatRates.valid_rate?(12, "KZ")
       false
 
       iex> EdocApi.VatRates.valid_rate?(0, "KZ")
@@ -154,8 +154,8 @@ defmodule EdocApi.VatRates do
 
   ## Examples
 
-      iex> VatRates.calculate_vat(Decimal.new("1000"), 12, "KZ")
-      #Decimal<120.00>
+      iex> VatRates.calculate_vat(Decimal.new("1000"), 16, "KZ")
+      #Decimal<160.00>
 
   """
   @spec calculate_vat(Decimal.t(), vat_rate(), String.t()) :: Decimal.t()
@@ -171,8 +171,8 @@ defmodule EdocApi.VatRates do
 
   ## Examples
 
-      iex> VatRates.calculate_total(Decimal.new("1000"), Decimal.new("120"), "KZT")
-      #Decimal<1120.00>
+      iex> VatRates.calculate_total(Decimal.new("1000"), Decimal.new("160"), "KZT")
+      #Decimal<1160.00>
 
   """
   @spec calculate_total(Decimal.t(), Decimal.t(), String.t()) :: Decimal.t()

@@ -48,7 +48,7 @@ All four medium-priority tasks from Phase 3 have been resolved:
 1. Created `EdocApi.InvoiceStateMachine` - enforces valid status transitions (draft→issued, issued→paid, etc.)
 2. Created `EdocApi.Validators.String` - centralized string normalization (trim, empty→nil, upcase, downcase)
 3. Updated `Company` and `Invoice` to use `String.normalize/1` instead of local functions
-4. Created `EdocApi.VatRates` - configurable VAT rates by country (KZ: 0/12%, RU: 0/20%, DEFAULT: 0/12%)
+4. Created `EdocApi.VatRates` - configurable VAT rates by country (KZ: 0/16%, RU: 0/20%, DEFAULT: 0/16%)
 5. Updated `Invoice` to use `VatRates.validate_rate/3` and `VatRates.calculate_vat/3`
 6. Updated `Currencies` module with `supported_currencies/0` and `supported?/1` functions
 7. Updated `Invoice` to use `Currencies.supported_currencies()` for validation
@@ -571,7 +571,7 @@ end
 # Create lib/edoc_api/vat_rates.ex
 defmodule EdocApi.VatRates do
   @rates %{
-    "KZ" => [0, 12],  # Kazakhstan changed from 16% to 12%
+    "KZ" => [0, 16],  # Kazakhstan VAT rate
     "RU" => [0, 20],
     "DEFAULT" => [0, 16]
   }
