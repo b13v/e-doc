@@ -6,7 +6,7 @@ defmodule EdocApiWeb.Router do
   end
 
   pipeline :auth_api do
-    plug(:accepts, ["json"])
+    plug(:accepts, ["json", "pdf"])
     plug(EdocApiWeb.Plugs.Authenticate)
   end
 
