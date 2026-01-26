@@ -16,7 +16,7 @@ defmodule EdocApi.PdfTest do
       invoice =
         user
         |> create_invoice_with_items!(company)
-        |> Repo.preload(company: [:bank, :kbe_code, :knp_code])
+        |> Repo.preload([:company, bank_account: [:bank, :kbe_code, :knp_code]])
 
       html = PdfTemplates.invoice_html(invoice)
 

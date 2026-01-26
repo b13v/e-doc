@@ -31,8 +31,8 @@ defmodule EdocApi.Invoicing do
       :items,
       :bank_snapshot,
       :contract,
-      bank_account: [:bank, :kbe_code, :knp_code],
-      company: [:bank, :kbe_code, :knp_code]
+      :company,
+      bank_account: [:bank, :kbe_code, :knp_code]
     ])
   end
 
@@ -202,8 +202,8 @@ defmodule EdocApi.Invoicing do
       :items,
       :bank_snapshot,
       :contract,
-      bank_account: [:bank, :kbe_code, :knp_code],
-      company: [:bank, :kbe_code, :knp_code]
+      :company,
+      bank_account: [:bank, :kbe_code, :knp_code]
     ])
   end
 
