@@ -197,6 +197,4 @@ defmodule EdocApi.VatRates do
       Decimal.round(decimal, 2)
     end
   end
-
-  defp apply_currency_precision(decimal, _currency_code), do: decimal
 end

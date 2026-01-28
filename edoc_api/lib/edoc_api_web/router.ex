@@ -33,6 +33,8 @@ defmodule EdocApiWeb.Router do
     get("/contracts", ContractController, :index)
     post("/contracts", ContractController, :create)
     get("/contracts/:id", ContractController, :show)
+    get("/contracts/:id/pdf", ContractController, :pdf)
+    post("/contracts/:id/issue", ContractController, :issue)
 
     get("/invoices/:id/pdf", InvoiceController, :pdf)
     post("/invoices/:id/issue", InvoiceController, :issue)

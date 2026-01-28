@@ -12,6 +12,14 @@ defmodule EdocApiWeb.PdfTemplates do
     |> IO.iodata_to_binary()
   end
 
+  def contract_html(contract) do
+    assigns = %{contract: contract}
+
+    contract(assigns)
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+  end
+
   defp money(nil), do: "—"
 
   defp money(%Decimal{} = d) do
@@ -62,6 +70,14 @@ defmodule EdocApiWeb.PdfTemplates do
     |> then(fn {y, m, day} ->
       "#{pad2(day)}.#{pad2(m)}.#{y}"
     end)
+  end
+
+  defp fmt_date_from_datetime(nil), do: "—"
+
+  defp fmt_date_from_datetime(%DateTime{} = dt) do
+    dt
+    |> DateTime.to_date()
+    |> fmt_date()
   end
 
   defp pad2(n) when is_integer(n) and n < 10, do: "0#{n}"
@@ -229,6 +245,64 @@ defmodule EdocApiWeb.PdfTemplates do
 
   defp assoc_loaded(%Ecto.Association.NotLoaded{}), do: nil
   defp assoc_loaded(value), do: value
+
+  defp contract(assigns) do
+    ~H"""
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #000; line-height: 1.4; }
+        h1 { font-size: 18px; margin: 0 0 6px 0; }
+        h2 { font-size: 14px; margin: 16px 0 6px 0; }
+        .meta { margin-bottom: 10px; }
+        .box { border: 1px solid #000; padding: 10px; margin-bottom: 12px; }
+        .row { display: flex; gap: 16px; }
+        .col { flex: 1; }
+        .label { font-weight: bold; }
+        .content { margin-top: 10px; }
+        .muted { color: #666; }
+      </style>
+    </head>
+    <body>
+      <% c = assoc_loaded(@contract.company) || %{} %>
+      <h1>Договор № <%= @contract.number %></h1>
+      <div class="meta">
+        <span class="label">Дата договора:</span>
+        <span><%= fmt_date(@contract.date) %></span>
+        <span class="muted"> | </span>
+        <span class="label">Дата выдачи:</span>
+        <span><%= fmt_date_from_datetime(@contract.issued_at) %></span>
+      </div>
+
+      <div class="box">
+        <div class="row">
+          <div class="col">
+            <div class="label">Компания</div>
+            <div><%= c.name || "—" %></div>
+            <div>БИН/ИИН: <%= c.bin_iin || "—" %></div>
+            <div><%= c.address || "—" %></div>
+          </div>
+          <div class="col">
+            <div class="label">Контакты</div>
+            <div>Телефон: <%= c.phone || "—" %></div>
+            <div>Email: <%= c.email || "—" %></div>
+          </div>
+        </div>
+      </div>
+
+      <%= if @contract.title do %>
+        <h2><%= @contract.title %></h2>
+      <% end %>
+
+      <div class="content">
+        <%= Phoenix.HTML.raw(@contract.body_html || "") %>
+      </div>
+    </body>
+    </html>
+    """
+  end
 
   # HEEx шаблон
   defp invoice(assigns) do

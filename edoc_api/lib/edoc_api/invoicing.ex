@@ -294,13 +294,8 @@ defmodule EdocApi.Invoicing do
 
   defp maybe_put_subtotal(attrs, nil), do: attrs
 
-  defp maybe_put_subtotal(attrs, subtotal) when is_binary(subtotal),
-    do: Map.put(attrs, "subtotal", subtotal)
-
   defp maybe_put_subtotal(attrs, %Decimal{} = subtotal),
     do: Map.put(attrs, "subtotal", Decimal.to_string(subtotal))
-
-  defp maybe_put_bank_account_id(attrs, nil), do: attrs
 
   defp maybe_put_bank_account_id(attrs, %CompanyBankAccount{id: id}),
     do: Map.put(attrs, "bank_account_id", id)

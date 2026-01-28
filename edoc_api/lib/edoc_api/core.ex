@@ -5,8 +5,10 @@ defmodule EdocApi.Core do
   alias EdocApi.Invoicing
   alias EdocApi.Payments
   alias EdocApi.Repo
+  alias EdocApi.RepoHelpers
   alias EdocApi.Core.Company
   alias EdocApi.Core.Contract
+  alias EdocApi.ContractStatus
 
   defdelegate get_company_by_user_id(user_id), to: Companies
   defdelegate upsert_company_for_user(user_id, attrs), to: Companies
@@ -73,8 +75,42 @@ defmodule EdocApi.Core do
         |> Repo.one()
         |> case do
           nil -> {:error, :not_found}
-          contract -> {:ok, contract}
+          contract -> {:ok, Repo.preload(contract, :company)}
         end
+    end
+  end
+
+  def issue_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    RepoHelpers.transaction(fn ->
+      case Companies.get_company_by_user_id(user_id) do
+        nil ->
+          RepoHelpers.abort(:not_found)
+
+        %Company{id: company_id} ->
+          contract =
+            Contract
+            |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
+            |> Repo.one()
+
+          unless contract do
+            RepoHelpers.abort(:not_found)
+          end
+
+          if ContractStatus.already_issued?(contract) do
+            RepoHelpers.abort(:contract_already_issued)
+          end
+
+          contract
+          |> Ecto.Changeset.change(
+            status: ContractStatus.issued(),
+            issued_at: DateTime.utc_now() |> DateTime.truncate(:second)
+          )
+          |> RepoHelpers.update_or_abort()
+      end
+    end)
+    |> case do
+      {:ok, contract} -> {:ok, contract}
+      {:error, reason} -> {:error, reason}
     end
   end
 end

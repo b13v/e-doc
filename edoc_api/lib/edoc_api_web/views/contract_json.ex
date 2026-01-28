@@ -12,7 +12,10 @@ defmodule EdocApiWeb.ContractJSON do
       id: contract.id,
       number: contract.number,
       date: contract.date,
-      title: contract.title
+      title: contract.title,
+      status: contract.status,
+      issued_at: contract.issued_at,
+      body_html: contract.body_html
     }
   end
 end

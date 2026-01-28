@@ -120,7 +120,8 @@ defmodule EdocApi.TestFixtures do
       Map.merge(
         %{
           "number" => number,
-          "date" => Date.utc_today()
+          "date" => Date.utc_today(),
+          "body_html" => "<p>Contract body</p>"
         },
         attrs
       )

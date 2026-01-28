@@ -46,7 +46,9 @@ defmodule EdocApi.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:plug_cowboy, "~> 2.5"},
       {:argon2_elixir, "~> 4.0"},
-      {:joken, "~> 2.6"}
+      {:joken, "~> 2.6"},
+      {:html_sanitize_ex, "~> 1.4"},
+      {:tidewave, "~> 0.5", only: :dev}
     ]
   end
 
