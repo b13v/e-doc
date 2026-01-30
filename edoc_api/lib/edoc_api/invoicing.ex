@@ -592,4 +592,34 @@ defmodule EdocApi.Invoicing do
         end
     end
   end
+
+  def delete_invoice_for_user(user_id, invoice_id) do
+    invoice =
+      Invoice
+      |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
+      |> Repo.one()
+
+    if invoice do
+      if InvoiceStatus.is_issued?(invoice.status) do
+        {:error, :cannot_delete_issued_invoice}
+      else
+        Repo.transaction(fn ->
+          # Delete invoice items first
+          InvoiceItem
+          |> where([ii], ii.invoice_id == ^invoice_id)
+          |> Repo.delete_all()
+
+          # Delete bank snapshot if exists
+          InvoiceBankSnapshot
+          |> where([ibs], ibs.invoice_id == ^invoice_id)
+          |> Repo.delete_all()
+
+          # Delete the invoice
+          Repo.delete(invoice)
+        end)
+      end
+    else
+      {:error, :not_found}
+    end
+  end
 end

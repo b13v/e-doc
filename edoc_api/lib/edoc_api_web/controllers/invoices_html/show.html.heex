@@ -1,0 +1,45 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-900">Invoice <%= @invoice.number %></h1>
+    <div class="flex space-x-4">
+      <a href={"/invoices/#{@invoice.id}/pdf"} target="_blank" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Download PDF
+      </a>
+      <a href="/invoices" class="text-gray-600 hover:text-gray-900 self-center">Back to List</a>
+    </div>
+  </div>
+
+  <div class="px-6 py-6">
+    <div class="grid grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Seller</h3>
+        <p class="mt-1 text-lg text-gray-900"><%= @invoice.seller_name %></p>
+        <p class="text-sm text-gray-600">BIN/IIN: <%= @invoice.seller_bin_iin %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Buyer</h3>
+        <p class="mt-1 text-lg text-gray-900"><%= @invoice.buyer_name %></p>
+        <p class="text-sm text-gray-600">BIN/IIN: <%= @invoice.buyer_bin_iin %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Service</h3>
+        <p class="mt-1 text-lg text-gray-900"><%= @invoice.service_name %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Status</h3>
+        <p class="mt-1"><%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Issue Date</h3>
+        <p class="mt-1 text-lg text-gray-900"><%= @invoice.issue_date %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-gray-500">Total</h3>
+        <p class="mt-1 text-lg text-gray-900"><%= EdocApiWeb.CoreComponents.format_money(@invoice, :total) %></p>
+      </div>
+    </div>
+  </div>
+</div>

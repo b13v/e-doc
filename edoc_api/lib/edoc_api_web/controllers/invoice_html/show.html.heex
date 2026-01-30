@@ -1,0 +1,125 @@
+<div class="lg:flex lg:items-center lg:justify-between">
+  <div class="min-w-0 flex-1">
+    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+      Invoice <%= @invoice.number || "Draft" %>
+    </h2>
+    <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+      <div class="mt-2 flex items-center text-sm text-gray-500">
+        <svg class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M6 3.75A2.75 2.75 0 018.75 1h2.5A2.75 2.75 0 0114 3.75v.443c.572.055 1.14.122 1.706.2C17.081 4.493 18 5.398 18 6.5v7.25c0 1.102-.919 2.007-2.294 2.107-.566.078-1.134.145-1.706.2v.443A2.75 2.75 0 0111.25 19h-2.5A2.75 2.75 0 016 16.25v-.443c-.572-.055-1.14-.122-1.706-.2C2.919 15.507 2 14.602 2 13.5V6.5c0-1.102.919-2.007 2.294-2.107.566-.078 1.134-.145 1.706-.2V3.75ZM10 2.5a.25.25 0 00-.25.25v.25H8.75A.25.25 0 008.5 3v.25h3v-.25A.25.25 0 0011.25 2.75h-1.25ZM3.5 6.5c0-.276.274-.48.614-.513.61-.053 1.218-.114 1.823-.18v8.586c-.605-.066-1.213-.127-1.823-.18-.34-.033-.614-.237-.614-.513V6.5Zm13 7c0 .276-.274.48-.614.513-.61.053-1.218.114-1.823.18V5.807c.605.066 1.213.127 1.823.18.34.033.614.237.614.513v7Z" clip-rule="evenodd" />
+        </svg>
+        <%= @invoice.currency || "KZT" %>
+      </div>
+      <div class="mt-2 flex items-center text-sm text-gray-500">
+        <svg class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clip-rule="evenodd" />
+        </svg>
+        <%= @invoice.issue_date && Calendar.strftime(@invoice.issue_date, "%B %d, %Y") %>
+      </div>
+      <div class="mt-2 flex items-center text-sm text-gray-500">
+        <%= status_badge(@invoice.status) %>
+      </div>
+    </div>
+  </div>
+  <div class="mt-5 flex lg:ml-4 lg:mt-0">
+    <a href="/invoices" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+      Back
+    </a>
+
+    <%= if @invoice.status == "draft" do %>
+      <button
+        type="button"
+        hx-post={"/v1/invoices/#{@invoice.id}/issue"}
+        hx-headers={"{\"Authorization\": \"Bearer #{get_token(@conn)}\"}"}
+        hx-confirm="Issue this invoice?"
+        class="ml-3 inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500">
+        Issue Invoice
+      </button>
+    <% end %>
+
+    <a
+      href={"/v1/invoices/#{@invoice.id}/pdf"}
+      target="_blank"
+      class="ml-3 inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+      PDF
+    </a>
+  </div>
+</div>
+
+<!-- Invoice Details -->
+<div class="mt-8 bg-white shadow sm:rounded-lg">
+  <div class="px-4 py-5 sm:px-6">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Invoice Details</h3>
+  </div>
+  <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Service Name</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @invoice.service_name %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Customer</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @invoice.buyer_name %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Customer BIN/IIN</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @invoice.buyer_bin_iin %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Customer Address</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= @invoice.buyer_address %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Subtotal</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= format_money(@invoice, :subtotal) %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">VAT (<%= @invoice.vat_rate %>%)</dt>
+        <dd class="mt-1 text-sm text-gray-900"><%= format_money(@invoice, :vat) %></dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Total</dt>
+        <dd class="mt-1 text-lg font-bold text-gray-900"><%= format_money(@invoice, :total) %></dd>
+      </div>
+
+    </dl>
+  </div>
+</div>
+
+<!-- Line Items -->
+<div class="mt-8 bg-white shadow sm:rounded-lg">
+  <div class="px-4 py-5 sm:px-6">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Line Items</h3>
+  </div>
+  <div class="border-t border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <%= for item <- @invoice.items do %>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= item.code || "-" %></td>
+            <td class="px-6 py-4 text-sm text-gray-900"><%= item.name %></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><%= item.qty %></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><%= format_decimal(item.unit_price) %></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><%= format_decimal(item.amount) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

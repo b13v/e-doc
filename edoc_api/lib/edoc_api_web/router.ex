@@ -10,6 +10,28 @@ defmodule EdocApiWeb.Router do
     plug(EdocApiWeb.Plugs.Authenticate)
   end
 
+  # HTML/htmx pipelines
+  pipeline :browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_flash)
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(EdocApiWeb.Plugs.HtmxDetect)
+    plug(EdocApiWeb.Plugs.HtmxLayout)
+  end
+
+  pipeline :auth_browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_flash)
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(EdocApiWeb.Plugs.HtmxDetect)
+    plug(EdocApiWeb.Plugs.AuthenticateSession)
+    plug(EdocApiWeb.Plugs.HtmxLayout)
+  end
+
   # Public API
   scope "/v1", EdocApiWeb do
     pipe_through(:api)
@@ -45,6 +67,37 @@ defmodule EdocApiWeb.Router do
     get("/company/bank-accounts", CompanyBankAccountController, :index)
     post("/company/bank-accounts", CompanyBankAccountController, :create)
     put("/company/bank-accounts/:id/set-default", CompanyBankAccountController, :set_default)
+  end
+
+  # HTML/htmx UI routes
+  scope "/", EdocApiWeb do
+    pipe_through(:browser)
+
+    get("/", PageController, :home)
+    get("/login", SessionController, :new)
+    post("/login", SessionController, :create)
+    delete("/logout", SessionController, :delete)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through(:auth_browser)
+
+    get("/invoices", InvoicesController, :index)
+    get("/invoices/new", InvoicesController, :new)
+    post("/invoices", InvoicesController, :create)
+    get("/invoices/:id", InvoicesController, :show)
+    get("/invoices/:id/pdf", InvoicesController, :pdf)
+    delete("/invoices/:id", InvoicesController, :delete)
+    get("/contracts", ContractsController, :index)
+
+    # Company management routes
+    get("/company/setup", CompaniesController, :setup)
+    post("/company/setup", CompaniesController, :create_setup)
+    get("/company", CompaniesController, :edit)
+    put("/company", CompaniesController, :update)
+    post("/company/bank-accounts", CompaniesController, :add_bank_account)
+    put("/company/bank-accounts/:id/set-default", CompaniesController, :set_default_bank_account)
+    delete("/company/bank-accounts/:id", CompaniesController, :delete_bank_account)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

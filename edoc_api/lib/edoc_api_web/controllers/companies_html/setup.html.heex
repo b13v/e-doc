@@ -1,0 +1,145 @@
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Set Up Your Company</h1>
+      <p class="mt-2 text-gray-600">Please enter your company information and bank account to get started.</p>
+    </div>
+
+    <%= if @flash["error"] do %>
+      <div class="mb-6 px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
+        <%= @flash["error"] %>
+      </div>
+    <% end %>
+
+    <form action="/company/setup" method="post" class="space-y-6">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+      <!-- Company Information -->
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Company Information</h2>
+
+        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name *</label>
+            <input type="text" name="company[name]" id="company_name" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_legal_form" class="block text-sm font-medium text-gray-700">Legal Form *</label>
+            <select name="company[legal_form]" id="company_legal_form" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="">Select...</option>
+              <option value="ТОО">ТОО</option>
+              <option value="АО">АО</option>
+              <option value="ИП">ИП</option>
+              <option value="ГКП">ГКП</option>
+              <option value="КХ">КХ</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="company_bin_iin" class="block text-sm font-medium text-gray-700">BIN / IIN *</label>
+            <input type="text" name="company[bin_iin]" id="company_bin_iin" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_city" class="block text-sm font-medium text-gray-700">City *</label>
+            <input type="text" name="company[city]" id="company_city" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_email" class="block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" name="company[email]" id="company_email"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="company_address" class="block text-sm font-medium text-gray-700">Address *</label>
+            <input type="text" name="company[address]" id="company_address" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_phone" class="block text-sm font-medium text-gray-700">Phone</label>
+            <input type="tel" name="company[phone]" id="company_phone"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_representative_name" class="block text-sm font-medium text-gray-700">Representative Name *</label>
+            <input type="text" name="company[representative_name]" id="company_representative_name" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div>
+            <label for="company_representative_title" class="block text-sm font-medium text-gray-700">Representative Title *</label>
+            <input type="text" name="company[representative_title]" id="company_representative_title" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="company_basis" class="block text-sm font-medium text-gray-700">Basis (e.g., Director, Power of Attorney) *</label>
+            <input type="text" name="company[basis]" id="company_basis" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Account Information -->
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Bank Account Information</h2>
+
+        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+          <div>
+            <label for="bank_account_bank_id" class="block text-sm font-medium text-gray-700">Bank *</label>
+            <select name="bank_account[bank_id]" id="bank_account_bank_id" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="">Select Bank...</option>
+              <%= for bank <- @banks do %>
+                <option value={bank.id}><%= bank.name %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div>
+            <label for="bank_account_iban" class="block text-sm font-medium text-gray-700">IBAN *</label>
+            <input type="text" name="bank_account[iban]" id="bank_account_iban" required
+              placeholder="KZ..."
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border font-mono" />
+          </div>
+
+          <div>
+            <label for="bank_account_kbe_code_id" class="block text-sm font-medium text-gray-700">KBE Code *</label>
+            <select name="bank_account[kbe_code_id]" id="bank_account_kbe_code_id" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="">Select KBE...</option>
+              <%= for kbe <- @kbe_codes do %>
+                <option value={kbe.id}><%= kbe.code %> - <%= kbe.description %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div>
+            <label for="bank_account_knp_code_id" class="block text-sm font-medium text-gray-700">KNP Code *</label>
+            <select name="bank_account[knp_code_id]" id="bank_account_knp_code_id" required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="">Select KNP...</option>
+              <%= for knp <- @knp_codes do %>
+                <option value={knp.id}><%= knp.code %> - <%= knp.description %></option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+          Continue to Dashboard
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

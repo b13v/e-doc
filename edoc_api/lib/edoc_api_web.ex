@@ -49,12 +49,41 @@ defmodule EdocApiWeb do
     end
   end
 
+  def html do
+    quote do
+      use Phoenix.Component
+
+      # Import convenience functions from controllers
+      import Phoenix.Controller,
+        only: [get_csrf_token: 0, view_module: 1, view_template: 1]
+
+      # Include general helpers for rendering HTML
+      unquote(html_helpers())
+    end
+  end
+
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
         endpoint: EdocApiWeb.Endpoint,
         router: EdocApiWeb.Router,
         statics: EdocApiWeb.static_paths()
+    end
+  end
+
+  def html_helpers do
+    quote do
+      # HTML escaping
+      import Phoenix.HTML
+
+      # Core HTML components
+      import EdocApiWeb.CoreComponents
+
+      # Shortcut for generating JS commands
+      alias Phoenix.LiveView.JS
+
+      # Routes generation with the ~p sigil
+      unquote(verified_routes())
     end
   end
 

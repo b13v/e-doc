@@ -1,0 +1,75 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-900">Invoices</h1>
+    <a href="/invoices/new" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+      New Invoice
+    </a>
+  </div>
+
+  <%= if @flash["info"] do %>
+    <div class="px-6 py-3 bg-green-50 text-green-800 border-b border-green-200">
+      <%= @flash["info"] %>
+    </div>
+  <% end %>
+
+  <%= if @flash["error"] do %>
+    <div class="px-6 py-3 bg-red-50 text-red-800 border-b border-red-200">
+      <%= @flash["error"] %>
+    </div>
+  <% end %>
+
+  <div class="px-6 py-4">
+    <%= if Enum.empty?(@invoices) do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500">No invoices yet. Create your first invoice!</p>
+      </div>
+    <% else %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <%= for invoice <- @invoices do %>
+              <tr id={"invoice-#{invoice.id}"} class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                  <a href={"/invoices/#{invoice.id}"}><%= invoice.number %></a>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <%= invoice.service_name %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= invoice.issue_date %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <%= EdocApiWeb.CoreComponents.format_money(invoice, :total) %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <%= EdocApiWeb.CoreComponents.status_badge(invoice.status) %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
+                  <button
+                    hx-delete={"/invoices/#{invoice.id}"}
+                    hx-confirm="Delete this invoice?"
+                    hx-target={"#invoice-#{invoice.id}"}
+                    hx-swap="outerHTML"
+                    class="text-red-600 hover:text-red-900">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>
