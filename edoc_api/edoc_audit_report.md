@@ -2,7 +2,7 @@
 
 ## 1. Duplicated Business Rules
 
-### 1.1 Item Amount Calculation Logic
+### 1.1 Item Amount Calculation Logic ✅ DONE
 
 **Location:** `lib/edoc_api/core/invoice_item.ex:33-46` and `lib/edoc_api/core/contract_item.ex:58-73`
 
@@ -14,41 +14,27 @@
 
 **Risk:** Maintenance burden, inconsistent behavior between invoices and contracts.
 
-**Suggested Refactor:**
+**Resolution:** Created `lib/edoc_api/calculations/item_calculation.ex` with shared logic:
 
-```elixir
-# Create lib/edoc_api/calculations/item_calculation.ex
-defmodule EdocApi.Calculations.ItemCalculation do
-  def compute_amount(qty, unit_price) when is_integer(qty) do
-    unit_price
-    |> Decimal.mult(Decimal.new(qty))
-    |> Decimal.round(2)
-  end
-
-  def compute_amount(%Decimal{} = qty, unit_price) do
-    unit_price
-    |> Decimal.mult(qty)
-    |> Decimal.round(2)
-  end
-end
-```
+- `compute_amount/2` - handles integer, decimal, and string qty types
+- `compute_amount_changeset/1` - changeset helper for automatic calculation
+- Both `InvoiceItem` and `ContractItem` now use the shared module
 
 ---
 
-### 1.2 VAT Rate Validation
+### 1.2 VAT Rate Validation ✅ DONE
 
 **Location:** `lib/edoc_api/core/contract.ex:100` and `lib/edoc_api/vat_rates.ex:32-38`
 
-**Issue:** Contract schema hardcodes `~w(0, 12, 16)` but `VatRates` module has its own configuration that only includes `[0, 16]` for KZ.
+**Issue:** Contract schema hardcoded `[0, 12, 16]` for VAT rates but Kazakhstan only uses 16% (and 0%) since 2026. The 12% rate was outdated.
 
-**Risk:** Adding 12% VAT to VatRates won't affect Contract validation, leading to inconsistent behavior.
+**Risk:** Inconsistent VAT validation - contracts could use 12% which is no longer valid in Kazakhstan.
 
-**Suggested Refactor:**
+**Resolution:**
 
-```elixir
-# In contract.ex
-|> validate_inclusion(:vat_rate, VatRates.for_country("KZ"))
-```
+- Removed 12% from contract validation
+- Changed to use `VatRates.validate_rate(:vat_rate, "KZ")` which correctly validates `[0, 16]`
+- Also updated currency validation to use `Currencies.supported_currencies()` for consistency
 
 ---
 

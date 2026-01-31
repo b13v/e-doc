@@ -7,7 +7,7 @@ defmodule EdocApi.Core.Contract do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias EdocApi.ContractStatus
+  alias EdocApi.{ContractStatus, Currencies, VatRates}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -96,8 +96,8 @@ defmodule EdocApi.Core.Contract do
     |> put_change(:company_id, seller_company_id)
     |> validate_required(@required_fields ++ [:company_id])
     |> validate_inclusion(:status, ContractStatus.all())
-    |> validate_inclusion(:currency, ~w(KZT USD EUR RUB))
-    |> validate_inclusion(:vat_rate, [0, 12, 16])
+    |> validate_inclusion(:currency, Currencies.supported_currencies())
+    |> VatRates.validate_rate(:vat_rate, "KZ")
     |> unique_constraint(:number, name: :contracts_company_id_number_index)
     |> validate_buyer_details()
   end
@@ -110,8 +110,8 @@ defmodule EdocApi.Core.Contract do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> sanitize_body_html()
     |> validate_inclusion(:status, ContractStatus.all())
-    |> validate_inclusion(:currency, ~w(KZT USD EUR RUB))
-    |> validate_inclusion(:vat_rate, [0, 12, 16])
+    |> validate_inclusion(:currency, Currencies.supported_currencies())
+    |> VatRates.validate_rate(:vat_rate, "KZ")
     |> validate_buyer_details()
   end
 
