@@ -2,6 +2,8 @@ defmodule EdocApi.Core.InvoiceItem do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Calculations.ItemCalculation
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -26,23 +28,7 @@ defmodule EdocApi.Core.InvoiceItem do
     |> validate_required(@required ++ [:invoice_id])
     |> validate_number(:qty, greater_than: 0)
     |> validate_number(:unit_price, greater_than: 0)
-    |> compute_amount()
+    |> ItemCalculation.compute_amount_changeset()
     |> validate_number(:amount, greater_than: 0)
-  end
-
-  defp compute_amount(changeset) do
-    qty = get_field(changeset, :qty)
-    unit_price = get_field(changeset, :unit_price)
-
-    if is_integer(qty) and is_struct(unit_price, Decimal) do
-      amount =
-        unit_price
-        |> Decimal.mult(Decimal.new(qty))
-        |> Decimal.round(2)
-
-      put_change(changeset, :amount, amount)
-    else
-      changeset
-    end
   end
 end

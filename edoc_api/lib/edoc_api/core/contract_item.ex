@@ -10,6 +10,7 @@ defmodule EdocApi.Core.ContractItem do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.Calculations.ItemCalculation
   alias EdocApi.Core.Contract
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -40,7 +41,7 @@ defmodule EdocApi.Core.ContractItem do
     |> validate_required(@required)
     |> validate_number(:qty, greater_than: 0)
     |> validate_number(:unit_price, greater_than: 0)
-    |> compute_amount()
+    |> ItemCalculation.compute_amount_changeset()
     |> validate_number(:amount, greater_than: 0)
     |> put_change(:contract_id, contract_id)
   end
@@ -51,29 +52,7 @@ defmodule EdocApi.Core.ContractItem do
     |> validate_required(@required ++ [:contract_id])
     |> validate_number(:qty, greater_than: 0)
     |> validate_number(:unit_price, greater_than: 0)
-    |> compute_amount()
+    |> ItemCalculation.compute_amount_changeset()
     |> validate_number(:amount, greater_than: 0)
   end
-
-  defp compute_amount(changeset) do
-    qty = get_field(changeset, :qty)
-    unit_price = get_field(changeset, :unit_price)
-
-    with %Decimal{} = qty_dec <- parse_decimal(qty),
-         %Decimal{} = price_dec <- parse_decimal(unit_price) do
-      amount =
-        price_dec
-        |> Decimal.mult(qty_dec)
-        |> Decimal.round(2)
-
-      put_change(changeset, :amount, amount)
-    else
-      _ -> changeset
-    end
-  end
-
-  defp parse_decimal(%Decimal{} = d), do: d
-  defp parse_decimal(n) when is_integer(n), do: Decimal.new(n)
-  defp parse_decimal(s) when is_binary(s), do: Decimal.parse(s) |> elem(0)
-  defp parse_decimal(_), do: nil
 end

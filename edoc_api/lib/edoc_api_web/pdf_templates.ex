@@ -210,14 +210,6 @@ defmodule EdocApiWeb.PdfTemplates do
     end)
   end
 
-  defp fmt_date_from_datetime(nil), do: "—"
-
-  defp fmt_date_from_datetime(%DateTime{} = dt) do
-    dt
-    |> DateTime.to_date()
-    |> fmt_date()
-  end
-
   defp pad2(n) when is_integer(n) and n < 10, do: "0#{n}"
   defp pad2(n) when is_integer(n), do: Integer.to_string(n)
 
