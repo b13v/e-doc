@@ -1,0 +1,263 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color:#000; line-height: 1.35; }
+      h1 { font-size: 16px; text-align:center; margin: 8px 0; }
+      h2 { font-size: 13px; margin: 12px 0 6px; }
+      .center { text-align:center; }
+      .right { text-align:right; }
+      .muted { color:#333; }
+      .hr { border-top: 2px solid #000; margin: 10px 0; }
+      table { width:100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
+      th { background: #f2f2f2; }
+      .no-border td { border: none; padding: 2px 0; }
+      .sign td { border: none; padding-top: 18px; }
+      .stamp { border: 1px dashed #777; height: 60px; width: 170px; margin-top: 8px; }
+      .small { font-size: 11px; }
+    </style>
+  </head>
+
+  <body>
+    <% c = @contract || %{} %>
+    <% seller = @seller || %{} %>
+    <% buyer = @buyer || %{} %>
+    <% bank = @bank || %{} %>
+    <% items = @items || [] %>
+    <% totals = @totals || %{} %>
+
+    <h1>ДОГОВОР № <%= c.number || "____" %></h1>
+    <div class="center muted">
+      г. <%= c.city || "Астана" %>, <%= EdocApiWeb.ContractsHTML.fmt_date(c.issue_date) || "__.__.20__" %> г.
+    </div>
+
+    <div class="hr"></div>
+
+    <!-- 0. Преамбула -->
+    <p>
+      <strong><%= buyer.legal_form || "ТОО" %> «<%= buyer.name || "____________" %>»</strong>,
+      БИН <strong><%= buyer.bin_iin || "____________" %></strong>,
+      адрес: <%= buyer.address || "____________" %>,
+      в лице <strong><%= buyer.director_title || "Директора" %> <%= buyer.director_name || "____________" %></strong>,
+      действующего на основании <strong><%= buyer.basis || "Устава" %></strong>,
+      именуемое далее «Заказчик», с одной стороны, и
+
+      <strong><%= seller.legal_form || "ТОО" %> «<%= seller.name || "____________" %>»</strong>,
+      БИН <strong><%= seller.bin_iin || "____________" %></strong>,
+      адрес: <%= seller.address || "____________" %>,
+      в лице <strong><%= seller.director_title || "Директора" %> <%= seller.director_name || "____________" %></strong>,
+      действующего на основании <strong><%= seller.basis || "Устава" %></strong>,
+      именуемое далее «Исполнитель», с другой стороны, совместно именуемые «Стороны»,
+      заключили настоящий Договор о нижеследующем.
+    </p>
+
+    <!-- 1. Предмет -->
+    <h2>1. Предмет Договора</h2>
+    <p>
+      1.1. Исполнитель обязуется оказать Заказчику услуги/поставить товары:
+      <strong><%= c.title || "__________________________" %></strong>,
+      а Заказчик обязуется принять и оплатить их на условиях настоящего Договора.
+    </p>
+    <p class="small">
+      1.2. Перечень, количество и стоимость указываются в <strong>Приложении №1</strong> (Спецификация),
+      являющемся неотъемлемой частью Договора.
+    </p>
+
+    <!-- 2. Стоимость и НДС -->
+    <h2>2. Стоимость, НДС и порядок оплаты</h2>
+    <p>
+      2.1. Стоимость по Договору: <strong><%= EdocApiWeb.ContractsHTML.money(totals.total) %> <%= c.currency || "KZT" %></strong>,
+      <strong><%= EdocApiWeb.ContractsHTML.vat_text(c) %></strong>.
+    </p>
+    <p>
+      2.2. Оплата: безналичным переводом на расчетный счет Исполнителя
+      в течение <strong>5</strong> (пяти) банковских дней с даты выставления счета,
+      если иное не согласовано Сторонами письменно.
+    </p>
+    <p class="small">
+      2.3. Датой оплаты считается дата поступления денежных средств на счет Исполнителя.
+    </p>
+
+    <!-- 3. Порядок оказания и приемки -->
+    <h2>3. Порядок оказания услуг и приемки</h2>
+    <p>
+      3.1. Срок оказания услуг: <strong>в сроки, согласованные Сторонами</strong>.
+    </p>
+    <p>
+      3.2. По факту оказания услуг Стороны подписывают <strong>Акт оказанных услуг</strong>
+      (может быть в электронном виде по согласованию).
+    </p>
+    <p class="small">
+      3.3. Если Заказчик не предоставил мотивированные замечания в течение
+      <strong>5</strong> рабочих дней с даты получения Акта,
+      услуги считаются принятыми в полном объеме.
+    </p>
+
+    <!-- 4. Ответственность -->
+    <h2>4. Ответственность Сторон</h2>
+    <p class="small">
+      4.1. За просрочку оплаты Заказчик уплачивает пеню <strong>0,1%</strong> от суммы задолженности за каждый день просрочки,
+      но не более <strong>10%</strong> от суммы задолженности.
+    </p>
+    <p class="small">
+      4.2. Стороны несут ответственность согласно законодательству Республики Казахстан.
+    </p>
+
+    <!-- 5. Форс-мажор -->
+    <h2>5. Форс-мажор</h2>
+    <p class="small">
+      5.1. Стороны освобождаются от ответственности при наступлении обстоятельств непреодолимой силы,
+      при условии уведомления другой стороны в разумный срок.
+    </p>
+
+    <!-- 6. Споры -->
+    <h2>6. Порядок разрешения споров</h2>
+    <p class="small">
+      6.1. Споры решаются путем переговоров; при недостижении согласия — в суде Республики Казахстан
+      по месту нахождения ответчика (если не согласовано иное).
+    </p>
+
+    <!-- 7. Срок действия -->
+    <h2>7. Срок действия</h2>
+    <p class="small">
+      7.1. Договор вступает в силу с даты подписания и действует до
+      <strong>полного исполнения обязательств</strong>.
+    </p>
+
+    <div class="hr"></div>
+
+    <!-- Реквизиты -->
+    <h2>Реквизиты Сторон</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Исполнитель</th>
+          <th>Заказчик</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div><strong><%= seller.legal_form || "ТОО" %> «<%= seller.name || "____________" %>»</strong></div>
+            <div>БИН: <%= seller.bin_iin || "____________" %></div>
+            <div>Адрес: <%= seller.address || "____________" %></div>
+            <%= if bank.bank_name != "" do %>
+              <div>Банк: <%= bank.bank_name %></div>
+              <div>ИИК (IBAN): <%= bank.iban %></div>
+              <div>БИК: <%= bank.bic %></div>
+              <div>КБе: <%= bank.kbe %></div>
+              <div>КНП: <%= bank.knp %></div>
+            <% end %>
+            <%= if seller.phone != "" do %>
+              <div>Тел.: <%= seller.phone %></div>
+            <% end %>
+            <%= if seller.email != "" do %>
+              <div>Email: <%= seller.email %></div>
+            <% end %>
+          </td>
+
+          <td>
+            <div><strong><%= buyer.legal_form || "ТОО" %> «<%= buyer.name || "____________" %>»</strong></div>
+            <div>БИН: <%= buyer.bin_iin || "____________" %></div>
+            <div>Адрес: <%= buyer.address || "____________" %></div>
+            <%= if buyer.phone != "" do %>
+              <div>Тел.: <%= buyer.phone %></div>
+            <% end %>
+            <%= if buyer.email != "" do %>
+              <div>Email: <%= buyer.email %></div>
+            <% end %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Подписи -->
+    <table class="sign" style="width:100%;">
+      <tr>
+        <td style="width:50%;">
+          <strong>Заказчик</strong><br/>
+          <%= buyer.director_title || "Директор" %><br/><br/>
+          ____________________________ <%= buyer.director_name || "____________" %><br/>
+          <div class="stamp small muted">М.П.</div>
+        </td>
+        <td style="width:50%;">
+          <strong>Исполнитель</strong><br/>
+          <%= seller.director_title || "Директор" %><br/><br/>
+          ____________________________ <%= seller.director_name || "____________" %><br/>
+          <div class="stamp small muted">М.П.</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Приложение №1 -->
+    <div style="page-break-before: always;"></div>
+
+    <h1>ПРИЛОЖЕНИЕ №1 (СПЕЦИФИКАЦИЯ)</h1>
+    <div class="center muted small">
+      к Договору № <%= c.number || "____" %> от <%= EdocApiWeb.ContractsHTML.fmt_date(c.issue_date) || "__.__.20__" %> г.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:40px;">№</th>
+          <th>Наименование</th>
+          <th class="center" style="width:80px;">Кол-во</th>
+          <th class="right" style="width:120px;">Цена</th>
+          <th class="right" style="width:140px;">Сумма</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for {item, idx} <- Enum.with_index(items, 1) do %>
+          <tr>
+            <td class="center"><%= idx %></td>
+            <td><%= item.name %></td>
+            <td class="center"><%= item.qty %></td>
+            <td class="right"><%= EdocApiWeb.ContractsHTML.money(item.unit_price) %></td>
+            <td class="right"><%= EdocApiWeb.ContractsHTML.money(item.amount) %></td>
+          </tr>
+        <% end %>
+
+        <%= if length(items) == 0 do %>
+          <tr>
+            <td class="center">—</td>
+            <td>—</td>
+            <td class="center">—</td>
+            <td class="right">—</td>
+            <td class="right">—</td>
+          </tr>
+        <% end %>
+
+        <tr>
+          <td colspan="4" class="right"><strong>Итого без НДС</strong></td>
+          <td class="right"><strong><%= EdocApiWeb.ContractsHTML.money(totals.subtotal) %></strong></td>
+        </tr>
+        <tr>
+          <td colspan="4" class="right"><strong>НДС <%= c.vat_rate || 0 %>%</strong></td>
+          <td class="right"><%= EdocApiWeb.ContractsHTML.money(totals.vat) %></td>
+        </tr>
+        <tr>
+          <td colspan="4" class="right"><strong>Итого</strong></td>
+          <td class="right"><strong><%= EdocApiWeb.ContractsHTML.money(totals.total) %></strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="sign" style="width:100%; margin-top: 14px;">
+      <tr>
+        <td style="width:50%;">
+          <strong>Заказчик</strong><br/><br/>
+          ____________________________ <%= buyer.director_name || "____________" %><br/>
+          <div class="stamp small muted">М.П.</div>
+        </td>
+        <td style="width:50%;">
+          <strong>Исполнитель</strong><br/><br/>
+          ____________________________ <%= seller.director_name || "____________" %><br/>
+          <div class="stamp small muted">М.П.</div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

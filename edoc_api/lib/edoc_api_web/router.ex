@@ -89,6 +89,8 @@ defmodule EdocApiWeb.Router do
     get("/invoices/:id/pdf", InvoicesController, :pdf)
     delete("/invoices/:id", InvoicesController, :delete)
     get("/contracts", ContractsController, :index)
+    get("/contracts/:id", ContractsController, :show)
+    get("/contracts/:id/pdf", ContractsController, :pdf)
 
     # Company management routes
     get("/company/setup", CompaniesController, :setup)

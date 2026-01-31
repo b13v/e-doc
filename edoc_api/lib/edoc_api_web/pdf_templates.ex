@@ -2,6 +2,7 @@ defmodule EdocApiWeb.PdfTemplates do
   use Phoenix.Component
 
   alias EdocApi.InvoiceStatus
+  alias EdocApi.Repo
 
   # Возвращает HTML строкой (готово для wkhtmltopdf)
   def invoice_html(invoice) do
@@ -13,11 +14,148 @@ defmodule EdocApiWeb.PdfTemplates do
   end
 
   def contract_html(contract) do
-    assigns = %{contract: contract}
+    contract =
+      Repo.preload(contract, [
+        :company,
+        :buyer_company,
+        :bank_account,
+        :contract_items,
+        bank_account: [:bank, :kbe_code, :knp_code]
+      ])
+
+    # Build seller data from contract's company
+    seller = build_seller_data(contract)
+
+    # Build buyer data from buyer_company or buyer fields
+    buyer = build_buyer_data(contract)
+
+    # Build bank data from bank_account
+    bank = build_bank_data(contract)
+
+    # Build items list
+    items = build_items_data(contract)
+
+    # Build totals
+    totals = build_totals(items, contract.vat_rate)
+
+    assigns = %{
+      contract: contract,
+      seller: seller,
+      buyer: buyer,
+      bank: bank,
+      items: items,
+      totals: totals
+    }
 
     contract(assigns)
     |> Phoenix.HTML.Safe.to_iodata()
     |> IO.iodata_to_binary()
+  end
+
+  defp build_seller_data(contract) do
+    company = contract.company || %{}
+
+    %{
+      name: Map.get(company, :name) || contract.company_id || "",
+      # Default, could be stored in company
+      legal_form: "ТОО",
+      bin_iin: Map.get(company, :bin_iin) || "",
+      address: Map.get(company, :address) || "",
+      director_name: Map.get(company, :representative_name) || "",
+      director_title: "директор",
+      basis: "Устав",
+      phone: Map.get(company, :phone) || "",
+      email: Map.get(company, :email) || ""
+    }
+  end
+
+  defp build_buyer_data(contract) do
+    if contract.buyer_company do
+      company = contract.buyer_company
+
+      %{
+        name: Map.get(company, :name) || "",
+        legal_form: contract.buyer_legal_form || "ТОО",
+        bin_iin: Map.get(company, :bin_iin) || "",
+        address: Map.get(company, :address) || "",
+        director_name:
+          Map.get(company, :representative_name) || contract.buyer_director_name || "",
+        director_title: "директор",
+        basis: Map.get(company, :basis) || contract.buyer_basis || "Устав",
+        phone: Map.get(company, :phone) || contract.buyer_phone || "",
+        email: Map.get(company, :email) || contract.buyer_email || ""
+      }
+    else
+      %{
+        name: contract.buyer_name || "",
+        legal_form: contract.buyer_legal_form || "ТОО",
+        bin_iin: contract.buyer_bin_iin || "",
+        address: contract.buyer_address || "",
+        director_name: contract.buyer_director_name || "",
+        director_title: contract.buyer_director_title || "директор",
+        basis: contract.buyer_basis || "Устав",
+        phone: contract.buyer_phone || "",
+        email: contract.buyer_email || ""
+      }
+    end
+  end
+
+  defp build_bank_data(contract) do
+    if contract.bank_account do
+      acc = contract.bank_account
+      bank = acc.bank || %{}
+      kbe = acc.kbe_code || %{}
+      knp = acc.knp_code || %{}
+
+      %{
+        bank_name: Map.get(bank, :name) || "",
+        iban: Map.get(acc, :iban) || "",
+        bic: Map.get(bank, :bic) || "",
+        kbe: Map.get(kbe, :code) || "",
+        knp: Map.get(knp, :code) || ""
+      }
+    else
+      # No bank account - return empty values (template will show blanks)
+      %{
+        bank_name: "",
+        iban: "",
+        bic: "",
+        kbe: "",
+        knp: ""
+      }
+    end
+  end
+
+  defp build_items_data(contract) do
+    Enum.map(contract.contract_items || [], fn item ->
+      %{
+        name: Map.get(item, :name) || "",
+        qty: Map.get(item, :qty) || Decimal.new(0),
+        unit_price: Map.get(item, :unit_price) || Decimal.new(0),
+        amount: Map.get(item, :amount) || Decimal.new(0),
+        code: Map.get(item, :code)
+      }
+    end)
+  end
+
+  defp build_totals(items, vat_rate) do
+    subtotal =
+      Enum.reduce(items, Decimal.new(0), fn item, acc ->
+        Decimal.add(acc, item.amount || Decimal.new(0))
+      end)
+
+    vat_rate_dec = Decimal.new(vat_rate || 0)
+
+    vat =
+      Decimal.mult(subtotal, vat_rate_dec) |> Decimal.div(Decimal.new(100)) |> Decimal.round(2)
+
+    total = Decimal.add(subtotal, vat)
+
+    %{
+      subtotal: subtotal,
+      vat: vat,
+      total: total
+    }
   end
 
   defp money(nil), do: "—"
@@ -82,6 +220,20 @@ defmodule EdocApiWeb.PdfTemplates do
 
   defp pad2(n) when is_integer(n) and n < 10, do: "0#{n}"
   defp pad2(n) when is_integer(n), do: Integer.to_string(n)
+
+  defp vat_text(%{vat_rate: vat_rate}) when is_integer(vat_rate) do
+    if vat_rate == 0, do: "без НДС", else: "с НДС #{vat_rate}%"
+  end
+
+  defp vat_text(%{vat_rate: vat_rate}) when is_binary(vat_rate) do
+    case Integer.parse(vat_rate) do
+      {0, _} -> "без НДС"
+      {n, _} -> "с НДС #{n}%"
+      :error -> "без НДС"
+    end
+  end
+
+  defp vat_text(_), do: "без НДС"
 
   defp vat_line(invoice) do
     rate = invoice.vat_rate || 0
@@ -250,56 +402,158 @@ defmodule EdocApiWeb.PdfTemplates do
     ~H"""
     <!doctype html>
     <html>
-    <head>
-      <meta charset="utf-8" />
-      <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #000; line-height: 1.4; }
-        h1 { font-size: 18px; margin: 0 0 6px 0; }
-        h2 { font-size: 14px; margin: 16px 0 6px 0; }
-        .meta { margin-bottom: 10px; }
-        .box { border: 1px solid #000; padding: 10px; margin-bottom: 12px; }
-        .row { display: flex; gap: 16px; }
-        .col { flex: 1; }
-        .label { font-weight: bold; }
-        .content { margin-top: 10px; }
-        .muted { color: #666; }
-      </style>
-    </head>
-    <body>
-      <% c = assoc_loaded(@contract.company) || %{} %>
-      <h1>Договор № <%= @contract.number %></h1>
-      <div class="meta">
-        <span class="label">Дата договора:</span>
-        <span><%= fmt_date(@contract.date) %></span>
-        <span class="muted"> | </span>
-        <span class="label">Дата выдачи:</span>
-        <span><%= fmt_date_from_datetime(@contract.issued_at) %></span>
-      </div>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 12px; color:#000; line-height:1.35; }
+          h1 { font-size: 16px; text-align:center; margin: 8px 0; }
+          h2 { font-size: 13px; margin: 12px 0 6px; }
+          .center { text-align:center; }
+          .right { text-align:right; }
+          .muted { color:#333; }
+          .hr { border-top: 2px solid #000; margin: 10px 0; }
+          table { width:100%; border-collapse: collapse; margin-top: 8px; }
+          th, td { border: 1px solid #000; padding: 6px; }
+          th { background:#f2f2f2; }
+          .no-border td { border:none; padding:2px 0; }
+          .sign td { border:none; padding-top:18px; }
+          .stamp { border:1px dashed #777; height:60px; width:170px; margin-top:8px; }
+          .small { font-size:11px; }
+        </style>
+      </head>
 
-      <div class="box">
-        <div class="row">
-          <div class="col">
-            <div class="label">Компания</div>
-            <div><%= c.name || "—" %></div>
-            <div>БИН/ИИН: <%= c.bin_iin || "—" %></div>
-            <div><%= c.address || "—" %></div>
-          </div>
-          <div class="col">
-            <div class="label">Контакты</div>
-            <div>Телефон: <%= c.phone || "—" %></div>
-            <div>Email: <%= c.email || "—" %></div>
-          </div>
+      <body>
+        <h1>CONTRACT № <%= @contract.number || "____" %></h1>
+        <div class="center muted">
+          City <%= @contract.city || "Astana" %>,
+          <%= fmt_date(@contract.issue_date) || "__.__.20__" %>
         </div>
-      </div>
 
-      <%= if @contract.title do %>
-        <h2><%= @contract.title %></h2>
-      <% end %>
+        <div class="hr"></div>
 
-      <div class="content">
-        <%= Phoenix.HTML.raw(@contract.body_html || "") %>
-      </div>
-    </body>
+        <p>
+          <strong><%= @buyer.name %></strong>, BIN <strong><%= @buyer.bin_iin %></strong>,
+          address: <%= @buyer.address %>,
+          represented by <strong><%= @buyer.director_title %> <%= @buyer.director_name %></strong>,
+          acting under the <strong><%= @buyer.basis || "Charter" %></strong>,
+          hereinafter referred to as the "Customer", and
+        </p>
+
+        <p>
+          <strong><%= @seller.name %></strong>, BIN <strong><%= @seller.bin_iin %></strong>,
+          address: <%= @seller.address %>,
+          represented by <strong><%= @seller.director_title %> <%= @seller.director_name %></strong>,
+          acting under the <strong><%= @seller.basis || "Charter" %></strong>,
+          hereinafter referred to as the "Contractor", jointly referred to as the "Parties".
+        </p>
+
+        <h2>1. Subject</h2>
+        <p>
+          The Contractor undertakes to provide services specified in Appendix №1 (Specification),
+          and the Customer undertakes to accept and pay for them.
+        </p>
+
+        <h2>2. Price and VAT</h2>
+        <p>
+          Total contract value: <strong><%= money(@totals.total) %> <%= @contract.currency %></strong>,
+          <%= vat_text(@contract) %>.
+        </p>
+
+        <h2>3. Acceptance of Services</h2>
+        <p>
+          Services are accepted based on the Act of Services Rendered.
+          If no objections are provided within 5 business days, services are deemed accepted.
+        </p>
+
+        <h2>4. Liability</h2>
+        <p class="small">
+          Late payment penalty: 0.1% per day, but not more than 10% of the outstanding amount.
+        </p>
+
+        <h2>5. Force Majeure</h2>
+        <p class="small">
+          Parties are released from liability in case of force majeure circumstances.
+        </p>
+
+        <h2>6. Disputes</h2>
+        <p class="small">
+          Disputes are resolved in courts of the Republic of Kazakhstan.
+        </p>
+
+        <h2>7. Term</h2>
+        <p class="small">
+          Contract is valid until full fulfillment of obligations.
+        </p>
+
+        <div class="hr"></div>
+
+        <h2>Details and Signatures</h2>
+        <table>
+          <tr>
+            <th>Contractor</th>
+            <th>Customer</th>
+          </tr>
+          <tr>
+            <td>
+              <strong><%= @seller.name %></strong><br/>
+              BIN: <%= @seller.bin_iin %><br/>
+              Address: <%= @seller.address %><br/>
+              Bank: <%= @bank.bank_name %><br/>
+              IBAN: <%= @bank.iban %><br/>
+              BIC: <%= @bank.bic %><br/>
+              KBe: <%= @bank.kbe %><br/>
+              KNP: <%= @bank.knp %>
+            </td>
+            <td>
+              <strong><%= @buyer.name %></strong><br/>
+              BIN: <%= @buyer.bin_iin %><br/>
+              Address: <%= @buyer.address %>
+            </td>
+          </tr>
+        </table>
+
+        <table class="sign" style="width:100%;">
+          <tr>
+            <td width="50%">
+              Contractor<br/><br/>
+              ____________________ <%= @seller.director_name %><br/>
+              <div class="stamp">Stamp</div>
+            </td>
+            <td width="50%">
+              Customer<br/><br/>
+              ____________________ <%= @buyer.director_name %><br/>
+              <div class="stamp">Stamp</div>
+            </td>
+          </tr>
+        </table>
+
+        <div style="page-break-before:always;"></div>
+
+        <h1>APPENDIX №1 — SPECIFICATION</h1>
+
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Amount</th>
+          </tr>
+          <%= for {item, idx} <- Enum.with_index(@items, 1) do %>
+            <tr>
+              <td><%= idx %></td>
+              <td><%= item.name %></td>
+              <td><%= item.qty %></td>
+              <td class="right"><%= money(item.unit_price) %></td>
+              <td class="right"><%= money(item.amount) %></td>
+            </tr>
+          <% end %>
+          <tr>
+            <td colspan="4" class="right"><strong>Total</strong></td>
+            <td class="right"><strong><%= money(@totals.total) %></strong></td>
+          </tr>
+        </table>
+      </body>
     </html>
     """
   end
@@ -431,7 +685,7 @@ defmodule EdocApiWeb.PdfTemplates do
                 <td><strong>Основание:</strong></td>
                 <td>
                 <%= if contract do %>
-                  Договор № <%= contract.number %> от <%= fmt_date(contract.date) %>
+                  Договор № <%= contract.number %> от <%= fmt_date(contract.issue_date) %>
                 <% else %>
                   Без договора
                 <% end %>

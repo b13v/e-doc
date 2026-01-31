@@ -18,11 +18,21 @@ defmodule EdocApiWeb.ContractController do
 
     result = Core.create_contract_for_user(user, attrs)
 
-    ControllerHelpers.handle_common_result(conn, result, fn conn, contract ->
-      conn
-      |> put_status(:created)
-      |> render(:show, contract: contract)
-    end)
+    error_map = %{
+      company_required: &ErrorMapper.bad_request(&1, "company_required"),
+      buyer_required: &ErrorMapper.unprocessable(&1, "buyer_required")
+    }
+
+    ControllerHelpers.handle_common_result(
+      conn,
+      result,
+      fn conn, contract ->
+        conn
+        |> put_status(:created)
+        |> render(:show, contract: contract)
+      end,
+      error_map
+    )
   end
 
   def show(conn, %{"id" => id}) do
@@ -49,7 +59,8 @@ defmodule EdocApiWeb.ContractController do
 
     error_map = %{
       not_found: &ErrorMapper.not_found(&1, "contract_not_found"),
-      contract_already_issued: &ErrorMapper.unprocessable(&1, "contract_already_issued")
+      contract_already_issued: &ErrorMapper.unprocessable(&1, "contract_already_issued"),
+      buyer_required: &ErrorMapper.unprocessable(&1, "buyer_required")
     }
 
     ControllerHelpers.handle_result(

@@ -37,7 +37,7 @@ defmodule EdocApi.Core do
         Contract
         |> where([c], c.company_id == ^company_id)
         |> order_by([c],
-          desc: fragment("COALESCE(?, ?)", c.date, fragment("?::date", c.inserted_at)),
+          desc: fragment("COALESCE(?, ?)", c.issue_date, fragment("?::date", c.inserted_at)),
           desc: c.inserted_at
         )
         |> Repo.all()
@@ -55,9 +55,67 @@ defmodule EdocApi.Core do
       %Company{id: company_id} ->
         attrs = attrs || %{}
 
-        %Contract{}
-        |> Contract.changeset(attrs, company_id)
-        |> Repo.insert()
+        RepoHelpers.transaction(fn ->
+          # Handle contract items
+          items_attrs = Map.get(attrs, "items", [])
+          attrs_without_items = Map.delete(attrs, "items")
+
+          %Contract{}
+          |> Contract.changeset(attrs_without_items, company_id)
+          |> RepoHelpers.insert_or_abort()
+          |> then(fn contract ->
+            if Enum.empty?(items_attrs) do
+              {:ok, contract}
+            else
+              create_contract_items(contract, items_attrs)
+            end
+          end)
+        end)
+    end
+  end
+
+  def update_contract_for_user(user_id, contract_id, attrs) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        {:error, :not_found}
+
+      %Company{id: company_id} ->
+        contract =
+          Contract
+          |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
+          |> Repo.one()
+
+        cond do
+          is_nil(contract) ->
+            {:error, :not_found}
+
+          not ContractStatus.can_edit?(contract) ->
+            {:error, :contract_not_editable}
+
+          true ->
+            RepoHelpers.transaction(fn ->
+              # Handle contract items
+              items_attrs = Map.get(attrs, "items", [])
+              attrs_without_items = Map.delete(attrs, "items")
+
+              # Delete existing items and recreate
+              contract
+              |> Ecto.Changeset.change()
+              |> Ecto.Changeset.put_assoc(:contract_items, [])
+              |> Repo.update()
+
+              contract
+              |> Contract.update_changeset(attrs_without_items)
+              |> RepoHelpers.update_or_abort()
+              |> then(fn contract ->
+                if Enum.empty?(items_attrs) do
+                  {:ok, contract}
+                else
+                  create_contract_items(contract, items_attrs)
+                end
+              end)
+            end)
+        end
     end
   end
 
@@ -74,8 +132,18 @@ defmodule EdocApi.Core do
         |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
         |> Repo.one()
         |> case do
-          nil -> {:error, :not_found}
-          contract -> {:ok, Repo.preload(contract, :company)}
+          nil ->
+            {:error, :not_found}
+
+          contract ->
+            {:ok,
+             Repo.preload(contract, [
+               :company,
+               :buyer_company,
+               :bank_account,
+               :contract_items,
+               bank_account: [:bank, :kbe_code, :knp_code]
+             ])}
         end
     end
   end
@@ -100,6 +168,11 @@ defmodule EdocApi.Core do
             RepoHelpers.abort(:contract_already_issued)
           end
 
+          # Validate contract has required buyer details
+          if is_nil(contract.buyer_company_id) and is_nil(contract.buyer_name) do
+            RepoHelpers.abort(:buyer_required)
+          end
+
           contract
           |> Ecto.Changeset.change(
             status: ContractStatus.issued(),
@@ -113,4 +186,21 @@ defmodule EdocApi.Core do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # Helper function to create contract items
+  defp create_contract_items(contract, items_attrs) when is_list(items_attrs) do
+    Enum.reduce_while(items_attrs, {:ok, contract}, fn item_attrs, {:ok, contract} ->
+      alias EdocApi.Core.ContractItem
+
+      %ContractItem{}
+      |> ContractItem.changeset(item_attrs, contract.id)
+      |> Repo.insert()
+      |> case do
+        {:ok, _item} -> {:cont, {:ok, contract}}
+        {:error, changeset} -> {:halt, {:error, changeset}}
+      end
+    end)
+  end
+
+  defp create_contract_items(contract, _), do: {:ok, contract}
 end
