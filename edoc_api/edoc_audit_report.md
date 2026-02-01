@@ -328,7 +328,7 @@ Therefore, currency consistency is guaranteed - all invoices and contracts must 
 
 ## 3. Inconsistent Error Handling
 
-### 3.1 Multiple Error Return Formats
+### 3.1 Multiple Error Return Formats ✅ DONE
 
 **Locations:** Various context modules
 
@@ -340,18 +340,43 @@ Therefore, currency consistency is guaranteed - all invoices and contracts must 
 
 **Risk:** Controllers must handle multiple error formats. Hard to write generic error handling.
 
-**Suggested Refactor:**
+**Resolution:**
+
+Implemented standardized error handling using the `EdocApi.Errors` module. All errors now use a consistent 3-tuple format:
 
 ```elixir
-# Standardize on {:error, reason, metadata} format
-defmodule EdocApi.Error do
-  defstruct [:reason, :message, :details]
+# Standardized error formats:
+{:error, :not_found, %{resource: atom}}           # For not found errors
+{:error, :validation, %{changeset: Ecto.Changeset}} # For validation errors
+{:error, :business_rule, %{rule: atom, details: map}} # For business rule violations
 
-  def new(reason, message \\ nil, details \\ %{}) do
-    {:error, %__MODULE__{reason: reason, message: message, details: details}}
-  end
-end
+# Examples:
+Errors.not_found(:invoice)
+# => {:error, :not_found, %{resource: :invoice}}
+
+Errors.business_rule(:already_issued, %{invoice_id: id})
+# => {:error, :business_rule, %{rule: :already_issued, details: %{invoice_id: id}}}
+
+Errors.from_changeset({:error, changeset})
+# => {:error, :validation, %{changeset: changeset}}
 ```
+
+**Changes Made:**
+
+1. **lib/edoc_api/errors.ex** - Added `normalize/1` function to convert tuple errors to standard format
+2. **lib/edoc_api/accounts.ex** - Updated `authenticate_user/2` to use `Errors.business_rule/2`
+3. **lib/edoc_api/core.ex** - Updated all error returns to use standardized format
+4. **lib/edoc_api/invoicing.ex** - Updated `do_issue_invoice/1`, `select_bank_account/1`, `create_bank_snapshot/2`, and `delete_invoice_for_user/2`
+5. **lib/edoc_api/repo_helpers.ex** - Updated to automatically normalize errors from transactions
+6. **lib/edoc_api_web/controller_helpers.ex** - Added handlers for standardized error formats
+7. **lib/edoc_api_web/error_mapper.ex** - Updated `already_issued/1` to accept resource parameter
+8. **Test files** - Updated all test expectations to match new error format
+
+**Benefits:**
+- Controllers can now handle errors generically
+- Consistent API across all modules
+- Clear distinction between error types (not_found, validation, business_rule)
+- Easy to extend with new error types
 
 ---
 
