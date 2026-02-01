@@ -25,7 +25,17 @@
 
         <div>
           <label for="buyer_bin_iin" class="block text-sm font-medium text-gray-700">Buyer BIN/IIN</label>
-          <input type="text" name="invoice[buyer_bin_iin]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+          <input
+            type="text"
+            name="invoice[buyer_bin_iin]"
+            required
+            pattern="\d{12}"
+            minlength="12"
+            maxlength="12"
+            title="BIN/IIN must be exactly 12 digits"
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          />
+          <p class="mt-1 text-xs text-gray-500">Enter exactly 12 digits</p>
         </div>
 
         <div>
