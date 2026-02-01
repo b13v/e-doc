@@ -61,7 +61,6 @@
                     hx-confirm="Delete this invoice?"
                     hx-target={"#invoice-#{invoice.id}"}
                     hx-swap="outerHTML"
-                    hx-headers={~s|{"x-csrf-token": "#{get_csrf_token()}"}|}
                     class="text-red-600 hover:text-red-900">
                     Delete
                   </button>

@@ -22,6 +22,18 @@ defmodule EdocApiWeb.Layouts do
         <!-- htmx from CDN -->
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
+        <!-- HTMX CSRF Token Configuration -->
+        <script>
+          document.addEventListener("DOMContentLoaded", function() {
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (csrfToken) {
+              document.body.addEventListener('htmx:configRequest', function(evt) {
+                evt.detail.headers['x-csrf-token'] = csrfToken;
+              });
+            }
+          });
+        </script>
+
         <!-- Tailwind CSS from CDN for POC -->
         <script src="https://cdn.tailwindcss.com"></script>
 
