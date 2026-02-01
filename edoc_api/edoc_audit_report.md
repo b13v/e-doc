@@ -67,20 +67,45 @@
 
 ---
 
-### 1.4 Duplicate Status Check Logic
+### 1.4 Overlapping but Non-Equivalent Status Checks
 
 **Location:** `lib/edoc_api/invoicing.ex:503-507`
 
-**Issue:** Checks both `not is_nil(invoice.bank_snapshot)` AND `InvoiceStatus.is_issued?(invoice)` - these should be equivalent.
+**Issue:** Two different checks for "already issued" that are NOT equivalent:
 
-**Risk:** Unclear which is the source of truth. Could lead to inconsistent state if one check passes and the other fails.
+```elixir
+not is_nil(invoice.bank_snapshot) -> {:error, :already_issued}
+InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+```
+
+**Why They Are Different:**
+
+| Check                               | Validates                 | Source of Truth                |
+| ----------------------------------- | ------------------------- | ------------------------------ |
+| `not is_nil(invoice.bank_snapshot)` | Database record existence | `invoice_bank_snapshots` table |
+| `InvoiceStatus.is_issued?(invoice)` | Status field value        | `invoices.status` column       |
+
+**Risk:**
+
+- Both return the SAME error (`:already_issued`), making debugging difficult
+- Data inconsistency possible: invoice could have `status: "issued"` but no snapshot, or vice versa
+- Unclear which check failed when debugging production issues
 
 **Suggested Refactor:**
 
+Use distinct error messages for each validation layer:
+
 ```elixir
-# Use only status check, make bank_snapshot validation separate
-InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+# Business logic - status is the canonical state
+InvoiceStatus.is_issued?(invoice) ->
+  {:error, :already_issued}
+
+# Data integrity - separate concern with distinct error
+not is_nil(invoice.bank_snapshot) ->
+  {:error, :snapshot_already_exists}
 ```
+
+Alternatively, remove the snapshot check entirely and rely on the database unique constraint on `invoice_bank_snapshots.invoice_id` to prevent duplicate snapshots.
 
 ---
 
