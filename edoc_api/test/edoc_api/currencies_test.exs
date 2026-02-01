@@ -3,35 +3,37 @@ defmodule EdocApi.CurrenciesTest do
 
   alias EdocApi.Currencies
 
+  describe "supported_currencies/0" do
+    test "returns only KZT" do
+      assert Currencies.supported_currencies() == ["KZT"]
+    end
+  end
+
+  describe "supported?/1" do
+    test "returns true for KZT" do
+      assert Currencies.supported?("KZT") == true
+      assert Currencies.supported?(:KZT) == true
+    end
+
+    test "returns false for other currencies" do
+      assert Currencies.supported?("USD") == false
+      assert Currencies.supported?("EUR") == false
+      assert Currencies.supported?("RUB") == false
+      assert Currencies.supported?("GBP") == false
+    end
+  end
+
   describe "precision/1" do
     test "returns correct precision for KZT" do
       assert Currencies.precision("KZT") == 2
       assert Currencies.precision(:KZT) == 2
     end
 
-    test "returns correct precision for USD" do
+    test "returns default precision for any currency (only KZT supported)" do
+      # Since we only support KZT, all precision calls return 2 (KZT precision)
       assert Currencies.precision("USD") == 2
-      assert Currencies.precision(:USD) == 2
-    end
-
-    test "returns correct precision for EUR" do
       assert Currencies.precision("EUR") == 2
-      assert Currencies.precision(:EUR) == 2
-    end
-
-    test "returns correct precision for RUB" do
-      assert Currencies.precision("RUB") == 2
-      assert Currencies.precision(:RUB) == 2
-    end
-
-    test "returns correct precision for JPY (no decimal places)" do
-      assert Currencies.precision("JPY") == 0
-      assert Currencies.precision(:JPY) == 0
-    end
-
-    test "returns default precision for unknown currencies" do
       assert Currencies.precision("GBP") == 2
-      assert Currencies.precision(:GBP) == 2
       assert Currencies.precision("UNKNOWN") == 2
     end
   end
@@ -40,16 +42,6 @@ defmodule EdocApi.CurrenciesTest do
     test "rounds KZT to 2 decimal places" do
       assert Currencies.round_currency(Decimal.new("123.456"), "KZT") == Decimal.new("123.46")
       assert Currencies.round_currency(Decimal.new("123.454"), "KZT") == Decimal.new("123.45")
-    end
-
-    test "rounds USD to 2 decimal places" do
-      assert Currencies.round_currency(Decimal.new("99.999"), "USD") == Decimal.new("100.00")
-      assert Currencies.round_currency(Decimal.new("50.125"), "USD") == Decimal.new("50.13")
-    end
-
-    test "rounds JPY to 0 decimal places" do
-      assert Currencies.round_currency(Decimal.new("123.456"), "JPY") == Decimal.new("123")
-      assert Currencies.round_currency(Decimal.new("999.99"), "JPY") == Decimal.new("1000")
     end
 
     test "uses default precision when currency not specified" do

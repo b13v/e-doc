@@ -305,7 +305,7 @@ Added format validation for invoice numbers in `validate_number_optional/1`:
 
 ---
 
-### 2.5 No Currency Consistency Between Contract and Invoice
+### 2.5 No Currency Consistency Between Contract and Invoice ✅ DONE
 
 **Location:** `lib/edoc_api/core/invoice.ex`
 
@@ -313,11 +313,15 @@ Added format validation for invoice numbers in `validate_number_optional/1`:
 
 **Risk:** Invoice in USD linked to Contract in KZT.
 
-**Suggested Refactor:**
+**Resolution:**
 
-```elixir
-# In Invoicing.create_invoice_from_contract/3
-|> validate_currency_matches_contract()
+This issue is now **resolved by design**. Following the fix in section 1.3, the application now only supports KZT currency:
+
+- `Currencies.supported_currencies()` returns only `["KZT"]`
+- Both Contract and Invoice schemas validate currency using `Currencies.supported_currencies()`
+- It's impossible to create an invoice or contract with any currency other than KZT
+
+Therefore, currency consistency is guaranteed - all invoices and contracts must use KZT.
 ```
 
 ---

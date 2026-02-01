@@ -174,7 +174,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
         "service_name" => "New Service",
         "issue_date" => today,
         "due_date" => Date.add(today, 7),
-        "currency" => "USD",
+        "currency" => "KZT",
         "buyer_name" => "New Buyer",
         "buyer_bin_iin" => "000000000000",
         "buyer_address" => "New Address",
@@ -185,7 +185,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
                Invoicing.update_invoice_for_user(user.id, invoice.id, updated_attrs)
 
       assert updated_invoice.service_name == "New Service"
-      assert updated_invoice.currency == "USD"
+      assert updated_invoice.currency == "KZT"
       assert updated_invoice.buyer_name == "New Buyer"
       assert updated_invoice.buyer_bin_iin == "000000000000"
       assert updated_invoice.buyer_address == "New Address"

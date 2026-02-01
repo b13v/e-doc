@@ -1,24 +1,25 @@
 defmodule EdocApi.Currencies do
   @moduledoc """
-  Currency configuration and precision management.
+  Currency configuration and precision management for KZT (Kazakhstani Tenge).
 
-  Provides currency-specific precision settings and utility functions
-  for monetary calculations throughout the application.
+  The application only operates in Kazakhstan and uses KZT exclusively.
+  All monetary calculations use 2 decimal places (standard for KZT).
   """
 
-  # Default currency precision (KZT - Kazakhstani Tenge)
+  # KZT precision (Kazakhstani Tenge)
   @default_precision 2
 
-  # Supported currencies for the application
-  @supported_currencies ~w(KZT USD EUR RUB)
+  # Only KZT is supported (Kazakhstan-only application)
+  @supported_currencies ~w(KZT)
 
   @doc """
   Returns the list of supported currency codes.
+  Only KZT is supported for this Kazakhstan-only application.
 
   ## Examples
 
       iex> EdocApi.Currencies.supported_currencies()
-      ["KZT", "USD", "EUR", "RUB"]
+      ["KZT"]
 
   """
   @spec supported_currencies() :: [String.t()]
@@ -32,7 +33,7 @@ defmodule EdocApi.Currencies do
       iex> EdocApi.Currencies.supported?("KZT")
       true
 
-      iex> EdocApi.Currencies.supported?("GBP")
+      iex> EdocApi.Currencies.supported?("USD")
       false
 
   """
@@ -47,18 +48,14 @@ defmodule EdocApi.Currencies do
   defp to_string_code(code) when is_binary(code), do: String.upcase(code)
 
   @doc """
-  Returns the decimal precision for the given currency code.
+  Returns the decimal precision for KZT.
+  KZT uses 2 decimal places.
 
   ## Examples
 
       iex> EdocApi.Currencies.precision("KZT")
       2
 
-      iex> EdocApi.Currencies.precision("USD")
-      2
-
-      iex> EdocApi.Currencies.precision("JPY")
-      0
   """
   @spec precision(String.t() | atom()) :: non_neg_integer()
   def precision(currency_code \\ "KZT")
@@ -66,30 +63,17 @@ defmodule EdocApi.Currencies do
   def precision("KZT"), do: 2
   def precision(:KZT), do: 2
 
-  # Additional common currencies (can be expanded as needed)
-  def precision("USD"), do: 2
-  def precision(:USD), do: 2
-  def precision("EUR"), do: 2
-  def precision(:EUR), do: 2
-  def precision("RUB"), do: 2
-  def precision(:RUB), do: 2
-  # Japanese Yen has no decimal places
-  def precision("JPY"), do: 0
-  def precision(:JPY), do: 0
-
-  # Fallback to default precision for unknown currencies
+  # Fallback to default precision for any other input
   def precision(_), do: @default_precision
 
   @doc """
-  Rounds a decimal value using the appropriate precision for the given currency.
+  Rounds a decimal value using KZT precision (2 decimal places).
 
   ## Examples
 
       iex> EdocApi.Currencies.round_currency(Decimal.new("123.456"), "KZT")
       #Decimal<123.46>
 
-      iex> EdocApi.Currencies.round_currency(Decimal.new("123.456"), "JPY")
-      #Decimal<123>
   """
   @spec round_currency(Decimal.t(), String.t() | atom()) :: Decimal.t()
   def round_currency(%Decimal{} = decimal, currency_code \\ "KZT") do
@@ -97,7 +81,7 @@ defmodule EdocApi.Currencies do
   end
 
   @doc """
-  Returns the default precision for the application.
+  Returns the default precision for the application (2 for KZT).
   """
   @spec default_precision() :: non_neg_integer()
   def default_precision, do: @default_precision
