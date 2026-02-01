@@ -34,12 +34,11 @@
         </div>
 
         <div>
-          <label for="currency" class="block text-sm font-medium text-gray-700">Currency</label>
-          <select name="invoice[currency]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            <option value="KZT">KZT</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-          </select>
+          <label class="block text-sm font-medium text-gray-700">Currency</label>
+          <input type="hidden" name="invoice[currency]" value="KZT" />
+          <div class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 px-3 py-2 text-gray-700">
+            KZT (Kazakhstani Tenge)
+          </div>
         </div>
       </div>
 
