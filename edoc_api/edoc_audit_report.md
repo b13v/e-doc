@@ -38,18 +38,30 @@
 
 ---
 
-### 1.3 Currency Validation
+### 1.3 Currency Validation ✅ DONE
 
-**Location:** `lib/edoc_api/core/contract.ex:99` and `lib/edoc_api/core/invoice.ex:83`
+**Location:** `lib/edoc_api/core/contract.ex:99` and `lib/edoc_api/core/invoice.ex:83`, `lib/edoc_api/currencies.ex:13`
 
-**Issue:** Both schemas hardcode currency lists. Contract uses `~w(KZT USD EUR RUB)` but Invoice delegates to `Currencies.supported_currencies()`.
+**Issue:** Both schemas supported multiple currencies (`~w(KZT USD EUR RUB)`), but the application only operates in Kazakhstan and should only use KZT (Kazakhstani Tenge). Having multiple currencies adds unnecessary complexity.
 
-**Risk:** Adding a new currency requires changes in multiple places.
+**Risk:**
 
-**Suggested Refactor:**
+- Unnecessary complexity for a Kazakhstan-only system
+- Potential currency conversion issues
+- Inconsistent currency validation between Contract and Invoice schemas
+
+**Resolution:**
+
+- Changed `Currencies.supported_currencies()` to return only `["KZT"]`
+- Updated both Contract and Invoice schemas to use `Currencies.supported_currencies()` consistently
+- Removed precision definitions for USD, EUR, RUB from the Currencies module
 
 ```elixir
-# Use Currencies module consistently in both schemas
+# Before: @supported_currencies ~w(KZT USD EUR RUB)
+# After:
+@supported_currencies ~w(KZT)
+
+# Both schemas now use:
 |> validate_inclusion(:currency, Currencies.supported_currencies())
 ```
 
