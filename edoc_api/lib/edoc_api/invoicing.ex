@@ -615,7 +615,10 @@ defmodule EdocApi.Invoicing do
           |> Repo.delete_all()
 
           # Delete the invoice
-          Repo.delete(invoice)
+          case Repo.delete(invoice) do
+            {:ok, invoice} -> {:ok, invoice}
+            {:error, changeset} -> {:error, :validation, %{changeset: changeset}}
+          end
         end)
       end
     else
