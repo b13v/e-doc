@@ -110,7 +110,11 @@ defmodule EdocApi.Invoicing do
 
       invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
-      {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
+      invoice =
+        case RepoHelpers.insert_or_abort(invoice_changeset) do
+          {:ok, inv} -> inv
+          {:error, reason} -> RepoHelpers.abort(reason)
+        end
 
       Enum.each(prepared_items, fn item_attrs ->
         cs =
@@ -190,8 +194,10 @@ defmodule EdocApi.Invoicing do
       invoice_changeset =
         Invoice.changeset(invoice, invoice_attrs, user_id, invoice.company_id)
 
-      {:ok, invoice} = RepoHelpers.update_or_abort(invoice_changeset)
-      {:ok, preload_invoice(invoice)}
+      case RepoHelpers.update_or_abort(invoice_changeset) do
+        {:ok, updated_invoice} -> {:ok, preload_invoice(updated_invoice)}
+        {:error, reason} -> RepoHelpers.abort(reason)
+      end
     end)
   end
 
