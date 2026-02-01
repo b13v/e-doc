@@ -97,21 +97,20 @@ defmodule EdocApiWeb.InvoicesController do
     user = current_user(conn)
     result = Invoicing.delete_invoice_for_user(user.id, id)
 
-    UnifiedErrorHandler.handle_result(result,
-      success: fn
-        conn ->
-          if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
-            send_resp(conn, :no_content, "")
-          else
-            conn
-            |> put_flash(:info, "Invoice deleted successfully")
-            |> redirect(to: "/invoices")
-          end
+    UnifiedErrorHandler.handle_result(conn, result,
+      success: fn conn, _data ->
+        if UnifiedErrorHandler.htmx_request?(conn) do
+          send_resp(conn, :no_content, "")
+        else
+          conn
+          |> put_flash(:info, "Invoice deleted successfully")
+          |> redirect(to: "/invoices")
+        end
       end,
       error: fn conn, type, details ->
         cond do
           type == :business_rule && details[:rule] == :cannot_delete_issued_invoice ->
-            if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
+            if UnifiedErrorHandler.htmx_request?(conn) do
               conn
               |> put_resp_content_type("text/html")
               |> send_resp(403, "<span class='text-red-600'>Cannot delete issued invoice</span>")
@@ -122,7 +121,7 @@ defmodule EdocApiWeb.InvoicesController do
             end
 
           true ->
-            if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
+            if UnifiedErrorHandler.htmx_request?(conn) do
               conn
               |> put_resp_content_type("text/html")
               |> send_resp(404, "<span class='text-red-600'>Error deleting invoice</span>")
