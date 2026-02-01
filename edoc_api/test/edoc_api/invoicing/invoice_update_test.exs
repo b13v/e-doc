@@ -167,10 +167,12 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
       company = create_company!(user)
       invoice = create_invoice_with_items!(user, company)
 
+      today = Date.utc_today()
+
       updated_attrs = %{
         "service_name" => "New Service",
-        "issue_date" => Date.utc_today() |> Date.add(1),
-        "due_date" => Date.utc_today() |> Date.add(7),
+        "issue_date" => today,
+        "due_date" => Date.add(today, 7),
         "currency" => "USD",
         "buyer_name" => "New Buyer",
         "buyer_bin_iin" => "999999999999",

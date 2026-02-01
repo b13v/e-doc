@@ -117,7 +117,7 @@ The `create_bank_snapshot/2` function already handles the unique constraint viol
 
 ## 2. Missing Validations
 
-### 2.1 No Date Validation
+### 2.1 Date Validation ✅ DONE
 
 **Location:** `lib/edoc_api/core/invoice.ex`, `lib/edoc_api/core/contract.ex`
 
@@ -129,13 +129,28 @@ The `create_bank_snapshot/2` function already handles the unique constraint viol
 
 **Risk:** Users can create invoices with past due dates or future issue dates.
 
-**Suggested Refactor:**
+**Resolution:**
+
+Added date validation functions to both schemas:
+
+**Invoice (`lib/edoc_api/core/invoice.ex`):**
 
 ```elixir
-# In invoice.ex changeset
+|> validate_date_not_in_future(:issue_date)
 |> validate_due_date_after_issue_date()
 
- defp validate_due_date_after_issue_date(changeset) do
+# Private validation functions:
+defp validate_date_not_in_future(changeset, field) do
+  date = get_field(changeset, field)
+
+  if date && Date.compare(date, Date.utc_today()) == :gt do
+    add_error(changeset, field, "cannot be in the future")
+  else
+    changeset
+  end
+end
+
+defp validate_due_date_after_issue_date(changeset) do
   due = get_field(changeset, :due_date)
   issue = get_field(changeset, :issue_date)
 
@@ -146,6 +161,14 @@ The `create_bank_snapshot/2` function already handles the unique constraint viol
   end
 end
 ```
+
+**Contract (`lib/edoc_api/core/contract.ex`):**
+
+```elixir
+|> validate_date_not_in_future(:issue_date)
+```
+
+Both `changeset/3` and `update_changeset/2` functions include the validation.
 
 ---
 

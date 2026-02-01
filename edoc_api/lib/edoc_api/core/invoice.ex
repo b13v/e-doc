@@ -83,6 +83,8 @@ defmodule EdocApi.Core.Invoice do
     |> validate_inclusion(:currency, Currencies.supported_currencies())
     |> validate_number_optional()
     |> validate_length(:service_name, min: 3, max: 255)
+    |> validate_date_not_in_future(:issue_date)
+    |> validate_due_date_after_issue_date()
     |> BinIin.validate(:seller_bin_iin)
     |> BinIin.validate(:buyer_bin_iin)
     |> Iban.validate(:seller_iban)
@@ -91,6 +93,27 @@ defmodule EdocApi.Core.Invoice do
     |> prepare_changes(&validate_contract_ownership/1)
     |> prepare_changes(&validate_bank_account_ownership/1)
     |> prepare_changes(&derive_seller_iban_from_bank_account/1)
+  end
+
+  defp validate_date_not_in_future(changeset, field) do
+    date = get_field(changeset, field)
+
+    if date && Date.compare(date, Date.utc_today()) == :gt do
+      add_error(changeset, field, "cannot be in the future")
+    else
+      changeset
+    end
+  end
+
+  defp validate_due_date_after_issue_date(changeset) do
+    due = get_field(changeset, :due_date)
+    issue = get_field(changeset, :issue_date)
+
+    if due && issue && Date.compare(due, issue) == :lt do
+      add_error(changeset, :due_date, "must be after issue date")
+    else
+      changeset
+    end
   end
 
   defp normalize_fields(changeset) do

@@ -98,6 +98,7 @@ defmodule EdocApi.Core.Contract do
     |> validate_inclusion(:status, ContractStatus.all())
     |> validate_inclusion(:currency, Currencies.supported_currencies())
     |> VatRates.validate_rate(:vat_rate, "KZ")
+    |> validate_date_not_in_future(:issue_date)
     |> unique_constraint(:number, name: :contracts_company_id_number_index)
     |> validate_buyer_details()
   end
@@ -112,7 +113,18 @@ defmodule EdocApi.Core.Contract do
     |> validate_inclusion(:status, ContractStatus.all())
     |> validate_inclusion(:currency, Currencies.supported_currencies())
     |> VatRates.validate_rate(:vat_rate, "KZ")
+    |> validate_date_not_in_future(:issue_date)
     |> validate_buyer_details()
+  end
+
+  defp validate_date_not_in_future(changeset, field) do
+    date = get_field(changeset, field)
+
+    if date && Date.compare(date, Date.utc_today()) == :gt do
+      add_error(changeset, field, "cannot be in the future")
+    else
+      changeset
+    end
   end
 
   defp maybe_put_default_status(changeset) do
