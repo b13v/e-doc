@@ -4,6 +4,11 @@ defmodule EdocApiWeb.ControllerHelpers do
 
   Provides consistent patterns for handling context function results,
   with proper logging of unexpected errors.
+
+  Supports standardized error formats:
+  - {:error, :not_found, %{resource: atom}}
+  - {:error, :validation, %{changeset: %Ecto.Changeset{}}}
+  - {:error, :business_rule, %{rule: atom, details: map}}
   """
 
   require Logger
@@ -30,9 +35,21 @@ defmodule EdocApiWeb.ControllerHelpers do
       {:ok, data} ->
         success_callback.(conn, data)
 
+      # Legacy format: Ecto.Changeset errors
       {:error, %Ecto.Changeset{} = changeset} ->
         ErrorMapper.validation(conn, changeset)
 
+      # Standardized format: {:error, type, details}
+      {:error, :not_found, %{resource: resource}} ->
+        ErrorMapper.not_found(conn, "#{resource}_not_found")
+
+      {:error, :validation, %{changeset: changeset}} ->
+        ErrorMapper.validation(conn, changeset)
+
+      {:error, :business_rule, %{rule: rule} = details} ->
+        handle_business_rule_error(conn, rule, details, error_map)
+
+      # Legacy format: simple atom errors (for backwards compatibility)
       {:error, error_atom} when is_atom(error_atom) ->
         case Map.fetch(error_map, error_atom) do
           {:ok, handler} when is_function(handler, 1) ->
@@ -46,7 +63,8 @@ defmodule EdocApiWeb.ControllerHelpers do
             ErrorMapper.internal(conn)
         end
 
-      {:error, error_atom, details} when is_atom(error_atom) ->
+      # Legacy format: atom with details (for backwards compatibility)
+      {:error, error_atom, details} when is_atom(error_atom) and is_map(details) ->
         case Map.fetch(error_map, error_atom) do
           {:ok, handler} when is_function(handler, 2) ->
             handler.(conn, details)
@@ -66,6 +84,40 @@ defmodule EdocApiWeb.ControllerHelpers do
       other ->
         Logger.error("Unexpected result format in controller: #{inspect(other)}")
         ErrorMapper.internal(conn)
+    end
+  end
+
+  # Handle business rule errors with specific mappings
+  defp handle_business_rule_error(conn, rule, details, error_map) do
+    case rule do
+      :invalid_credentials ->
+        ErrorMapper.unauthorized(conn, "Invalid credentials")
+
+      :company_required ->
+        ErrorMapper.unprocessable(conn, "company_required")
+
+      :contract_not_editable ->
+        ErrorMapper.unprocessable(conn, "contract_not_editable", details)
+
+      :contract_already_issued ->
+        ErrorMapper.already_issued(conn, "contract")
+
+      :buyer_required ->
+        ErrorMapper.unprocessable(conn, "buyer_required", details)
+
+      _ ->
+        # Check if there's a custom handler in error_map
+        case Map.fetch(error_map, rule) do
+          {:ok, handler} when is_function(handler, 1) ->
+            handler.(conn)
+
+          {:ok, handler} when is_function(handler, 2) ->
+            handler.(conn, details)
+
+          :error ->
+            Logger.warning("Unhandled business rule: #{inspect(rule)}")
+            ErrorMapper.unprocessable(conn, to_string(rule), details)
+        end
     end
   end
 

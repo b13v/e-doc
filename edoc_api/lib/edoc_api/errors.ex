@@ -89,7 +89,7 @@ defmodule EdocApi.Errors do
 
   @doc """
   Normalizes an error to a standard shape.
-  Ensures we never have nested tuples like {:error, {:error, term}}.
+  Ensures we never have nested tuples and converts tuple errors to standard format.
 
   ## Examples
 
@@ -99,9 +99,23 @@ defmodule EdocApi.Errors do
       iex> Errors.normalize({:error, :some_reason})
       {:error, :some_reason}
 
+      iex> Errors.normalize({:error, {:not_found, %{resource: :contract}}})
+      {:error, :not_found, %{resource: :contract}}
+
   """
   def normalize({:error, {:error, reason}}), do: {:error, reason}
   def normalize({:error, {:error, reason, details}}), do: {:error, reason, details}
+
+  # Handle tuple errors from Repo.rollback: convert to standard 3-tuple format
+  def normalize({:error, {:not_found, details}}) when is_map(details),
+    do: {:error, :not_found, details}
+
+  def normalize({:error, {:validation, details}}) when is_map(details),
+    do: {:error, :validation, details}
+
+  def normalize({:error, {:business_rule, details}}) when is_map(details),
+    do: {:error, :business_rule, details}
+
   def normalize(other), do: other
 
   # -------------------------

@@ -26,10 +26,10 @@ defmodule EdocApiWeb.ErrorMapper do
     |> Controller.json(%{error: code})
   end
 
-  def already_issued(conn) do
+  def already_issued(conn, resource \\ "invoice") when is_binary(resource) do
     conn
     |> put_status(:unprocessable_entity)
-    |> Controller.json(%{error: "invoice_already_issued"})
+    |> Controller.json(%{error: "#{resource}_already_issued"})
   end
 
   def unauthorized(conn, code \\ "unauthorized") when is_binary(code) do

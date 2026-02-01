@@ -82,7 +82,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
 
       updated_attrs = %{"contract_id" => other_contract.id}
 
-      assert {:error, %Ecto.Changeset{} = cs} =
+      assert {:error, :validation, %{changeset: cs}} =
                Invoicing.update_invoice_for_user(user.id, invoice.id, updated_attrs)
 
       assert {"does not belong to company", _} = Keyword.get(cs.errors, :contract_id)
@@ -110,7 +110,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
       fake_contract_id = Ecto.UUID.generate()
       updated_attrs = %{"contract_id" => fake_contract_id}
 
-      assert {:error, %Ecto.Changeset{} = cs} =
+      assert {:error, :validation, %{changeset: cs}} =
                Invoicing.update_invoice_for_user(user.id, invoice.id, updated_attrs)
 
       assert {"does not belong to company", _} = Keyword.get(cs.errors, :contract_id)

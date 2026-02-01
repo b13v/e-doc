@@ -17,7 +17,7 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
 
       attrs = invoice_attrs(%{"contract_id" => contract.id})
 
-      assert {:error, %Ecto.Changeset{} = cs} =
+      assert {:error, :validation, %{changeset: cs}} =
                Invoicing.create_invoice_for_user(user.id, company_b.id, attrs)
 
       assert {"does not belong to company", _} = Keyword.get(cs.errors, :contract_id)

@@ -3,6 +3,7 @@ defmodule EdocApi.Invoicing do
 
   alias EdocApi.Repo
   alias EdocApi.RepoHelpers
+  alias EdocApi.Errors
   alias EdocApi.Currencies
   alias EdocApi.Core.Company
   alias EdocApi.Core.Invoice
@@ -44,22 +45,22 @@ defmodule EdocApi.Invoicing do
         |> Repo.one()
 
       unless invoice do
-        RepoHelpers.abort(:invoice_not_found)
+        RepoHelpers.abort({:not_found, %{resource: :invoice}})
       end
 
       invoice = preload_invoice(invoice)
 
       case do_issue_invoice(invoice) do
-        {:ok, inv} -> {:ok, inv}
-        {:error, reason} -> RepoHelpers.abort(reason)
-        {:error, reason, details} -> RepoHelpers.abort({reason, details})
+        {:ok, inv} ->
+          {:ok, inv}
+
+        {:error, reason} ->
+          RepoHelpers.abort({:business_rule, %{rule: reason}})
+
+        {:error, reason, details} ->
+          RepoHelpers.abort({:business_rule, %{rule: reason, details: details}})
       end
     end)
-    |> case do
-      {:ok, invoice} -> {:ok, invoice}
-      {:error, {reason, details}} -> {:error, reason, details}
-      {:error, reason} -> {:error, reason}
-    end
   end
 
   def create_invoice_for_user(user_id, company_id, attrs) do
@@ -190,11 +191,6 @@ defmodule EdocApi.Invoicing do
       {:ok, invoice} = RepoHelpers.update_or_abort(invoice_changeset)
       {:ok, preload_invoice(invoice)}
     end)
-    |> case do
-      {:ok, invoice} -> {:ok, invoice}
-      {:error, {reason, details}} -> {:error, reason, details}
-      {:error, reason} -> {:error, reason}
-    end
   end
 
   defp preload_invoice(invoice) do
@@ -462,40 +458,46 @@ defmodule EdocApi.Invoicing do
   def mark_invoice_issued(invoice) do
     RepoHelpers.transaction(fn ->
       unless invoice do
-        RepoHelpers.abort(:invoice_not_found)
+        RepoHelpers.abort({:not_found, %{resource: :invoice}})
       end
 
       invoice = preload_invoice(invoice)
 
       case do_issue_invoice(invoice) do
-        {:ok, inv} -> {:ok, inv}
-        {:error, reason} -> RepoHelpers.abort(reason)
-        {:error, reason, details} -> RepoHelpers.abort({reason, details})
+        {:ok, inv} ->
+          {:ok, inv}
+
+        {:error, reason} ->
+          RepoHelpers.abort({:business_rule, %{rule: reason}})
+
+        {:error, reason, details} ->
+          RepoHelpers.abort({:business_rule, %{rule: reason, details: details}})
       end
     end)
-    |> case do
-      {:ok, inv} -> {:ok, inv}
-      {:error, {reason, details}} -> {:error, reason, details}
-      {:error, reason} -> {:error, reason}
-    end
   end
 
   defp do_issue_invoice(invoice) do
     cond do
       is_nil(invoice) ->
-        {:error, :invoice_not_found}
+        Errors.not_found(:invoice)
 
       InvoiceStatus.is_issued?(invoice) ->
-        {:error, :already_issued}
+        Errors.business_rule(:already_issued, %{invoice_id: invoice.id, status: invoice.status})
 
       not InvoiceStatus.can_issue?(invoice) ->
-        {:error, :cannot_issue, %{status: "must be draft to issue"}}
+        Errors.business_rule(:cannot_issue, %{
+          invoice_id: invoice.id,
+          status: "must be draft to issue"
+        })
 
       (invoice.items || []) == [] ->
-        {:error, :cannot_issue, %{items: "must have at least 1 item"}}
+        Errors.business_rule(:cannot_issue, %{
+          invoice_id: invoice.id,
+          items: "must have at least 1 item"
+        })
 
       is_nil(invoice.total) or Decimal.compare(invoice.total, zero_decimal()) != :gt ->
-        {:error, :cannot_issue, %{total: "must be > 0"}}
+        Errors.business_rule(:cannot_issue, %{invoice_id: invoice.id, total: "must be > 0"})
 
       true ->
         with {:ok, bank_account} <- select_bank_account(invoice),
@@ -523,8 +525,14 @@ defmodule EdocApi.Invoicing do
         case invoice.bank_account_id do
           nil ->
             case CompanyBankAccount.get_default_account(invoice_company_id) do
-              nil -> {:error, :bank_account_required}
-              acc -> {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
+              nil ->
+                Errors.business_rule(:bank_account_required, %{
+                  invoice_id: invoice.id,
+                  company_id: invoice_company_id
+                })
+
+              acc ->
+                {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
             end
 
           id ->
@@ -533,7 +541,7 @@ defmodule EdocApi.Invoicing do
                 {:ok, Repo.preload(acc, [:bank, :kbe_code, :knp_code])}
 
               _ ->
-                {:error, :bank_account_not_found}
+                Errors.not_found(:bank_account)
             end
         end
     end
@@ -564,13 +572,13 @@ defmodule EdocApi.Invoicing do
         case Keyword.get(cs.errors, :invoice_id) do
           {_, opts} when is_list(opts) ->
             if Keyword.get(opts, :constraint) == :unique do
-              {:error, :already_issued}
+              Errors.business_rule(:already_issued, %{invoice_id: invoice.id})
             else
-              {:error, cs}
+              Errors.from_changeset({:error, cs})
             end
 
           _ ->
-            {:error, cs}
+            Errors.from_changeset({:error, cs})
         end
     end
   end
@@ -583,7 +591,10 @@ defmodule EdocApi.Invoicing do
 
     if invoice do
       if InvoiceStatus.is_issued?(invoice.status) do
-        {:error, :cannot_delete_issued_invoice}
+        Errors.business_rule(:cannot_delete_issued_invoice, %{
+          invoice_id: invoice.id,
+          status: invoice.status
+        })
       else
         Repo.transaction(fn ->
           # Delete invoice items first
@@ -601,7 +612,7 @@ defmodule EdocApi.Invoicing do
         end)
       end
     else
-      {:error, :not_found}
+      Errors.not_found(:invoice)
     end
   end
 end

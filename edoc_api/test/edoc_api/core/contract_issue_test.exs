@@ -22,6 +22,8 @@ defmodule EdocApi.Core.ContractIssueTest do
     contract = create_contract!(company)
 
     assert {:ok, issued} = Core.issue_contract_for_user(user.id, contract.id)
-    assert {:error, :contract_already_issued} = Core.issue_contract_for_user(user.id, issued.id)
+
+    assert {:error, :business_rule, %{rule: :contract_already_issued}} =
+             Core.issue_contract_for_user(user.id, issued.id)
   end
 end

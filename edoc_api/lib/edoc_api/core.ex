@@ -2,6 +2,7 @@ defmodule EdocApi.Core do
   import Ecto.Query, warn: false
 
   alias EdocApi.Companies
+  alias EdocApi.Errors
   alias EdocApi.Invoicing
   alias EdocApi.Payments
   alias EdocApi.Repo
@@ -50,7 +51,7 @@ defmodule EdocApi.Core do
   def create_contract_for_user(user_id, attrs) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
-        {:error, :company_required}
+        Errors.business_rule(:company_required, %{user_id: user_id})
 
       %Company{id: company_id} ->
         attrs = attrs || %{}
@@ -71,13 +72,14 @@ defmodule EdocApi.Core do
             end
           end)
         end)
+        |> Errors.normalize()
     end
   end
 
   def update_contract_for_user(user_id, contract_id, attrs) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
-        {:error, :not_found}
+        Errors.not_found(:company)
 
       %Company{id: company_id} ->
         contract =
@@ -87,10 +89,13 @@ defmodule EdocApi.Core do
 
         cond do
           is_nil(contract) ->
-            {:error, :not_found}
+            Errors.not_found(:contract)
 
           not ContractStatus.can_edit?(contract) ->
-            {:error, :contract_not_editable}
+            Errors.business_rule(:contract_not_editable, %{
+              contract_id: contract_id,
+              status: contract.status
+            })
 
           true ->
             RepoHelpers.transaction(fn ->
@@ -125,7 +130,7 @@ defmodule EdocApi.Core do
   def get_contract_for_user(user_id, contract_id) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
-        {:error, :not_found}
+        Errors.not_found(:company)
 
       %Company{id: company_id} ->
         Contract
@@ -133,7 +138,7 @@ defmodule EdocApi.Core do
         |> Repo.one()
         |> case do
           nil ->
-            {:error, :not_found}
+            Errors.not_found(:contract)
 
           contract ->
             {:ok,
@@ -152,7 +157,7 @@ defmodule EdocApi.Core do
     RepoHelpers.transaction(fn ->
       case Companies.get_company_by_user_id(user_id) do
         nil ->
-          RepoHelpers.abort(:not_found)
+          RepoHelpers.abort({:not_found, %{resource: :company}})
 
         %Company{id: company_id} ->
           contract =
@@ -161,16 +166,20 @@ defmodule EdocApi.Core do
             |> Repo.one()
 
           unless contract do
-            RepoHelpers.abort(:not_found)
+            RepoHelpers.abort({:not_found, %{resource: :contract}})
           end
 
           if ContractStatus.already_issued?(contract) do
-            RepoHelpers.abort(:contract_already_issued)
+            RepoHelpers.abort(
+              {:business_rule, %{rule: :contract_already_issued, contract_id: contract.id}}
+            )
           end
 
           # Validate contract has required buyer details
           if is_nil(contract.buyer_company_id) and is_nil(contract.buyer_name) do
-            RepoHelpers.abort(:buyer_required)
+            RepoHelpers.abort(
+              {:business_rule, %{rule: :buyer_required, contract_id: contract.id}}
+            )
           end
 
           contract
@@ -181,10 +190,7 @@ defmodule EdocApi.Core do
           |> RepoHelpers.update_or_abort()
       end
     end)
-    |> case do
-      {:ok, contract} -> {:ok, contract}
-      {:error, reason} -> {:error, reason}
-    end
+    |> Errors.normalize()
   end
 
   # Helper function to create contract items
@@ -197,7 +203,7 @@ defmodule EdocApi.Core do
       |> Repo.insert()
       |> case do
         {:ok, _item} -> {:cont, {:ok, contract}}
-        {:error, changeset} -> {:halt, {:error, changeset}}
+        {:error, changeset} -> {:halt, Errors.from_changeset({:error, changeset})}
       end
     end)
   end
