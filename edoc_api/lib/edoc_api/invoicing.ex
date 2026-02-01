@@ -500,9 +500,6 @@ defmodule EdocApi.Invoicing do
       is_nil(invoice) ->
         {:error, :invoice_not_found}
 
-      not is_nil(invoice.bank_snapshot) ->
-        {:error, :already_issued}
-
       InvoiceStatus.is_issued?(invoice) ->
         {:error, :already_issued}
 

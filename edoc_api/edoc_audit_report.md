@@ -67,18 +67,18 @@
 
 ---
 
-### 1.4 Overlapping but Non-Equivalent Status Checks
+### 1.4 Overlapping Status Checks ✅ DONE
 
-**Location:** `lib/edoc_api/invoicing.ex:503-507`
+**Location:** `lib/edoc_api/invoicing.ex:501-507`
 
-**Issue:** Two different checks for "already issued" that are NOT equivalent:
+**Issue:** Two different checks for "already issued":
 
 ```elixir
 not is_nil(invoice.bank_snapshot) -> {:error, :already_issued}
 InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
 ```
 
-**Why They Are Different:**
+**Why They Were Different:**
 
 | Check                               | Validates                 | Source of Truth                |
 | ----------------------------------- | ------------------------- | ------------------------------ |
@@ -87,25 +87,31 @@ InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
 
 **Risk:**
 
-- Both return the SAME error (`:already_issued`), making debugging difficult
+- Both returned the SAME error (`:already_issued`), making debugging difficult
 - Data inconsistency possible: invoice could have `status: "issued"` but no snapshot, or vice versa
-- Unclear which check failed when debugging production issues
 
-**Suggested Refactor:**
+**Resolution:**
 
-Use distinct error messages for each validation layer:
+Removed the `bank_snapshot` check entirely. The database unique constraint on `invoice_bank_snapshots.invoice_id` already prevents duplicate snapshots.
+
+**Code change:**
 
 ```elixir
-# Business logic - status is the canonical state
-InvoiceStatus.is_issued?(invoice) ->
-  {:error, :already_issued}
+# Before:
+cond do
+  not is_nil(invoice.bank_snapshot) -> {:error, :already_issued}
+  InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+  ...
+end
 
-# Data integrity - separate concern with distinct error
-not is_nil(invoice.bank_snapshot) ->
-  {:error, :snapshot_already_exists}
+# After:
+cond do
+  InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+  ...
+end
 ```
 
-Alternatively, remove the snapshot check entirely and rely on the database unique constraint on `invoice_bank_snapshots.invoice_id` to prevent duplicate snapshots.
+The `create_bank_snapshot/2` function already handles the unique constraint violation from the database and returns `{:error, :already_issued}` if a snapshot exists.
 
 ---
 
