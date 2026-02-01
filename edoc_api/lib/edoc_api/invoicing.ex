@@ -1,5 +1,6 @@
 defmodule EdocApi.Invoicing do
   import Ecto.Query, warn: false
+  require Logger
 
   alias EdocApi.Repo
   alias EdocApi.RepoHelpers
@@ -603,23 +604,32 @@ defmodule EdocApi.Invoicing do
           status: invoice.status
         })
       else
-        Repo.transaction(fn ->
-          # Delete invoice items first
-          InvoiceItem
-          |> where([ii], ii.invoice_id == ^invoice_id)
-          |> Repo.delete_all()
+        case Repo.transaction(fn ->
+               # Delete invoice items first
+               InvoiceItem
+               |> where([ii], ii.invoice_id == ^invoice_id)
+               |> Repo.delete_all()
 
-          # Delete bank snapshot if exists
-          InvoiceBankSnapshot
-          |> where([ibs], ibs.invoice_id == ^invoice_id)
-          |> Repo.delete_all()
+               # Delete bank snapshot if exists
+               InvoiceBankSnapshot
+               |> where([ibs], ibs.invoice_id == ^invoice_id)
+               |> Repo.delete_all()
 
-          # Delete the invoice
-          case Repo.delete(invoice) do
-            {:ok, invoice} -> {:ok, invoice}
-            {:error, changeset} -> {:error, :validation, %{changeset: changeset}}
-          end
-        end)
+               # Delete the invoice
+               case Repo.delete(invoice) do
+                 {:ok, invoice} -> invoice
+                 {:error, changeset} -> Repo.rollback({:validation_failed, changeset})
+               end
+             end) do
+          {:ok, invoice} ->
+            {:ok, invoice}
+
+          {:error, {:validation_failed, changeset}} ->
+            {:error, :validation, %{changeset: changeset}}
+
+          {:error, reason} ->
+            {:error, :transaction_failed, %{reason: reason}}
+        end
       end
     else
       Errors.not_found(:invoice)
