@@ -172,24 +172,67 @@ Both `changeset/3` and `update_changeset/2` functions include the validation.
 
 ---
 
-### 2.2 Weak BIN/IIN Validation
+### 2.2 Weak BIN/IIN Validation ✅ DONE
 
 **Location:** `lib/edoc_api/validators/bin_iin.ex:40-43`
 
-**Issue:** Only validates length (12 digits) and format, not the actual checksum. Kazakhstan BIN has a validation algorithm.
+**Issue:** Only validated length (12 digits) and format, not the actual checksum. Kazakhstan BIN/IIN has a validation algorithm.
 
-**Risk:** Invalid BINs can pass validation.
+**Risk:** Invalid BINs could pass validation (e.g., `000000000000` or `111111111111`).
 
-**Suggested Refactor:**
+**Resolution:**
+
+Implemented Kazakhstan BIN/IIN checksum validation algorithm:
 
 ```elixir
 def validate(changeset, field) do
   changeset
   |> validate_length(field, is: @bin_iin_length)
-  |> validate_format(field, @bin_iin_pattern)
-  |> validate_checksum(field)  # Add this
+  |> validate_format(field, @bin_iin_pattern, message: "must contain exactly 12 digits")
+  |> validate_checksum(field)
+end
+
+# Kazakhstan BIN/IIN checksum algorithm:
+# 1. Multiply each of first 11 digits by weights [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+# 2. Sum all products
+# 3. Take modulo 11
+# 4. If remainder is 10, use alternative weights [3, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2]
+# 5. Result (0-9) must match the 12th digit
+
+@spec valid_checksum?(String.t()) :: boolean()
+def valid_checksum?(value) when is_binary(value) do
+  case String.length(value) do
+    12 -> validate_kazakhstan_checksum(value)
+    _ -> false
+  end
+end
+
+defp validate_kazakhstan_checksum(<<digits::binary-size(11), check_digit::binary-size(1)>>) do
+  weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  alternative_weights = [3, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2]
+
+  digit_list =
+    digits
+    |> String.graphemes()
+    |> Enum.map(&String.to_integer/1)
+
+  expected =
+    case calculate_checksum(digit_list, weights) do
+      10 -> calculate_checksum(digit_list, alternative_weights)
+      remainder -> remainder
+    end
+
+  String.to_integer(check_digit) == expected
 end
 ```
+
+**Validation Results:**
+
+| Value          | Length | Format | Checksum | Result  |
+| -------------- | ------ | ------ | -------- | ------- |
+| `000000000000` | ✓      | ✓      | ✗        | Invalid |
+| `111111111111` | ✓      | ✓      | ✗        | Invalid |
+| `940440001481` | ✓      | ✓      | ✓        | Valid   |
 
 ---
 

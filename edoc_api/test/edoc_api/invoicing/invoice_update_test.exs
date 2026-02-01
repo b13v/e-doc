@@ -169,13 +169,14 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
 
       today = Date.utc_today()
 
+      # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
       updated_attrs = %{
         "service_name" => "New Service",
         "issue_date" => today,
         "due_date" => Date.add(today, 7),
         "currency" => "USD",
         "buyer_name" => "New Buyer",
-        "buyer_bin_iin" => "999999999999",
+        "buyer_bin_iin" => "000000000000",
         "buyer_address" => "New Address",
         "vat_rate" => 16
       }
@@ -186,7 +187,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
       assert updated_invoice.service_name == "New Service"
       assert updated_invoice.currency == "USD"
       assert updated_invoice.buyer_name == "New Buyer"
-      assert updated_invoice.buyer_bin_iin == "999999999999"
+      assert updated_invoice.buyer_bin_iin == "000000000000"
       assert updated_invoice.buyer_address == "New Address"
       assert updated_invoice.vat_rate == 16
     end

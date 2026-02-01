@@ -32,11 +32,12 @@ defmodule EdocApi.TestFixtures do
   def company_attrs(overrides \\ %{}) do
     # NOTE: bank_name, iban, bank_id, kbe_code_id, knp_code_id are deprecated
     # Use create_company_bank_account! instead
+    # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
     Map.merge(
       %{
         "name" => "Acme LLC",
         "legal_form" => "LLC",
-        "bin_iin" => "123456789012",
+        "bin_iin" => "000000000000",
         "city" => "Almaty",
         "address" => "Some Street 1",
         "phone" => "+7 (777) 123 45 67",
@@ -56,13 +57,14 @@ defmodule EdocApi.TestFixtures do
   end
 
   def invoice_attrs(overrides \\ %{}) do
+    # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
     Map.merge(
       %{
         "service_name" => "Consulting",
         "issue_date" => Date.utc_today(),
         "currency" => "KZT",
         "buyer_name" => "Buyer LLC",
-        "buyer_bin_iin" => "123456789012",
+        "buyer_bin_iin" => "000000000000",
         "buyer_address" => "Buyer Address",
         "vat_rate" => 0,
         "items" => [
@@ -116,13 +118,14 @@ defmodule EdocApi.TestFixtures do
   def create_contract!(company, attrs \\ %{}) do
     number = "C-#{System.unique_integer([:positive])}"
 
+    # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
     attrs =
       Map.merge(
         %{
           "number" => number,
           "issue_date" => Date.utc_today(),
           "buyer_name" => "Test Buyer LLC",
-          "buyer_bin_iin" => "987654321098",
+          "buyer_bin_iin" => "000000000000",
           "buyer_address" => "Test Buyer Address"
         },
         attrs
@@ -137,6 +140,7 @@ defmodule EdocApi.TestFixtures do
     # Get or create a bank account for the company
     bank_account = ensure_company_has_bank_account(company)
 
+    # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
     base = %Invoice{
       number: "0000000001",
       service_name: "Consulting",
@@ -147,7 +151,7 @@ defmodule EdocApi.TestFixtures do
       seller_address: company.address,
       seller_iban: bank_account.iban,
       buyer_name: "Buyer LLC",
-      buyer_bin_iin: "123456789012",
+      buyer_bin_iin: "000000000000",
       buyer_address: "Buyer Address",
       subtotal: Decimal.new("100.00"),
       vat_rate: 0,
