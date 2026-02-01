@@ -67,7 +67,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
 
       updated_attrs = %{"service_name" => "Should not update"}
 
-      assert {:error, :invoice_already_issued} =
+      assert {:error, :business_rule, %{rule: :invoice_already_issued}} =
                Invoicing.update_invoice_for_user(user.id, issued_invoice.id, updated_attrs)
     end
 
@@ -139,7 +139,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
       fake_invoice_id = Ecto.UUID.generate()
       updated_attrs = %{"service_name" => "Updated"}
 
-      assert {:error, :invoice_not_found} =
+      assert {:error, :not_found, %{resource: :invoice}} =
                Invoicing.update_invoice_for_user(user.id, fake_invoice_id, updated_attrs)
     end
 

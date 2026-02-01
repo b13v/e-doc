@@ -380,7 +380,7 @@ Errors.from_changeset({:error, changeset})
 
 ---
 
-### 3.2 Inconsistent Transaction Abort Patterns
+### 3.2 Inconsistent Transaction Abort Patterns ✅ DONE
 
 **Location:** `lib/edoc_api/invoicing.ex:46-48` vs `lib/edoc_api/core.ex:153-155`
 
@@ -388,21 +388,54 @@ Errors.from_changeset({:error, changeset})
 
 **Risk:** Inconsistent error handling makes code harder to follow.
 
-**Code Examples:**
+**Resolution:**
 
+Created `RepoHelpers.fetch_or_abort/2` and `RepoHelpers.fetch_or_abort/3` helper functions to standardize the pattern of fetching records and aborting transactions when records are not found.
+
+**Before:**
 ```elixir
-# invoicing.ex - uses pattern with unless
-unless invoice do
-  RepoHelpers.abort(:invoice_not_found)
-end
+# Manual pattern with unless check
+invoice =
+  Invoice
+  |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
+  |> Repo.one()
 
-# core.ex - uses direct pattern
-unless contract do
-  RepoHelpers.abort(:not_found)
+unless invoice do
+  RepoHelpers.abort({:not_found, %{resource: :invoice}})
 end
 ```
 
-**Suggested Refactor:** Standardize on a single pattern using `fetch_or_abort` helper.
+**After:**
+```elixir
+# Standardized pattern with fetch_or_abort
+invoice =
+  RepoHelpers.fetch_or_abort(
+    from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+    :invoice
+  )
+```
+
+**Changes Made:**
+
+1. **lib/edoc_api/repo_helpers.ex** - Added two new functions:
+   - `fetch_or_abort(queryable, id, resource_name)` - for fetching by ID
+   - `fetch_or_abort(query, resource_name)` - for fetching by query
+
+2. **lib/edoc_api/invoicing.ex** - Updated 3 locations to use `fetch_or_abort`:
+   - `issue_invoice_for_user/2`
+   - `update_invoice_for_user/3`
+   - `mark_invoice_issued/1`
+
+3. **lib/edoc_api/core.ex** - Updated 1 location:
+   - `issue_contract_for_user/2`
+
+4. **test/edoc_api/invoicing/invoice_update_test.exs** - Updated 2 test expectations to match new error formats
+
+**Benefits:**
+- Consistent pattern across all modules for fetching records
+- Eliminates repetitive `unless` checks
+- Automatic standardized error formatting
+- Cleaner, more readable code
 
 ---
 

@@ -161,13 +161,10 @@ defmodule EdocApi.Core do
 
         %Company{id: company_id} ->
           contract =
-            Contract
-            |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
-            |> Repo.one()
-
-          unless contract do
-            RepoHelpers.abort({:not_found, %{resource: :contract}})
-          end
+            RepoHelpers.fetch_or_abort(
+              from(c in Contract, where: c.company_id == ^company_id and c.id == ^contract_id),
+              :contract
+            )
 
           if ContractStatus.already_issued?(contract) do
             RepoHelpers.abort(

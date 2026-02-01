@@ -117,4 +117,51 @@ defmodule EdocApi.RepoHelpers do
       abort(reason)
     end
   end
+
+  @doc """
+  Fetches a record by ID and aborts if not found.
+
+  Standardizes the pattern of fetching records within transactions.
+  Eliminates the need for manual `unless` checks after Repo.get.
+
+  ## Examples
+
+      transaction(fn ->
+        # Old pattern:
+        # invoice = Repo.get(Invoice, id)
+        # unless invoice do
+        #   RepoHelpers.abort({:not_found, %{resource: :invoice}})
+        # end
+
+        # New pattern:
+        invoice = fetch_or_abort(Invoice, id, :invoice)
+        {:ok, invoice}
+      end)
+  """
+  def fetch_or_abort(queryable, id, resource_name) when is_atom(resource_name) do
+    case Repo.get(queryable, id) do
+      nil -> abort({:not_found, %{resource: resource_name}})
+      record -> record
+    end
+  end
+
+  @doc """
+  Fetches a record by query and aborts if not found.
+
+  ## Examples
+
+      transaction(fn ->
+        invoice = fetch_or_abort(
+          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          :invoice
+        )
+        {:ok, invoice}
+      end)
+  """
+  def fetch_or_abort(query, resource_name) do
+    case Repo.one(query) do
+      nil -> abort({:not_found, %{resource: resource_name}})
+      record -> record
+    end
+  end
 end

@@ -40,13 +40,10 @@ defmodule EdocApi.Invoicing do
   def issue_invoice_for_user(user_id, invoice_id) do
     RepoHelpers.transaction(fn ->
       invoice =
-        Invoice
-        |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
-        |> Repo.one()
-
-      unless invoice do
-        RepoHelpers.abort({:not_found, %{resource: :invoice}})
-      end
+        RepoHelpers.fetch_or_abort(
+          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          :invoice
+        )
 
       invoice = preload_invoice(invoice)
 
@@ -129,17 +126,17 @@ defmodule EdocApi.Invoicing do
   def update_invoice_for_user(user_id, invoice_id, attrs) do
     RepoHelpers.transaction(fn ->
       invoice =
-        Invoice
-        |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
-        |> Repo.one()
-
-      unless invoice do
-        RepoHelpers.abort(:invoice_not_found)
-      end
+        RepoHelpers.fetch_or_abort(
+          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          :invoice
+        )
 
       # Only allow updates on draft invoices
       unless InvoiceStatus.is_draft?(invoice) do
-        RepoHelpers.abort(:invoice_already_issued)
+        RepoHelpers.abort(
+          {:business_rule,
+           %{rule: :invoice_already_issued, invoice_id: invoice.id, status: invoice.status}}
+        )
       end
 
       items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
@@ -153,13 +150,17 @@ defmodule EdocApi.Invoicing do
         end
 
       if bank_account_id && bank_account == nil do
-        RepoHelpers.abort(:bank_account_not_found)
+        RepoHelpers.abort({:not_found, %{resource: :bank_account}})
       end
 
       # Handle items if provided
       new_subtotal =
         if items_attrs != [] do
-          RepoHelpers.check_or_abort(items_attrs != [], :items_required)
+          RepoHelpers.check_or_abort(
+            items_attrs != [],
+            {:business_rule, %{rule: :items_required, invoice_id: invoice.id}}
+          )
+
           {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
 
           # Delete existing items
@@ -205,8 +206,13 @@ defmodule EdocApi.Invoicing do
 
   defp get_bank_account_for_invoice(company_id, nil) do
     case CompanyBankAccount.get_default_account(company_id) do
-      nil -> RepoHelpers.abort(:bank_account_required)
-      acc -> acc
+      nil ->
+        RepoHelpers.abort(
+          {:business_rule, %{rule: :bank_account_required, company_id: company_id}}
+        )
+
+      acc ->
+        acc
     end
   end
 
@@ -216,7 +222,10 @@ defmodule EdocApi.Invoicing do
         acc
 
       _ ->
-        RepoHelpers.abort(:bank_account_not_found)
+        RepoHelpers.abort(
+          {:not_found,
+           %{resource: :bank_account, company_id: company_id, bank_account_id: bank_account_id}}
+        )
     end
   end
 
@@ -457,9 +466,7 @@ defmodule EdocApi.Invoicing do
   # ------------ Marking-Invoice-issued-------------------
   def mark_invoice_issued(invoice) do
     RepoHelpers.transaction(fn ->
-      unless invoice do
-        RepoHelpers.abort({:not_found, %{resource: :invoice}})
-      end
+      invoice = RepoHelpers.fetch_or_abort(invoice, :invoice)
 
       invoice = preload_invoice(invoice)
 
