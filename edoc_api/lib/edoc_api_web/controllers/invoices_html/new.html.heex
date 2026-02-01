@@ -14,6 +14,11 @@
         </div>
 
         <div>
+          <label for="issue_date" class="block text-sm font-medium text-gray-700">Issue Date</label>
+          <input type="date" name="invoice[issue_date]" required value={Date.utc_today()} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
           <label for="buyer_name" class="block text-sm font-medium text-gray-700">Buyer Name</label>
           <input type="text" name="invoice[buyer_name]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
@@ -29,15 +34,38 @@
         </div>
 
         <div>
-          <label for="total" class="block text-sm font-medium text-gray-700">Total Amount</label>
-          <input type="number" name="invoice[total]" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
-
-        <div>
           <label class="block text-sm font-medium text-gray-700">Currency</label>
           <input type="hidden" name="invoice[currency]" value="KZT" />
           <div class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 px-3 py-2 text-gray-700">
             KZT (Kazakhstani Tenge)
+          </div>
+        </div>
+
+        <div>
+          <label for="vat_rate" class="block text-sm font-medium text-gray-700">VAT Rate (%)</label>
+          <select name="invoice[vat_rate]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <option value="0">0%</option>
+            <option value="16" selected>16%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Invoice Items</h3>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="grid grid-cols-12 gap-4 mb-4">
+            <div class="col-span-6">
+              <label class="block text-sm font-medium text-gray-700">Item Name</label>
+              <input type="text" name="items[0][name]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Qty</label>
+              <input type="number" name="items[0][qty]" value="1" min="1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+            </div>
+            <div class="col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Unit Price</label>
+              <input type="number" name="items[0][unit_price]" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+            </div>
           </div>
         </div>
       </div>

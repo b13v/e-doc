@@ -37,7 +37,7 @@ defmodule EdocApiWeb.InvoicesController do
     render(conn, :new, page_title: "New Invoice")
   end
 
-  def create(conn, %{"invoice" => invoice_params}) do
+  def create(conn, %{"invoice" => invoice_params, "items" => items_params}) do
     user = current_user(conn)
 
     # Get company for user
@@ -48,18 +48,47 @@ defmodule EdocApiWeb.InvoicesController do
         |> redirect(to: "/company")
 
       company ->
-        case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params) do
+        # Combine invoice params with items
+        invoice_params_with_items =
+          invoice_params
+          |> Map.put("items", Map.values(items_params))
+
+        case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params_with_items) do
           {:ok, invoice} ->
             conn
             |> put_flash(:info, "Invoice created successfully")
             |> redirect(to: "/invoices/#{invoice.id}")
 
-          {:error, _changeset} ->
+          {:error, %Ecto.Changeset{} = changeset} ->
             conn
-            |> put_flash(:error, "Failed to create invoice")
+            |> put_flash(
+              :error,
+              "Failed to create invoice: #{format_changeset_errors(changeset)}"
+            )
+            |> render(:new, page_title: "New Invoice")
+
+          {:error, reason} ->
+            conn
+            |> put_flash(:error, "Failed to create invoice: #{reason}")
             |> render(:new, page_title: "New Invoice")
         end
     end
+  end
+
+  def create(conn, %{"invoice" => _invoice_params}) do
+    conn
+    |> put_flash(:error, "At least one item is required")
+    |> render(:new, page_title: "New Invoice")
+  end
+
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
+    |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
+    |> Enum.join("; ")
   end
 
   def pdf(conn, %{"id" => id}) do
