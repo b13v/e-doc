@@ -142,7 +142,7 @@ defmodule EdocApi.TestFixtures do
 
     # Using valid Kazakhstan BIN: 000000000000 (passes checksum validation)
     base = %Invoice{
-      number: "0000000001",
+      number: "00000000001",
       service_name: "Consulting",
       issue_date: Date.utc_today(),
       currency: "KZT",

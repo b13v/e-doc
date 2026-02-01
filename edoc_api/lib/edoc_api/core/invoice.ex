@@ -131,11 +131,23 @@ defmodule EdocApi.Core.Invoice do
     |> update_change(:buyer_bin_iin, &BinIin.normalize/1)
   end
 
+  # Invoice number format: exactly 11 digits (e.g., 00000000001)
+  @invoice_number_format ~r/^\d{11}$/
+
   defp validate_number_optional(changeset) do
     case get_field(changeset, :number) do
-      nil -> changeset
-      "" -> add_error(changeset, :number, "can't be blank")
-      _ -> validate_length(changeset, :number, min: 1, max: 32)
+      nil ->
+        changeset
+
+      "" ->
+        add_error(changeset, :number, "can't be blank")
+
+      _number ->
+        changeset
+        |> validate_length(:number, is: 11)
+        |> validate_format(:number, @invoice_number_format,
+          message: "must be exactly 11 digits (e.g., 00000000001)"
+        )
     end
   end
 

@@ -2,16 +2,12 @@ defmodule EdocApi.Core.InvoiceCounter do
   @moduledoc """
   Invoice counter schema for generating sequential invoice numbers.
 
-  Supports multiple sequences per company through the `sequence_name` field.
-  This allows for separate numbering sequences by currency, department, etc.
+  Each company has a single sequence for invoice numbering.
+  All invoice numbers are generated as 11-digit format without prefixes.
 
   ## Examples
 
-      # Default sequence
       %InvoiceCounter{company_id: "123", sequence_name: "default", next_seq: 100}
-
-      # Currency-specific sequence
-      %InvoiceCounter{company_id: "123", sequence_name: "USD", next_seq: 50}
 
   """
   use Ecto.Schema
@@ -42,24 +38,9 @@ defmodule EdocApi.Core.InvoiceCounter do
 
   @doc """
   Returns all valid sequence names.
-  Can be extended to support dynamic sequences.
+  Only supports the default sequence (no currency prefixes).
   """
   def valid_sequence_names do
-    # Predefined sequences + option for custom sequences
-    ~w(default) ++ currency_sequences()
-  end
-
-  @doc """
-  Returns currency-based sequence names.
-  """
-  def currency_sequences do
-    ~w(KZT USD EUR RUB)
-  end
-
-  @doc """
-  Generates a sequence name for a specific currency.
-  """
-  def currency_sequence(currency_code) do
-    String.upcase(currency_code || "default")
+    ~w(default)
   end
 end

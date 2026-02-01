@@ -236,20 +236,55 @@ end
 
 ---
 
-### 2.3 No Invoice Number Format Validation
+### 2.3 No Invoice Number Format Validation ✅ DONE
 
-**Location:** `lib/edoc_api/core/invoice.ex:111-116`
+**Location:** `lib/edoc_api/core/invoice.ex:134-150`
 
 **Issue:** Number is only validated for length (1-32 chars). No format enforcement.
 
 **Risk:** Inconsistent invoice numbers across the system.
 
-**Suggested Refactor:**
+**Resolution:**
+
+Added format validation for invoice numbers in `validate_number_optional/1`:
 
 ```elixir
-# Add format validation for auto-generated pattern
-|> validate_format(:number, ~r/^[A-Z]{0,3}-?\d{10}$/)
+# Invoice number format: exactly 11 digits (e.g., 00000000001)
+@invoice_number_format ~r/^\d{11}$/
+
+ defp validate_number_optional(changeset) do
+    case get_field(changeset, :number) do
+      nil ->
+        changeset
+
+      "" ->
+        add_error(changeset, :number, "can't be blank")
+
+      _number ->
+        changeset
+        |> validate_length(:number, is: 11)
+        |> validate_format(:number, @invoice_number_format,
+          message: "must be exactly 11 digits (e.g., 00000000001)"
+        )
+    end
+  end
 ```
+
+**Additional Changes:**
+
+1. **Removed currency-specific sequences** from `InvoiceCounter` - only "default" sequence is now supported
+2. **Updated `format_invoice_number`** to always generate 11-digit numbers without prefixes
+3. **Simplified `normalize_sequence_name`** to always return "default"
+
+**Validation Results:**
+
+| Value | Format | Result |
+|-------|--------|--------|
+| `00000000001` | ✓ (11 digits) | Valid |
+| `12345678901` | ✓ (11 digits) | Valid |
+| `0000000001` | ✗ (10 digits) | Invalid |
+| `000000000000` | ✗ (12 digits) | Invalid |
+| `KZT-00000000001` | ✗ (has prefix) | Invalid |
 
 ---
 

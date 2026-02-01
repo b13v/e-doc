@@ -11,8 +11,8 @@ defmodule EdocApi.Invoicing.InvoiceCounterTest do
     user = create_user!()
     company = create_company!(user)
 
-    assert Invoicing.next_invoice_number!(company.id) == "0000000001"
-    assert Invoicing.next_invoice_number!(company.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000002"
   end
 
   test "sequences are independent per company" do
@@ -22,9 +22,9 @@ defmodule EdocApi.Invoicing.InvoiceCounterTest do
     user_two = create_user!()
     company_two = create_company!(user_two)
 
-    assert Invoicing.next_invoice_number!(company_one.id) == "0000000001"
-    assert Invoicing.next_invoice_number!(company_two.id) == "0000000001"
-    assert Invoicing.next_invoice_number!(company_one.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company_one.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company_two.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company_one.id) == "00000000002"
   end
 
   test "handles large invoice numbers correctly" do
@@ -38,9 +38,9 @@ defmodule EdocApi.Invoicing.InvoiceCounterTest do
     })
 
     # Should get 9,999,999,998
-    assert Invoicing.next_invoice_number!(company.id) == "9999999998"
+    assert Invoicing.next_invoice_number!(company.id) == "09999999998"
     # Should get 9,999,999,999
-    assert Invoicing.next_invoice_number!(company.id) == "9999999999"
+    assert Invoicing.next_invoice_number!(company.id) == "09999999999"
   end
 
   test "raises error when counter overflows maximum" do

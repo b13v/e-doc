@@ -380,40 +380,25 @@ defmodule EdocApi.Invoicing do
   end
 
   @doc """
-  Formats an invoice number according to the sequence type.
-
-  For currency-specific sequences, adds a prefix.
-  For default sequence, uses the standard 10-digit format.
+  Formats an invoice number as exactly 11 digits.
 
   ## Examples
 
-      iex> Invoicing.format_invoice_number(123, "default")
-      "0000000123"
+      iex> Invoicing.format_invoice_number(1)
+      "00000000001"
 
-      iex> Invoicing.format_invoice_number(456, "USD")
-      "USD-0000000456"
+      iex> Invoicing.format_invoice_number(123)
+      "00000000123"
 
   """
-  def format_invoice_number(seq, sequence_name \\ "default") do
-    if sequence_name == "default" do
-      String.pad_leading(Integer.to_string(seq), 10, "0")
-    else
-      "#{sequence_name}-#{String.pad_leading(Integer.to_string(seq), 10, "0")}"
-    end
+  def format_invoice_number(seq, _sequence_name \\ "default") do
+    String.pad_leading(Integer.to_string(seq), 11, "0")
   end
 
-  # Normalize sequence name to uppercase and validate
-  defp normalize_sequence_name(sequence_name) when is_binary(sequence_name) do
-    normalized = String.upcase(String.trim(sequence_name))
-
-    if normalized in InvoiceCounter.valid_sequence_names() do
-      normalized
-    else
-      "default"
-    end
+  # Always use default sequence (no currency prefixes supported)
+  defp normalize_sequence_name(_sequence_name) do
+    "default"
   end
-
-  defp normalize_sequence_name(_), do: "default"
 
   defp create_and_increment_counter(company_id, sequence_name) do
     Repo.transaction(fn ->
