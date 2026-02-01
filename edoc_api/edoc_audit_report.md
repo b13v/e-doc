@@ -439,7 +439,7 @@ invoice =
 
 ---
 
-### 3.3 HTML vs JSON Controller Error Handling Divergence
+### 3.3 HTML vs JSON Controller Error Handling Divergence ✅ DONE
 
 **Location:** `lib/edoc_api_web/controllers/invoices_controller.ex:108-129` vs `lib/edoc_api_web/controllers/invoice_controller.ex`
 
@@ -447,19 +447,95 @@ invoice =
 
 **Risk:** Error handling logic duplicated and diverging.
 
-**Suggested Refactor:**
+**Resolution:**
+
+Created `EdocApiWeb.UnifiedErrorHandler` module to provide consistent error handling across all controller types (HTML, HTMX, and JSON).
+
+**Implementation:**
 
 ```elixir
-# Create a unified error handler that dispatches based on request type
-# lib/edoc_api_web/error_handler.ex
-def handle_error(conn, error) do
-  if conn.assigns.htmx.request do
-    handle_htmx_error(conn, error)
-  else
-    handle_html_error(conn, error)
+# lib/edoc_api_web/unified_error_handler.ex
+defmodule EdocApiWeb.UnifiedErrorHandler do
+  def handle_result(conn, result, opts \\ []) do
+    case result do
+      {:ok, data} ->
+        success_handler = Keyword.get(opts, :success)
+        success_handler.(conn, data)
+
+      {:error, type, details} ->
+        handle_error(conn, type, details, opts)
+    end
+  end
+
+  def handle_error(conn, type, details, opts) do
+    cond do
+      htmx_request?(conn) -> handle_htmx_error(conn, type, details, opts)
+      json_request?(conn) -> handle_json_error(conn, type, details, opts)
+      true -> handle_html_error(conn, type, details, opts)
+    end
   end
 end
 ```
+
+**Changes Made:**
+
+1. **lib/edoc_api_web/unified_error_handler.ex** (new file) - Created unified error handler with:
+   - `handle_result/3` - Main entry point for handling success/error results
+   - `handle_error/4` - Dispatches to appropriate handler based on request type
+   - `htmx_request?/1` - Detects HTMX requests
+   - `json_request?/1` - Detects JSON requests
+   - Separate handlers for HTMX, HTML, and JSON error responses
+
+2. **lib/edoc_api_web/controllers/invoices_controller.ex** - Updated `delete/2` action to demonstrate the new pattern:
+   - Uses `UnifiedErrorHandler.handle_result/3`
+   - Provides custom success and error handlers
+   - Maintains HTMX-specific behavior
+
+**Usage Example:**
+
+```elixir
+# Before: Inline error handling with pattern matching
+def delete(conn, %{"id" => id}) do
+  case Invoicing.delete_invoice_for_user(user.id, id) do
+    {:ok, _} ->
+      if conn.assigns.htmx.request do
+        send_resp(conn, :no_content, "")
+      else
+        redirect(conn, to: "/invoices")
+      end
+    {:error, :cannot_delete_issued_invoice} ->
+      if conn.assigns.htmx.request do
+        send_resp(403, "<span class='text-red-600'>Cannot delete...</span>")
+      else
+        put_flash(:error, "Cannot delete...") |> redirect(to: "/invoices")
+      end
+  end
+end
+
+# After: Unified error handling
+def delete(conn, %{"id" => id}) do
+  result = Invoicing.delete_invoice_for_user(user.id, id)
+
+  UnifiedErrorHandler.handle_result(conn, result,
+    success: fn conn, _ ->
+      if UnifiedErrorHandler.htmx_request?(conn) do
+        send_resp(conn, :no_content, "")
+      else
+        redirect(conn, to: "/invoices")
+      end
+    end
+  )
+end
+```
+
+**Benefits:**
+- Consistent error handling across all controller types
+- Eliminates code duplication between HTML/HTMX/JSON responses
+- Centralized error formatting and dispatching
+- Easy to extend with new error types
+- Maintains backward compatibility with existing ControllerHelpers for JSON
+
+**Note:** Other controllers can be migrated to use `UnifiedErrorHandler` incrementally as they are modified.
 
 ---
 

@@ -3,6 +3,7 @@ defmodule EdocApiWeb.InvoicesController do
 
   alias EdocApi.Invoicing
   alias EdocApi.Documents.InvoicePdf
+  alias EdocApiWeb.UnifiedErrorHandler
 
   # Get current user from conn.assigns (set by auth plug)
   defp current_user(conn), do: conn.assigns.current_user
@@ -94,40 +95,44 @@ defmodule EdocApiWeb.InvoicesController do
 
   def delete(conn, %{"id" => id}) do
     user = current_user(conn)
+    result = Invoicing.delete_invoice_for_user(user.id, id)
 
-    case Invoicing.delete_invoice_for_user(user.id, id) do
-      {:ok, _invoice} ->
-        # For htmx requests, return empty content to remove the row
-        if conn.assigns.htmx.request do
-          send_resp(conn, :no_content, "")
-        else
-          conn
-          |> put_flash(:info, "Invoice deleted successfully")
-          |> redirect(to: "/invoices")
-        end
+    UnifiedErrorHandler.handle_result(result,
+      success: fn
+        conn ->
+          if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
+            send_resp(conn, :no_content, "")
+          else
+            conn
+            |> put_flash(:info, "Invoice deleted successfully")
+            |> redirect(to: "/invoices")
+          end
+      end,
+      error: fn conn, type, details ->
+        cond do
+          type == :business_rule && details[:rule] == :cannot_delete_issued_invoice ->
+            if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
+              conn
+              |> put_resp_content_type("text/html")
+              |> send_resp(403, "<span class='text-red-600'>Cannot delete issued invoice</span>")
+            else
+              conn
+              |> put_flash(:error, "Cannot delete issued invoice")
+              |> redirect(to: "/invoices")
+            end
 
-      {:error, :cannot_delete_issued_invoice} ->
-        # For htmx, return an error response
-        if conn.assigns.htmx.request do
-          conn
-          |> put_resp_content_type("text/html")
-          |> send_resp(403, "<span class='text-red-600'>Cannot delete issued invoice</span>")
-        else
-          conn
-          |> put_flash(:error, "Cannot delete issued invoice")
-          |> redirect(to: "/invoices")
+          true ->
+            if conn.assigns[:htmx] && conn.assigns.htmx[:request] do
+              conn
+              |> put_resp_content_type("text/html")
+              |> send_resp(404, "<span class='text-red-600'>Error deleting invoice</span>")
+            else
+              conn
+              |> put_flash(:error, "Error deleting invoice")
+              |> redirect(to: "/invoices")
+            end
         end
-
-      {:error, _reason} ->
-        if conn.assigns.htmx.request do
-          conn
-          |> put_resp_content_type("text/html")
-          |> send_resp(404, "<span class='text-red-600'>Error deleting invoice</span>")
-        else
-          conn
-          |> put_flash(:error, "Error deleting invoice")
-          |> redirect(to: "/invoices")
-        end
-    end
+      end
+    )
   end
 end
