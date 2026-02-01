@@ -67,6 +67,14 @@ defmodule EdocApiWeb.InvoicesController do
             )
             |> render(:new, page_title: "New Invoice")
 
+          {:error, :validation, %{changeset: changeset}} ->
+            conn
+            |> put_flash(
+              :error,
+              "Failed to create invoice: #{format_changeset_errors(changeset)}"
+            )
+            |> render(:new, page_title: "New Invoice")
+
           {:error, reason} ->
             conn
             |> put_flash(:error, "Failed to create invoice: #{reason}")
