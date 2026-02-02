@@ -11,6 +11,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Core.InvoiceBankSnapshot
   alias EdocApi.Core.InvoiceItem
   alias EdocApi.Core.InvoiceCounter
+  alias EdocApi.Core.InvoiceRecycledNumber
   alias EdocApi.Core.CompanyBankAccount
   alias EdocApi.InvoiceStatus
 
@@ -62,7 +63,7 @@ defmodule EdocApi.Invoicing do
   end
 
   def create_invoice_for_user(user_id, company_id, attrs) do
-    items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
+    items_attrs = normalize_items(Map.get(attrs, "items") || Map.get(attrs, :items) || [])
     bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
 
     RepoHelpers.transaction(fn ->
@@ -144,7 +145,7 @@ defmodule EdocApi.Invoicing do
         )
       end
 
-      items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
+      items_attrs = normalize_items(Map.get(attrs, "items") || Map.get(attrs, :items) || [])
       bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
 
       # Handle bank account if specified
@@ -161,11 +162,6 @@ defmodule EdocApi.Invoicing do
       # Handle items if provided
       new_subtotal =
         if items_attrs != [] do
-          RepoHelpers.check_or_abort(
-            items_attrs != [],
-            {:business_rule, %{rule: :items_required, invoice_id: invoice.id}}
-          )
-
           {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
 
           # Delete existing items
@@ -271,6 +267,22 @@ defmodule EdocApi.Invoicing do
     end)
   end
 
+  # Convert items from map format (from HTML forms) to list format
+  # Handles: %{"0" => item1, "1" => item2} -> [item1, item2]
+  # Also handles already-list format and filters out destroyed items
+  defp normalize_items(items_attrs) when is_list(items_attrs), do: items_attrs
+
+  defp normalize_items(items_attrs) when is_map(items_attrs) do
+    items_attrs
+    |> Map.values()
+    |> Enum.reject(fn item ->
+      # Skip items marked for destruction or empty items
+      is_map(item) and (Map.get(item, "_destroy") == "true" or Map.get(item, :_destroy) == true)
+    end)
+  end
+
+  defp normalize_items(_), do: []
+
   defp parse_int(v) when is_integer(v), do: v
 
   defp parse_int(v) when is_binary(v) do
@@ -354,6 +366,18 @@ defmodule EdocApi.Invoicing do
   def next_invoice_number!(company_id, sequence_name \\ "default") do
     sequence_name = normalize_sequence_name(sequence_name)
 
+    # First, check for recycled numbers (FIFO - use oldest first)
+    case get_and_remove_recycled_number(company_id, sequence_name) do
+      {:ok, recycled_number} ->
+        recycled_number
+
+      :none_available ->
+        # No recycled numbers available, use counter
+        get_next_number_from_counter(company_id, sequence_name)
+    end
+  end
+
+  defp get_next_number_from_counter(company_id, sequence_name) do
     # Check for existing counter
     current_counter =
       Repo.get_by(InvoiceCounter, company_id: company_id, sequence_name: sequence_name)
@@ -628,6 +652,10 @@ defmodule EdocApi.Invoicing do
                end
              end) do
           {:ok, invoice} ->
+            # Store the invoice number for recycling
+            # Only draft invoices are deleted, so we can safely recycle their numbers
+            recycle_invoice_number(invoice.company_id, invoice.number, "default")
+
             {:ok, invoice}
 
           {:error, {:validation_failed, changeset}} ->
@@ -639,6 +667,89 @@ defmodule EdocApi.Invoicing do
       end
     else
       Errors.not_found(:invoice)
+    end
+  end
+
+  @doc """
+  Stores an invoice number in the recycle pool for later reuse.
+  This is called when a draft invoice is deleted.
+  """
+  defp recycle_invoice_number(company_id, number, sequence_name) do
+    # Parse the number to ensure it's valid (11 digits)
+    case Integer.parse(number) do
+      {num, ""} when num > 0 and num <= @max_invoice_number ->
+        attrs = %{
+          company_id: company_id,
+          number: number,
+          sequence_name: normalize_sequence_name(sequence_name),
+          deleted_at: DateTime.utc_now()
+        }
+
+        %InvoiceRecycledNumber{}
+        |> InvoiceRecycledNumber.changeset(attrs)
+        |> Repo.insert()
+        |> case do
+          {:ok, _recycled} ->
+            Logger.info("Recycled invoice number #{number} for company #{company_id}")
+            :ok
+
+          {:error, %{errors: [number: {"has already been taken", _}]}} ->
+            # Number already in recycle pool (shouldn't happen normally)
+            Logger.warning(
+              "Invoice number #{number} already in recycle pool for company #{company_id}"
+            )
+
+            :ok
+
+          {:error, changeset} ->
+            Logger.error(
+              "Failed to recycle invoice number #{number}: #{inspect(changeset.errors)}"
+            )
+
+            # Don't fail the deletion if recycling fails
+            :ok
+        end
+
+      _ ->
+        # Invalid number format, skip recycling
+        Logger.warning("Cannot recycle invalid invoice number format: #{number}")
+        :ok
+    end
+  end
+
+  @doc """
+  Gets the oldest recycled invoice number for a company/sequence and removes it from the pool.
+  Returns {:ok, number} if a recycled number is available, :none_available otherwise.
+  """
+  defp get_and_remove_recycled_number(company_id, sequence_name) do
+    sequence_name = normalize_sequence_name(sequence_name)
+
+    # Find the oldest recycled number (FIFO)
+    recycled =
+      InvoiceRecycledNumber
+      |> where([r], r.company_id == ^company_id and r.sequence_name == ^sequence_name)
+      |> order_by([r], asc: r.inserted_at)
+      |> limit(1)
+      |> Repo.one()
+
+    case recycled do
+      nil ->
+        :none_available
+
+      recycled ->
+        # Delete it from the pool and return the number
+        case Repo.delete(recycled) do
+          {:ok, _} ->
+            Logger.info(
+              "Reusing recycled invoice number #{recycled.number} for company #{company_id}"
+            )
+
+            {:ok, recycled.number}
+
+          {:error, _changeset} ->
+            # If deletion fails (race condition), try again
+            get_and_remove_recycled_number(company_id, sequence_name)
+        end
     end
   end
 end

@@ -2,6 +2,7 @@ defmodule EdocApiWeb.InvoicesController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Invoicing
+  alias EdocApi.InvoiceStatus
   alias EdocApi.Documents.InvoicePdf
   alias EdocApiWeb.UnifiedErrorHandler
 
@@ -51,7 +52,7 @@ defmodule EdocApiWeb.InvoicesController do
         # Combine invoice params with items
         invoice_params_with_items =
           invoice_params
-          |> Map.put("items", Map.values(items_params))
+          |> Map.put("items", items_params)
 
         case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params_with_items) do
           {:ok, invoice} ->
@@ -170,5 +171,91 @@ defmodule EdocApiWeb.InvoicesController do
         end
       end
     )
+  end
+
+  def edit(conn, %{"id" => id}) do
+    user = current_user(conn)
+
+    case Invoicing.get_invoice_for_user(user.id, id) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> put_flash(:error, "Invoice not found")
+        |> redirect(to: "/invoices")
+
+      invoice ->
+        if InvoiceStatus.is_draft?(invoice.status) do
+          changeset = Ecto.Changeset.change(invoice)
+
+          render(conn, :edit,
+            invoice: invoice,
+            changeset: changeset,
+            page_title: "Edit Invoice #{invoice.number}"
+          )
+        else
+          conn
+          |> put_flash(:error, "Only draft invoices can be edited")
+          |> redirect(to: "/invoices/#{id}")
+        end
+    end
+  end
+
+  def update(conn, %{"id" => id, "invoice" => invoice_params}) do
+    user = current_user(conn)
+
+    case Invoicing.update_invoice_for_user(user.id, id, invoice_params) do
+      {:ok, invoice} ->
+        conn
+        |> put_flash(:info, "Invoice updated successfully")
+        |> redirect(to: "/invoices/#{invoice.id}")
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        invoice = Invoicing.get_invoice_for_user(user.id, id)
+
+        conn
+        |> put_flash(:error, "Failed to update invoice: #{format_changeset_errors(changeset)}")
+        |> render(:edit,
+          invoice: invoice,
+          changeset: changeset,
+          page_title: "Edit Invoice #{invoice.number}"
+        )
+
+      {:error, reason} ->
+        invoice = Invoicing.get_invoice_for_user(user.id, id)
+
+        conn
+        |> put_flash(:error, "Failed to update invoice: #{reason}")
+        |> render(:edit,
+          invoice: invoice,
+          changeset: Ecto.Changeset.change(invoice, invoice_params),
+          page_title: "Edit Invoice #{invoice.number}"
+        )
+    end
+  end
+
+  def issue(conn, %{"id" => id}) do
+    user = current_user(conn)
+
+    case Invoicing.issue_invoice_for_user(user.id, id) do
+      {:ok, invoice} ->
+        conn
+        |> put_flash(:info, "Invoice issued successfully")
+        |> redirect(to: "/invoices/#{invoice.id}")
+
+      {:error, {:business_rule, %{rule: :cannot_issue}}} ->
+        conn
+        |> put_flash(:error, "Only draft invoices can be issued")
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error, {:business_rule, %{rule: :already_issued}}} ->
+        conn
+        |> put_flash(:error, "Invoice is already issued")
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error, reason} ->
+        conn
+        |> put_flash(:error, "Failed to issue invoice: #{inspect(reason)}")
+        |> redirect(to: "/invoices/#{id}")
+    end
   end
 end

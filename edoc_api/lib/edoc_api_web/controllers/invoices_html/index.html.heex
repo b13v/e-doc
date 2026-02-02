@@ -56,6 +56,9 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
+                  <%= if invoice.status == "draft" do %>
+                    <a href={"/invoices/#{invoice.id}/edit"} class="text-green-600 hover:text-green-900 mr-4">Edit</a>
+                  <% end %>
                   <button
                     hx-delete={"/invoices/#{invoice.id}"}
                     hx-confirm="Delete this invoice?"

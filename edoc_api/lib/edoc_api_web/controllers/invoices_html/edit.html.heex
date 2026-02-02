@@ -1,0 +1,198 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h1 class="text-2xl font-bold text-gray-900">Edit Invoice <%= @invoice.number %></h1>
+    <p class="text-sm text-gray-500 mt-1">Status: <%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %></p>
+  </div>
+
+  <div class="px-6 py-6">
+    <form action={"/invoices/#{@invoice.id}"} method="post">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <input type="hidden" name="_method" value="put" />
+
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label for="service_name" class="block text-sm font-medium text-gray-700">Service Name</label>
+          <input
+            type="text"
+            name="invoice[service_name]"
+            required
+            value={@invoice.service_name}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
+          <label for="issue_date" class="block text-sm font-medium text-gray-700">Issue Date</label>
+          <input
+            type="date"
+            name="invoice[issue_date]"
+            required
+            value={@invoice.issue_date}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
+          <label for="buyer_name" class="block text-sm font-medium text-gray-700">Buyer Name</label>
+          <input
+            type="text"
+            name="invoice[buyer_name]"
+            required
+            value={@invoice.buyer_name}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
+          <label for="buyer_bin_iin" class="block text-sm font-medium text-gray-700">Buyer BIN/IIN</label>
+          <input
+            type="text"
+            name="invoice[buyer_bin_iin]"
+            required
+            pattern="\d{12}"
+            minlength="12"
+            maxlength="12"
+            title="BIN/IIN must be exactly 12 digits"
+            value={@invoice.buyer_bin_iin}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          />
+          <p class="mt-1 text-xs text-gray-500">Enter exactly 12 digits</p>
+        </div>
+
+        <div>
+          <label for="buyer_address" class="block text-sm font-medium text-gray-700">Buyer Address</label>
+          <input
+            type="text"
+            name="invoice[buyer_address]"
+            required
+            value={@invoice.buyer_address}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Currency</label>
+          <input type="hidden" name="invoice[currency]" value={@invoice.currency} />
+          <div class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 px-3 py-2 text-gray-700">
+            <%= @invoice.currency %>
+          </div>
+        </div>
+
+        <div>
+          <label for="vat_rate" class="block text-sm font-medium text-gray-700">VAT Rate (%)</label>
+          <select name="invoice[vat_rate]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <option value="0" selected={@invoice.vat_rate == 0}>0%</option>
+            <option value="16" selected={@invoice.vat_rate == 16}>16%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Invoice Items</h3>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div id="items-container" class="space-y-2">
+            <%= for {item, index} <- Enum.with_index(@invoice.items) do %>
+              <div class="item-row grid grid-cols-12 gap-2 items-end">
+                <input type="hidden" name={"invoice[items][#{index}][id]"} value={item.id} />
+                <div class="col-span-2">
+                  <label class="block text-xs text-gray-500">Code</label>
+                  <input
+                    type="text"
+                    name={"invoice[items][#{index}][code]"}
+                    value={item.code}
+                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+                </div>
+                <div class="col-span-5">
+                  <label class="block text-xs text-gray-500">Description</label>
+                  <input
+                    type="text"
+                    name={"invoice[items][#{index}][name]"}
+                    required
+                    value={item.name}
+                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs text-gray-500">Qty</label>
+                  <input
+                    type="number"
+                    name={"invoice[items][#{index}][qty]"}
+                    value={item.qty}
+                    min="1"
+                    required
+                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs text-gray-500">Unit Price</label>
+                  <input
+                    type="number"
+                    name={"invoice[items][#{index}][unit_price]"}
+                    step="0.01"
+                    value={item.unit_price}
+                    required
+                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+                </div>
+                <div class="col-span-1">
+                  <input type="hidden" name={"invoice[items][#{index}][_destroy]"} value="false" />
+                  <button type="button" onclick="removeItemRow(this)" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          <button
+            type="button"
+            onclick="addItemRow()"
+            class="mt-2 text-sm text-blue-600 hover:text-blue-900">
+            + Add Item
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          Save Changes
+        </button>
+        <a href={"/invoices/#{@invoice.id}"} class="ml-4 text-gray-600 hover:text-gray-900">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let itemIndex = <%= length(@invoice.items) %>;
+
+  function addItemRow() {
+    const container = document.getElementById('items-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'item-row grid grid-cols-12 gap-2 items-end';
+    newRow.innerHTML = `
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Code</label>
+        <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-5">
+        <label class="block text-xs text-gray-500">Description</label>
+        <input type="text" name="invoice[items][${itemIndex}][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Qty</label>
+        <input type="number" name="invoice[items][${itemIndex}][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Unit Price</label>
+        <input type="number" name="invoice[items][${itemIndex}][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-1">
+        <button type="button" onclick="removeItemRow(this)" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
+      </div>
+    `;
+    container.appendChild(newRow);
+    itemIndex++;
+  }
+
+  function removeItemRow(button) {
+    const row = button.closest('.item-row');
+    const destroyInput = row.querySelector('input[name*="[_destroy]"]');
+    if (destroyInput) {
+      destroyInput.value = 'true';
+      row.style.display = 'none';
+    } else {
+      row.remove();
+    }
+  }
+</script>
