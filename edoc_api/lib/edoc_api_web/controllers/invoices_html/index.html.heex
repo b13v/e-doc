@@ -58,16 +58,16 @@
                   <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
                   <%= if invoice.status == "draft" do %>
                     <a href={"/invoices/#{invoice.id}/edit"} class="text-green-600 hover:text-green-900 mr-4">Edit</a>
+                    <button
+                      hx-delete={"/invoices/#{invoice.id}"}
+                      hx-confirm="Delete this invoice?"
+                      hx-target={"#invoice-#{invoice.id}"}
+                      hx-swap="outerHTML"
+                      hx-on::after-request="if(event.detail.successful) window.location.reload()"
+                      class="text-red-600 hover:text-red-900">
+                      Delete
+                    </button>
                   <% end %>
-                  <button
-                    hx-delete={"/invoices/#{invoice.id}"}
-                    hx-confirm="Delete this invoice?"
-                    hx-target={"#invoice-#{invoice.id}"}
-                    hx-swap="outerHTML"
-                    hx-on::after-request="if(event.detail.successful) window.location.reload()"
-                    class="text-red-600 hover:text-red-900">
-                    Delete
-                  </button>
                 </td>
               </tr>
             <% end %>
