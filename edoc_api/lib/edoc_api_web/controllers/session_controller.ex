@@ -12,24 +12,30 @@ defmodule EdocApiWeb.SessionController do
   def create(conn, %{"email" => email, "password" => password}) do
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
-        # Generate JWT token
-        {:ok, token, _claims} = Token.generate_access_token(user.id)
+        if user.verified_at == nil do
+          conn
+          |> put_flash(:error, "Please verify your email before logging in.")
+          |> redirect(to: "/verify-email-pending?email=#{email}")
+        else
+          # Generate JWT token
+          {:ok, token, _claims} = Token.generate_access_token(user.id)
 
-        # Check if user has a company set up
-        redirect_path =
-          case Companies.get_company_by_user_id(user.id) do
-            nil -> "/company/setup"
-            _company -> "/invoices"
-          end
+          # Check if user has a company set up
+          redirect_path =
+            case Companies.get_company_by_user_id(user.id) do
+              nil -> "/company/setup"
+              _company -> "/invoices"
+            end
 
-        # Store token in session for htmx requests
-        conn
-        |> put_session(:user_id, user.id)
-        |> put_session(:token, token)
-        |> assign(:current_user, user)
-        |> assign(:token, token)
-        |> put_flash(:info, "Welcome back!")
-        |> redirect(to: redirect_path)
+          # Store token in session for htmx requests
+          conn
+          |> put_session(:user_id, user.id)
+          |> put_session(:token, token)
+          |> assign(:current_user, user)
+          |> assign(:token, token)
+          |> put_flash(:info, "Welcome back!")
+          |> redirect(to: redirect_path)
+        end
 
       {:error, _reason} ->
         conn

@@ -44,7 +44,7 @@ defmodule EdocApi.Core.Contract do
 
     # Relationships
     belongs_to(:company, EdocApi.Core.Company)
-    belongs_to(:buyer_company, EdocApi.Core.Company)
+    belongs_to(:buyer, EdocApi.Core.Buyer)
     belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
 
     has_many(:invoices, EdocApi.Core.Invoice)
@@ -76,7 +76,7 @@ defmodule EdocApi.Core.Contract do
     signed_at
     title
     body_html
-    buyer_company_id
+    buyer_id
     bank_account_id
   )a ++ @buyer_fields
 
@@ -145,31 +145,36 @@ defmodule EdocApi.Core.Contract do
     end
   end
 
-  # Validate that either buyer_company_id is set OR buyer details are provided
+  # Validate that buyer_id is required for new contracts
+  # Legacy contracts may have ad-hoc buyer details
   defp validate_buyer_details(changeset) do
-    buyer_company_id = get_field(changeset, :buyer_company_id)
+    buyer_id = get_field(changeset, :buyer_id)
     buyer_name = get_field(changeset, :buyer_name)
     buyer_bin_iin = get_field(changeset, :buyer_bin_iin)
 
     cond do
-      # Buyer company is set - no need for buyer details
-      buyer_company_id != nil ->
+      # Buyer from Buyers table is set - valid
+      buyer_id != nil ->
         changeset
 
-      # Buyer details provided - validate required ones
+      # Legacy contract with ad-hoc buyer details - allowed for backward compatibility
       buyer_name != nil and buyer_bin_iin != nil ->
         changeset
 
-      # New contract without buyer info
-      is_new?(changeset) and buyer_name == nil ->
-        changeset
+      # New contract - buyer_id is required
+      is_new?(changeset) ->
+        add_error(
+          changeset,
+          :buyer_id,
+          "must select a buyer from the list"
+        )
 
-      # Update without buyer info but no buyer_company
+      # Update without buyer_id and without buyer details
       true ->
         add_error(
           changeset,
-          :buyer_name,
-          "must provide either buyer_company_id or buyer details (buyer_name, buyer_bin_iin)"
+          :buyer_id,
+          "must select a buyer from the list"
         )
     end
   end
@@ -181,7 +186,7 @@ defmodule EdocApi.Core.Contract do
   @doc """
   Returns the effective buyer name for this contract.
   """
-  def buyer_name(%__MODULE__{buyer_company: %EdocApi.Core.Company{name: name}}),
+  def buyer_name(%__MODULE__{buyer: %EdocApi.Core.Buyer{name: name}}),
     do: name
 
   def buyer_name(%__MODULE__{buyer_name: name}), do: name
@@ -190,7 +195,7 @@ defmodule EdocApi.Core.Contract do
   @doc """
   Returns the effective buyer BIN/IIN for this contract.
   """
-  def buyer_bin_iin(%__MODULE__{buyer_company: %EdocApi.Core.Company{bin_iin: bin}}),
+  def buyer_bin_iin(%__MODULE__{buyer: %EdocApi.Core.Buyer{bin_iin: bin}}),
     do: bin
 
   def buyer_bin_iin(%__MODULE__{buyer_bin_iin: bin}), do: bin
@@ -199,7 +204,7 @@ defmodule EdocApi.Core.Contract do
   @doc """
   Returns the effective buyer address for this contract.
   """
-  def buyer_address(%__MODULE__{buyer_company: %EdocApi.Core.Company{address: addr}}),
+  def buyer_address(%__MODULE__{buyer: %EdocApi.Core.Buyer{address: addr}}),
     do: addr
 
   def buyer_address(%__MODULE__{buyer_address: addr}), do: addr

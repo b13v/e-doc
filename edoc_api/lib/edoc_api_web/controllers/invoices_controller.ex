@@ -1,19 +1,22 @@
 defmodule EdocApiWeb.InvoicesController do
   use EdocApiWeb, :controller
+  import Ecto.Query, warn: false
 
   alias EdocApi.Invoicing
   alias EdocApi.InvoiceStatus
   alias EdocApi.Documents.InvoicePdf
   alias EdocApiWeb.UnifiedErrorHandler
+  alias EdocApi.Companies
+  alias EdocApi.Buyers
+  alias EdocApi.Payments
+  alias EdocApi.Core
+  alias EdocApi.Core.Contract
 
-  # Get current user from conn.assigns (set by auth plug)
   defp current_user(conn), do: conn.assigns.current_user
 
   def index(conn, _params) do
     user = current_user(conn)
     invoices = Invoicing.list_invoices_for_user(user.id)
-
-    # Render the HTML template
     render(conn, :index, invoices: invoices, page_title: "Invoices")
   end
 
@@ -33,61 +36,235 @@ defmodule EdocApiWeb.InvoicesController do
   end
 
   def new(conn, _params) do
-    # Render new invoice form
-    # For POC, we'll just show a simple form
-    render(conn, :new, page_title: "New Invoice")
+    user = current_user(conn)
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        conn
+        |> put_flash(:error, "Please set up your company first")
+        |> redirect(to: "/company/setup")
+
+      company ->
+        contracts = get_available_contracts(company.id)
+        buyers = Buyers.list_buyers_for_company(company.id)
+        bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
+
+        cond do
+          Enum.empty?(buyers) ->
+            conn
+            |> put_flash(:error, "Please create at least one buyer first")
+            |> redirect(to: "/buyers/new")
+
+          Enum.empty?(bank_accounts) ->
+            conn
+            |> put_flash(:error, "Please add at least one bank account first")
+            |> redirect(to: "/company")
+
+          true ->
+            render(conn, :new,
+              page_title: "New Invoice",
+              contracts: contracts,
+              buyers: buyers,
+              bank_accounts: bank_accounts,
+              selected_contract_id: nil,
+              selected_buyer_id: nil,
+              prefill_items: []
+            )
+        end
+    end
   end
 
   def create(conn, %{"invoice" => invoice_params, "items" => items_params}) do
     user = current_user(conn)
 
-    # Get company for user
-    case EdocApi.Companies.get_company_by_user_id(user.id) do
+    case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
         |> put_flash(:error, "Please set up your company first")
         |> redirect(to: "/company")
 
       company ->
-        # Combine invoice params with items
-        invoice_params_with_items =
-          invoice_params
-          |> Map.put("items", items_params)
+        processed_items = process_items(items_params)
+        invoice_params_final = prepare_invoice_params(invoice_params, processed_items, user)
 
-        case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params_with_items) do
+        case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params_final) do
           {:ok, invoice} ->
             conn
             |> put_flash(:info, "Invoice created successfully")
             |> redirect(to: "/invoices/#{invoice.id}")
 
           {:error, %Ecto.Changeset{} = changeset} ->
-            conn
-            |> put_flash(
-              :error,
+            render_with_data(
+              conn,
+              user,
+              company,
+              invoice_params,
               "Failed to create invoice: #{format_changeset_errors(changeset)}"
             )
-            |> render(:new, page_title: "New Invoice")
 
           {:error, :validation, %{changeset: changeset}} ->
-            conn
-            |> put_flash(
-              :error,
+            render_with_data(
+              conn,
+              user,
+              company,
+              invoice_params,
               "Failed to create invoice: #{format_changeset_errors(changeset)}"
             )
-            |> render(:new, page_title: "New Invoice")
 
           {:error, reason} ->
-            conn
-            |> put_flash(:error, "Failed to create invoice: #{reason}")
-            |> render(:new, page_title: "New Invoice")
+            render_with_data(
+              conn,
+              user,
+              company,
+              invoice_params,
+              "Failed to create invoice: #{reason}"
+            )
         end
     end
   end
 
   def create(conn, %{"invoice" => _invoice_params}) do
+    user = current_user(conn)
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        conn
+        |> put_flash(:error, "Please set up your company first")
+        |> redirect(to: "/company")
+
+      company ->
+        render_with_data(conn, user, company, %{}, "At least one item is required")
+    end
+  end
+
+  def create_from_contract(conn, %{"contract_id" => contract_id}) do
+    user = current_user(conn)
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        conn
+        |> put_flash(:error, "Please set up your company first")
+        |> redirect(to: "/company")
+
+      company ->
+        case Core.get_contract_for_user(user.id, contract_id) do
+          {:ok, contract} ->
+            contract = EdocApi.Repo.preload(contract, [:buyer, :contract_items])
+            contracts = get_available_contracts(company.id)
+            buyers = Buyers.list_buyers_for_company(company.id)
+            bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
+
+            prefill_items =
+              Enum.map(contract.contract_items || [], fn item ->
+                %{
+                  "name" => item.name,
+                  "code" => item.code,
+                  "qty" => to_string(item.qty || 1),
+                  "unit_price" => Decimal.to_string(item.unit_price || Decimal.new(0))
+                }
+              end)
+
+            buyer_id = if contract.buyer, do: contract.buyer.id, else: nil
+
+            render(conn, :new,
+              page_title: "New Invoice from Contract #{contract.number}",
+              contracts: contracts,
+              buyers: buyers,
+              bank_accounts: bank_accounts,
+              selected_contract_id: contract.id,
+              selected_buyer_id: buyer_id,
+              prefill_items: prefill_items
+            )
+
+          {:error, :not_found} ->
+            conn
+            |> put_flash(:error, "Contract not found")
+            |> redirect(to: "/contracts")
+
+          {:error, :company_required} ->
+            conn
+            |> put_flash(:error, "Please set up your company first")
+            |> redirect(to: "/company/setup")
+        end
+    end
+  end
+
+  defp get_available_contracts(company_id) do
+    Contract
+    |> where([c], c.company_id == ^company_id)
+    |> where([c], c.status in ["issued", "signed"])
+    |> order_by([c], desc: c.inserted_at)
+    |> EdocApi.Repo.all()
+    |> EdocApi.Repo.preload([:buyer])
+  end
+
+  defp process_items(items_params) do
+    items_params
+    |> Enum.reject(fn item -> item["name"] == "" or item["name"] == nil end)
+    |> Enum.map(fn item ->
+      qty = String.to_integer(item["qty"] || "1")
+      unit_price = Decimal.new(item["unit_price"] || "0")
+      amount = Decimal.mult(unit_price, qty)
+      Map.merge(item, %{"qty" => qty, "unit_price" => unit_price, "amount" => amount})
+    end)
+  end
+
+  defp prepare_invoice_params(invoice_params, processed_items, user) do
+    invoice_params
+    |> Map.delete("items")
+    |> Map.put("items", processed_items)
+    |> copy_buyer_from_contract_or_selection(user)
+  end
+
+  defp copy_buyer_from_contract_or_selection(invoice_params, user) do
+    buyer_id = invoice_params["buyer_id"]
+    contract_id = invoice_params["contract_id"]
+
+    cond do
+      contract_id && contract_id != "" ->
+        case Core.get_contract_for_user(user.id, contract_id) do
+          {:ok, contract} when contract.buyer != nil ->
+            put_buyer_fields(invoice_params, contract.buyer)
+
+          _ ->
+            invoice_params
+        end
+
+      buyer_id && buyer_id != "" ->
+        case Buyers.get_buyer(buyer_id) do
+          nil -> invoice_params
+          buyer -> put_buyer_fields(invoice_params, buyer)
+        end
+
+      true ->
+        invoice_params
+    end
+  end
+
+  defp put_buyer_fields(params, buyer) do
+    params
+    |> Map.put("buyer_name", buyer.name)
+    |> Map.put("buyer_bin_iin", buyer.bin_iin)
+    |> Map.put("buyer_address", buyer.address || "")
+    |> Map.put("buyer_company_id", buyer.id)
+  end
+
+  defp render_with_data(conn, user, company, invoice_params, error_message) do
+    contracts = get_available_contracts(company.id)
+    buyers = Buyers.list_buyers_for_company(company.id)
+    bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
+
     conn
-    |> put_flash(:error, "At least one item is required")
-    |> render(:new, page_title: "New Invoice")
+    |> put_flash(:error, error_message)
+    |> render(:new,
+      page_title: "New Invoice",
+      contracts: contracts,
+      buyers: buyers,
+      bank_accounts: bank_accounts,
+      selected_contract_id: invoice_params["contract_id"],
+      selected_buyer_id: invoice_params["buyer_id"],
+      prefill_items: []
+    )
   end
 
   defp format_changeset_errors(changeset) do
@@ -164,9 +341,7 @@ defmodule EdocApiWeb.InvoicesController do
               |> put_resp_content_type("text/html")
               |> send_resp(404, "<span class='text-red-600'>Error deleting invoice</span>")
             else
-              conn
-              |> put_flash(:error, "Error deleting invoice")
-              |> redirect(to: "/invoices")
+              conn |> put_flash(:error, "Error deleting invoice") |> redirect(to: "/invoices")
             end
         end
       end
@@ -248,9 +423,7 @@ defmodule EdocApiWeb.InvoicesController do
         |> redirect(to: "/invoices/#{id}")
 
       {:error, {:business_rule, %{rule: :already_issued}}} ->
-        conn
-        |> put_flash(:error, "Invoice is already issued")
-        |> redirect(to: "/invoices/#{id}")
+        conn |> put_flash(:error, "Invoice is already issued") |> redirect(to: "/invoices/#{id}")
 
       {:error, reason} ->
         conn

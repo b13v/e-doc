@@ -46,8 +46,11 @@ defmodule EdocApiWeb.CompaniesController do
             case Payments.create_company_bank_account_for_user(user.id, bank_account_attrs) do
               {:ok, _bank_account} ->
                 conn
-                |> put_flash(:info, "Company set up successfully!")
-                |> redirect(to: "/invoices")
+                |> put_flash(
+                  :info,
+                  "Company set up successfully! Now add your first buyer to start creating contracts."
+                )
+                |> redirect(to: "/buyers/new")
 
               {:error, _changeset} ->
                 conn

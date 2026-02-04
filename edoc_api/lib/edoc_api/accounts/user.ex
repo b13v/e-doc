@@ -11,6 +11,7 @@ defmodule EdocApi.Accounts.User do
     field(:email, :string)
     field(:password, :string, virtual: true)
     field(:password_hash, :string)
+    field(:verified_at, :utc_datetime)
 
     has_one(:company, EdocApi.Core.Company)
 

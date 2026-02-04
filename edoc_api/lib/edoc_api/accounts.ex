@@ -33,4 +33,25 @@ defmodule EdocApi.Accounts do
         end
     end
   end
+
+  @doc """
+  Returns user with verified status check.
+  """
+  def get_user_with_verification_status(id) when is_binary(id) do
+    case Repo.get(User, id) do
+      nil -> nil
+      user -> %{user: user, verified: user.verified_at != nil}
+    end
+  end
+
+  @doc """
+  Checks if a user is verified.
+  """
+  def user_verified?(id) when is_binary(id) do
+    case Repo.get(User, id) do
+      %User{verified_at: nil} -> false
+      %User{} -> true
+      nil -> false
+    end
+  end
 end

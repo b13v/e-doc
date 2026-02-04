@@ -11,7 +11,15 @@ defmodule EdocApiWeb.Plugs.Authenticate do
          {:ok, claims} <- Token.verify(token),
          user_id when is_binary(user_id) <- claims["sub"],
          user when not is_nil(user) <- Accounts.get_user(user_id) do
-      assign(conn, :current_user, user)
+      if user.verified_at != nil do
+        assign(conn, :current_user, user)
+      else
+        unauthorized_with_message(
+          conn,
+          "email_not_verified",
+          "Please verify your email before accessing this resource"
+        )
+      end
     else
       _ -> unauthorized(conn)
     end
@@ -31,6 +39,13 @@ defmodule EdocApiWeb.Plugs.Authenticate do
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(401, ~s({"error":"unauthorized"}))
+    |> halt()
+  end
+
+  defp unauthorized_with_message(conn, code, message) do
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(401, Jason.encode!(%{error: code, message: message}))
     |> halt()
   end
 end

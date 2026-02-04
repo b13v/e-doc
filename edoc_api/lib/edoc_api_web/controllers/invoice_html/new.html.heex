@@ -11,127 +11,181 @@
   </div>
 </div>
 
+<%= if @flash["error"] do %>
+  <div class="mt-4 px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
+    <%= @flash["error"] %>
+  </div>
+<% end %>
+
 <div class="mt-8">
   <div class="bg-white shadow sm:rounded-lg">
     <form action="/invoices" method="post" class="px-4 py-5 sm:px-6">
       <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
-      <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-
-        <div class="sm:col-span-3">
-          <label for="invoice_service_name" class="block text-sm font-medium text-gray-700">Service Name</label>
-          <div class="mt-2">
-            <input
-              type="text"
-              name="invoice[service_name]"
-              id="invoice_service_name"
-              required
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-          </div>
+      <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 class="text-sm font-medium text-blue-800 mb-3">Invoice Type</h3>
+        <div class="flex gap-4">
+          <label class="flex items-center">
+            <input type="radio" name="invoice_type" value="contract" checked class="mr-2" />
+            <span class="text-sm text-gray-700">From Contract</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="invoice_type" value="direct" class="mr-2" />
+            <span class="text-sm text-gray-700">Direct (No Contract)</span>
+          </label>
         </div>
+      </div>
 
-        <div class="sm:col-span-3">
-          <label for="invoice_buyer_name" class="block text-sm font-medium text-gray-700">Customer Name</label>
-          <div class="mt-2">
-            <input
-              type="text"
-              name="invoice[buyer_name]"
-              id="invoice_buyer_name"
-              required
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-          </div>
-        </div>
-
-        <div class="sm:col-span-3">
-          <label for="invoice_buyer_bin_iin" class="block text-sm font-medium text-gray-700">Customer BIN/IIN</label>
-          <div class="mt-2">
-            <input
-              type="text"
-              name="invoice[buyer_bin_iin]"
-              id="invoice_buyer_bin_iin"
-              required
-              pattern="\d{12}"
-              title="12-digit BIN/IIN"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-          </div>
-        </div>
-
-        <div class="sm:col-span-3">
-          <label for="invoice_buyer_address" class="block text-sm font-medium text-gray-700">Customer Address</label>
-          <div class="mt-2">
-            <input
-              type="text"
-              name="invoice[buyer_address]"
-              id="invoice_buyer_address"
-              required
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-          </div>
-        </div>
-
-        <div class="sm:col-span-2">
-          <label for="invoice_issue_date" class="block text-sm font-medium text-gray-700">Issue Date</label>
-          <div class="mt-2">
-            <input
-              type="date"
-              name="invoice[issue_date]"
-              id="invoice_issue_date"
-              required
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-          </div>
-        </div>
-
-        <div class="sm:col-span-2">
-          <label for="invoice_currency" class="block text-sm font-medium text-gray-700">Currency</label>
-          <div class="mt-2">
+      <div id="contract-section" class="space-y-6">
+        <div>
+          <label for="contract_select" class="block text-sm font-medium text-gray-700">Contract</label>
+          <div class="mt-1">
             <select
-              name="invoice[currency]"
-              id="invoice_currency"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-              <option value="KZT" selected>KZT - Kazakhstani Tenge</option>
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-              <option value="RUB">RUB - Russian Ruble</option>
+              id="contract_select"
+              name="invoice[contract_id]"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+              <option value="">Select a contract...</option>
+              <%= for contract <- @contracts do %>
+                <option value={contract.id} selected={@selected_contract_id == contract.id}>
+                  <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: "Unknown" %> (<%= contract.issue_date %>)
+                </option>
+              <% end %>
             </select>
           </div>
+          <p class="mt-1 text-xs text-gray-500">Select a contract to auto-fill buyer and items</p>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-200 my-6"></div>
+
+      <div class="space-y-6">
+        <div>
+          <label for="buyer_select" class="block text-sm font-medium text-gray-700">Buyer *</label>
+          <div class="mt-1">
+            <select
+              id="buyer_select"
+              name="invoice[buyer_id]"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+              <option value="">Select a buyer...</option>
+              <%= for buyer <- @buyers do %>
+                <option value={buyer.id} selected={@selected_buyer_id == buyer.id}>
+                  <%= buyer.name %> (<%= buyer.bin_iin %>)
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            <a href="/buyers/new" class="text-blue-600 hover:text-blue-500">Add new buyer</a>
+          </p>
         </div>
 
-        <div class="sm:col-span-2">
-          <label for="invoice_vat_rate" class="block text-sm font-medium text-gray-700">VAT Rate</label>
-          <div class="mt-2">
-            <select
-              name="invoice[vat_rate]"
-              id="invoice_vat_rate"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-              <option value="0">0%</option>
-              <option value="16" selected>16%</option>
-            </select>
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+          <div class="sm:col-span-3">
+            <label for="invoice_service_name" class="block text-sm font-medium text-gray-700">Service Name *</label>
+            <div class="mt-2">
+              <input
+                type="text"
+                name="invoice[service_name]"
+                id="invoice_service_name"
+                required
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="invoice_buyer_address" class="block text-sm font-medium text-gray-700">Buyer Address *</label>
+            <div class="mt-2">
+              <input
+                type="text"
+                name="invoice[buyer_address]"
+                id="invoice_buyer_address"
+                required
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="invoice_issue_date" class="block text-sm font-medium text-gray-700">Issue Date *</label>
+            <div class="mt-2">
+              <input
+                type="date"
+                name="invoice[issue_date]"
+                id="invoice_issue_date"
+                required
+                value={Date.utc_today()}
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="invoice_due_date" class="block text-sm font-medium text-gray-700">Due Date</label>
+            <div class="mt-2">
+              <input
+                type="date"
+                name="invoice[due_date]"
+                id="invoice_due_date"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="invoice_bank_account_id" class="block text-sm font-medium text-gray-700">Bank Account</label>
+            <div class="mt-2">
+              <select
+                name="invoice[bank_account_id]"
+                id="invoice_bank_account_id"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
+                <option value="">Select bank account...</option>
+                <%= for bank_account <- @bank_accounts do %>
+                  <option value={bank_account.id}>
+                    <%= bank_account.bank.name %> - <%= bank_account.iban %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div class="sm:col-span-6">
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+          <div class="sm:col-span-2">
+            <label for="invoice_currency" class="block text-sm font-medium text-gray-700">Currency</label>
+            <div class="mt-2">
+              <select
+                name="invoice[currency]"
+                id="invoice_currency"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
+                <option value="KZT">KZT - Kazakhstani Tenge</option>
+                <option value="USD">USD - US Dollar</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="RUB">RUB - Russian Ruble</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="invoice_vat_rate" class="block text-sm font-medium text-gray-700">VAT Rate</label>
+            <div class="mt-2">
+              <select
+                name="invoice[vat_rate]"
+                id="invoice_vat_rate"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
+                <option value="0">0%</option>
+                <option value="16" selected>16%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700">Line Items</label>
           <div class="mt-2">
             <div id="items-container" class="space-y-2">
-              <div class="item-row grid grid-cols-12 gap-2 items-end">
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500">Code</label>
-                  <input type="text" name="invoice[items][][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-5">
-                  <label class="block text-xs text-gray-500">Description</label>
-                  <input type="text" name="invoice[items][][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500">Qty</label>
-                  <input type="number" name="invoice[items][][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500">Unit Price</label>
-                  <input type="number" name="invoice[items][][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-1">
-                  <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
-                </div>
+              <div class="item-header grid grid-cols-12 gap-2 items-end text-xs font-medium text-gray-500 pb-2 border-b">
+                <div class="col-span-2">Code</div>
+                <div class="col-span-5">Description *</div>
+                <div class="col-span-2">Qty</div>
+                <div class="col-span-2">Unit Price</div>
+                <div class="col-span-1"></div>
               </div>
             </div>
             <button
@@ -142,7 +196,6 @@
             </button>
           </div>
         </div>
-
       </div>
 
       <div class="mt-6 flex items-center justify-end gap-x-6">
@@ -158,31 +211,40 @@
 </div>
 
 <script>
-  function addItemRow() {
+  const prefillItems = <%= Jason.encode!(@prefill_items) %>;
+  const selectedContractId = "<%= @selected_contract_id || "" %>";
+
+  function addItemRow(data = {}) {
     const container = document.getElementById('items-container');
     const newRow = document.createElement('div');
-    newRow.className = 'item-row grid grid-cols-12 gap-2 items-end';
+    newRow.className = 'item-row grid grid-cols-12 gap-2 items-center py-2 border-b';
     newRow.innerHTML = `
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Code</label>
-        <input type="text" name="invoice[items][][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <input type="text" name="items[][code]" value="${data.code || ''}" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-5">
-        <label class="block text-xs text-gray-500">Description</label>
-        <input type="text" name="invoice[items][][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <input type="text" name="items[][name]" value="${data.name || ''}" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Qty</label>
-        <input type="number" name="invoice[items][][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <input type="number" name="items[][qty]" value="${data.qty || 1}" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Unit Price</label>
-        <input type="number" name="invoice[items][][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <input type="number" name="items[][unit_price]" value="${data.unit_price || ''}" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
-      <div class="col-span-1">
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
+      <div class="col-span-1 text-center">
+        <button type="button" onclick="this.closest('.item-row').remove()" class="text-red-600 hover:text-red-900 text-sm font-medium">Remove</button>
       </div>
     `;
     container.appendChild(newRow);
   }
+
+  function initItems() {
+    if (prefillItems && prefillItems.length > 0) {
+      prefillItems.forEach(item => addItemRow(item));
+    } else {
+      addItemRow();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initItems);
 </script>

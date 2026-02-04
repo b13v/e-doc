@@ -48,7 +48,8 @@ defmodule EdocApi.Core do
   def create_contract_for_user(%{id: user_id}, attrs),
     do: create_contract_for_user(user_id, attrs)
 
-  def create_contract_for_user(user_id, attrs) when is_binary(user_id) do
+  def create_contract_for_user(user_id, attrs, items_attrs \\ [])
+      when is_binary(user_id) and is_list(items_attrs) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
         Errors.business_rule(:company_required, %{user_id: user_id})
@@ -57,12 +58,8 @@ defmodule EdocApi.Core do
         attrs = attrs || %{}
 
         RepoHelpers.transaction(fn ->
-          # Handle contract items
-          items_attrs = Map.get(attrs, "items", [])
-          attrs_without_items = Map.delete(attrs, "items")
-
           %Contract{}
-          |> Contract.changeset(attrs_without_items, company_id)
+          |> Contract.changeset(attrs, company_id)
           |> RepoHelpers.insert_or_abort()
           |> then(fn contract ->
             if Enum.empty?(items_attrs) do
@@ -76,7 +73,8 @@ defmodule EdocApi.Core do
     end
   end
 
-  def update_contract_for_user(user_id, contract_id, attrs) when is_binary(user_id) do
+  def update_contract_for_user(user_id, contract_id, attrs, items_attrs \\ [])
+      when is_binary(user_id) and is_list(items_attrs) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
         Errors.not_found(:company)
@@ -99,18 +97,13 @@ defmodule EdocApi.Core do
 
           true ->
             RepoHelpers.transaction(fn ->
-              # Handle contract items
-              items_attrs = Map.get(attrs, "items", [])
-              attrs_without_items = Map.delete(attrs, "items")
-
-              # Delete existing items and recreate
               contract
               |> Ecto.Changeset.change()
               |> Ecto.Changeset.put_assoc(:contract_items, [])
               |> Repo.update()
 
               contract
-              |> Contract.update_changeset(attrs_without_items)
+              |> Contract.update_changeset(attrs)
               |> RepoHelpers.update_or_abort()
               |> then(fn contract ->
                 if Enum.empty?(items_attrs) do

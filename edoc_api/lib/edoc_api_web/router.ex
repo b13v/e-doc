@@ -40,6 +40,9 @@ defmodule EdocApiWeb.Router do
 
     post("/auth/signup", AuthController, :signup)
     post("/auth/login", AuthController, :login)
+    get("/auth/verify", AuthController, :verify_email)
+    post("/auth/resend-verification", AuthController, :resend_verification)
+    get("/auth/status", AuthController, :auth_status)
   end
 
   # Protected API (JWT required)
@@ -48,6 +51,11 @@ defmodule EdocApiWeb.Router do
 
     get("/company", CompanyController, :show)
     put("/company", CompanyController, :upsert)
+    get("/buyers", BuyersController, :index)
+    get("/buyers/:id", BuyersController, :show)
+    post("/buyers", BuyersController, :create)
+    put("/buyers/:id", BuyersController, :update)
+    delete("/buyers/:id", BuyersController, :delete)
     get("/invoices", InvoiceController, :index)
     post("/invoices", InvoiceController, :create)
     get("/invoices/:id", InvoiceController, :show)
@@ -77,6 +85,9 @@ defmodule EdocApiWeb.Router do
     get("/login", SessionController, :new)
     post("/login", SessionController, :create)
     delete("/logout", SessionController, :delete)
+    get("/signup", SignupController, :new)
+    post("/signup", SignupController, :create)
+    get("/verify-email", VerificationPendingController, :new)
   end
 
   scope "/", EdocApiWeb do
@@ -91,9 +102,23 @@ defmodule EdocApiWeb.Router do
     get("/invoices/:id/pdf", InvoicesController, :pdf)
     post("/invoices/:id/issue", InvoicesController, :issue)
     delete("/invoices/:id", InvoicesController, :delete)
-    get("/contracts", ContractsController, :index)
-    get("/contracts/:id", ContractsController, :show)
-    get("/contracts/:id/pdf", ContractsController, :pdf)
+    post("/invoices/from-contract/:contract_id", InvoicesController, :create_from_contract)
+    get("/contracts", ContractHTMLController, :index)
+    get("/contracts/new", ContractHTMLController, :new)
+    post("/contracts", ContractHTMLController, :create)
+    get("/contracts/:id", ContractHTMLController, :show)
+    get("/contracts/:id/edit", ContractHTMLController, :edit)
+    put("/contracts/:id", ContractHTMLController, :update)
+    get("/contracts/:id/pdf", ContractHTMLController, :pdf)
+    post("/contracts/:id/issue", ContractHTMLController, :issue)
+
+    # Buyer management routes
+    get("/buyers", BuyerHTMLController, :index)
+    get("/buyers/new", BuyerHTMLController, :new)
+    post("/buyers", BuyerHTMLController, :create)
+    get("/buyers/:id/edit", BuyerHTMLController, :edit)
+    put("/buyers/:id", BuyerHTMLController, :update)
+    delete("/buyers/:id", BuyerHTMLController, :delete)
 
     # Company management routes
     get("/company/setup", CompaniesController, :setup)
