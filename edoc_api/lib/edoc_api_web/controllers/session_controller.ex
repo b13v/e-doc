@@ -37,6 +37,11 @@ defmodule EdocApiWeb.SessionController do
           |> redirect(to: redirect_path)
         end
 
+      {:error, :business_rule, _details} ->
+        conn
+        |> put_flash(:error, "Invalid email or password")
+        |> render(:new, page_title: "Login")
+
       {:error, _reason} ->
         conn
         |> put_flash(:error, "Invalid email or password")
