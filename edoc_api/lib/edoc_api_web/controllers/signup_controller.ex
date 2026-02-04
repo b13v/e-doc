@@ -30,6 +30,23 @@ defmodule EdocApiWeb.SignupController do
           |> put_flash(:info, "Account created! Please check your email to verify your account.")
           |> redirect(to: "/verify-email-pending?email=#{email}")
 
+        {:error, :validation, changeset: changeset} ->
+          error_message = format_changeset_errors(changeset)
+
+          # Check if it's an email already taken error
+          if String.downcase(error_message) =~ ~r/email.*already.*taken|has already been taken/ do
+            conn
+            |> put_flash(
+              :error,
+              "An account with this email already exists. Please log in instead."
+            )
+            |> redirect(to: "/login")
+          else
+            conn
+            |> put_flash(:error, error_message)
+            |> render(:new, page_title: "Sign Up")
+          end
+
         {:error, changeset} ->
           error_message = format_changeset_errors(changeset)
 
