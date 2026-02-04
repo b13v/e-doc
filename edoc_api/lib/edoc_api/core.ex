@@ -137,7 +137,7 @@ defmodule EdocApi.Core do
             {:ok,
              Repo.preload(contract, [
                :company,
-               :buyer_company,
+               :buyer,
                :bank_account,
                :contract_items,
                bank_account: [:bank, :kbe_code, :knp_code]
@@ -166,7 +166,7 @@ defmodule EdocApi.Core do
           end
 
           # Validate contract has required buyer details
-          if is_nil(contract.buyer_company_id) and is_nil(contract.buyer_name) do
+          if is_nil(contract.buyer_id) and is_nil(contract.buyer_name) do
             RepoHelpers.abort(
               {:business_rule, %{rule: :buyer_required, contract_id: contract.id}}
             )

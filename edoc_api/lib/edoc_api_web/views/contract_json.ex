@@ -20,7 +20,7 @@ defmodule EdocApiWeb.ContractJSON do
       issued_at: contract.issued_at,
       signed_at: contract.signed_at,
       body_html: contract.body_html,
-      buyer_company_id: contract.buyer_company_id,
+      buyer_id: contract.buyer_id,
       buyer_name: contract.buyer_name,
       buyer_legal_form: contract.buyer_legal_form,
       buyer_bin_iin: contract.buyer_bin_iin,

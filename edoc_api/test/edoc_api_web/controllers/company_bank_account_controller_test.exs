@@ -7,6 +7,8 @@ defmodule EdocApiWeb.CompanyBankAccountControllerTest do
 
   setup %{conn: conn} do
     user = create_user!()
+    # Set verified_at to allow API access
+    EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
 
     {:ok, conn: authenticate(conn, user), user: user, company: company}

@@ -54,4 +54,15 @@ defmodule EdocApi.Accounts do
       nil -> false
     end
   end
+
+  @doc """
+  Marks a user's email as verified (for testing purposes).
+  """
+  def mark_email_verified!(id) when is_binary(id) do
+    user = Repo.get!(User, id)
+
+    user
+    |> Ecto.Changeset.change(verified_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update!()
+  end
 end

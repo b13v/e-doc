@@ -17,7 +17,7 @@ defmodule EdocApiWeb.PdfTemplates do
     contract =
       Repo.preload(contract, [
         :company,
-        :buyer_company,
+        :buyer,
         :bank_account,
         :contract_items,
         bank_account: [:bank, :kbe_code, :knp_code]
@@ -26,7 +26,7 @@ defmodule EdocApiWeb.PdfTemplates do
     # Build seller data from contract's company
     seller = build_seller_data(contract)
 
-    # Build buyer data from buyer_company or buyer fields
+    # Build buyer data from buyer or legacy buyer fields
     buyer = build_buyer_data(contract)
 
     # Build bank data from bank_account
@@ -70,20 +70,19 @@ defmodule EdocApiWeb.PdfTemplates do
   end
 
   defp build_buyer_data(contract) do
-    if contract.buyer_company do
-      company = contract.buyer_company
+    if contract.buyer do
+      buyer_entity = contract.buyer
 
       %{
-        name: Map.get(company, :name) || "",
-        legal_form: contract.buyer_legal_form || "ТОО",
-        bin_iin: Map.get(company, :bin_iin) || "",
-        address: Map.get(company, :address) || "",
-        director_name:
-          Map.get(company, :representative_name) || contract.buyer_director_name || "",
+        name: buyer_entity.name || "",
+        legal_form: buyer_entity.legal_form || contract.buyer_legal_form || "ТОО",
+        bin_iin: buyer_entity.bin_iin || "",
+        address: buyer_entity.address || "",
+        director_name: buyer_entity.director_name || contract.buyer_director_name || "",
         director_title: "директор",
-        basis: Map.get(company, :basis) || contract.buyer_basis || "Устав",
-        phone: Map.get(company, :phone) || contract.buyer_phone || "",
-        email: Map.get(company, :email) || contract.buyer_email || ""
+        basis: buyer_entity.basis || contract.buyer_basis || "Устав",
+        phone: buyer_entity.phone || contract.buyer_phone || "",
+        email: buyer_entity.email || contract.buyer_email || ""
       }
     else
       %{
