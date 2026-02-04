@@ -25,11 +25,14 @@ config :edoc_api, EdocApiWeb.Endpoint,
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
+# locally in a temporary directory. You can see the emails in your browser, at "/dev/mailbox".
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local
+config :edoc_api, EdocApi.Mailer,
+  adapter: Swoosh.Adapters.Local,
+  # Keep emails in memory for /dev/mailbox
+  persist: true
 
 # Configures Elixir's Logger
 config :logger, :console,
