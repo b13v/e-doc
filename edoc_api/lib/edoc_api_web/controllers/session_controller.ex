@@ -24,7 +24,7 @@ defmodule EdocApiWeb.SessionController do
           redirect_path =
             case Companies.get_company_by_user_id(user.id) do
               nil -> "/company/setup"
-              _company -> "/invoices"
+              _company -> "/company"
             end
 
           # Store token in session for htmx requests

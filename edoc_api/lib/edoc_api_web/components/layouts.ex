@@ -54,6 +54,41 @@ defmodule EdocApiWeb.Layouts do
   end
 
   @doc """
+  Public navigation for unauthenticated users
+  """
+  def public_nav(assigns) do
+    ~H"""
+    <nav class="flex items-center space-x-6">
+      <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+      <a href="/about" class="text-gray-600 hover:text-gray-900 font-medium">About</a>
+      <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        Sign In
+      </a>
+    </nav>
+    """
+  end
+
+  @doc """
+  Authenticated user navigation
+  """
+  def auth_nav(assigns) do
+    ~H"""
+    <nav class="flex items-center space-x-6">
+      <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium">Invoices</a>
+      <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium">Contracts</a>
+      <a href="/buyers" class="text-gray-600 hover:text-gray-900 font-medium">Buyers</a>
+      <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium">Company</a>
+      <span class="text-gray-500 text-sm"><%= @current_user.email %></span>
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="_method" value="delete" />
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <button type="submit" class="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-none cursor-pointer p-0">Logout</button>
+      </form>
+    </nav>
+    """
+  end
+
+  @doc """
   The app layout includes the header and main content area.
   """
   def app(assigns) do
@@ -62,26 +97,13 @@ defmodule EdocApiWeb.Layouts do
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <h1 class="text-xl font-bold text-gray-900">EdocAPI</h1>
+            <a href="/" class="text-xl font-bold text-gray-900">EdocAPI</a>
           </div>
-          <nav class="flex items-center space-x-8">
-            <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Dashboard</a>
-            <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium">Invoices</a>
-            <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium">Contracts</a>
-            <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium">Company</a>
-            <%= if assigns[:current_user] do %>
-              <span class="text-gray-500 text-sm mr-2"><%= @current_user.email %></span>
-              <form method="post" action="/logout" class="inline">
-                <input type="hidden" name="_method" value="delete" />
-                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-none cursor-pointer p-0">Logout</button>
-              </form>
-            <% else %>
-              <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                Login
-              </a>
-            <% end %>
-          </nav>
+          <%= if assigns[:current_user] do %>
+            <%= auth_nav(assigns) %>
+          <% else %>
+            <%= public_nav(assigns) %>
+          <% end %>
         </div>
       </div>
     </header>
