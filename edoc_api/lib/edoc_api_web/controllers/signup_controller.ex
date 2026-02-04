@@ -5,7 +5,7 @@ defmodule EdocApiWeb.SignupController do
 
   alias EdocApi.Accounts
   alias EdocApi.EmailVerification
-  alias EdocApi.EmailVerification.Token
+  alias EdocApi.EmailSender
 
   def new(conn, _params) do
     render(conn, :new, page_title: "Sign Up")
@@ -24,9 +24,14 @@ defmodule EdocApiWeb.SignupController do
       case Accounts.register_user(%{"email" => email, "password" => password}) do
         {:ok, user} ->
           {:ok, token} = EmailVerification.create_token_for_user(user.id)
-          verification_url = verification_link(token)
 
-          send_verification_email(user.email, verification_url)
+          case EmailSender.send_verification_email(user.email, token) do
+            {:ok, _} ->
+              Logger.info("Verification email sent to #{email}")
+
+            {:error, reason} ->
+              Logger.error("Failed to send verification email to #{email}: #{inspect(reason)}")
+          end
 
           conn
           |> put_flash(:info, "Account created! Please verify your email to continue.")
@@ -57,20 +62,6 @@ defmodule EdocApiWeb.SignupController do
           |> render(:new, page_title: "Sign Up")
       end
     end
-  end
-
-  defp send_verification_email(email, verification_url) do
-    # In production, this would send an actual email
-    # For now, we'll log the verification link
-    Logger.info("""
-    [EMAIL MOCK] Verification email sent to #{email}
-    Verification link: #{verification_url}
-    """)
-  end
-
-  defp verification_link(token) do
-    base_url = System.get_env("BASE_URL") || "http://localhost:4000"
-    "#{base_url}/verify-email?token=#{token}"
   end
 
   defp format_changeset_errors(changeset) do

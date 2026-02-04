@@ -68,6 +68,22 @@ if config_env() == :prod do
   config :edoc_api, EdocApi.Auth,
     jwt_secret: System.get_env("JWT_SECRET") || "dev-secret-change-me"
 
+  # Email configuration
+  if System.get_env("SMTP_HOST") do
+    config :edoc_api, EdocApi.Mailer,
+      adapter: Swoosh.Adapters.SMTP,
+      relay: System.get_env("SMTP_HOST"),
+      username: System.get_env("SMTP_USERNAME"),
+      password: System.get_env("SMTP_PASSWORD"),
+      port: String.to_integer(System.get_env("SMTP_PORT") || "587"),
+      ssl: System.get_env("SMTP_SSL") in ~w(true 1),
+      tls: System.get_env("SMTP_TLS") in ~w(true 1) || :never,
+      retries: String.to_integer(System.get_env("SMTP_RETRIES") || "2")
+  else
+    # Default to local for development
+    config :edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local
+  end
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key
