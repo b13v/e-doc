@@ -1,6 +1,8 @@
 defmodule EdocApiWeb.BuyerHTMLController do
   use EdocApiWeb, :controller
 
+  plug(:put_view, EdocApiWeb.BuyerHTML)
+
   alias EdocApi.Buyers
   alias EdocApi.Companies
 

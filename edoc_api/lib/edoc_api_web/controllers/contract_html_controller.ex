@@ -1,6 +1,8 @@
 defmodule EdocApiWeb.ContractHTMLController do
   use EdocApiWeb, :controller
 
+  plug(:put_view, EdocApiWeb.ContractHTML)
+
   alias EdocApi.Core
   alias EdocApi.Buyers
   alias EdocApi.Companies
