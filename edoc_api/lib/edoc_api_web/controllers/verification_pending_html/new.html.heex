@@ -29,6 +29,15 @@
         </div>
       </div>
 
+      <%= if assigns[:token] do %>
+        <div class="rounded-md bg-yellow-50 p-4 mb-6 border border-yellow-200">
+          <p class="text-sm text-yellow-800 mb-2 font-medium">Development Mode - Verification Link:</p>
+          <a href={"/verify-email?token=#{@token}"} class="text-sm text-yellow-700 underline break-all">
+            /verify-email?token=<%= @token %>
+          </a>
+        </div>
+      <% end %>
+
       <div id="resend-section" class="space-y-4">
         <p class="text-sm text-gray-600">Didn't receive the email?</p>
 

@@ -24,11 +24,13 @@ defmodule EdocApiWeb.SignupController do
       case Accounts.register_user(%{"email" => email, "password" => password}) do
         {:ok, user} ->
           {:ok, token} = EmailVerification.create_token_for_user(user.id)
-          send_verification_email(user.email, token)
+          verification_url = verification_link(token)
+
+          send_verification_email(user.email, verification_url)
 
           conn
-          |> put_flash(:info, "Account created! Please check your email to verify your account.")
-          |> redirect(to: "/verify-email-pending?email=#{email}")
+          |> put_flash(:info, "Account created! Please verify your email to continue.")
+          |> redirect(to: "/verify-email-pending?email=#{email}&token=#{token}")
 
         {:error, :validation, changeset: changeset} ->
           error_message = format_changeset_errors(changeset)
@@ -57,16 +59,18 @@ defmodule EdocApiWeb.SignupController do
     end
   end
 
-  defp send_verification_email(email, %Token{token: token, expires_at: expires_at}) do
+  defp send_verification_email(email, verification_url) do
     # In production, this would send an actual email
     # For now, we'll log the verification link
-    expiry_hours = round(DateTime.diff(expires_at, DateTime.utc_now()) / 3600)
-
     Logger.info("""
     [EMAIL MOCK] Verification email sent to #{email}
-    Verification link: http://localhost:4000/verify-email?token=#{token}
-    Expires in: #{expiry_hours} hours
+    Verification link: #{verification_url}
     """)
+  end
+
+  defp verification_link(token) do
+    base_url = System.get_env("BASE_URL") || "http://localhost:4000"
+    "#{base_url}/verify-email?token=#{token}"
   end
 
   defp format_changeset_errors(changeset) do

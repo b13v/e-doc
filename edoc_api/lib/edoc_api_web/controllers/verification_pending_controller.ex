@@ -3,6 +3,10 @@ defmodule EdocApiWeb.VerificationPendingController do
 
   alias EdocApi.EmailVerification
 
+  def new(conn, %{"email" => email, "token" => token}) do
+    render(conn, :new, email: email, token: token, page_title: "Verify Your Email")
+  end
+
   def new(conn, %{"email" => email}) do
     render(conn, :new, email: email, page_title: "Verify Your Email")
   end
