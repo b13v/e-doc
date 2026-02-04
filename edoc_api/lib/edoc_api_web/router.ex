@@ -87,7 +87,8 @@ defmodule EdocApiWeb.Router do
     delete("/logout", SessionController, :delete)
     get("/signup", SignupController, :new)
     post("/signup", SignupController, :create)
-    get("/verify-email", VerificationPendingController, :new)
+    get("/verify-email-pending", VerificationPendingController, :new)
+    get("/verify-email", VerificationPendingController, :verify)
   end
 
   scope "/", EdocApiWeb do
