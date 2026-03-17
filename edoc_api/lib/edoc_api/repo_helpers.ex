@@ -30,7 +30,7 @@ defmodule EdocApi.RepoHelpers do
   def transaction(fun) when is_function(fun, 0) do
     Repo.transaction(fn ->
       case fun.() do
-        {:ok, result} -> result
+        {:ok, result} -> {:ok, result}
         {:error, reason} -> Repo.rollback(reason)
         {:error, reason, details} -> Repo.rollback({reason, details})
         other -> other

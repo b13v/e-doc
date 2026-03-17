@@ -67,4 +67,33 @@ defmodule EdocApiWeb.CompanyBankAccountControllerTest do
       assert response(conn, 404)
     end
   end
+
+  describe "create/2" do
+    test "creates new default bank account and unsets previous default", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      existing_default = create_company_bank_account!(company, %{"label" => "Existing Default"})
+
+      params = %{
+        "label" => "New Default",
+        "iban" => "KZ971234567890123456",
+        "bank_id" => existing_default.bank_id,
+        "is_default" => "true"
+      }
+
+      conn = post(conn, "/v1/company/bank-accounts", params)
+      assert response(conn, 201)
+
+      accounts = Payments.list_company_bank_accounts_for_user(user.id)
+      assert length(accounts) == 2
+
+      old_account = Enum.find(accounts, &(&1.id == existing_default.id))
+      new_account = Enum.find(accounts, &(&1.label == "New Default"))
+
+      assert old_account.is_default == false
+      assert new_account.is_default == true
+    end
+  end
 end

@@ -6,11 +6,13 @@ defmodule EdocApiWeb.Serializers.CompanySerializer do
   Use the /company/bank-accounts endpoint to manage bank accounts instead.
   """
 
+  alias EdocApi.LegalForms
+
   def to_map(company) do
     base_map = %{
       id: company.id,
       name: company.name,
-      legal_form: company.legal_form,
+      legal_form: LegalForms.display(company.legal_form),
       bin_iin: company.bin_iin,
       city: company.city,
       address: company.address,

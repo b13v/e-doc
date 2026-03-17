@@ -33,20 +33,30 @@ defmodule EdocApi.Validators.BinIin do
 
   @doc """
   Validates BIN/IIN format on a changeset field.
-  Checks that the value is exactly 12 digits (Kazakhstan format).
-
-  Note: Full checksum validation is currently disabled as the correct
-  Kazakhstan BIN/IIN checksum algorithm needs verification. Format
-  validation (12 digits) is still enforced.
+  Checks that the value is exactly 12 digits and has a valid checksum.
   """
   @spec validate(Ecto.Changeset.t(), atom()) :: Ecto.Changeset.t()
   def validate(changeset, field) do
     changeset
     |> validate_length(field, is: @bin_iin_length)
     |> validate_format(field, @bin_iin_pattern, message: "must contain exactly 12 digits")
+    |> validate_change(field, fn
+      ^field, nil ->
+        []
 
-    # TODO: Re-enable checksum validation once correct algorithm is confirmed
-    # |> validate_checksum(field)
+      ^field, "" ->
+        []
+
+      ^field, value when is_binary(value) ->
+        if valid_checksum?(value) do
+          []
+        else
+          [{field, "has invalid checksum"}]
+        end
+
+      ^field, _value ->
+        []
+    end)
   end
 
   @doc """
@@ -118,21 +128,6 @@ defmodule EdocApi.Validators.BinIin do
     |> Enum.zip(weights)
     |> Enum.reduce(0, fn {digit, weight}, acc -> acc + digit * weight end)
     |> rem(11)
-  end
-
-  defp validate_checksum(changeset, field) do
-    value = get_field(changeset, field)
-
-    cond do
-      is_nil(value) ->
-        changeset
-
-      valid_checksum?(value) ->
-        changeset
-
-      true ->
-        add_error(changeset, field, "has invalid checksum")
-    end
   end
 
   @doc """

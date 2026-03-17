@@ -85,8 +85,9 @@ defmodule EdocApi.EmailVerification do
           {:error, :already_verified}
         else
           Repo.transaction(fn ->
-            Repo.update!(Ecto.Changeset.change(db_token, used_at: DateTime.utc_now()))
-            Repo.update!(Ecto.Changeset.change(user, verified_at: DateTime.utc_now()))
+            now = DateTime.utc_now() |> DateTime.truncate(:second)
+            Repo.update!(Ecto.Changeset.change(db_token, used_at: now))
+            Repo.update!(Ecto.Changeset.change(user, verified_at: now))
           end)
 
           Logger.info("Email verified successfully for user #{user.id}")

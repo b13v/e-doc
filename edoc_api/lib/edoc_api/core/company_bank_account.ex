@@ -32,6 +32,7 @@ defmodule EdocApi.Core.CompanyBankAccount do
     |> validate_required(@required ++ [:company_id])
     |> update_change(:label, &String.trim/1)
     |> update_change(:iban, &Iban.normalize/1)
+    |> validate_length(:iban, is: 20, message: "must be exactly 20 characters")
     |> Iban.validate(:iban)
     |> unique_constraint(:iban, name: :company_bank_accounts_company_id_iban_index)
     |> unique_constraint(:company_id,

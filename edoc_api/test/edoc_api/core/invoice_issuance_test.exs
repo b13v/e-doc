@@ -94,4 +94,35 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
                Invoicing.issue_invoice_for_user(user.id, Ecto.UUID.generate())
     end
   end
+
+  describe "pay_invoice_for_user/2" do
+    test "marks issued invoice as paid" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+      invoice = create_invoice_with_items!(user, company)
+      {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      assert {:ok, paid} = Invoicing.pay_invoice_for_user(user.id, issued.id)
+      assert paid.status == "paid"
+    end
+
+    test "rejects draft invoice" do
+      user = create_user!()
+      company = create_company!(user)
+      invoice = insert_invoice!(user, company, %{status: "draft"})
+
+      assert {:error, :business_rule, %{rule: :cannot_mark_paid}} =
+               Invoicing.pay_invoice_for_user(user.id, invoice.id)
+    end
+
+    test "rejects already paid invoice" do
+      user = create_user!()
+      company = create_company!(user)
+      invoice = insert_invoice!(user, company, %{status: "paid"})
+
+      assert {:error, :business_rule, %{rule: :already_paid}} =
+               Invoicing.pay_invoice_for_user(user.id, invoice.id)
+    end
+  end
 end

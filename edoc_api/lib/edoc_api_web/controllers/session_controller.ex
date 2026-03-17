@@ -2,7 +2,6 @@ defmodule EdocApiWeb.SessionController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Accounts
-  alias EdocApi.Auth.Token
   alias EdocApi.Companies
 
   def new(conn, _params) do
@@ -14,12 +13,12 @@ defmodule EdocApiWeb.SessionController do
       {:ok, user} ->
         if user.verified_at == nil do
           conn
-          |> put_flash(:error, "Please verify your email before logging in.")
+          |> put_flash(
+            :error,
+            "Пожалуйста, подтвердите свой адрес электронной почты перед входом в систему."
+          )
           |> redirect(to: "/verify-email-pending?email=#{email}")
         else
-          # Generate JWT token
-          {:ok, token, _claims} = Token.generate_access_token(user.id)
-
           # Check if user has a company set up
           redirect_path =
             case Companies.get_company_by_user_id(user.id) do
@@ -27,24 +26,18 @@ defmodule EdocApiWeb.SessionController do
               _company -> "/company"
             end
 
-          # Store token in session for htmx requests
+          # Store authenticated user id in session
           conn
+          |> configure_session(renew: true)
           |> put_session(:user_id, user.id)
-          |> put_session(:token, token)
           |> assign(:current_user, user)
-          |> assign(:token, token)
-          |> put_flash(:info, "Welcome back!")
+          |> put_flash(:info, "Добро пожаловать!")
           |> redirect(to: redirect_path)
         end
 
       {:error, :business_rule, _details} ->
         conn
-        |> put_flash(:error, "Invalid email or password")
-        |> render(:new, page_title: "Login")
-
-      {:error, _reason} ->
-        conn
-        |> put_flash(:error, "Invalid email or password")
+        |> put_flash(:error, "Неверный адрес электронной почты или пароль.")
         |> render(:new, page_title: "Login")
     end
   end
@@ -52,7 +45,7 @@ defmodule EdocApiWeb.SessionController do
   def delete(conn, _params) do
     conn
     |> configure_session(drop: true)
-    |> put_flash(:info, "Logged out successfully")
+    |> put_flash(:info, "Выход из системы выполнен успешно.")
     |> redirect(to: "/")
   end
 end

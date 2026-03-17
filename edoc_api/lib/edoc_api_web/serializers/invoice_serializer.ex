@@ -22,6 +22,8 @@ defmodule EdocApiWeb.Serializers.InvoiceSerializer do
       company_id: inv.company_id,
       user_id: inv.user_id,
       bank_account_id: inv.bank_account_id,
+      kbe_code_id: inv.kbe_code_id,
+      knp_code_id: inv.knp_code_id,
       items: Enum.map(inv.items || [], &item_to_map/1),
       inserted_at: inv.inserted_at,
       updated_at: inv.updated_at

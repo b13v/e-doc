@@ -5,11 +5,7 @@
       <p class="mt-2 text-gray-600">Please enter your company information and bank account to get started.</p>
     </div>
 
-    <%= if @flash["error"] do %>
-      <div class="mb-6 px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
-        <%= @flash["error"] %>
-      </div>
-    <% end %>
+    <.flash_error flash={@flash} class="mb-6" />
 
     <form action="/company/setup" method="post" class="space-y-6">
       <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -30,11 +26,9 @@
             <select name="company[legal_form]" id="company_legal_form" required
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
               <option value="">Select...</option>
-              <option value="ТОО">ТОО</option>
-              <option value="АО">АО</option>
-              <option value="ИП">ИП</option>
-              <option value="ГКП">ГКП</option>
-              <option value="КХ">КХ</option>
+              <option value="Товарищество с ограниченной ответственностью">Товарищество с ограниченной ответственностью</option>
+              <option value="Акционерное общество">Акционерное общество</option>
+              <option value="Индивидуальный предприниматель">Индивидуальный предприниматель</option>
             </select>
           </div>
 

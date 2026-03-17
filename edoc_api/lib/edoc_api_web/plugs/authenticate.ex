@@ -3,6 +3,7 @@ defmodule EdocApiWeb.Plugs.Authenticate do
 
   alias EdocApi.Auth.Token
   alias EdocApi.Accounts
+  alias EdocApiWeb.ErrorMapper
 
   def init(opts), do: opts
 
@@ -14,14 +15,17 @@ defmodule EdocApiWeb.Plugs.Authenticate do
       if user.verified_at != nil do
         assign(conn, :current_user, user)
       else
-        unauthorized_with_message(
-          conn,
-          "email_not_verified",
-          "Please verify your email before accessing this resource"
-        )
+        conn
+        |> ErrorMapper.unauthorized("email_not_verified", %{
+          message: "Please verify your email before accessing this resource"
+        })
+        |> halt()
       end
     else
-      _ -> unauthorized(conn)
+      _ ->
+        conn
+        |> ErrorMapper.unauthorized()
+        |> halt()
     end
   end
 
@@ -35,17 +39,4 @@ defmodule EdocApiWeb.Plugs.Authenticate do
     end
   end
 
-  defp unauthorized(conn) do
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(401, ~s({"error":"unauthorized"}))
-    |> halt()
-  end
-
-  defp unauthorized_with_message(conn, code, message) do
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(401, Jason.encode!(%{error: code, message: message}))
-    |> halt()
-  end
 end

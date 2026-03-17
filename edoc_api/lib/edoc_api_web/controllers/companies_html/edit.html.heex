@@ -6,11 +6,7 @@
     </div>
   <% end %>
 
-  <%= if @flash["error"] do %>
-    <div class="px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
-      <%= @flash["error"] %>
-    </div>
-  <% end %>
+  <.flash_error flash={@flash} />
 
   <!-- Company Info Form -->
   <div class="bg-white shadow rounded-lg">
@@ -36,11 +32,21 @@
           <div>
             <label class="block text-sm font-medium text-gray-700">Legal Form</label>
             <select name="company[legal_form]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-              <%= if @company.legal_form == "ТОО" do %><option value="ТОО" selected>ТОО</option><% else %><option value="ТОО">ТОО</option><% end %>
-              <%= if @company.legal_form == "АО" do %><option value="АО" selected>АО</option><% else %><option value="АО">АО</option><% end %>
-              <%= if @company.legal_form == "ИП" do %><option value="ИП" selected>ИП</option><% else %><option value="ИП">ИП</option><% end %>
-              <%= if @company.legal_form == "ГКП" do %><option value="ГКП" selected>ГКП</option><% else %><option value="ГКП">ГКП</option><% end %>
-              <%= if @company.legal_form == "КХ" do %><option value="КХ" selected>КХ</option><% else %><option value="КХ">КХ</option><% end %>
+              <option
+                value="Товарищество с ограниченной ответственностью"
+                selected={EdocApi.LegalForms.display(@company.legal_form) == "Товарищество с ограниченной ответственностью"}>
+                Товарищество с ограниченной ответственностью
+              </option>
+              <option
+                value="Акционерное общество"
+                selected={EdocApi.LegalForms.display(@company.legal_form) == "Акционерное общество"}>
+                Акционерное общество
+              </option>
+              <option
+                value="Индивидуальный предприниматель"
+                selected={EdocApi.LegalForms.display(@company.legal_form) == "Индивидуальный предприниматель"}>
+                Индивидуальный предприниматель
+              </option>
             </select>
           </div>
 
@@ -112,7 +118,7 @@
 
         <div>
           <dt class="text-sm font-medium text-gray-500">Legal Form</dt>
-          <dd class="mt-1 text-gray-900"><%= @company.legal_form %></dd>
+          <dd class="mt-1 text-gray-900"><%= EdocApi.LegalForms.display(@company.legal_form) %></dd>
         </div>
 
         <div>
@@ -194,30 +200,8 @@
 
           <div class="sm:col-span-2">
             <label class="block text-sm font-medium text-gray-700">IBAN *</label>
-            <input type="text" name="bank_account[iban]" placeholder="KZ..." required
+            <input type="text" name="bank_account[iban]" placeholder="KZ..." required minlength="20" maxlength="20" pattern="[A-Za-z0-9]{20}" title="IBAN must be exactly 20 alphanumeric characters"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border font-mono" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700">KBE Code *</label>
-            <select name="bank_account[kbe_code_id]" required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-              <option value="">Select KBE...</option>
-              <%= for kbe <- @kbe_codes do %>
-                <option value={kbe.id}><%= kbe.code %> - <%= kbe.description %></option>
-              <% end %>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700">KNP Code *</label>
-            <select name="bank_account[knp_code_id]" required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-              <option value="">Select KNP...</option>
-              <%= for knp <- @knp_codes do %>
-                <option value={knp.id}><%= knp.code %> - <%= knp.description %></option>
-              <% end %>
-            </select>
           </div>
 
           <div>
@@ -248,9 +232,8 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Label</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BIC</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IBAN</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KBE</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KNP</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -265,9 +248,8 @@
                     <% end %>
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-900"><%= account.bank.name %></td>
+                  <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= account.bank.bic %></td>
                   <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= account.iban %></td>
-                  <td class="px-6 py-4 text-sm text-gray-500"><%= account.kbe_code.code %></td>
-                  <td class="px-6 py-4 text-sm text-gray-500"><%= account.knp_code.code %></td>
                   <td class="px-6 py-4 text-sm text-gray-500">
                     <%= if account.is_default do %>
                       <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -284,6 +266,14 @@
                     <% end %>
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-500">
+                    <a href={"/company/bank-accounts/#{account.id}"} class="text-blue-600 hover:text-blue-900">
+                      View
+                    </a>
+                    <span class="mx-1 text-gray-300">|</span>
+                    <a href={"/company/bank-accounts/#{account.id}/edit"} class="text-blue-600 hover:text-blue-900">
+                      Edit
+                    </a>
+                    <span class="mx-1 text-gray-300">|</span>
                     <%= if length(@bank_accounts) > 1 do %>
                       <form action={"/company/bank-accounts/#{account.id}"} method="post" class="inline"
                         onsubmit="return confirm('Are you sure you want to delete this bank account?');">

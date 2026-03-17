@@ -116,6 +116,9 @@ defmodule EdocApi.Errors do
   def normalize({:error, {:business_rule, details}}) when is_map(details),
     do: {:error, :business_rule, details}
 
+  # Handle nested ok tuples from transactions
+  def normalize({:ok, {:ok, result}}), do: {:ok, result}
+
   def normalize(other), do: other
 
   # -------------------------

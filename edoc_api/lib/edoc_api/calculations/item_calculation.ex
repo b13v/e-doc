@@ -24,7 +24,7 @@ defmodule EdocApi.Calculations.ItemCalculation do
       iex> ItemCalculation.compute_amount(Decimal.new("2.5"), Decimal.new("100.00"))
       #Decimal<250.00>
   """
-  @spec compute_amount(integer() | Decimal.t(), Decimal.t()) :: Decimal.t()
+  @spec compute_amount(term(), Decimal.t()) :: Decimal.t() | nil
   def compute_amount(qty, %Decimal{} = unit_price) when is_integer(qty) do
     unit_price
     |> Decimal.mult(Decimal.new(qty))

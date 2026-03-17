@@ -36,5 +36,19 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
       assert {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, attrs)
       assert invoice.contract_id == contract.id
     end
+
+    test "treats blank bank_account_id as nil and uses default account" do
+      user = create_user!()
+      company = create_company!(user)
+      default_account = create_company_bank_account!(company)
+
+      attrs =
+        invoice_attrs(%{
+          "bank_account_id" => ""
+        })
+
+      assert {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, attrs)
+      assert invoice.bank_account_id == default_account.id
+    end
   end
 end

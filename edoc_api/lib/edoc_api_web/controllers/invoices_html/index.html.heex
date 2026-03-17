@@ -12,11 +12,7 @@
     </div>
   <% end %>
 
-  <%= if @flash["error"] do %>
-    <div class="px-6 py-3 bg-red-50 text-red-800 border-b border-red-200">
-      <%= @flash["error"] %>
-    </div>
-  <% end %>
+  <.flash_error flash={@flash} class="mx-6 mt-3" />
 
   <div class="px-6 py-4">
     <%= if Enum.empty?(@invoices) do %>
@@ -29,7 +25,6 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Date</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -42,9 +37,6 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                   <a href={"/invoices/#{invoice.id}"}><%= invoice.number %></a>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <%= invoice.service_name %>
-                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <%= invoice.issue_date %>
                 </td>
@@ -56,6 +48,17 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
+                  <%= if invoice.status == "issued" do %>
+                    <form action={"/invoices/#{invoice.id}/pay"} method="post" class="inline">
+                      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                      <button
+                        type="submit"
+                        onclick="return confirm('Mark this invoice as paid?')"
+                        class="text-emerald-600 hover:text-emerald-900 mr-4">
+                        Paid
+                      </button>
+                    </form>
+                  <% end %>
                   <%= if invoice.status == "draft" do %>
                     <a href={"/invoices/#{invoice.id}/edit"} class="text-green-600 hover:text-green-900 mr-4">Edit</a>
                     <button

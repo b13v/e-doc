@@ -3,6 +3,7 @@ defmodule EdocApi.Core.Company do
   import Ecto.Changeset
 
   alias EdocApi.Validators.{BinIin, Email, String}
+  alias EdocApi.LegalForms
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -50,6 +51,7 @@ defmodule EdocApi.Core.Company do
     |> put_change(:user_id, user_id)
     |> validate_required(@required_fields ++ [:user_id])
     |> normalize_fields()
+    |> validate_inclusion(:legal_form, LegalForms.allowed())
     |> BinIin.validate(:bin_iin)
     |> Email.validate(:email)
     |> validate_phone()
@@ -66,6 +68,7 @@ defmodule EdocApi.Core.Company do
     |> update_change(:city, &String.normalize/1)
     |> update_change(:address, &String.normalize/1)
     |> update_change(:name, &String.normalize/1)
+    |> update_change(:legal_form, &LegalForms.normalize/1)
     |> update_change(:representative_name, &String.normalize/1)
     |> update_change(:representative_title, &String.normalize/1)
     |> update_change(:basis, &String.normalize/1)

@@ -11,22 +11,21 @@
 
       <div class="grid grid-cols-2 gap-6">
         <div>
-          <label for="service_name" class="block text-sm font-medium text-gray-700">Service Name</label>
-          <input
-            type="text"
-            name="invoice[service_name]"
-            required
-            value={@invoice.service_name}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
-
-        <div>
           <label for="issue_date" class="block text-sm font-medium text-gray-700">Issue Date</label>
           <input
             type="date"
             name="invoice[issue_date]"
             required
             value={@invoice.issue_date}
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+        </div>
+
+        <div>
+          <label for="due_date" class="block text-sm font-medium text-gray-700">Due Date</label>
+          <input
+            type="date"
+            name="invoice[due_date]"
+            value={@invoice.due_date}
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
 
@@ -81,6 +80,36 @@
             <option value="16" selected={@invoice.vat_rate == 16}>16%</option>
           </select>
         </div>
+
+        <div>
+          <label for="kbe_code_id" class="block text-sm font-medium text-gray-700">KBE Code</label>
+          <select
+            id="kbe_code_id"
+            name="invoice[kbe_code_id]"
+            required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <%= for code <- @kbe_codes do %>
+              <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :kbe_code_id), else: @invoice.kbe_code_id) == code.id}>
+                <%= code.code %> - <%= code.description %>
+              </option>
+            <% end %>
+          </select>
+        </div>
+
+        <div>
+          <label for="knp_code_id" class="block text-sm font-medium text-gray-700">KNP Code</label>
+          <select
+            id="knp_code_id"
+            name="invoice[knp_code_id]"
+            required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <%= for code <- @knp_codes do %>
+              <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :knp_code_id), else: @invoice.knp_code_id) == code.id}>
+                <%= code.code %> - <%= code.description %>
+              </option>
+            <% end %>
+          </select>
+        </div>
       </div>
 
       <div class="mt-8">
@@ -90,14 +119,6 @@
             <%= for {item, index} <- Enum.with_index(@invoice.items) do %>
               <div class="item-row grid grid-cols-12 gap-2 items-end">
                 <input type="hidden" name={"invoice[items][#{index}][id]"} value={item.id} />
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500">Code</label>
-                  <input
-                    type="text"
-                    name={"invoice[items][#{index}][code]"}
-                    value={item.code}
-                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
                 <div class="col-span-5">
                   <label class="block text-xs text-gray-500">Description</label>
                   <input
@@ -105,6 +126,14 @@
                     name={"invoice[items][#{index}][name]"}
                     required
                     value={item.name}
+                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs text-gray-500">Ед. Изм.</label>
+                  <input
+                    type="text"
+                    name={"invoice[items][#{index}][code]"}
+                    value={item.code}
                     class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
                 </div>
                 <div class="col-span-2">
@@ -161,13 +190,13 @@
     const newRow = document.createElement('div');
     newRow.className = 'item-row grid grid-cols-12 gap-2 items-end';
     newRow.innerHTML = `
-      <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Code</label>
-        <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-      </div>
       <div class="col-span-5">
         <label class="block text-xs text-gray-500">Description</label>
         <input type="text" name="invoice[items][${itemIndex}][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Ед. Изм.</label>
+        <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
         <label class="block text-xs text-gray-500">Qty</label>

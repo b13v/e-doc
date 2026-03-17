@@ -1,5 +1,9 @@
 import Config
 
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    Base.url_encode64(:crypto.strong_rand_bytes(64), padding: false)
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -17,7 +21,7 @@ config :edoc_api, EdocApi.Repo,
 # you can enable the server option below.
 config :edoc_api, EdocApiWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "zOLb+Q7Bj/xLH8g59iozHbiBpo9pwB88GC69Zbb/DbrTQ+fk6Hzyy14zENsnf6Fu",
+  secret_key_base: secret_key_base,
   server: false
 
 # In test we don't send emails.

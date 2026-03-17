@@ -14,11 +14,7 @@
     </div>
   </div>
 
-  <%= if @flash["error"] do %>
-    <div class="mb-4 px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
-      <%= @flash["error"] %>
-    </div>
-  <% end %>
+  <.flash_error flash={@flash} class="mb-4" />
 
   <form action="/contracts" method="post" class="space-y-8">
     <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -119,15 +115,13 @@
               Currency
             </label>
             <div class="mt-1">
-              <select
+              <input
+                type="text"
                 id="currency"
                 name="contract[currency]"
-                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-                <option value="KZT">KZT - Kazakhstani Tenge</option>
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="RUB">RUB - Russian Ruble</option>
-              </select>
+                value="KZT"
+                readonly
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2 bg-gray-100" />
             </div>
           </div>
 
@@ -136,14 +130,13 @@
               VAT Rate (%)
             </label>
             <div class="mt-1">
-              <input
-                type="number"
+              <select
                 name="contract[vat_rate]"
                 id="vat_rate"
-                value="16"
-                min="0"
-                max="100"
-                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+                <option value="16" selected>16%</option>
+                <option value="0">0%</option>
+              </select>
             </div>
           </div>
         </div>
@@ -164,7 +157,7 @@
         <div id="items-container" class="space-y-4">
           <div class="item-row grid grid-cols-12 gap-4 items-center text-sm font-medium text-gray-500 pb-2 border-b">
             <div class="col-span-5">Item Name</div>
-            <div class="col-span-2">Code</div>
+            <div class="col-span-2">Unit</div>
             <div class="col-span-2">Qty</div>
             <div class="col-span-2">Unit Price</div>
             <div class="col-span-1"></div>
@@ -176,21 +169,24 @@
             <div class="col-span-5">
               <input
                 type="text"
-                name="items[][name]"
+                data-name="items[][name]"
                 placeholder="Item description"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
             </div>
             <div class="col-span-2">
-              <input
-                type="text"
-                name="items[][code]"
-                placeholder="Code"
-                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
+              <select
+                data-name="items[][code]"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+                <option value="">Select unit...</option>
+                <%= for unit <- @units do %>
+                  <option value={unit.symbol}><%= unit.symbol %> — <%= unit.name %></option>
+                <% end %>
+              </select>
             </div>
             <div class="col-span-2">
               <input
                 type="number"
-                name="items[][qty]"
+                data-name="items[][qty]"
                 placeholder="1"
                 min="1"
                 value="1"
@@ -199,7 +195,7 @@
             <div class="col-span-2">
               <input
                 type="number"
-                name="items[][unit_price]"
+                data-name="items[][unit_price]"
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -251,7 +247,17 @@ document.addEventListener('DOMContentLoaded', function() {
   function addItem() {
     const div = document.createElement('div');
     div.innerHTML = template.innerHTML;
-    container.appendChild(div.firstElementChild);
+    const row = div.firstElementChild;
+
+    const existingRows = container.querySelectorAll('.item-row:not(:first-child)');
+    const newIndex = existingRows.length;
+
+    row.querySelectorAll('[data-name]').forEach(field => {
+      const fieldName = field.getAttribute('data-name').replace('items[][', '').replace(']', '');
+      field.setAttribute('name', `items[${newIndex}][${fieldName}]`);
+    });
+
+    container.appendChild(row);
   }
 
   function removeItem(e) {

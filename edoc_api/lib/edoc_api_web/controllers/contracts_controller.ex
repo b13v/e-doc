@@ -3,6 +3,7 @@ defmodule EdocApiWeb.ContractsController do
 
   alias EdocApi.Core
   alias EdocApi.Documents.ContractPdf
+  alias EdocApi.LegalForms
 
   def index(conn, _params) do
     user = conn.assigns.current_user
@@ -14,10 +15,10 @@ defmodule EdocApiWeb.ContractsController do
     user = conn.assigns.current_user
 
     case Core.get_contract_for_user(user.id, id) do
-      {:error, :not_found} ->
+      {:error, :not_found, _details} ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, "Контракт не найден.")
         |> redirect(to: "/contracts")
 
       {:ok, contract} ->
@@ -44,10 +45,10 @@ defmodule EdocApiWeb.ContractsController do
     user = conn.assigns.current_user
 
     case Core.get_contract_for_user(user.id, id) do
-      {:error, :not_found} ->
+      {:error, :not_found, _details} ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, "Контракт не найден.")
         |> redirect(to: "/contracts")
 
       {:ok, contract} ->
@@ -77,7 +78,7 @@ defmodule EdocApiWeb.ContractsController do
 
     %{
       name: Map.get(company, :name) || contract.company_id || "",
-      legal_form: "ТОО",
+      legal_form: LegalForms.display(Map.get(company, :legal_form)),
       bin_iin: Map.get(company, :bin_iin) || "",
       address: Map.get(company, :address) || "",
       director_name: Map.get(company, :representative_name) || "",
@@ -94,7 +95,7 @@ defmodule EdocApiWeb.ContractsController do
 
       %{
         name: Map.get(company, :name) || "",
-        legal_form: contract.buyer_legal_form || "ТОО",
+        legal_form: LegalForms.display(contract.buyer_legal_form),
         bin_iin: Map.get(company, :bin_iin) || "",
         address: Map.get(company, :address) || "",
         director_name:
@@ -107,7 +108,7 @@ defmodule EdocApiWeb.ContractsController do
     else
       %{
         name: contract.buyer_name || "",
-        legal_form: contract.buyer_legal_form || "ТОО",
+        legal_form: LegalForms.display(contract.buyer_legal_form),
         bin_iin: contract.buyer_bin_iin || "",
         address: contract.buyer_address || "",
         director_name: contract.buyer_director_name || "",

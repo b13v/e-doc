@@ -3,11 +3,6 @@
     <h1 class="text-2xl font-bold text-gray-900">Contracts</h1>
     <div class="flex gap-3">
       <a
-        href="/invoices/new"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-        New Invoice
-      </a>
-      <a
         href="/contracts/new"
         class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
         New Contract
@@ -22,11 +17,7 @@
       </div>
     <% end %>
 
-    <%= if @flash["error"] do %>
-      <div class="mb-4 px-4 py-3 bg-red-50 text-red-800 border border-red-200 rounded">
-        <%= @flash["error"] %>
-      </div>
-    <% end %>
+    <.flash_error flash={@flash} class="mb-4" />
 
     <%= if Enum.empty?(@contracts) do %>
       <div class="text-center py-12">
@@ -61,7 +52,22 @@
                   <%= EdocApiWeb.CoreComponents.status_badge(contract.status) %>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <a href={"/contracts/#{contract.id}"} class="text-blue-600 hover:text-blue-900">View</a>
+                  <div class="inline-flex items-center gap-3">
+                    <a href={"/contracts/#{contract.id}"} class="text-blue-600 hover:text-blue-900">View</a>
+                    <%= if EdocApi.ContractStatus.is_draft?(contract) do %>
+                      <a href={"/contracts/#{contract.id}/edit"} class="text-green-600 hover:text-green-900">Edit</a>
+                      <form action={"/contracts/#{contract.id}"} method="post" class="inline">
+                        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                        <input type="hidden" name="_method" value="delete" />
+                        <button
+                          type="submit"
+                          class="text-red-600 hover:text-red-900"
+                          onclick="return confirm('Delete this draft contract?')">
+                          Delete
+                        </button>
+                      </form>
+                    <% end %>
+                  </div>
                 </td>
               </tr>
             <% end %>

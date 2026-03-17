@@ -23,32 +23,33 @@ defmodule EdocApiWeb.SignupController do
     else
       case Accounts.register_user(%{"email" => email, "password" => password}) do
         {:ok, user} ->
-          {:ok, token} = EmailVerification.create_token_for_user(user.id)
+          {:ok, %{token: token}} = EmailVerification.create_token_for_user(user.id)
 
           case EmailSender.send_verification_email(user.email, token) do
             {:ok, _} ->
-              Logger.info("Verification email sent to #{email}")
+              Logger.info("Verification email sent to #{masked_email(email)}")
 
             {:error, reason} ->
-              Logger.error("Failed to send verification email to #{email}: #{inspect(reason)}")
+              Logger.error(
+                "Failed to send verification email to #{masked_email(email)}: #{inspect(reason)}"
+              )
           end
 
           conn
           |> put_flash(:info, "Account created! Please verify your email to continue.")
-          |> redirect(to: "/verify-email-pending?email=#{email}&token=#{token}")
+          |> redirect(to: "/verify-email-pending?email=#{email}")
 
         {:error, :validation, changeset: changeset} ->
-          error_message = format_changeset_errors(changeset)
-
-          # Check if it's an email already taken error
-          if String.downcase(error_message) =~ ~r/email.*already.*taken|has already been taken/ do
+          if duplicate_email_error?(changeset) do
             conn
             |> put_flash(
-              :error,
-              "An account with this email already exists. Please log in instead."
+              :info,
+              "If the email is eligible, verification instructions will be sent shortly."
             )
-            |> redirect(to: "/login")
+            |> redirect(to: "/verify-email-pending?email=#{URI.encode_www_form(email)}")
           else
+            error_message = format_changeset_errors(changeset)
+
             conn
             |> put_flash(:error, error_message)
             |> render(:new, page_title: "Sign Up")
@@ -72,5 +73,25 @@ defmodule EdocApiWeb.SignupController do
     end)
     |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
     |> Enum.join("; ")
+  end
+
+  defp duplicate_email_error?(%Ecto.Changeset{} = changeset) do
+    Enum.any?(changeset.errors, fn
+      {:email, {_msg, opts}} -> opts[:constraint] == :unique
+      _ -> false
+    end)
+  end
+
+  defp masked_email(email) when is_binary(email) do
+    case String.split(email, "@", parts: 2) do
+      [local, domain] when byte_size(local) > 1 ->
+        String.slice(local, 0, 1) <> "***@" <> domain
+
+      [local, domain] ->
+        local <> "***@" <> domain
+
+      _ ->
+        "***"
+    end
   end
 end

@@ -7,12 +7,12 @@ defmodule EdocApi.EmailSender do
 
   @from {"EdocAPI", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
 
-  def send_verification_email(email, token) do
+  def send_verification_email(recipient_email, token) do
     verification_url = verification_link(token)
 
     email =
       new()
-      |> to({nil, email})
+      |> to({nil, recipient_email})
       |> from(@from)
       |> subject("Verify your email - EdocAPI")
       |> html_body("""
@@ -37,8 +37,7 @@ defmodule EdocApi.EmailSender do
       If you didn't create an account on EdocAPI, please ignore this email.
       """)
 
-    Logger.info("[EMAIL] Sending verification email to: #{email}")
-    Logger.debug("[EMAIL] Full email: #{inspect(email)}")
+    Logger.info("[EMAIL] Sending verification email to: #{recipient_email}")
 
     case Mailer.deliver(email) do
       {:ok, receipt} ->

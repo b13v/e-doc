@@ -1,8 +1,12 @@
 defmodule EdocApiWeb.CompaniesController do
   use EdocApiWeb, :controller
 
+  import Ecto.Query, warn: false
+
   alias EdocApi.Companies
   alias EdocApi.Payments
+  alias EdocApi.Repo
+  alias EdocApi.Core.CompanyBankAccount
 
   # Setup page for new users (create company)
   def setup(conn, _params) do
@@ -48,13 +52,16 @@ defmodule EdocApiWeb.CompaniesController do
                 conn
                 |> put_flash(
                   :info,
-                  "Company set up successfully! Now add your first buyer to start creating contracts."
+                  "Компания успешно зарегистрирована! Теперь добавьте своего первого покупателя, чтобы начать заключать договоры."
                 )
                 |> redirect(to: "/buyers/new")
 
               {:error, _changeset} ->
                 conn
-                |> put_flash(:error, "Failed to create bank account. Please try again.")
+                |> put_flash(
+                  :error,
+                  "Не удалось создать банковский счет. Пожалуйста, попробуйте еще раз."
+                )
                 |> render(:setup,
                   company: company,
                   banks: banks,
@@ -66,7 +73,7 @@ defmodule EdocApiWeb.CompaniesController do
 
           {:error, changeset, _warnings} ->
             conn
-            |> put_flash(:error, "Please fix the errors below.")
+            |> put_flash(:error, company_validation_flash_message(changeset))
             |> render(:setup,
               changeset: changeset,
               banks: banks,
@@ -92,15 +99,11 @@ defmodule EdocApiWeb.CompaniesController do
       company ->
         bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
-        kbe_codes = Payments.list_kbe_codes()
-        knp_codes = Payments.list_knp_codes()
 
         render(conn, :edit,
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
-          kbe_codes: kbe_codes,
-          knp_codes: knp_codes,
           page_title: "Company Settings"
         )
     end
@@ -112,22 +115,20 @@ defmodule EdocApiWeb.CompaniesController do
     case Companies.upsert_company_for_user(user.id, company_params) do
       {:ok, _company, _warnings} ->
         conn
-        |> put_flash(:info, "Company updated successfully")
+        |> put_flash(:info, "Обновление компании прошло успешно")
         |> redirect(to: "/company")
 
       {:error, changeset, _warnings} ->
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
-        kbe_codes = Payments.list_kbe_codes()
-        knp_codes = Payments.list_knp_codes()
 
-        render(conn, :edit,
+        conn
+        |> put_flash(:error, company_validation_flash_message(changeset))
+        |> render(:edit,
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
-          kbe_codes: kbe_codes,
-          knp_codes: knp_codes,
           changeset: changeset,
           page_title: "Company Settings"
         )
@@ -141,22 +142,18 @@ defmodule EdocApiWeb.CompaniesController do
     case Payments.create_company_bank_account_for_user(user.id, bank_account_params) do
       {:ok, _bank_account} ->
         conn
-        |> put_flash(:info, "Bank account added successfully")
+        |> put_flash(:info, "Банковский счет успешно добавлен.")
         |> redirect(to: "/company")
 
       {:error, _changeset} ->
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
-        kbe_codes = Payments.list_kbe_codes()
-        knp_codes = Payments.list_knp_codes()
 
         render(conn, :edit,
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
-          kbe_codes: kbe_codes,
-          knp_codes: knp_codes,
           page_title: "Company Settings"
         )
     end
@@ -168,12 +165,12 @@ defmodule EdocApiWeb.CompaniesController do
     case Payments.set_default_bank_account(user.id, id) do
       {:ok, _bank_account} ->
         conn
-        |> put_flash(:info, "Default bank account updated")
+        |> put_flash(:info, "Обновлен банковский счет по умолчанию.")
         |> redirect(to: "/company")
 
       {:error, _reason} ->
         conn
-        |> put_flash(:error, "Failed to update default bank account")
+        |> put_flash(:error, "Не удалось обновить банковский счет по умолчанию.")
         |> redirect(to: "/company")
     end
   end
@@ -181,29 +178,55 @@ defmodule EdocApiWeb.CompaniesController do
   def delete_bank_account(conn, %{"id" => id}) do
     user = conn.assigns.current_user
 
-    # Get the bank account and verify ownership
-    case Payments.list_company_bank_accounts_for_user(user.id)
-         |> Enum.find(fn acc -> acc.id == id end) do
+    case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Bank account not found")
+        |> put_flash(:error, "Компания не найдена")
         |> redirect(to: "/company")
 
-      _bank_account ->
-        # Don't allow deleting the only bank account
+      company ->
         accounts = Payments.list_company_bank_accounts_for_user(user.id)
 
-        if length(accounts) == 1 do
-          conn
-          |> put_flash(:error, "Cannot delete the only bank account")
-          |> redirect(to: "/company")
-        else
-          EdocApi.Repo.delete(EdocApi.Repo.get(EdocApi.Core.CompanyBankAccount, id))
+        cond do
+          Enum.empty?(accounts) ->
+            conn
+            |> put_flash(:error, "Банковский счет не найден")
+            |> redirect(to: "/company")
 
-          conn
-          |> put_flash(:info, "Bank account deleted")
-          |> redirect(to: "/company")
+          Enum.all?(accounts, fn account -> account.id != id end) ->
+            conn
+            |> put_flash(:error, "Банковский счет не найден")
+            |> redirect(to: "/company")
+
+          length(accounts) == 1 ->
+            conn
+            |> put_flash(:error, "Невозможно удалить единственный банковский счет.")
+            |> redirect(to: "/company")
+
+          true ->
+            {deleted_count, _} =
+              CompanyBankAccount
+              |> where([a], a.id == ^id and a.company_id == ^company.id)
+              |> Repo.delete_all()
+
+            if deleted_count == 1 do
+              conn
+              |> put_flash(:info, "Банковский счет удален")
+              |> redirect(to: "/company")
+            else
+              conn
+              |> put_flash(:error, "Не удалось удалить банковский счет")
+              |> redirect(to: "/company")
+            end
         end
+    end
+  end
+
+  defp company_validation_flash_message(changeset) do
+    if Keyword.has_key?(changeset.errors, :bin_iin) do
+      "Неверный БИН/ИИН. Пожалуйста, введите действительный 12-значный БИН/ИИН."
+    else
+      "Пожалуйста, исправьте ошибки, указанные ниже."
     end
   end
 end

@@ -25,11 +25,21 @@ defmodule EdocApiWeb.InvoiceController do
     end
   end
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    invoices = Invoicing.list_invoices_for_user(user.id)
 
-    json(conn, %{invoices: Enum.map(invoices, &InvoiceSerializer.to_map/1)})
+    %{page: page, page_size: page_size, offset: offset} =
+      ControllerHelpers.pagination_params(params)
+
+    invoices =
+      Invoicing.list_invoices_for_user(user.id, limit: page_size, offset: offset)
+
+    total_count = Invoicing.count_invoices_for_user(user.id)
+
+    json(conn, %{
+      invoices: Enum.map(invoices, &InvoiceSerializer.to_map/1),
+      meta: ControllerHelpers.pagination_meta(page, page_size, total_count)
+    })
   end
 
   def show(conn, %{"id" => id}) do
@@ -62,6 +72,27 @@ defmodule EdocApiWeb.InvoiceController do
     end)
   end
 
+  def pay(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+    result = Invoicing.pay_invoice_for_user(user.id, id)
+
+    ControllerHelpers.handle_common_result(
+      conn,
+      result,
+      fn conn, invoice ->
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+      end,
+      %{
+        cannot_mark_paid: fn conn, details ->
+          ErrorMapper.unprocessable(conn, "cannot_mark_paid", details)
+        end,
+        already_paid: fn conn, details ->
+          ErrorMapper.unprocessable(conn, "already_paid", details)
+        end
+      }
+    )
+  end
+
   def pdf(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     conn = put_layout(conn, false)
@@ -74,8 +105,8 @@ defmodule EdocApiWeb.InvoiceController do
         result = InvoicePdf.render(invoice)
 
         error_map = %{
-          pdf_generation_failed: fn conn, details ->
-            ErrorMapper.unprocessable(conn, "pdf_generation_failed", details)
+          pdf_generation_failed: fn conn ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
           end
         }
 
@@ -84,6 +115,7 @@ defmodule EdocApiWeb.InvoiceController do
           result,
           fn conn, pdf_binary ->
             conn
+            |> put_pdf_security_headers()
             |> put_resp_content_type("application/pdf")
             |> put_resp_header(
               "content-disposition",
@@ -94,5 +126,12 @@ defmodule EdocApiWeb.InvoiceController do
           error_map
         )
     end
+  end
+
+  defp put_pdf_security_headers(conn) do
+    conn
+    |> put_resp_header("cache-control", "private, no-store, max-age=0")
+    |> put_resp_header("pragma", "no-cache")
+    |> put_resp_header("x-content-type-options", "nosniff")
   end
 end

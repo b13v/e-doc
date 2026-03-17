@@ -5,11 +5,19 @@ defmodule EdocApiWeb.ContractController do
   alias EdocApi.Documents.ContractPdf
   alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    contracts = Core.list_contracts_for_user(user)
 
-    render(conn, :index, contracts: contracts)
+    %{page: page, page_size: page_size, offset: offset} =
+      ControllerHelpers.pagination_params(params)
+
+    contracts = Core.list_contracts_for_user(user, limit: page_size, offset: offset)
+    total_count = Core.count_contracts_for_user(user)
+
+    render(conn, :index,
+      contracts: contracts,
+      meta: ControllerHelpers.pagination_meta(page, page_size, total_count)
+    )
   end
 
   def create(conn, params) do
@@ -78,15 +86,15 @@ defmodule EdocApiWeb.ContractController do
     conn = put_layout(conn, false)
 
     case Core.get_contract_for_user(user, id) do
-      {:error, :not_found} ->
+      {:error, :not_found, _details} ->
         ErrorMapper.not_found(conn, "contract_not_found")
 
       {:ok, contract} ->
         result = ContractPdf.render(contract)
 
         error_map = %{
-          pdf_generation_failed: fn conn, details ->
-            ErrorMapper.unprocessable(conn, "pdf_generation_failed", details)
+          pdf_generation_failed: fn conn ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
           end
         }
 
@@ -95,6 +103,7 @@ defmodule EdocApiWeb.ContractController do
           result,
           fn conn, pdf_binary ->
             conn
+            |> put_pdf_security_headers()
             |> put_resp_content_type("application/pdf")
             |> put_resp_header(
               "content-disposition",
@@ -105,5 +114,12 @@ defmodule EdocApiWeb.ContractController do
           error_map
         )
     end
+  end
+
+  defp put_pdf_security_headers(conn) do
+    conn
+    |> put_resp_header("cache-control", "private, no-store, max-age=0")
+    |> put_resp_header("pragma", "no-cache")
+    |> put_resp_header("x-content-type-options", "nosniff")
   end
 end

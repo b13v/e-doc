@@ -7,13 +7,14 @@ defmodule EdocApi.Core.Buyer do
   import Ecto.Changeset
 
   alias EdocApi.Validators.{BinIin, Email, String}
+  alias EdocApi.LegalForms
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
   schema "buyers" do
     field(:name, :string)
-    field(:legal_form, :string, default: "ТОО")
+    field(:legal_form, :string, default: "Товарищество с ограниченной ответственностью")
     field(:bin_iin, :string)
     field(:address, :string)
     field(:city, :string)
@@ -24,6 +25,7 @@ defmodule EdocApi.Core.Buyer do
     field(:basis, :string)
 
     belongs_to(:company, EdocApi.Core.Company)
+    has_many(:bank_accounts, EdocApi.Core.BuyerBankAccount)
 
     timestamps(type: :utc_datetime)
   end
@@ -49,6 +51,7 @@ defmodule EdocApi.Core.Buyer do
     |> put_change(:company_id, company_id)
     |> validate_required(@required_fields ++ [:company_id])
     |> normalize_fields()
+    |> validate_inclusion(:legal_form, LegalForms.allowed())
     |> BinIin.validate(:bin_iin)
     |> Email.validate(:email)
     |> validate_length(:name, min: 2, max: 255)
@@ -62,6 +65,7 @@ defmodule EdocApi.Core.Buyer do
     buyer
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> normalize_fields()
+    |> validate_inclusion(:legal_form, LegalForms.allowed())
     |> BinIin.validate(:bin_iin)
     |> Email.validate(:email)
     |> validate_length(:name, min: 2, max: 255)
@@ -75,6 +79,7 @@ defmodule EdocApi.Core.Buyer do
     |> update_change(:city, &String.normalize/1)
     |> update_change(:address, &String.normalize/1)
     |> update_change(:name, &String.normalize/1)
+    |> update_change(:legal_form, &LegalForms.normalize/1)
     |> update_change(:director_name, &String.normalize/1)
     |> update_change(:director_title, &String.normalize/1)
     |> update_change(:basis, &String.normalize/1)

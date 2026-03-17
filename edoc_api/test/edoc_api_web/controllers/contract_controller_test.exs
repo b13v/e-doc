@@ -45,6 +45,29 @@ defmodule EdocApiWeb.ContractControllerTest do
     end
   end
 
+  describe "index/2" do
+    test "returns normalized pagination metadata", %{conn: conn, company: company} do
+      _contract_1 = create_contract!(company)
+      _contract_2 = create_contract!(company)
+      _contract_3 = create_contract!(company)
+
+      conn = get(conn, "/v1/contracts?page=2&page_size=2")
+      assert response(conn, 200)
+
+      body = json_response(conn, 200)
+      assert length(body["data"]) == 1
+
+      assert body["meta"] == %{
+               "page" => 2,
+               "page_size" => 2,
+               "total_count" => 3,
+               "total_pages" => 2,
+               "has_next" => false,
+               "has_prev" => true
+             }
+    end
+  end
+
   describe "pdf/2" do
     if System.find_executable("wkhtmltopdf") do
       test "returns contract pdf", %{conn: conn, company: company} do
@@ -56,6 +79,10 @@ defmodule EdocApiWeb.ContractControllerTest do
 
         assert get_resp_header(conn, "content-disposition") ==
                  [~s(inline; filename="contract-#{contract.number}.pdf")]
+
+        assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+        assert get_resp_header(conn, "pragma") == ["no-cache"]
+        assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
       end
     else
       @tag skip: "wkhtmltopdf is not available in PATH"

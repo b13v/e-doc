@@ -3,7 +3,7 @@ defmodule EdocApi.Auth.Token do
 
   @issuer "edoc_api"
   @aud "edoc_api_users"
-  @ttl_seconds 60 * 60 * 24 * 7
+  @default_access_ttl_seconds 15 * 60
 
   @type token :: String.t()
   @type claims :: %{optional(String.t()) => term()}
@@ -13,13 +13,14 @@ defmodule EdocApi.Auth.Token do
           {:ok, token(), claims()} | {:error, error()}
   def generate_access_token(user_id) when is_binary(user_id) do
     now = DateTime.utc_now() |> DateTime.to_unix()
+    ttl_seconds = access_ttl_seconds()
 
     claims = %{
       "sub" => user_id,
       "iss" => @issuer,
       "aud" => @aud,
       "iat" => now,
-      "exp" => now + @ttl_seconds
+      "exp" => now + ttl_seconds
     }
 
     # For plain claim maps, use encode_and_sign/2 (not generate_and_sign)
@@ -56,4 +57,11 @@ defmodule EdocApi.Auth.Token do
   end
 
   defp validate_claims(_), do: {:error, :invalid_claims}
+
+  defp access_ttl_seconds do
+    case Application.get_env(:edoc_api, EdocApi.Auth, [])[:access_ttl_seconds] do
+      ttl when is_integer(ttl) and ttl > 0 -> ttl
+      _ -> @default_access_ttl_seconds
+    end
+  end
 end

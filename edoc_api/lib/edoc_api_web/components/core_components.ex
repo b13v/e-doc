@@ -6,7 +6,6 @@ defmodule EdocApiWeb.CoreComponents do
   and helper functions used in templates.
   """
   use Phoenix.Component
-  import Plug.Conn
 
   attr(:class, :string, default: nil)
 
@@ -15,6 +14,22 @@ defmodule EdocApiWeb.CoreComponents do
   def link(assigns) do
     ~H"""
     <a class={@class}><%= render_slot(@inner_block) %></a>
+    """
+  end
+
+  @doc """
+  Render a consistent flash error summary for forms.
+  """
+  attr(:flash, :map, required: true)
+  attr(:class, :string, default: nil)
+
+  def flash_error(assigns) do
+    ~H"""
+    <%= if @flash["error"] do %>
+      <div class={["rounded-md bg-red-50 p-4 mb-4", @class]}>
+        <p class="text-sm font-medium text-red-800"><%= @flash["error"] %></p>
+      </div>
+    <% end %>
     """
   end
 
@@ -102,14 +117,4 @@ defmodule EdocApiWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Get the JWT token from the conn for htmx requests.
-  Looks for token in session or assigns.
-  """
-  def get_token(conn) do
-    # Try to get token from session or assigns
-    # For the POC, we'll look for it in assigns (set by auth plug)
-    # In production, you might store this in the session after login
-    conn.assigns[:token] || conn.private[:guardian_token] || get_session(conn, :token) || ""
-  end
 end

@@ -53,8 +53,8 @@
               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                 Email
               </th>
-              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                <span class="sr-only">Actions</span>
+              <th scope="col" class="relative py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 sm:pr-6">
+                Action
               </th>
             </tr>
           </thead>
@@ -64,7 +64,7 @@
                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                   <%= buyer.name %>
                   <%= if buyer.legal_form do %>
-                    <span class="text-gray-500 font-normal"><%= buyer.legal_form %></span>
+                    <span class="text-gray-500 font-normal"><%= EdocApi.LegalForms.display(buyer.legal_form) %></span>
                   <% end %>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
@@ -77,6 +77,9 @@
                   <%= buyer.email || "-" %>
                 </td>
                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  <a href={"/buyers/" <> buyer.id} class="text-gray-700 hover:text-gray-900 mr-4">
+                    View
+                  </a>
                   <a href={"/buyers/" <> buyer.id <> "/edit"} class="text-blue-600 hover:text-blue-900 mr-4">
                     Edit
                   </a>

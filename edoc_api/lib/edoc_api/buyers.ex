@@ -7,7 +7,7 @@ defmodule EdocApi.Buyers do
   alias EdocApi.Repo
   alias EdocApi.Errors
   alias EdocApi.Core.Buyer
-  alias EdocApi.Core.Company
+  alias EdocApi.Core.BuyerBankAccount
   alias EdocApi.Validators.BinIin
 
   @doc """
@@ -41,11 +41,13 @@ defmodule EdocApi.Buyers do
 
   @doc """
   Lists all buyers for a company.
+  Supports optional pagination via :limit and :offset.
   """
-  def list_buyers_for_company(company_id) when is_binary(company_id) do
+  def list_buyers_for_company(company_id, opts \\ []) when is_binary(company_id) do
     Buyer
     |> where(company_id: ^company_id)
     |> order_by([b], asc: b.name)
+    |> apply_pagination(opts)
     |> Repo.all()
   end
 
@@ -53,10 +55,31 @@ defmodule EdocApi.Buyers do
   Creates a buyer for a company.
   """
   def create_buyer_for_company(company_id, attrs) when is_binary(company_id) do
-    %Buyer{}
-    |> Buyer.changeset(attrs, company_id)
-    |> Repo.insert()
-    |> Errors.from_changeset()
+    {buyer_attrs, bank_attrs} = split_attrs(attrs)
+
+    case Repo.transaction(fn ->
+           buyer_changeset = Buyer.changeset(%Buyer{}, buyer_attrs, company_id)
+
+           buyer =
+             case Repo.insert(buyer_changeset) do
+               {:ok, buyer} -> buyer
+               {:error, changeset} -> Repo.rollback({:changeset, changeset})
+             end
+
+           case maybe_upsert_default_bank_account(buyer.id, bank_attrs) do
+             {:ok, _} -> buyer
+             {:error, changeset} -> Repo.rollback({:changeset, changeset})
+           end
+         end) do
+      {:ok, buyer} ->
+        {:ok, Repo.preload(buyer, bank_accounts: :bank)}
+
+      {:error, {:changeset, changeset}} ->
+        Errors.from_changeset({:error, changeset})
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -68,10 +91,64 @@ defmodule EdocApi.Buyers do
         Errors.not_found(:buyer)
 
       buyer ->
-        buyer
-        |> Buyer.update_changeset(attrs)
-        |> Repo.update()
-        |> Errors.from_changeset()
+        {buyer_attrs, bank_attrs} = split_attrs(attrs)
+
+        case Repo.transaction(fn ->
+               buyer_changeset = Buyer.update_changeset(buyer, buyer_attrs)
+
+               updated_buyer =
+                 case Repo.update(buyer_changeset) do
+                   {:ok, updated_buyer} -> updated_buyer
+                   {:error, changeset} -> Repo.rollback({:changeset, changeset})
+                 end
+
+               case maybe_upsert_default_bank_account(updated_buyer.id, bank_attrs) do
+                 {:ok, _} -> updated_buyer
+                 {:error, changeset} -> Repo.rollback({:changeset, changeset})
+               end
+             end) do
+          {:ok, updated_buyer} ->
+            {:ok, Repo.preload(updated_buyer, bank_accounts: :bank)}
+
+          {:error, {:changeset, changeset}} ->
+            Errors.from_changeset({:error, changeset})
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  def get_default_bank_account(%Buyer{} = buyer) do
+    bank_accounts =
+      case buyer.bank_accounts do
+        %Ecto.Association.NotLoaded{} -> []
+        accounts -> accounts
+      end
+
+    Enum.find(bank_accounts, & &1.is_default) || List.first(bank_accounts)
+  end
+
+  def get_default_bank_account(buyer_id) when is_binary(buyer_id) do
+    BuyerBankAccount
+    |> where([a], a.buyer_id == ^buyer_id and a.is_default == true)
+    |> order_by([a], desc: a.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil ->
+        BuyerBankAccount
+        |> where([a], a.buyer_id == ^buyer_id)
+        |> order_by([a], desc: a.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      account ->
+        account
+    end
+    |> case do
+      nil -> nil
+      account -> Repo.preload(account, :bank)
     end
   end
 
@@ -118,6 +195,24 @@ defmodule EdocApi.Buyers do
     end
   end
 
+  defp apply_pagination(query, opts) do
+    limit = Keyword.get(opts, :limit)
+    offset = Keyword.get(opts, :offset)
+
+    query =
+      if is_integer(limit) do
+        from(q in query, limit: ^limit)
+      else
+        query
+      end
+
+    if is_integer(offset) and offset > 0 do
+      from(q in query, offset: ^offset)
+    else
+      query
+    end
+  end
+
   @doc """
   Searches buyers by name or BIN/IIN.
   """
@@ -151,4 +246,46 @@ defmodule EdocApi.Buyers do
     |> where(company_id: ^company_id)
     |> Repo.aggregate(:count, :id)
   end
+
+  defp split_attrs(attrs) do
+    buyer_attrs = Map.drop(attrs || %{}, ["bank_id", "iban", "bic"])
+    bank_attrs = Map.take(attrs || %{}, ["bank_id", "iban", "bic"])
+    {buyer_attrs, bank_attrs}
+  end
+
+  defp maybe_upsert_default_bank_account(_buyer_id, %{"bank_id" => bank_id})
+       when bank_id in [nil, ""],
+       do: {:ok, nil}
+
+  defp maybe_upsert_default_bank_account(buyer_id, %{"bank_id" => bank_id} = attrs) do
+    normalized_attrs = %{
+      "bank_id" => bank_id,
+      "iban" => blank_to_nil(attrs["iban"]),
+      "bic" => blank_to_nil(attrs["bic"]),
+      "is_default" => true
+    }
+
+    existing_default =
+      BuyerBankAccount
+      |> where([a], a.buyer_id == ^buyer_id and a.is_default == true)
+      |> order_by([a], desc: a.inserted_at)
+      |> limit(1)
+      |> Repo.one()
+
+    changeset =
+      case existing_default do
+        nil -> BuyerBankAccount.changeset(%BuyerBankAccount{}, normalized_attrs, buyer_id)
+        account -> BuyerBankAccount.changeset(account, normalized_attrs, buyer_id)
+      end
+
+    case existing_default do
+      nil -> Repo.insert(changeset)
+      _ -> Repo.update(changeset)
+    end
+  end
+
+  defp maybe_upsert_default_bank_account(_buyer_id, _attrs), do: {:ok, nil}
+
+  defp blank_to_nil(v) when v in [nil, ""], do: nil
+  defp blank_to_nil(v), do: v
 end

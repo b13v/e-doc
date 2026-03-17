@@ -8,6 +8,7 @@ defmodule EdocApi.Core.Contract do
   import Ecto.Changeset
 
   alias EdocApi.{ContractStatus, Currencies, VatRates}
+  alias EdocApi.LegalForms
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -48,7 +49,7 @@ defmodule EdocApi.Core.Contract do
     belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
 
     has_many(:invoices, EdocApi.Core.Invoice)
-    has_many(:contract_items, EdocApi.Core.ContractItem)
+    has_many(:contract_items, EdocApi.Core.ContractItem, on_replace: :delete)
 
     timestamps(type: :utc_datetime)
   end
@@ -92,11 +93,13 @@ defmodule EdocApi.Core.Contract do
     contract
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> maybe_put_default_status()
+    |> normalize_legal_forms()
     |> sanitize_body_html()
     |> put_change(:company_id, seller_company_id)
     |> validate_required(@required_fields ++ [:company_id])
     |> validate_inclusion(:status, ContractStatus.all())
     |> validate_inclusion(:currency, Currencies.supported_currencies())
+    |> validate_inclusion(:buyer_legal_form, LegalForms.allowed())
     |> VatRates.validate_rate(:vat_rate, "KZ")
     |> validate_date_not_in_future(:issue_date)
     |> unique_constraint(:number, name: :contracts_company_id_number_index)
@@ -109,9 +112,11 @@ defmodule EdocApi.Core.Contract do
   def update_changeset(contract, attrs) do
     contract
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> normalize_legal_forms()
     |> sanitize_body_html()
     |> validate_inclusion(:status, ContractStatus.all())
     |> validate_inclusion(:currency, Currencies.supported_currencies())
+    |> validate_inclusion(:buyer_legal_form, LegalForms.allowed())
     |> VatRates.validate_rate(:vat_rate, "KZ")
     |> validate_date_not_in_future(:issue_date)
     |> validate_buyer_details()
@@ -143,6 +148,10 @@ defmodule EdocApi.Core.Contract do
         sanitized = HtmlSanitizeEx.basic_html(body_html)
         put_change(changeset, :body_html, sanitized)
     end
+  end
+
+  defp normalize_legal_forms(changeset) do
+    update_change(changeset, :buyer_legal_form, &LegalForms.normalize/1)
   end
 
   # Validate that buyer_id is required for new contracts

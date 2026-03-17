@@ -6,7 +6,10 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.RepoHelpers
   alias EdocApi.Errors
   alias EdocApi.Currencies
+  alias EdocApi.Companies
+  alias EdocApi.Payments
   alias EdocApi.Core.Company
+  alias EdocApi.Core.Contract
   alias EdocApi.Core.Invoice
   alias EdocApi.Core.InvoiceBankSnapshot
   alias EdocApi.Core.InvoiceItem
@@ -25,18 +28,93 @@ defmodule EdocApi.Invoicing do
     end
   end
 
-  def list_invoices_for_user(user_id) do
+  def list_issued_contracts_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        []
+
+      %Company{id: company_id} ->
+        Contract
+        |> where([c], c.company_id == ^company_id and c.status == "issued")
+        |> order_by([c], desc: c.inserted_at)
+        |> Repo.all()
+        |> Repo.preload([:buyer])
+    end
+  end
+
+  def get_issued_contract_for_user(user_id, contract_id)
+      when is_binary(user_id) and is_binary(contract_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        {:error, :company_required}
+
+      %Company{id: company_id} ->
+        Contract
+        |> where(
+          [c],
+          c.company_id == ^company_id and c.id == ^contract_id and c.status == "issued"
+        )
+        |> Repo.one()
+        |> case do
+          nil ->
+            {:error, :not_found}
+
+          contract ->
+            {:ok, Repo.preload(contract, [:buyer, :contract_items, :bank_account])}
+        end
+    end
+  end
+
+  def build_invoice_from_contract(user_id, contract_id)
+      when is_binary(user_id) and is_binary(contract_id) do
+    with {:ok, contract} <- get_issued_contract_for_user(user_id, contract_id) do
+      bank_accounts = Payments.list_company_bank_accounts_for_user(user_id)
+      selected_bank_account_id = resolve_contract_bank_account_id(contract, bank_accounts)
+
+      buyer = contract.buyer
+
+      prefill_items =
+        Enum.map(contract.contract_items || [], fn item ->
+          %{
+            "code" => item.code || "",
+            "name" => item.name || "",
+            "qty" => normalize_qty_for_invoice(item.qty),
+            "unit_price" => decimal_to_string(item.unit_price)
+          }
+        end)
+
+      {:ok,
+       %{
+         selected_contract_id: contract.id,
+         selected_buyer_id: buyer && buyer.id,
+         selected_bank_account_id: selected_bank_account_id,
+         buyer_address: (buyer && buyer.address) || "",
+         prefill_items: prefill_items
+       }}
+    end
+  end
+
+  def list_invoices_for_user(user_id, opts \\ []) do
     Invoice
     |> where([i], i.user_id == ^user_id)
     |> order_by([i], desc: i.inserted_at)
+    |> apply_pagination(opts)
     |> Repo.all()
     |> Repo.preload([
       :items,
       :bank_snapshot,
       :contract,
       :company,
+      :kbe_code,
+      :knp_code,
       bank_account: [:bank, :kbe_code, :knp_code]
     ])
+  end
+
+  def count_invoices_for_user(user_id) when is_binary(user_id) do
+    Invoice
+    |> where([i], i.user_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
@@ -62,9 +140,59 @@ defmodule EdocApi.Invoicing do
     end)
   end
 
+  def pay_invoice_for_user(user_id, invoice_id) do
+    RepoHelpers.transaction(fn ->
+      invoice =
+        RepoHelpers.fetch_or_abort(
+          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          :invoice
+        )
+        |> preload_invoice()
+
+      cond do
+        InvoiceStatus.is_paid?(invoice) ->
+          RepoHelpers.abort(
+            {:business_rule, %{rule: :already_paid, details: %{invoice_id: invoice.id}}}
+          )
+
+        not InvoiceStatus.is_issued?(invoice) ->
+          RepoHelpers.abort(
+            {:business_rule,
+             %{
+               rule: :cannot_mark_paid,
+               details: %{invoice_id: invoice.id, status: invoice.status}
+             }}
+          )
+
+        true ->
+          case update_invoice_status(invoice, InvoiceStatus.paid()) do
+            {:ok, inv} ->
+              {:ok, preload_invoice(inv)}
+
+            {:error, %Ecto.Changeset{} = changeset} ->
+              RepoHelpers.abort({:validation, %{changeset: changeset}})
+          end
+      end
+    end)
+  end
+
   def create_invoice_for_user(user_id, company_id, attrs) do
     items_attrs = normalize_items(Map.get(attrs, "items") || Map.get(attrs, :items) || [])
-    bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
+
+    bank_account_id =
+      attrs
+      |> fetch_optional_value("bank_account_id", :bank_account_id)
+      |> normalize_blank_to_nil()
+
+    kbe_code_id =
+      attrs
+      |> fetch_optional_value("kbe_code_id", :kbe_code_id)
+      |> normalize_blank_to_nil()
+
+    knp_code_id =
+      attrs
+      |> fetch_optional_value("knp_code_id", :knp_code_id)
+      |> normalize_blank_to_nil()
 
     RepoHelpers.transaction(fn ->
       RepoHelpers.check_or_abort(items_attrs != [], :items_required)
@@ -108,14 +236,12 @@ defmodule EdocApi.Invoicing do
         |> Map.put("subtotal", subtotal)
         |> Map.put("number", number)
         |> maybe_put_bank_account_id(bank_account)
+        |> maybe_put_kbe_code_id(kbe_code_id || bank_account.kbe_code_id)
+        |> maybe_put_knp_code_id(knp_code_id || bank_account.knp_code_id)
 
       invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
-      invoice =
-        case RepoHelpers.insert_or_abort(invoice_changeset) do
-          {:ok, inv} -> inv
-          {:error, reason} -> RepoHelpers.abort(reason)
-        end
+      {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
 
       Enum.each(prepared_items, fn item_attrs ->
         cs =
@@ -146,7 +272,21 @@ defmodule EdocApi.Invoicing do
       end
 
       items_attrs = normalize_items(Map.get(attrs, "items") || Map.get(attrs, :items) || [])
-      bank_account_id = Map.get(attrs, "bank_account_id") || Map.get(attrs, :bank_account_id)
+
+      bank_account_id =
+        attrs
+        |> fetch_optional_value("bank_account_id", :bank_account_id)
+        |> normalize_blank_to_nil()
+
+      kbe_code_id =
+        attrs
+        |> fetch_optional_value("kbe_code_id", :kbe_code_id)
+        |> normalize_blank_to_nil()
+
+      knp_code_id =
+        attrs
+        |> fetch_optional_value("knp_code_id", :knp_code_id)
+        |> normalize_blank_to_nil()
 
       # Handle bank account if specified
       bank_account =
@@ -185,15 +325,19 @@ defmodule EdocApi.Invoicing do
       invoice_attrs =
         attrs
         |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+        |> maybe_put_kbe_code_id(
+          kbe_code_id || invoice.kbe_code_id || inferred_kbe_code_id(invoice, bank_account)
+        )
+        |> maybe_put_knp_code_id(
+          knp_code_id || invoice.knp_code_id || inferred_knp_code_id(invoice, bank_account)
+        )
         |> maybe_put_subtotal(new_subtotal)
 
       invoice_changeset =
         Invoice.changeset(invoice, invoice_attrs, user_id, invoice.company_id)
 
-      case RepoHelpers.update_or_abort(invoice_changeset) do
-        {:ok, updated_invoice} -> {:ok, preload_invoice(updated_invoice)}
-        {:error, reason} -> RepoHelpers.abort(reason)
-      end
+      {:ok, updated_invoice} = RepoHelpers.update_or_abort(invoice_changeset)
+      {:ok, preload_invoice(updated_invoice)}
     end)
   end
 
@@ -201,9 +345,11 @@ defmodule EdocApi.Invoicing do
     Repo.preload(invoice, [
       :items,
       :bank_snapshot,
-      :contract,
       :company,
-      bank_account: [:bank, :kbe_code, :knp_code]
+      :kbe_code,
+      :knp_code,
+      bank_account: [:bank, :kbe_code, :knp_code],
+      contract: [:buyer]
     ])
   end
 
@@ -229,6 +375,24 @@ defmodule EdocApi.Invoicing do
           {:not_found,
            %{resource: :bank_account, company_id: company_id, bank_account_id: bank_account_id}}
         )
+    end
+  end
+
+  defp apply_pagination(query, opts) do
+    limit = Keyword.get(opts, :limit)
+    offset = Keyword.get(opts, :offset)
+
+    query =
+      if is_integer(limit) do
+        from(q in query, limit: ^limit)
+      else
+        query
+      end
+
+    if is_integer(offset) and offset > 0 do
+      from(q in query, offset: ^offset)
+    else
+      query
     end
   end
 
@@ -283,6 +447,19 @@ defmodule EdocApi.Invoicing do
 
   defp normalize_items(_), do: []
 
+  defp fetch_optional_value(attrs, string_key, atom_key) do
+    case Map.get(attrs, string_key) do
+      nil -> Map.get(attrs, atom_key)
+      value -> value
+    end
+  end
+
+  defp normalize_blank_to_nil(value) when is_binary(value) do
+    if String.trim(value) == "", do: nil, else: value
+  end
+
+  defp normalize_blank_to_nil(value), do: value
+
   defp parse_int(v) when is_integer(v), do: v
 
   defp parse_int(v) when is_binary(v) do
@@ -323,6 +500,34 @@ defmodule EdocApi.Invoicing do
 
   defp maybe_put_bank_account_id(attrs, %CompanyBankAccount{id: id}),
     do: Map.put(attrs, "bank_account_id", id)
+
+  defp maybe_put_kbe_code_id(attrs, nil), do: attrs
+  defp maybe_put_kbe_code_id(attrs, id), do: Map.put(attrs, "kbe_code_id", id)
+
+  defp maybe_put_knp_code_id(attrs, nil), do: attrs
+  defp maybe_put_knp_code_id(attrs, id), do: Map.put(attrs, "knp_code_id", id)
+
+  defp inferred_kbe_code_id(_invoice, %CompanyBankAccount{kbe_code_id: code_id}), do: code_id
+
+  defp inferred_kbe_code_id(invoice, nil) do
+    if invoice.bank_account_id do
+      case Repo.get(CompanyBankAccount, invoice.bank_account_id) do
+        %CompanyBankAccount{kbe_code_id: code_id} -> code_id
+        _ -> nil
+      end
+    end
+  end
+
+  defp inferred_knp_code_id(_invoice, %CompanyBankAccount{knp_code_id: code_id}), do: code_id
+
+  defp inferred_knp_code_id(invoice, nil) do
+    if invoice.bank_account_id do
+      case Repo.get(CompanyBankAccount, invoice.bank_account_id) do
+        %CompanyBankAccount{knp_code_id: code_id} -> code_id
+        _ -> nil
+      end
+    end
+  end
 
   defp zero_decimal do
     Decimal.new("0.#{String.duplicate("0", Currencies.default_precision())}")
@@ -437,61 +642,53 @@ defmodule EdocApi.Invoicing do
   end
 
   defp create_and_increment_counter(company_id, sequence_name) do
-    Repo.transaction(fn ->
-      %{next_seq: next_seq} =
-        Repo.insert!(
-          %InvoiceCounter{
-            company_id: company_id,
-            sequence_name: sequence_name,
-            next_seq: @initial_next_seq
-          },
-          on_conflict: [inc: [next_seq: 1]],
-          conflict_target: [:company_id, :sequence_name],
-          returning: [:next_seq]
-        )
+    {:ok, number} =
+      Repo.transaction(fn ->
+        %{next_seq: next_seq} =
+          Repo.insert!(
+            %InvoiceCounter{
+              company_id: company_id,
+              sequence_name: sequence_name,
+              next_seq: @initial_next_seq
+            },
+            on_conflict: [inc: [next_seq: 1]],
+            conflict_target: [:company_id, :sequence_name],
+            returning: [:next_seq]
+          )
 
-      seq = next_seq - 1
-      format_invoice_number(seq, sequence_name)
-    end)
-    |> case do
-      {:ok, number} ->
-        number
+        seq = next_seq - 1
+        format_invoice_number(seq, sequence_name)
+      end)
 
-      {:error, reason} ->
-        raise "invoice number generation failed: #{inspect(reason)}"
-    end
+    number
   end
 
   defp increment_and_get_number(company_id, sequence_name) do
-    Repo.transaction(fn ->
-      %{next_seq: next_seq} =
-        Repo.insert!(
-          %InvoiceCounter{
-            company_id: company_id,
-            sequence_name: sequence_name,
-            next_seq: @initial_next_seq
-          },
-          on_conflict: [inc: [next_seq: 1]],
-          conflict_target: [:company_id, :sequence_name],
-          returning: [:next_seq]
-        )
+    {:ok, number} =
+      Repo.transaction(fn ->
+        %{next_seq: next_seq} =
+          Repo.insert!(
+            %InvoiceCounter{
+              company_id: company_id,
+              sequence_name: sequence_name,
+              next_seq: @initial_next_seq
+            },
+            on_conflict: [inc: [next_seq: 1]],
+            conflict_target: [:company_id, :sequence_name],
+            returning: [:next_seq]
+          )
 
-      seq = next_seq - 1
+        seq = next_seq - 1
 
-      if seq > @max_invoice_number do
-        raise RuntimeError,
-              "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
-      end
+        if seq > @max_invoice_number do
+          raise RuntimeError,
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
+        end
 
-      format_invoice_number(seq, sequence_name)
-    end)
-    |> case do
-      {:ok, number} ->
-        number
+        format_invoice_number(seq, sequence_name)
+      end)
 
-      {:error, reason} ->
-        raise "invoice number generation failed: #{inspect(reason)}"
-    end
+    number
   end
 
   # ------------ Marking-Invoice-issued-------------------
@@ -587,8 +784,8 @@ defmodule EdocApi.Invoicing do
 
   defp create_bank_snapshot(invoice, %CompanyBankAccount{} = acc) do
     bank = acc.bank
-    kbe = acc.kbe_code
-    knp = acc.knp_code
+    kbe = invoice.kbe_code || acc.kbe_code
+    knp = invoice.knp_code || acc.knp_code
 
     attrs = %{
       "invoice_id" => invoice.id,
@@ -670,10 +867,7 @@ defmodule EdocApi.Invoicing do
     end
   end
 
-  @doc """
-  Stores an invoice number in the recycle pool for later reuse.
-  This is called when a draft invoice is deleted.
-  """
+  @doc false
   defp recycle_invoice_number(company_id, number, sequence_name) do
     # Parse the number to ensure it's valid (11 digits)
     case Integer.parse(number) do
@@ -717,10 +911,7 @@ defmodule EdocApi.Invoicing do
     end
   end
 
-  @doc """
-  Gets the oldest recycled invoice number for a company/sequence and removes it from the pool.
-  Returns {:ok, number} if a recycled number is available, :none_available otherwise.
-  """
+  @doc false
   defp get_and_remove_recycled_number(company_id, sequence_name) do
     sequence_name = normalize_sequence_name(sequence_name)
 
@@ -752,4 +943,41 @@ defmodule EdocApi.Invoicing do
         end
     end
   end
+
+  defp resolve_contract_bank_account_id(contract, bank_accounts) do
+    contract_bank_account_id = contract.bank_account_id
+
+    has_contract_bank_account? =
+      Enum.any?(bank_accounts, fn account -> account.id == contract_bank_account_id end)
+
+    cond do
+      has_contract_bank_account? ->
+        contract_bank_account_id
+
+      true ->
+        case Enum.find(bank_accounts, & &1.is_default) || List.first(bank_accounts) do
+          nil -> nil
+          account -> account.id
+        end
+    end
+  end
+
+  defp normalize_qty_for_invoice(%Decimal{} = qty_decimal) do
+    qty_decimal
+    |> Decimal.round(0, :half_up)
+    |> Decimal.to_integer()
+  end
+
+  defp normalize_qty_for_invoice(qty) when is_integer(qty), do: qty
+  defp normalize_qty_for_invoice(qty) when is_float(qty), do: trunc(qty)
+  defp normalize_qty_for_invoice(qty) when is_binary(qty), do: parse_int(qty)
+  defp normalize_qty_for_invoice(_), do: 1
+
+  defp decimal_to_string(%Decimal{} = value), do: Decimal.to_string(value)
+  defp decimal_to_string(value) when is_integer(value), do: Integer.to_string(value)
+
+  defp decimal_to_string(value) when is_float(value),
+    do: :erlang.float_to_binary(value, [:compact])
+
+  defp decimal_to_string(_), do: "0"
 end

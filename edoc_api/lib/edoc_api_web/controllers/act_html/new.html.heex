@@ -1,0 +1,276 @@
+<div class="lg:flex lg:items-center lg:justify-between">
+  <div class="min-w-0 flex-1">
+    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+      New Act
+    </h2>
+  </div>
+</div>
+
+<.flash_error flash={@flash} class="mt-4" />
+
+<div class="mt-8">
+  <div class="bg-white shadow sm:rounded-lg">
+    <form action="/acts" method="post" class="px-4 py-5 sm:px-6">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+      <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 class="text-sm font-medium text-blue-800 mb-3">Act Type</h3>
+        <div class="flex gap-4">
+          <label class="flex items-center">
+            <input
+              type="radio"
+              name="act[act_type]"
+              value="contract"
+              checked={@act_type != "direct"}
+              class="mr-2"
+              id="act_type_contract" />
+            <span class="text-sm text-gray-700">Из Договора</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="radio"
+              name="act[act_type]"
+              value="direct"
+              checked={@act_type == "direct"}
+              class="mr-2"
+              id="act_type_direct" />
+            <span class="text-sm text-gray-700">Без Договора</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="contract-section" class={["space-y-6", @act_type == "direct" && "hidden"]}>
+        <div>
+          <label for="contract_select" class="block text-sm font-medium text-gray-700">Contract</label>
+          <div class="mt-1">
+            <select
+              id="contract_select"
+              name="act[contract_id]"
+              onchange="onContractSelectChange(this.value)"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+              <option value="">Select an issued contract...</option>
+              <%= for contract <- @contracts do %>
+                <option value={contract.id} selected={@selected_contract_id == contract.id}>
+                  <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: "Unknown" %> (<%= contract.issue_date %>)
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-200 my-6"></div>
+
+      <div class="space-y-6">
+        <div>
+          <label for="buyer_select" class="block text-sm font-medium text-gray-700">Buyer *</label>
+          <div class="mt-1">
+            <select
+              id="buyer_select"
+              name="act[buyer_id]"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+              <option value="">Select a buyer...</option>
+              <%= for buyer <- @buyers do %>
+                <option
+                  value={buyer.id}
+                  data-address={buyer.address || ""}
+                  selected={@selected_buyer_id == buyer.id}>
+                  <%= buyer.name %> (<%= buyer.bin_iin %>)
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+          <div class="sm:col-span-6">
+            <label for="act_buyer_address" class="block text-sm font-medium text-gray-700">Buyer Address *</label>
+            <div class="mt-2">
+              <input
+                type="text"
+                name="act[buyer_address]"
+                id="act_buyer_address"
+                required
+                value={@buyer_address || ""}
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label for="act_issue_date" class="block text-sm font-medium text-gray-700">Дата составления *</label>
+            <div class="mt-2">
+              <input
+                type="date"
+                name="act[issue_date]"
+                id="act_issue_date"
+                required
+                value={Date.utc_today()}
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+
+          
+
+          <div class="sm:col-span-2">
+            <label for="act_actual_date" class="block text-sm font-medium text-gray-700">Дата подписания (принятия) работ(услуг)</label>
+            <div class="mt-2">
+              <input
+                type="date"
+                name="act[actual_date]"
+                id="act_actual_date"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" name="act[vat_rate]" id="act_vat_rate" value={@vat_rate} />
+
+        <div class="mt-8">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Работы (услуги)</h3>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div id="items-container" class="space-y-2"></div>
+            <button
+              id="add-item-btn"
+              type="button"
+              onclick="addItemRow()"
+              class="mt-2 text-sm text-blue-600 hover:text-blue-900">
+              + Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-x-6">
+        <a href="/acts" class="text-sm font-semibold text-gray-900 hover:text-gray-700">Cancel</a>
+        <button
+          type="submit"
+          class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+          Create Act
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const prefillItems = <%= Phoenix.HTML.raw(Jason.encode!(@prefill_items)) %>;
+  const selectedContractId = "<%= @selected_contract_id || "" %>";
+  const units = <%= Phoenix.HTML.raw(Jason.encode!(Enum.map(@units, fn u -> %{symbol: u.symbol, name: u.name} end))) %>;
+  let itemIndex = 0;
+  let lockContractItems = selectedContractId !== "";
+
+  function unitOptions(selected) {
+    const base = [`<option value="">Select unit...</option>`];
+    units.forEach((u) => {
+      const sel = selected === u.symbol ? "selected" : "";
+      base.push(`<option value="${escapeHtml(u.symbol)}" ${sel}>${escapeHtml(u.symbol)} — ${escapeHtml(u.name || "")}</option>`);
+    });
+    return base.join("");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function addItemRow(data = {}) {
+    const container = document.getElementById("items-container");
+    const row = document.createElement("div");
+    const idx = itemIndex++;
+    row.className = "item-row grid grid-cols-12 gap-2 items-end";
+
+    const removeBtn = lockContractItems
+      ? ""
+      : `<button type="button" onclick="this.closest('.item-row').remove()" class="text-red-600 hover:text-red-900 text-sm font-medium">Remove</button>`;
+
+    row.innerHTML = `
+      <div class="col-span-4">
+        <label class="block text-xs text-gray-500">Наименование</label>
+        <input type="text" name="items[${idx}][name]" value="${escapeHtml(data.name || "")}" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Дата выполнения работ(оказания услуг)</label>
+        <input type="date" name="items[${idx}][actual_date]" value="${escapeHtml(data.actual_date || "")}" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500">Сведения об отчете</label>
+        <input type="text" name="items[${idx}][report_info]" value="${escapeHtml(data.report_info || "")}" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-1">
+        <label class="block text-xs text-gray-500">Ед. изм.</label>
+        <select name="items[${idx}][code]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm">
+          ${unitOptions(data.code || "")}
+        </select>
+      </div>
+      <div class="col-span-1">
+        <label class="block text-xs text-gray-500">Кол-во</label>
+        <input type="number" name="items[${idx}][qty]" value="${escapeHtml(data.qty || "1")}" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-1">
+        <label class="block text-xs text-gray-500">Цена</label>
+        <input type="number" name="items[${idx}][unit_price]" value="${escapeHtml(data.unit_price || "")}" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+      </div>
+      <div class="col-span-1">
+        ${removeBtn}
+      </div>
+    `;
+
+    container.appendChild(row);
+  }
+
+  function clearItems() {
+    const container = document.getElementById("items-container");
+    container.innerHTML = "";
+    itemIndex = 0;
+  }
+
+  function onContractSelectChange(contractId) {
+    const mode = document.getElementById("act_type_contract").checked ? "contract" : "direct";
+    const url = new URL(window.location.href);
+    url.searchParams.set("act_type", mode);
+    if (contractId) {
+      url.searchParams.set("contract_id", contractId);
+    } else {
+      url.searchParams.delete("contract_id");
+    }
+    window.location.href = url.toString();
+  }
+
+  function handleTypeChange(mode) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("act_type", mode);
+    if (mode === "direct") {
+      url.searchParams.delete("contract_id");
+    }
+    window.location.href = url.toString();
+  }
+
+  document.getElementById("act_type_contract").addEventListener("change", () => handleTypeChange("contract"));
+  document.getElementById("act_type_direct").addEventListener("change", () => handleTypeChange("direct"));
+
+  document.getElementById("buyer_select").addEventListener("change", function() {
+    const option = this.options[this.selectedIndex];
+    const address = option ? option.getAttribute("data-address") : "";
+    document.getElementById("act_buyer_address").value = address || "";
+  });
+
+  (function init() {
+    const addBtn = document.getElementById("add-item-btn");
+    if (lockContractItems) {
+      addBtn.classList.add("hidden");
+    } else {
+      addBtn.classList.remove("hidden");
+    }
+
+    clearItems();
+    if (prefillItems && prefillItems.length > 0) {
+      prefillItems.forEach((item) => addItemRow(item));
+    } else {
+      addItemRow();
+    }
+  })();
+</script>

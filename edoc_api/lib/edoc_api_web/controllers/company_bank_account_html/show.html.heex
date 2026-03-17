@@ -1,0 +1,43 @@
+<div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <a href="/company" class="text-sm text-blue-600 hover:text-blue-500">
+      &larr; Back to Company
+    </a>
+  </div>
+
+  <div class="bg-white shadow sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Bank Account</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Details</p>
+      </div>
+      <a href={"/company/bank-accounts/#{@account.id}/edit"} class="text-sm text-blue-600 hover:text-blue-500">
+        Edit
+      </a>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+      <dl class="sm:divide-y sm:divide-gray-200">
+        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Label</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= @account.label %></dd>
+        </div>
+        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Bank</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= @account.bank.name %></dd>
+        </div>
+        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">IBAN</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 font-mono"><%= @account.iban %></dd>
+        </div>
+        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">BIC</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 font-mono"><%= @account.bank.bic %></dd>
+        </div>
+        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Default</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= if @account.is_default, do: "Yes", else: "No" %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>

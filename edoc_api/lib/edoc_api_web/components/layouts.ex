@@ -19,8 +19,8 @@ defmodule EdocApiWeb.Layouts do
         <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
         <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
 
-        <!-- htmx from CDN -->
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <!-- htmx (self-hosted) -->
+        <script defer phx-track-static type="text/javascript" src={~p"/vendor/htmx.min.js"}></script>
 
         <!-- HTMX CSRF Token Configuration -->
         <script>
@@ -34,8 +34,8 @@ defmodule EdocApiWeb.Layouts do
           });
         </script>
 
-        <!-- Tailwind CSS from CDN for POC -->
-        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Tailwind CSS from CDN (pinned version) -->
+        <script src="https://cdn.tailwindcss.com/3.4.14"></script>
 
         <style>
           /* Custom styles for htmx */
@@ -76,6 +76,7 @@ defmodule EdocApiWeb.Layouts do
     <nav class="flex items-center space-x-6">
       <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium">Invoices</a>
       <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium">Contracts</a>
+      <a href="/acts" class="text-gray-600 hover:text-gray-900 font-medium">Acts</a>
       <a href="/buyers" class="text-gray-600 hover:text-gray-900 font-medium">Buyers</a>
       <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium">Company</a>
       <span class="text-gray-500 text-sm"><%= @current_user.email %></span>

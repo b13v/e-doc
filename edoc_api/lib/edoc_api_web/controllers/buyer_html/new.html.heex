@@ -16,6 +16,8 @@
     </div>
   </div>
 
+  <.flash_error flash={@flash} class="mb-4" />
+
   <div class="bg-white shadow sm:rounded-lg">
     <form action="/buyers" method="post" class="space-y-6 px-4 py-5 sm:p-6">
       <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -45,12 +47,9 @@
               id="legal_form"
               name="buyer[legal_form]"
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:max-w-xs sm:text-sm sm:leading-6 px-3">
-              <option value="ТОО">ТОО</option>
-              <option value="АО">АО</option>
-              <option value="ИП">ИП</option>
-              <option value="ТД">ТД</option>
-              <option value="КХ">КХ</option>
-              <option value="ПК">ПК</option>
+              <option value="Товарищество с ограниченной ответственностью">Товарищество с ограниченной ответственностью</option>
+              <option value="Акционерное общество">Акционерное общество</option>
+              <option value="Индивидуальный предприниматель">Индивидуальный предприниматель</option>
             </select>
           </div>
         </div>
@@ -83,6 +82,39 @@
               id="email"
               value={if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :email), else: ""}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+          </div>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label for="bank_id" class="block text-sm font-medium leading-6 text-gray-900">
+            Bank
+          </label>
+          <div class="mt-2">
+            <select
+              id="bank_id"
+              name="buyer[bank_id]"
+              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
+              <option value="">Select Bank...</option>
+              <%= for bank <- @banks do %>
+                <option value={bank.id} selected={to_string(@bank_form["bank_id"]) == bank.id}>
+                  <%= bank.name %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label for="iban" class="block text-sm font-medium leading-6 text-gray-900">
+            IBAN
+          </label>
+          <div class="mt-2">
+            <input
+              type="text"
+              name="buyer[iban]"
+              id="iban"
+              value={@bank_form["iban"] || ""}
+              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3 font-mono" />
           </div>
         </div>
 
@@ -152,7 +184,7 @@
               type="text"
               name="buyer[director_title]"
               id="director_title"
-              placeholder="директор"
+              placeholder="Директора"
               value={if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :director_title), else: ""}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>
@@ -167,7 +199,7 @@
               type="text"
               name="buyer[basis]"
               id="basis"
-              placeholder="Устав"
+              placeholder="Устава"
               value={if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :basis), else: ""}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>

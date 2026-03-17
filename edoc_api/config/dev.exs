@@ -1,5 +1,9 @@
 import Config
 
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    Base.url_encode64(:crypto.strong_rand_bytes(64), padding: false)
+
 # Configure your database
 config :edoc_api, EdocApi.Repo,
   username: "postgres",
@@ -24,7 +28,7 @@ config :edoc_api, EdocApiWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "uQY/NtqZZR1pps7A4pBUyNzYlU4l0KcpHhc45SNFfsHDSyOQiKI2RSPhCe/IlGdM",
+  secret_key_base: secret_key_base,
   watchers: []
 
 # ## SSL Support

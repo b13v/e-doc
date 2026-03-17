@@ -4,7 +4,7 @@ defmodule EdocApi.Core.Invoice do
   import Ecto.Query
 
   alias EdocApi.Repo
-  alias EdocApi.Core.{Contract, CompanyBankAccount}
+  alias EdocApi.Core.{Contract, CompanyBankAccount, KbeCode, KnpCode}
   alias EdocApi.InvoiceStatus
   alias EdocApi.Validators.{BinIin, Iban, String}
   alias EdocApi.{Currencies, VatRates}
@@ -39,6 +39,8 @@ defmodule EdocApi.Core.Invoice do
     belongs_to(:company, EdocApi.Core.Company)
     belongs_to(:user, EdocApi.Accounts.User)
     belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
+    belongs_to(:kbe_code, KbeCode)
+    belongs_to(:knp_code, KnpCode)
     belongs_to(:contract, EdocApi.Core.Contract)
     has_one(:bank_snapshot, EdocApi.Core.InvoiceBankSnapshot)
 
@@ -58,7 +60,19 @@ defmodule EdocApi.Core.Invoice do
     vat_rate
     )a
 
-  @optional_fields ~w(number due_date subtotal total vat status bank_account_id contract_id seller_iban)a
+  @optional_fields ~w(
+    number
+    due_date
+    subtotal
+    total
+    vat
+    status
+    bank_account_id
+    kbe_code_id
+    knp_code_id
+    contract_id
+    seller_iban
+  )a
 
   @allowed_statuses InvoiceStatus.all()
 
@@ -90,6 +104,8 @@ defmodule EdocApi.Core.Invoice do
     |> Iban.validate(:seller_iban)
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
     |> foreign_key_constraint(:contract_id)
+    |> foreign_key_constraint(:kbe_code_id)
+    |> foreign_key_constraint(:knp_code_id)
     |> prepare_changes(&validate_contract_ownership/1)
     |> prepare_changes(&validate_bank_account_ownership/1)
     |> prepare_changes(&derive_seller_iban_from_bank_account/1)

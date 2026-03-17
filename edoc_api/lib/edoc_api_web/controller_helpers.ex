@@ -151,4 +151,68 @@ defmodule EdocApiWeb.ControllerHelpers do
     error_map = Map.merge(common_errors, extra_error_map)
     handle_result(conn, result, success_callback, error_map)
   end
+
+  @doc """
+  Parses pagination params for API endpoints.
+  Returns %{page, page_size, offset}.
+  """
+  def pagination_params(params, opts \\ []) when is_map(params) do
+    default_page = Keyword.get(opts, :default_page, 1)
+    default_page_size = Keyword.get(opts, :default_page_size, 50)
+    max_page_size = Keyword.get(opts, :max_page_size, 100)
+
+    page = parse_int(params["page"], default_page, 1, nil)
+    page_size = parse_int(params["page_size"], default_page_size, 1, max_page_size)
+    offset = (page - 1) * page_size
+
+    %{page: page, page_size: page_size, offset: offset}
+  end
+
+  @doc """
+  Builds normalized pagination metadata for API collection responses.
+  """
+  def pagination_meta(page, page_size, total_count)
+      when is_integer(page) and is_integer(page_size) and is_integer(total_count) do
+    total_count = max(total_count, 0)
+
+    total_pages =
+      if total_count == 0 do
+        0
+      else
+        div(total_count + page_size - 1, page_size)
+      end
+
+    %{
+      page: page,
+      page_size: page_size,
+      total_count: total_count,
+      total_pages: total_pages,
+      has_next: page < total_pages,
+      has_prev: page > 1 and total_pages > 0
+    }
+  end
+
+  defp parse_int(value, default, min, max) do
+    parsed =
+      case value do
+        v when is_integer(v) ->
+          v
+
+        v when is_binary(v) ->
+          case Integer.parse(v) do
+            {i, ""} -> i
+            _ -> default
+          end
+
+        _ ->
+          default
+      end
+
+    parsed
+    |> max(min)
+    |> clamp_max(max)
+  end
+
+  defp clamp_max(value, nil), do: value
+  defp clamp_max(value, max_value), do: min(value, max_value)
 end

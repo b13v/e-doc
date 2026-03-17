@@ -8,7 +8,8 @@ defmodule EdocApiWeb.Plugs.AuthenticateSession do
 
   def call(conn, _opts) do
     with user_id when not is_nil(user_id) <- get_session(conn, :user_id),
-         user when not is_nil(user) <- Accounts.get_user(user_id) do
+         user when not is_nil(user) <- Accounts.get_user(user_id),
+         true <- user.verified_at != nil do
       assign(conn, :current_user, user)
     else
       _ -> redirect_to_login(conn)
@@ -17,6 +18,7 @@ defmodule EdocApiWeb.Plugs.AuthenticateSession do
 
   defp redirect_to_login(conn) do
     conn
+    |> configure_session(drop: true)
     |> redirect(to: "/login")
     |> halt()
   end

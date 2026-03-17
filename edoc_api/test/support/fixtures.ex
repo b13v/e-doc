@@ -32,12 +32,12 @@ defmodule EdocApi.TestFixtures do
   def company_attrs(overrides \\ %{}) do
     # NOTE: bank_name, iban, bank_id, kbe_code_id, knp_code_id are deprecated
     # Use create_company_bank_account! instead
-    # Using valid Kazakhstan BIN: 060215385679 (Feb 15, 2006)
+    # Using valid Kazakhstan BIN: 060215385673
     Map.merge(
       %{
         "name" => "Acme LLC",
-        "legal_form" => "LLC",
-        "bin_iin" => "060215385679",
+        "legal_form" => "Товарищество с ограниченной ответственностью",
+        "bin_iin" => "060215385673",
         "city" => "Almaty",
         "address" => "Some Street 1",
         "phone" => "+7 (777) 123 45 67",
@@ -57,14 +57,14 @@ defmodule EdocApi.TestFixtures do
   end
 
   def invoice_attrs(overrides \\ %{}) do
-    # Using valid Kazakhstan BIN: 060215385679 (Feb 15, 2006)
+    # Using valid Kazakhstan BIN: 060215385673
     Map.merge(
       %{
         "service_name" => "Consulting",
         "issue_date" => Date.utc_today(),
         "currency" => "KZT",
         "buyer_name" => "Buyer LLC",
-        "buyer_bin_iin" => "060215385679",
+        "buyer_bin_iin" => "060215385673",
         "buyer_address" => "Buyer Address",
         "vat_rate" => 0,
         "items" => [
@@ -118,14 +118,14 @@ defmodule EdocApi.TestFixtures do
   def create_contract!(company, attrs \\ %{}) do
     number = "C-#{System.unique_integer([:positive])}"
 
-    # Using valid Kazakhstan BIN: 060215385679 (Feb 15, 2006)
+    # Using valid Kazakhstan BIN: 060215385673
     attrs =
       Map.merge(
         %{
           "number" => number,
           "issue_date" => Date.utc_today(),
           "buyer_name" => "Test Buyer LLC",
-          "buyer_bin_iin" => "060215385679",
+          "buyer_bin_iin" => "060215385673",
           "buyer_address" => "Test Buyer Address"
         },
         attrs
@@ -140,7 +140,7 @@ defmodule EdocApi.TestFixtures do
     # Get or create a bank account for the company
     bank_account = ensure_company_has_bank_account(company)
 
-    # Using valid Kazakhstan BIN: 060215385679 (Feb 15, 2006)
+    # Using valid Kazakhstan BIN: 060215385673
     base = %Invoice{
       number: "00000000001",
       service_name: "Consulting",
@@ -151,7 +151,7 @@ defmodule EdocApi.TestFixtures do
       seller_address: company.address,
       seller_iban: bank_account.iban,
       buyer_name: "Buyer LLC",
-      buyer_bin_iin: "060215385679",
+      buyer_bin_iin: "060215385673",
       buyer_address: "Buyer Address",
       subtotal: Decimal.new("100.00"),
       vat_rate: 0,
@@ -286,12 +286,54 @@ defmodule EdocApi.TestFixtures do
     end
   end
 
+  def valid_kz_iban(account_reference) when is_integer(account_reference) do
+    account_reference
+    |> Integer.to_string()
+    |> valid_kz_iban()
+  end
+
+  def valid_kz_iban(account_reference) when is_binary(account_reference) do
+    account_part =
+      account_reference
+      |> String.replace(~r/\D+/, "")
+      |> String.pad_leading(16, "0")
+      |> String.slice(-16, 16)
+
+    check_digits = iban_check_digits("KZ", account_part)
+    "KZ" <> check_digits <> account_part
+  end
+
   defp unique_iban do
     suffix =
       System.unique_integer([:positive])
       |> Integer.to_string()
-      |> String.pad_leading(11, "0")
+      |> String.pad_leading(16, "0")
 
-    "KZ00#{suffix}"
+    valid_kz_iban(suffix)
+  end
+
+  defp iban_check_digits(country_code, bban) do
+    transformed =
+      (bban <> country_code <> "00")
+      |> String.graphemes()
+      |> Enum.map_join(&iban_char_to_number/1)
+
+    remainder =
+      transformed
+      |> String.graphemes()
+      |> Enum.reduce(0, fn digit, acc ->
+        rem(acc * 10 + String.to_integer(digit), 97)
+      end)
+
+    (98 - remainder)
+    |> Integer.to_string()
+    |> String.pad_leading(2, "0")
+  end
+
+  defp iban_char_to_number(char) do
+    case Integer.parse(char) do
+      {digit, ""} -> Integer.to_string(digit)
+      _ -> Integer.to_string(:binary.first(char) - ?A + 10)
+    end
   end
 end
