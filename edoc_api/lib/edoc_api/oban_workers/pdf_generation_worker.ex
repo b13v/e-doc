@@ -4,6 +4,22 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
 
   This worker generates PDFs for contracts, invoices, and acts.
   The PDF is stored in the generated_documents table for later retrieval.
+
+  ## Dependency Inversion
+
+  This worker accepts HTML as a binary argument (provided by the web layer)
+  rather than importing from EdocApiWeb, maintaining proper core→web separation.
+
+  ## Usage
+
+      # In web layer controller:
+      html = PdfTemplates.contract_html(contract)
+      PdfGenerationWorker.enqueue("contract", contract.id, user.id, html)
+
+  ## Direct Generation (for testing or fallback)
+
+      # When you have the document record but need HTML rendering:
+      {:ok, pdf} = PdfGenerationWorker.generate_direct("contract", contract, render_fn)
   """
   use Oban.Worker
   require Logger
@@ -16,11 +32,12 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     document_type = Map.get(args, "document_type")
     document_id = Map.get(args, "document_id")
     user_id = Map.get(args, "user_id")
+    html_binary = Map.get(args, "html")
 
     Logger.info("Generating PDF for #{document_type} #{document_id}")
 
-    with {:ok, record} <- fetch_document(document_type, document_id, user_id),
-         {:ok, pdf_binary} <- generate_pdf(document_type, record),
+    with {:ok, _record} <- fetch_document(document_type, document_id, user_id),
+         {:ok, pdf_binary} <- generate_pdf(document_type, html_binary),
          {:ok, _} <- store_pdf(document_type, document_id, user_id, pdf_binary) do
       Logger.info("Successfully generated PDF for #{document_type} #{document_id}")
       :ok
@@ -40,19 +57,36 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
   @impl Oban.Worker
   def timeout(_job), do: :timer.seconds(30)
 
-  # Enqueue a PDF generation job
-  def enqueue(document_type, document_id, user_id)
-      when document_type in ~w(contract invoice act) do
+  @doc """
+  Enqueue a PDF generation job.
+
+  ## Parameters
+
+    * `document_type` - "contract", "invoice", or "act"
+    * `document_id` - The UUID of the document
+    * `user_id` - The UUID of the user who owns the document
+    * `html_binary` - Pre-rendered HTML binary (from PdfTemplates)
+
+  ## Example
+
+      html = PdfTemplates.contract_html(contract)
+      {:ok, job} = PdfGenerationWorker.enqueue("contract", contract.id, user.id, html)
+  """
+  def enqueue(document_type, document_id, user_id, html_binary)
+      when document_type in ~w(contract invoice act) and is_binary(html_binary) do
     %{
       "document_type" => document_type,
       "document_id" => document_id,
-      "user_id" => user_id
+      "user_id" => user_id,
+      "html" => html_binary
     }
     |> Oban.Job.new(queue: :pdf_generation, max_attempts: 3)
     |> Oban.insert()
   end
 
-  # Check if a PDF is ready for a document
+  @doc """
+  Check if a PDF is ready for a document.
+  """
   def ready?(document_type, document_id) do
     case Repo.get_by(GeneratedDocument,
            document_type: to_string(document_type),
@@ -64,16 +98,44 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     end
   end
 
-  # Get the PDF binary for a document
-  def get_pdf(document_type, document_id) do
+  @doc """
+  Get the PDF binary for a document.
+
+  Validates that the document belongs to the user before returning.
+  """
+  def get_pdf(document_type, document_id, user_id) do
     case Repo.get_by(GeneratedDocument,
            document_type: to_string(document_type),
            document_id: document_id,
+           user_id: user_id,
            status: "completed"
          ) do
       nil -> {:error, :not_found}
       %{pdf_binary: pdf} when is_binary(pdf) -> {:ok, pdf}
       %{file_path: path} when is_binary(path) -> File.read(path)
+    end
+  end
+
+  @doc """
+  Generate PDF directly (synchronous, without enqueuing).
+
+  Useful for tests or when immediate PDF generation is needed.
+
+  ## Parameters
+
+    * `document_type` - "contract", "invoice", or "act"
+    * `record` - The document struct (Contract, Invoice, or Act)
+    * `html_binary` - Pre-rendered HTML binary
+
+  ## Example
+
+      html = PdfTemplates.contract_html(contract)
+      {:ok, pdf} = PdfGenerationWorker.generate_direct("contract", contract, html)
+  """
+  def generate_direct(document_type, _record, html_binary)
+      when document_type in ~w(contract invoice act) and is_binary(html_binary) do
+    with {:ok, pdf_binary} <- generate_pdf(document_type, html_binary) do
+      {:ok, pdf_binary}
     end
   end
 
@@ -100,20 +162,19 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     end
   end
 
-  defp generate_pdf("contract", contract) do
-    html = EdocApiWeb.PdfTemplates.contract_html(contract)
+  defp generate_pdf("contract", html) when is_binary(html) do
     EdocApi.Documents.ContractPdf.render(html)
   end
 
-  defp generate_pdf("invoice", invoice) do
-    html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
+  defp generate_pdf("invoice", html) when is_binary(html) do
     EdocApi.Documents.InvoicePdf.render(html)
   end
 
-  defp generate_pdf("act", act) do
-    html = EdocApiWeb.PdfTemplates.act_html(act)
+  defp generate_pdf("act", html) when is_binary(html) do
     EdocApi.Documents.ActPdf.render(html)
   end
+
+  defp generate_pdf(_, _), do: {:error, :invalid_html}
 
   defp store_pdf(document_type, document_id, user_id, pdf_binary) do
     changeset =
@@ -138,18 +199,30 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     end
   end
 
-  defp mark_failed(document_type, document_id, _user_id, error_message) do
-    Repo.insert_all(
-      GeneratedDocument,
-      [
+  defp mark_failed(document_type, document_id, user_id, error_message) do
+    # Create or update the failed record
+    attrs = %{
+      user_id: user_id,
+      document_type: to_string(document_type),
+      document_id: document_id,
+      status: "failed",
+      error_message: error_message
+    }
+
+    changeset =
+      %GeneratedDocument{}
+      |> Ecto.Changeset.change(attrs)
+
+    Repo.insert(
+      changeset,
+      on_conflict: [
         set: [
           status: "failed",
           error_message: error_message,
           updated_at: DateTime.utc_now()
-        ],
-        conflict_target: [document_type: document_type, document_id: document_id]
+        ]
       ],
-      on_conflict: :replace_all
+      conflict_target: [:document_type, :document_id]
     )
 
     :ok
