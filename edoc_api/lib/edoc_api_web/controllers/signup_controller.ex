@@ -8,7 +8,7 @@ defmodule EdocApiWeb.SignupController do
   alias EdocApi.EmailSender
 
   def new(conn, _params) do
-    render(conn, :new, page_title: "Sign Up")
+    render(conn, :new, page_title: gettext("Sign Up"))
   end
 
   def create(conn, %{
@@ -18,8 +18,8 @@ defmodule EdocApiWeb.SignupController do
       }) do
     if password != password_confirmation do
       conn
-      |> put_flash(:error, "Passwords do not match")
-      |> render(:new, page_title: "Sign Up")
+      |> put_flash(:error, gettext("Passwords do not match."))
+      |> render(:new, page_title: gettext("Sign Up"))
     else
       case Accounts.register_user(%{"email" => email, "password" => password}) do
         {:ok, user} ->
@@ -36,7 +36,7 @@ defmodule EdocApiWeb.SignupController do
           end
 
           conn
-          |> put_flash(:info, "Account created! Please verify your email to continue.")
+          |> put_flash(:info, gettext("Account created! Please verify your email to continue."))
           |> redirect(to: "/verify-email-pending?email=#{email}")
 
         {:error, :validation, changeset: changeset} ->
@@ -44,7 +44,7 @@ defmodule EdocApiWeb.SignupController do
             conn
             |> put_flash(
               :info,
-              "If the email is eligible, verification instructions will be sent shortly."
+              gettext("If the email is eligible, verification instructions will be sent shortly.")
             )
             |> redirect(to: "/verify-email-pending?email=#{URI.encode_www_form(email)}")
           else
@@ -52,7 +52,7 @@ defmodule EdocApiWeb.SignupController do
 
             conn
             |> put_flash(:error, error_message)
-            |> render(:new, page_title: "Sign Up")
+            |> render(:new, page_title: gettext("Sign Up"))
           end
 
         {:error, changeset} ->
@@ -60,7 +60,7 @@ defmodule EdocApiWeb.SignupController do
 
           conn
           |> put_flash(:error, error_message)
-          |> render(:new, page_title: "Sign Up")
+          |> render(:new, page_title: gettext("Sign Up"))
       end
     end
   end

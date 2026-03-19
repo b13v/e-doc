@@ -5,7 +5,7 @@ defmodule EdocApiWeb.SessionController do
   alias EdocApi.Companies
 
   def new(conn, _params) do
-    render(conn, :new, page_title: "Login")
+    render(conn, :new, page_title: gettext("Sign In"))
   end
 
   def create(conn, %{"email" => email, "password" => password}) do
@@ -15,7 +15,7 @@ defmodule EdocApiWeb.SessionController do
           conn
           |> put_flash(
             :error,
-            "Пожалуйста, подтвердите свой адрес электронной почты перед входом в систему."
+            gettext("Please verify your email address before signing in.")
           )
           |> redirect(to: "/verify-email-pending?email=#{email}")
         else
@@ -31,21 +31,21 @@ defmodule EdocApiWeb.SessionController do
           |> configure_session(renew: true)
           |> put_session(:user_id, user.id)
           |> assign(:current_user, user)
-          |> put_flash(:info, "Добро пожаловать!")
+          |> put_flash(:info, gettext("Welcome!"))
           |> redirect(to: redirect_path)
         end
 
       {:error, :business_rule, _details} ->
         conn
-        |> put_flash(:error, "Неверный адрес электронной почты или пароль.")
-        |> render(:new, page_title: "Login")
+        |> put_flash(:error, gettext("Invalid email address or password."))
+        |> render(:new, page_title: gettext("Sign In"))
     end
   end
 
   def delete(conn, _params) do
     conn
     |> configure_session(drop: true)
-    |> put_flash(:info, "Выход из системы выполнен успешно.")
+    |> put_flash(:info, gettext("Signed out successfully."))
     |> redirect(to: "/")
   end
 end

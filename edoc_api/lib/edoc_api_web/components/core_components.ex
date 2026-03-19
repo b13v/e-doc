@@ -6,6 +6,7 @@ defmodule EdocApiWeb.CoreComponents do
   and helper functions used in templates.
   """
   use Phoenix.Component
+  use Gettext, backend: EdocApiWeb.Gettext
 
   attr(:class, :string, default: nil)
 
@@ -91,11 +92,11 @@ defmodule EdocApiWeb.CoreComponents do
   @doc """
   Render a status badge with appropriate styling.
   """
-  def status_badge("draft"), do: badge("Draft", "gray")
-  def status_badge("issued"), do: badge("Issued", "blue")
-  def status_badge("paid"), do: badge("Paid", "green")
-  def status_badge("void"), do: badge("Void", "red")
-  def status_badge(_), do: badge("Unknown", "gray")
+  def status_badge("draft"), do: badge(gettext("Draft"), "gray")
+  def status_badge("issued"), do: badge(gettext("Issued"), "blue")
+  def status_badge("paid"), do: badge(gettext("Paid"), "green")
+  def status_badge("void"), do: badge(gettext("Void"), "red")
+  def status_badge(_), do: badge(gettext("Unknown"), "gray")
 
   defp badge(text, color) do
     colors = %{
@@ -116,5 +117,4 @@ defmodule EdocApiWeb.CoreComponents do
     </span>
     """
   end
-
 end

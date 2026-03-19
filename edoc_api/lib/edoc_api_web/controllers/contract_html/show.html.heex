@@ -63,14 +63,14 @@
 
     <div class="nav-bar">
       <div class="nav-links">
-        <a href="/contracts">&larr; Back to Contracts</a>
+        <a href="/contracts">&larr; <%= gettext("Back to Contracts") %></a>
       </div>
       <div style="display: flex; gap: 10px;">
         <%= if EdocApi.ContractStatus.is_draft?(c) do %>
-          <a href={"/contracts/#{c.id}/edit"} class="btn" style="background: #16a34a; color: white;">Edit</a>
+          <a href={"/contracts/#{c.id}/edit"} class="btn" style="background: #16a34a; color: white;"><%= gettext("Edit") %></a>
           <form action={"/contracts/#{c.id}/issue"} method="post" style="display: inline;">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <button type="submit" class="btn" style="background: #0066cc; color: white;">Issue</button>
+            <button type="submit" class="btn" style="background: #0066cc; color: white;"><%= gettext("Issue") %></button>
           </form>
           <form action={"/contracts/#{c.id}"} method="post" style="display: inline;">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -79,14 +79,14 @@
               type="submit"
               class="btn"
               style="background: #b91c1c; color: white;"
-              onclick="return confirm('Delete this draft contract?')">
-              Delete
+              onclick={"return confirm(#{Jason.encode!(gettext("Delete this draft contract?"))})"}>
+              <%= gettext("Delete") %>
             </button>
           </form>
         <% end %>
         <%= if not EdocApi.ContractStatus.is_draft?(c) do %>
           <details class="send-menu">
-            <summary class="btn" style="background: #111827; color: white;">Send</summary>
+            <summary class="btn" style="background: #111827; color: white;"><%= gettext("Send") %></summary>
             <div class="send-menu-panel">
               <button
                 type="button"
@@ -94,20 +94,20 @@
                 hx-get={"/documents/contract/#{c.id}/send/email"}
                 hx-target={"#contract-send-panel-#{c.id}"}
                 hx-swap="innerHTML">
-                Email
+                <%= gettext("Email") %>
               </button>
               <form action={"/documents/contract/#{c.id}/share/whatsapp"} method="post" class="send-menu-form">
                 <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item">WhatsApp</button>
+                <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
               </form>
               <form action={"/documents/contract/#{c.id}/share/telegram"} method="post" class="send-menu-form">
                 <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item">Telegram</button>
+                <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
               </form>
             </div>
           </details>
         <% end %>
-        <a href={"/contracts/#{c.id}/pdf"} class="btn" style="background: #dc2626; color: white;">Download PDF</a>
+        <a href={"/contracts/#{c.id}/pdf"} class="btn" style="background: #dc2626; color: white;"><%= gettext("Download PDF") %></a>
       </div>
     </div>
 
@@ -235,7 +235,7 @@
               <div>Тел.: <%= seller.phone %></div>
             <% end %>
             <%= if seller.email != "" do %>
-              <div>Email: <%= seller.email %></div>
+              <div><%= gettext("Email") %>: <%= seller.email %></div>
             <% end %>
           </td>
 
@@ -251,7 +251,7 @@
               <div>Тел.: <%= buyer.phone %></div>
             <% end %>
             <%= if buyer.email != "" do %>
-              <div>Email: <%= buyer.email %></div>
+              <div><%= gettext("Email") %>: <%= buyer.email %></div>
             <% end %>
           </td>
         </tr>

@@ -81,6 +81,7 @@ defmodule EdocApiWeb.Router do
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
+    plug(EdocApiWeb.Plugs.SetLocale)
     plug(:fetch_flash)
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
@@ -91,6 +92,7 @@ defmodule EdocApiWeb.Router do
   pipeline :auth_browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
+    plug(EdocApiWeb.Plugs.SetLocale)
     plug(:fetch_flash)
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
@@ -188,6 +190,7 @@ defmodule EdocApiWeb.Router do
     pipe_through(:browser)
 
     get("/", PageController, :home)
+    get("/locale/:locale", LocaleController, :update)
     get("/about", AboutController, :index)
     get("/login", SessionController, :new)
     post("/login", SessionController, :create)

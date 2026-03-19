@@ -39,13 +39,27 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
   end
 
   describe "document show pages" do
+    test "authenticated app header uses the Edocly brand logo", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_issued_invoice!(user, company)
+
+      conn = get(conn, "/invoices/#{invoice.id}")
+
+      body = html_response(conn, 200)
+      assert body =~ "Edocly"
+      refute body =~ "EdocAPI"
+    end
+
     test "issued invoice show displays the Send menu", %{conn: conn, user: user, company: company} do
       invoice = create_issued_invoice!(user, company)
 
       conn = get(conn, "/invoices/#{invoice.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Send<"
+      assert body =~ ">Отправить<"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"
@@ -56,7 +70,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
 
       conn = get(conn, "/invoices/#{invoice.id}")
 
-      refute html_response(conn, 200) =~ ">Send<"
+      refute html_response(conn, 200) =~ ">Отправить<"
     end
 
     test "issued contract show displays the Send menu", %{conn: conn, company: company} do
@@ -65,7 +79,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/contracts/#{contract.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Send<"
+      assert body =~ ">Отправить<"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"
@@ -77,7 +91,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/acts/#{act.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Send<"
+      assert body =~ ">Отправить<"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"

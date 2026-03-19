@@ -162,35 +162,35 @@
 
   <div class="nav-bar">
     <div class="nav-links">
-      <a href="/invoices">&larr; Back to Invoices</a>
+      <a href="/invoices">&larr; <%= gettext("Back to Invoices") %></a>
     </div>
     <div style="display: flex; gap: 10px;">
       <%= if @invoice.status == "draft" do %>
-        <a href={"/invoices/#{@invoice.id}/edit"} class="btn" style="background: #16a34a; color: white;">Edit</a>
-        <form action={"/invoices/#{@invoice.id}/issue"} method="post" class="inline" onsubmit="return confirm('Issue this invoice?')">
+        <a href={"/invoices/#{@invoice.id}/edit"} class="btn" style="background: #16a34a; color: white;"><%= gettext("Edit") %></a>
+        <form action={"/invoices/#{@invoice.id}/issue"} method="post" class="inline" onsubmit={"return confirm(#{Jason.encode!(gettext("Issue this invoice?"))})"}>
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
           <button
             type="submit"
             class="btn"
             style="background: #0066cc; color: white;">
-            Issue
+            <%= gettext("Issue") %>
           </button>
         </form>
       <% end %>
       <%= if @invoice.status == "issued" do %>
-        <form action={"/invoices/#{@invoice.id}/pay"} method="post" class="inline" onsubmit="return confirm('Mark this invoice as paid?')">
+        <form action={"/invoices/#{@invoice.id}/pay"} method="post" class="inline" onsubmit={"return confirm(#{Jason.encode!(gettext("Mark this invoice as paid?"))})"}>
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
           <button
             type="submit"
             class="btn"
             style="background: #059669; color: white;">
-            Mark as Paid
+            <%= gettext("Mark as Paid") %>
           </button>
         </form>
       <% end %>
       <%= if not EdocApi.InvoiceStatus.is_draft?(@invoice) do %>
         <details class="send-menu">
-          <summary class="btn" style="background: #111827; color: white;">Send</summary>
+          <summary class="btn" style="background: #111827; color: white;"><%= gettext("Send") %></summary>
           <div class="send-menu-panel">
             <button
               type="button"
@@ -198,20 +198,20 @@
               hx-get={"/documents/invoice/#{@invoice.id}/send/email"}
               hx-target={"#invoice-send-panel-#{@invoice.id}"}
               hx-swap="innerHTML">
-              Email
+              <%= gettext("Email") %>
             </button>
             <form action={"/documents/invoice/#{@invoice.id}/share/whatsapp"} method="post" class="send-menu-form">
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-              <button type="submit" class="send-menu-item">WhatsApp</button>
+              <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
             </form>
             <form action={"/documents/invoice/#{@invoice.id}/share/telegram"} method="post" class="send-menu-form">
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-              <button type="submit" class="send-menu-item">Telegram</button>
+              <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
             </form>
           </div>
         </details>
       <% end %>
-      <a href={"/invoices/#{@invoice.id}/pdf"} target="_blank" class="btn" style="background: #dc2626; color: white;">Download PDF</a>
+      <a href={"/invoices/#{@invoice.id}/pdf"} target="_blank" class="btn" style="background: #dc2626; color: white;"><%= gettext("Download PDF") %></a>
     </div>
   </div>
 

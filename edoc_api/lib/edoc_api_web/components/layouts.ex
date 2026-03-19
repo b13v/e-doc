@@ -10,7 +10,7 @@ defmodule EdocApiWeb.Layouts do
   def root(assigns) do
     ~H"""
     <!DOCTYPE html>
-    <html lang="en" class="[scrollbar-gutter:stable]">
+    <html lang={assigns[:locale] || "ru"} class="[scrollbar-gutter:stable]">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,10 +59,11 @@ defmodule EdocApiWeb.Layouts do
   def public_nav(assigns) do
     ~H"""
     <nav class="flex items-center space-x-6">
-      <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
-      <a href="/about" class="text-gray-600 hover:text-gray-900 font-medium">About</a>
+      <a href="/" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Home") %></a>
+      <a href="/about" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("About") %></a>
+      <%= locale_switcher(assigns) %>
       <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-        Sign In
+        <%= gettext("Sign In") %>
       </a>
     </nav>
     """
@@ -74,16 +75,17 @@ defmodule EdocApiWeb.Layouts do
   def auth_nav(assigns) do
     ~H"""
     <nav class="flex items-center space-x-6">
-      <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium">Invoices</a>
-      <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium">Contracts</a>
-      <a href="/acts" class="text-gray-600 hover:text-gray-900 font-medium">Acts</a>
-      <a href="/buyers" class="text-gray-600 hover:text-gray-900 font-medium">Buyers</a>
-      <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium">Company</a>
+      <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Invoices") %></a>
+      <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Contracts") %></a>
+      <a href="/acts" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Acts") %></a>
+      <a href="/buyers" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Buyers") %></a>
+      <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Company") %></a>
+      <%= locale_switcher(assigns) %>
       <span class="text-gray-500 text-sm"><%= @current_user.email %></span>
       <form method="post" action="/logout" class="inline">
         <input type="hidden" name="_method" value="delete" />
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <button type="submit" class="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-none cursor-pointer p-0">Logout</button>
+        <button type="submit" class="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-none cursor-pointer p-0"><%= gettext("Logout") %></button>
       </form>
     </nav>
     """
@@ -98,7 +100,7 @@ defmodule EdocApiWeb.Layouts do
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <a href="/" class="text-xl font-bold text-gray-900">EdocAPI</a>
+            <%= brand_logo(assigns) %>
           </div>
           <%= if assigns[:current_user] do %>
             <%= auth_nav(assigns) %>
@@ -113,5 +115,65 @@ defmodule EdocApiWeb.Layouts do
       {@inner_content}
     </main>
     """
+  end
+
+  defp brand_logo(assigns) do
+    ~H"""
+    <a href="/" class="inline-flex items-center gap-2 text-xl font-extrabold text-[#0066cc]">
+      <span class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#0066cc] to-[#00a651] text-white shadow-sm">
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 3h6l4 4v14H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M15 3v4h4" />
+          <path d="M11 12h6" />
+          <path d="M11 16h6" />
+        </svg>
+      </span>
+      <span>Edocly</span>
+    </a>
+    """
+  end
+
+  defp locale_switcher(assigns) do
+    assigns =
+      Map.merge(assigns, %{
+        current_path: assigns[:current_path] || "/",
+        locale: assigns[:locale] || "ru"
+      })
+
+    ~H"""
+    <div class="inline-flex items-center rounded-md bg-gray-100 p-1">
+      <a
+        href={locale_path("kk", @current_path)}
+        class={[
+          "rounded px-2 py-1 text-sm font-medium",
+          if(@locale == "kk", do: "bg-white text-blue-600 shadow-sm", else: "text-gray-500")
+        ]}
+      >
+        Қаз
+      </a>
+      <a
+        href={locale_path("ru", @current_path)}
+        class={[
+          "rounded px-2 py-1 text-sm font-medium",
+          if(@locale == "ru", do: "bg-white text-blue-600 shadow-sm", else: "text-gray-500")
+        ]}
+      >
+        Рус
+      </a>
+    </div>
+    """
+  end
+
+  defp locale_path(locale, current_path) do
+    "/locale/#{locale}?return_to=#{URI.encode_www_form(current_path)}"
   end
 end

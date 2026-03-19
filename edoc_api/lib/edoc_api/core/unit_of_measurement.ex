@@ -4,10 +4,10 @@ defmodule EdocApi.Core.UnitOfMeasurement do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "units_of_measurements" do
-    field :okei_code, :integer
-    field :symbol, :string
-    field :name, :string
-    field :category, :string
+    field(:okei_code, :integer)
+    field(:symbol, :string)
+    field(:name, :string)
+    field(:category, :string)
 
     timestamps(type: :utc_datetime)
   end

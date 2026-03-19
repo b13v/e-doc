@@ -39,7 +39,7 @@ defmodule EdocApi.Repo.Migrations.NormalizeAndRestrictLegalForms do
     """)
 
     alter table(:buyers) do
-      modify :legal_form, :string, default: "Товарищество с ограниченной ответственностью"
+      modify(:legal_form, :string, default: "Товарищество с ограниченной ответственностью")
     end
   end
 end

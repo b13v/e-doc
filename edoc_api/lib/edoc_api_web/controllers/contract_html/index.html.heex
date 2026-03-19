@@ -1,11 +1,11 @@
 <div class="bg-white shadow rounded-lg">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900">Contracts</h1>
+    <h1 class="text-2xl font-bold text-gray-900"><%= gettext("Contracts") %></h1>
     <div class="flex gap-3">
       <a
         href="/contracts/new"
         class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-        New Contract
+        <%= gettext("New Contract") %>
       </a>
     </div>
   </div>
@@ -21,11 +21,11 @@
 
     <%= if Enum.empty?(@contracts) do %>
       <div class="text-center py-12">
-        <p class="text-gray-500 mb-4">No contracts yet.</p>
+        <p class="text-gray-500 mb-4"><%= gettext("No contracts yet.") %></p>
         <a
           href="/contracts/new"
           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-          Create your first contract
+          <%= gettext("Create your first contract") %>
         </a>
       </div>
     <% else %>
@@ -33,10 +33,10 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Number") %></th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Date") %></th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Status") %></th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Actions") %></th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
@@ -53,17 +53,17 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="inline-flex items-center gap-3">
-                    <a href={"/contracts/#{contract.id}"} class="text-blue-600 hover:text-blue-900">View</a>
+                    <a href={"/contracts/#{contract.id}"} class="text-blue-600 hover:text-blue-900"><%= gettext("View") %></a>
                     <%= if EdocApi.ContractStatus.is_draft?(contract) do %>
-                      <a href={"/contracts/#{contract.id}/edit"} class="text-green-600 hover:text-green-900">Edit</a>
+                      <a href={"/contracts/#{contract.id}/edit"} class="text-green-600 hover:text-green-900"><%= gettext("Edit") %></a>
                       <form action={"/contracts/#{contract.id}"} method="post" class="inline">
                         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
                         <input type="hidden" name="_method" value="delete" />
                         <button
                           type="submit"
                           class="text-red-600 hover:text-red-900"
-                          onclick="return confirm('Delete this draft contract?')">
-                          Delete
+                          onclick={"return confirm(#{Jason.encode!(gettext("Delete this draft contract?"))})"}>
+                          <%= gettext("Delete") %>
                         </button>
                       </form>
                     <% end %>

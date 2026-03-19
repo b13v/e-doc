@@ -6,6 +6,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
   alias EdocApi.Buyers
   alias EdocApi.Companies
   alias EdocApi.Payments
+  alias EdocApiWeb.ErrorHelpers
 
   def index(conn, _params) do
     user = conn.assigns.current_user
@@ -13,18 +14,24 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
         buyers = Buyers.list_buyers_for_company(company.id)
-        render(conn, :index, buyers: buyers, page_title: "Buyers")
+        render(conn, :index, buyers: buyers, page_title: gettext("Buyers"))
     end
   end
 
   def new(conn, _params) do
     banks = Payments.list_banks()
-    render(conn, :new, buyer: nil, banks: banks, bank_form: %{}, page_title: "New Buyer")
+
+    render(conn, :new,
+      buyer: nil,
+      banks: banks,
+      bank_form: %{},
+      page_title: gettext("New Buyer")
+    )
   end
 
   def show(conn, %{"id" => id}) do
@@ -33,19 +40,24 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
         case Buyers.get_buyer_for_company(id, company.id) do
           nil ->
             conn
-            |> put_flash(:error, "Покупатель не найден.")
+            |> put_flash(:error, gettext("Buyer not found."))
             |> redirect(to: "/buyers")
 
           buyer ->
             bank_account = Buyers.get_default_bank_account(buyer.id)
-            render(conn, :show, buyer: buyer, bank_account: bank_account, page_title: "Buyer")
+
+            render(conn, :show,
+              buyer: buyer,
+              bank_account: bank_account,
+              page_title: gettext("Buyer")
+            )
         end
     end
   end
@@ -56,7 +68,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
@@ -65,7 +77,10 @@ defmodule EdocApiWeb.BuyerHTMLController do
             conn
             |> put_flash(
               :info,
-              "Покупатель успешно создан! #{buyer.name} готов к использованию в договорах и счетах на оплату."
+              gettext(
+                "Buyer created successfully. %{name} is ready to use in contracts and invoices.",
+                name: buyer.name
+              )
             )
             |> redirect(to: "/buyers")
 
@@ -79,7 +94,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "New Buyer"
+              page_title: gettext("New Buyer")
             )
 
           {:error, :validation, changeset: %Ecto.Changeset{} = changeset} ->
@@ -92,7 +107,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "New Buyer"
+              page_title: gettext("New Buyer")
             )
 
           {:error, :validation, %{changeset: %Ecto.Changeset{} = changeset}} ->
@@ -105,7 +120,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "New Buyer"
+              page_title: gettext("New Buyer")
             )
 
           {:error, _reason} ->
@@ -114,13 +129,13 @@ defmodule EdocApiWeb.BuyerHTMLController do
             conn
             |> put_flash(
               :error,
-              "Не удалось создать покупателя. Пожалуйста, проверьте форму и попробуйте снова."
+              gettext("Failed to create buyer. Please check the form and try again.")
             )
             |> render(:new,
               buyer: nil,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "New Buyer"
+              page_title: gettext("New Buyer")
             )
         end
     end
@@ -132,14 +147,14 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
         case Buyers.get_buyer_for_company(id, company.id) do
           nil ->
             conn
-            |> put_flash(:error, "Покупатель не найден.")
+            |> put_flash(:error, gettext("Buyer not found."))
             |> redirect(to: "/buyers")
 
           buyer ->
@@ -149,7 +164,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               buyer: buyer,
               banks: banks,
               bank_form: bank_form_from_buyer(buyer),
-              page_title: "Edit Buyer"
+              page_title: gettext("Edit Buyer")
             )
         end
     end
@@ -161,14 +176,14 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
         case Buyers.update_buyer(id, buyer_params, company.id) do
           {:ok, _buyer} ->
             conn
-            |> put_flash(:info, "Информация покупателя успешно обновлена.")
+            |> put_flash(:info, gettext("Buyer updated successfully."))
             |> redirect(to: "/buyers")
 
           {:error, %Ecto.Changeset{} = changeset} ->
@@ -182,7 +197,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "Edit Buyer"
+              page_title: gettext("Edit Buyer")
             )
 
           {:error, :validation, changeset: %Ecto.Changeset{} = changeset} ->
@@ -196,7 +211,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "Edit Buyer"
+              page_title: gettext("Edit Buyer")
             )
 
           {:error, :validation, %{changeset: %Ecto.Changeset{} = changeset}} ->
@@ -210,17 +225,17 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "Edit Buyer"
+              page_title: gettext("Edit Buyer")
             )
 
           {:error, :not_found} ->
             conn
-            |> put_flash(:error, "Покупатель не найден.")
+            |> put_flash(:error, gettext("Buyer not found."))
             |> redirect(to: "/buyers")
 
           {:error, :not_found, _details} ->
             conn
-            |> put_flash(:error, "Покупатель не найден.")
+            |> put_flash(:error, gettext("Buyer not found."))
             |> redirect(to: "/buyers")
 
           {:error, _reason} ->
@@ -230,13 +245,13 @@ defmodule EdocApiWeb.BuyerHTMLController do
             conn
             |> put_flash(
               :error,
-              "Не удалось обновить информацию о покупателе. Пожалуйста, проверьте форму и попробуйте снова."
+              gettext("Failed to update buyer. Please check the form and try again.")
             )
             |> render(:edit,
               buyer: buyer,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
-              page_title: "Edit Buyer"
+              page_title: gettext("Edit Buyer")
             )
         end
     end
@@ -248,47 +263,41 @@ defmodule EdocApiWeb.BuyerHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
         case Buyers.delete_buyer(id, company.id) do
           {:ok, :deleted} ->
             conn
-            |> put_flash(:info, "Покупатель успешно удален.")
+            |> put_flash(:info, gettext("Buyer deleted successfully."))
             |> redirect(to: "/buyers")
 
           {:error, :in_use, details} ->
             conn
             |> put_flash(
               :error,
-              "Невозможно удалить покупателя: используется в #{details.contract_count} договоре(ах) и #{details.invoice_count} счете(ах) на оплату"
+              gettext(
+                "Cannot delete buyer: used in %{contract_count} contract(s) and %{invoice_count} invoice(s).",
+                contract_count: details.contract_count,
+                invoice_count: details.invoice_count
+              )
             )
             |> redirect(to: "/buyers")
 
           {:error, :not_found} ->
             conn
-            |> put_flash(:error, "Покупатель не найден.")
+            |> put_flash(:error, gettext("Buyer not found."))
             |> redirect(to: "/buyers")
         end
     end
   end
 
-  defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
-    end)
-    |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
-    |> Enum.join("; ")
-  end
-
   defp validation_flash_message(changeset) do
     if Keyword.has_key?(changeset.errors, :bin_iin) do
-      "Неверный БИН/ИИН. Пожалуйста, введите действительный 12-значный БИН/ИИН."
+      gettext("Invalid BIN/IIN. Please enter a valid 12-digit BIN/IIN.")
     else
-      format_changeset_errors(changeset)
+      ErrorHelpers.format_changeset_errors(changeset)
     end
   end
 

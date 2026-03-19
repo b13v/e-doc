@@ -1,276 +1,284 @@
 # Project Health Audit: Edoc API
 
-**Generated**: 2026-02-19
-**Mode**: full
-**Project**: Electronic Document Invoicing API (Elixir/Phoenix)
+**Generated:** 2026-02-19
+**Project:** e-doc/edoc_api
+**Stack:** Phoenix 1.7.21, Ecto 4.4, Elixir ~> 1.14
 
 ---
 
 ## Executive Summary
 
-### Health Score: C+ (70/100)
+### Overall Health Score: **D (64/100)**
 
-| Category | Score | Status |
-|----------|-------|--------|
-| Architecture | 75/100 | Moderate |
-| Performance | 60/100 | Needs Attention |
-| Security | 72/100 | Moderate |
-| Test Quality | 55/100 | Needs Work |
-| Dependencies | 90/100 | Good |
+| Category | Score | Status | Weight |
+|----------|-------|--------|--------|
+| **Dependencies** | 90/100 | Excellent (A) | 10% |
+| **Architecture** | 65/100 | Needs Improvement (C) | 15% |
+| **Tests** | 60/100 | Needs Work (D) | 20% |
+| **Security** | 55/100 | Critical Issues (F) | 30% |
+| **Performance** | 50/100 | Critical Issues (F) | 25% |
 
-### Overall Grade: C+
-
-The EdocAPI project has a solid foundation with good patterns for authentication, input validation, and database design. However, there are critical gaps in test coverage (especially for authentication/authorization), performance concerns (missing indexes, no caching), and security issues (hardcoded secrets).
+**Weighted Score:** 64/100
 
 ---
 
-## Critical Issues (Must Address)
+## Critical Issues (Must Address Immediately)
 
 ### Security (Critical)
-1. **Hardcoded secrets in configuration files** - JWT secret and secret_key_base are hardcoded in `config/config.exs`, `config/dev.exs`, and `config/test.exs`
-2. **Missing log parameter filtering** - Sensitive data may be logged in plain text
-3. **Information disclosure** - Using `inspect(reason)` in error responses may leak internal details
 
-### Testing (Critical)
-4. **Zero test coverage for authentication** - No tests for signup, login, email verification flows
-5. **Zero test coverage for authorization** - No tests verifying user isolation or company ownership
-6. **No tests for payments module** - Financial transactions unvalidated
-7. **New Acts feature has zero test coverage**
+1. **Hardcoded Secrets in Configuration Files**
+   - **Files:** `config/config.exs:53`, `config/dev.exs:27`, `config/test.exs:20`
+   - **Issue:** JWT secret and secret_key_base are hardcoded
+   - **Risk:** Credentials in version control, production secrets may be exposed
+   - **Fix:** Use environment variables with fallback to raise error if unset
 
-### Performance (High)
-8. **Missing database indexes** on `invoices.status` and `contracts.status`
-9. **Unpaginated HTML list views** - Will cause memory issues as data grows
-10. **No caching layer** - Reference data (KBE/KNP codes, banks) fetched on every request
+2. **Missing Log Parameter Filtering**
+   - **Issue:** Sensitive data (passwords, tokens) may be logged
+   - **Fix:** Add `config :phoenix, :filter_parameters, ["password", "token", "secret"]`
 
-### Architecture (Moderate)
-11. **EdocApi.Core is an anti-pattern** - Not a proper context, just a delegation facade
-12. **29 circular dependencies** - Should be reduced where possible
+3. **Information Disclosure via `inspect(reason)`**
+   - **Files:** Multiple controllers (auth_controller.ex, buyers_controller.ex)
+   - **Issue:** Internal error details exposed to users
+   - **Fix:** Return sanitized error messages
 
----
+### Performance (Critical)
 
-## Top Recommendations (Priority Order)
+4. **Unpaginated Lists in HTML Controllers**
+   - **Files:** `invoices_controller.ex`, `acts_controller.ex`, `buyer_html_controller.ex`
+   - **Issue:** ALL records loaded without limit
+   - **Risk:** Memory exhaustion as data grows
+   - **Fix:** Add pagination with `limit` and `offset` parameters
 
-### Immediate (This Sprint)
-1. **Remove hardcoded secrets** from config files
-   ```elixir
-   config :edoc_api, EdocApi.Auth, jwt_secret:
-     System.get_env("JWT_SECRET") || raise "JWT_SECRET not set"
-   config :phoenix, :filter_parameters, ["password", "token", "secret", "csrf"]
-   ```
+5. **Missing Database Indexes**
+   - **Tables:** `invoices.status`, `contracts.status`
+   - **Issue:** Full table scans on status filter queries
+   - **Fix:** Add indexes and composite index `(company_id, status)`
 
-2. **Add authentication tests** - Create `test/edoc_api_web/controllers/auth_controller_test.exs`
-   - Test signup, login, verification flows
-   - Test JWT token generation and validation
+6. **No Caching Layer**
+   - **Issue:** Reference data (KBE/KNP codes, banks) fetched on every request
+   - **Fix:** Install Cachex for reference data caching
 
-3. **Add database indexes** for performance
-   ```elixir
-   create(index(:invoices, [:status]))
-   create(index(:contracts, [:status]))
-   create(index(:contracts, [:company_id, :status]))
-   ```
+### Tests (Critical)
 
-4. **Add pagination to HTML list views** - Prevent memory exhaustion
+7. **Zero Authentication Test Coverage**
+   - **Missing:** `AuthController`, `Accounts` context, JWT validation
+   - **Risk:** Security vulnerabilities undetected
 
-### Short-term (Next 2 Sprints)
-5. **Add authorization tests** - Verify user isolation and company ownership enforcement
-6. **Implement reference data caching** - Cache KBE/KNP codes and banks
-7. **Enable async: true on all controller tests** - 30-40% test speedup
-8. **Add Acts feature tests** - New feature is completely untested
+8. **Zero Authorization Test Coverage**
+   - **Missing:** User isolation tests, company ownership enforcement
+   - **Risk:** Horizontal privilege escalation undetected
 
-### Long-term (Backlog)
-9. **Extract Contracts context** from EdocApi.Core
-10. **Install Oban for background jobs** - Move PDF generation to background
-11. **Add property-based tests** for VAT calculations
-12. **Consider Phoenix 1.8 upgrade** - Requires testing
+9. **Zero Coverage for New Acts Feature**
+   - **Missing:** All Acts-related tests
+   - **Risk:** New feature bugs undetected
 
 ---
 
-## Detailed Findings by Category
+## Detailed Findings
 
-## Architecture (75/100) - Moderate
+### Architecture (65/100 - C)
 
-### Strengths
-- ✅ Clear separation between API and HTML controllers
-- ✅ Context pattern used consistently
-- ✅ Good schema organization in `core/` directory
-- ✅ Validator modules properly extracted
+**Strengths:**
+- Proper Phoenix context pattern foundation
+- Explicit user/company injection prevents mass assignment
+- Consistent changeset structure with validation
+- Clean serialization layer separates DB from API
 
-### Weaknesses
-- ❌ `EdocApi.Core` is not a proper context - just a delegation facade
-- ❌ `Invoicing` context is bloated (991 lines)
-- ❌ Inconsistent schema location (User in `accounts/`, others in `core/`)
-- ❌ 29 circular dependencies
-- ❌ No explicit behaviours or protocols
+**Issues:**
+- **29 circular dependencies** between modules
+- `EdocApi.Core` is a facade anti-pattern, not a true context
+- `Invoicing` context bloated (991 lines) — handles multiple concerns
+- Schema location inconsistent (Accounts.User in `accounts/`, others in `core/`)
+- No `@behaviour` or protocols — limits polymorphism
+- HTML controllers contain form preparation logic (should be form objects)
 
-### Key Recommendations
-1. Extract `EdocApi.Contracts` from `EdocApi.Core`
-2. Split invoice number generation into separate context
-3. Introduce behaviours for external service boundaries
-
----
-
-## Performance (60/100) - Needs Attention
-
-### Strengths
-- ✅ Most foreign keys have indexes
-- ✅ Pagination implemented for API endpoints
-- ✅ Efficient use of Ecto
-
-### Weaknesses
-- ❌ Missing indexes on `invoices.status` and `contracts.status`
-- ❌ HTML list views unpaginated
-- ❌ No caching layer
-- ❌ Leading wildcard searches prevent index usage
-- ❌ Bulk operations done in loops
-- ❌ No background job processor
-
-### Key Recommendations
-1. Add status indexes for invoices and contracts
-2. Add pagination to all list views
-3. Implement caching for reference data
-4. Consider Oban for background PDF generation
+**Recommendations:**
+1. Extract `EdocApi.Contracts` context from `Core`
+2. Split invoice number generation to `InvoiceNumbering` context
+3. Standardize schema organization
+4. Extract form objects from HTML controllers
+5. Introduce behaviours for number generation and document rendering
 
 ---
 
-## Security (72/100) - Moderate
+### Security (55/100 - F)
 
-### Strengths
-- ✅ Argon2 for password hashing (industry best practice)
-- ✅ Timing-safe authentication prevents user enumeration
-- ✅ Proper JWT implementation with Joken
-- ✅ All data access scoped by user/company
-- ✅ No SQL injection vulnerabilities
-- ✅ HEEX auto-escapes by default
-- ✅ CSRF protection enabled
+**Strengths:**
+- Argon2 password hashing (industry best practice)
+- Timing-safe authentication prevents timing attacks
+- JWT implementation using Joken library
+- Proper data scoping by user_id in all context functions
+- Changesets for all input validation
+- No SQL injection — all queries use `^` operator
+- CSRF protection enabled
+- Email verification required
 
-### Weaknesses
-- ❌ **Hardcoded secrets** in config files (Critical)
-- ❌ Missing log parameter filtering
-- ❌ Information disclosure through `inspect(reason)`
-- ❌ Rate limiting only on auth endpoints
-- ❌ Weak CSP policy with `unsafe-inline`
-- ❌ Missing security headers
-- ❌ No token revocation on logout
+**Critical Issues:**
+1. Hardcoded JWT secret: `"dev-secret-change-me"`
+2. Hardcoded secret_key_base in dev/test configs
+3. Hardcoded session signing_salt in endpoint
+4. No `filter_parameters` configuration
+5. `inspect(reason)` exposes internal details
+6. Missing security headers (X-Frame-Options, X-Content-Type-Options)
+7. CSP uses `unsafe-inline` for scripts
+8. Rate limiting only on auth endpoints
+9. 7-day JWT expiry (may be too long)
+10. No token revocation on logout
 
-### Key Recommendations
-1. Remove all hardcoded secrets from config files
-2. Add `filter_parameters` configuration
+**Recommendations:**
+1. Move all secrets to environment variables
+2. Add parameter filtering to Phoenix config
 3. Sanitize error messages
-4. Expand rate limiting to all endpoints
-5. Tighten CSP policy
+4. Add missing security headers
+5. Extend rate limiting to all sensitive endpoints
+6. Consider shorter JWT expiry with refresh tokens
 
 ---
 
-## Test Quality (55/100) - Needs Work
+### Performance (50/100 - F)
 
-### Strengths
-- ✅ 17 test files covering core business logic
-- ✅ Good setup patterns with fixtures
-- ✅ Sandbox isolation configured
-- ✅ Strong assertion patterns
-- ✅ No sleep-based timing issues
+**Strengths:**
+- Recent migrations added important foreign key indexes
+- Proper use of Ecto预加载 syntax
 
-### Weaknesses
-- ❌ **Zero coverage** for authentication/authorization (Critical)
-- ❌ **Zero coverage** for payments module (Critical)
-- ❌ **Zero coverage** for Acts feature (Critical)
-- ❌ **Zero coverage** for companies module
-- ❌ Controller tests missing `async: true` (slows CI)
-- ❌ No integration test suite
-- ❌ No mock framework (Mox) for external services
+**Critical Issues:**
+1. **Unpaginated lists** — All invoices/acts/buyers loaded
+2. **Missing indexes** — `invoices.status`, `contracts.status`
+3. **No caching** — Reference data fetched on every request
+4. **N+1 queries** — 8 patterns (preload after query, enum.each with Repo)
+5. **Bulk operations in loops** — Invoice/act items inserted one-by-one
+6. **Inefficient search** — Leading wildcard `%query%` prevents index use
 
-### Key Recommendations
-1. Add authentication test suite (highest priority)
-2. Add authorization tests for user isolation
-3. Enable `async: true` on controller tests
-4. Add Acts feature tests
-5. Install ExMachina for better factory patterns
+**Recommendations:**
+1. Add pagination to all list views
+2. Create migration for status indexes
+3. Install Cachex for reference data (KBE/KNP codes, banks)
+4. Convert bulk inserts to `insert_all/2`
+5. Add trigram index for buyer search or migrate to full-text search
 
 ---
 
-## Dependencies (90/100) - Good
+### Tests (60/100 - D)
 
-### Strengths
-- ✅ No known vulnerabilities detected
-- ✅ All dependencies are in use
-- ✅ Permissive licenses (MIT/Apache-2.0)
-- ✅ Up-to-date versions
+**Strengths:**
+- 17 test files covering core business logic
+- Good patterns: sandbox isolation, proper setup, strong assertions
+- No `Process.sleep` — proper async testing
+- Named setup functions prevent duplication
 
-### Weaknesses
-- ❌ Phoenix 1.7 → 1.8 available (major version)
-- ❌ Elixir 1.14 → 1.17+ available
-- ❌ Several minor updates available
+**Critical Gaps:**
+| Module | Coverage | Risk |
+|--------|----------|------|
+| `EdocApi.Accounts` | 0% | HIGH — Auth logic untested |
+| `EdocApi.Auth` | 0% | HIGH — JWT untested |
+| `EdocApi.Payments` | 0% | HIGH — Financial transactions untested |
+| `EdocApi.Acts` | 0% | MEDIUM — New feature |
+| `EdocApi.Companies` | 0% | MEDIUM — Core entity |
 
-### Key Recommendations
-1. Apply patch updates (ecto_sql, tidewave)
-2. Plan Phoenix 1.8 upgrade carefully
-3. Consider Elixir version upgrade
+**Missing Controller Tests:**
+- `AuthController` — signup, login, verification
+- `CompanyController` — all endpoints
+- `ActsController` — all endpoints (new)
+- HTML/HTMX controllers — all forms and interactivity
+
+**Issues:**
+1. 4 controller tests missing `async: true` (slower CI)
+2. No integration test suite
+3. No mock framework (Mox)
+4. Manual fixtures instead of ExMachina
+5. No test tags for categorization
+
+**Recommendations:**
+1. Create authentication test suite
+2. Create authorization test suite
+3. Create Acts feature test suite
+4. Enable `async: true` on all controller tests (30-40% speedup)
+5. Install ExMachina for better factories
 
 ---
 
-## Cross-Category Correlations
+### Dependencies (90/100 - A)
 
-### Test Coverage ↔ Security
-The lack of authentication and authorization tests represents the highest risk. Security primitives (Argon2, scoping) appear sound, but without tests, security guarantees cannot be verified.
+**Strengths:**
+- No retired packages (hex.audit clean)
+- All dependencies actively used
+- Permissive licenses (MIT/Apache-2.0)
+- Proper classification (compile/runtime/dev)
 
-### Performance ↔ Architecture
-The bloated `Invoicing` context contributes to performance issues. Splitting it would enable better caching and optimization strategies.
+**Updates Available:**
+- Patch: `ecto_sql` 3.13.3 → 3.13.4, `tidewave` 0.5.4 → 0.5.5
+- Minor: `finch`, `plug_cowboy`, `postgrex`, `swoosh`
+- Major: Phoenix 1.7.21 → 1.8.3 (requires constraint change)
 
-### Dependencies ↔ Architecture
-The use of newer Phoenix 1.8 features (which this project doesn't have yet) could help address some architectural concerns like better LiveView patterns.
+**Recommendations:**
+1. Apply patch updates
+2. Plan Phoenix 1.8 upgrade for next cycle
+3. Consider upgrading to Elixir 1.16+
 
 ---
 
 ## Action Plan
 
-### Sprint 1 (Immediate)
+### Immediate (This Sprint)
+
+**Security:**
 - [ ] Remove hardcoded secrets from config files
-- [ ] Add `filter_parameters` to config
-- [ ] Add status indexes to invoices and contracts tables
+- [ ] Add `filter_parameters` to Phoenix config
+- [ ] Sanitize error messages (remove `inspect(reason)`)
+
+**Performance:**
+- [ ] Add pagination to `invoices_controller.ex`
+- [ ] Add pagination to `acts_controller.ex`
+- [ ] Create migration for status indexes
+
+**Tests:**
 - [ ] Create authentication test suite
-- [ ] Add pagination to HTML list views
-
-### Sprint 2 (Short-term)
-- [ ] Add authorization tests for user isolation
-- [ ] Implement reference data caching
-- [ ] Enable async: true on controller tests
-- [ ] Add Acts feature tests
-- [ ] Sanitize error messages (remove inspect())
-
-### Sprint 3+ (Long-term)
-- [ ] Extract Contracts context from Core
-- [ ] Install Oban for background jobs
-- [ ] Add property-based tests
-- [ ] Plan Phoenix 1.8 upgrade
-- [ ] Add structured security logging
+- [ ] Enable `async: true` on controller tests
 
 ---
 
-## Metrics Summary
+### Short-term (Next 2 Sprints)
 
-| Metric | Value | Target |
-|--------|-------|--------|
-| Test Files | 17 | 30+ |
-| Test Coverage | ~40% | 80% |
-| Circular Dependencies | 29 | <15 |
-| Hardcoded Secrets | 3 | 0 |
-| Missing Indexes | 4 | 0 |
-| Critical Vulnerabilities | 1 (secrets) | 0 |
+**Security:**
+- [ ] Add missing security headers
+- [ ] Extend rate limiting to protected endpoints
+- [ ] Tighten CSP policy
+
+**Performance:**
+- [ ] Install Cachex and cache reference data
+- [ ] Convert bulk inserts to `insert_all/2`
+- [ ] Add composite indexes for user queries
+
+**Architecture:**
+- [ ] Extract `Contracts` context from `Core`
+- [ ] Split invoice number generation to separate context
+
+**Tests:**
+- [ ] Create Acts feature test suite
+- [ ] Create authorization test suite
+- [ ] Install ExMachina for factories
 
 ---
 
-## Conclusion
+### Long-term (Backlog)
 
-The EdocAPI project demonstrates solid engineering fundamentals with proper use of Elixir/Phoenix patterns. The codebase is clean and follows many best practices. However, the lack of test coverage for security-critical paths (authentication, authorization) and the presence of hardcoded secrets represent significant risks that should be addressed immediately.
-
-With focused effort on the critical items identified above, this project can quickly move from a "C+" to a "B+" rating. The foundation is strong—what's needed is systematic attention to the identified gaps.
+- [ ] Phoenix 1.8 upgrade
+- [ ] Elixir 1.16+ upgrade
+- [ ] Install Oban for background jobs (PDF generation)
+- [ ] Implement search service for buyer queries
+- [ ] Add integration test suite
+- [ ] Implement token revocation on logout
+- [ ] Add structured security event logging
 
 ---
 
-## Reports Generated
+## Summary
 
-- `.claude/audit/reports/arch-review.md` - Architecture analysis
-- `.claude/audit/reports/perf-audit.md` - Performance analysis
-- `.claude/audit/reports/security-audit.md` - Security analysis
-- `.claude/audit/reports/test-audit.md` - Test coverage analysis
-- `.claude/audit/reports/deps-audit.md` - Dependency analysis
+**Current State:** The Edoc API has a solid foundation with proper Phoenix patterns, good input validation, and a clean dependency tree. However, critical security vulnerabilities (hardcoded secrets), performance issues (unpaginated queries, missing indexes), and major test coverage gaps (authentication, authorization, new features) require immediate attention.
+
+**Focus Areas:**
+1. **Security first** — Remove hardcoded secrets immediately
+2. **Performance second** — Add pagination before data volume grows
+3. **Tests third** — Cover authentication and authorization paths
+
+**Target Health:** B (80/100) within 2 sprints by addressing critical issues above.

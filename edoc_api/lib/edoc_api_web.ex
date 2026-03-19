@@ -58,6 +58,8 @@ defmodule EdocApiWeb do
         only: [get_csrf_token: 0, view_module: 1, view_template: 1]
 
       # Include general helpers for rendering HTML
+      use Gettext, backend: EdocApiWeb.Gettext
+
       unquote(html_helpers())
     end
   end
@@ -75,6 +77,7 @@ defmodule EdocApiWeb do
     quote do
       # HTML escaping
       import Phoenix.HTML
+      use Gettext, backend: EdocApiWeb.Gettext
 
       # Core HTML components
       import EdocApiWeb.CoreComponents

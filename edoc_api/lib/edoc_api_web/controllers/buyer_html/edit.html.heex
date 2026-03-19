@@ -1,17 +1,17 @@
 <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
   <div class="mb-6">
     <a href="/buyers" class="text-sm text-blue-600 hover:text-blue-500">
-      &larr; Back to Buyers
+      &larr; <%= gettext("Back to Buyers") %>
     </a>
   </div>
 
   <div class="md:flex md:items-center md:justify-between mb-6">
     <div class="min-w-0 flex-1">
       <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-        Edit Buyer
+        <%= gettext("Edit Buyer") %>
       </h2>
       <p class="mt-1 text-sm text-gray-500">
-        Update buyer information
+        <%= gettext("Update buyer information") %>
       </p>
     </div>
   </div>
@@ -26,7 +26,7 @@
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
         <div class="sm:col-span-3">
           <label for="name" class="block text-sm font-medium leading-6 text-gray-900">
-            Company Name *
+            <%= gettext("Company Name") %> *
           </label>
           <div class="mt-2">
             <input
@@ -41,7 +41,7 @@
 
         <div class="sm:col-span-3">
           <label for="legal_form" class="block text-sm font-medium leading-6 text-gray-900">
-            Legal Form
+            <%= gettext("Legal Form") %>
           </label>
           <div class="mt-2">
             <select
@@ -69,7 +69,7 @@
 
         <div class="sm:col-span-3">
           <label for="bin_iin" class="block text-sm font-medium leading-6 text-gray-900">
-            BIN/IIN *
+            <%= gettext("BIN/IIN") %> *
           </label>
           <div class="mt-2">
             <input
@@ -81,12 +81,12 @@
               value={if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :bin_iin), else: @buyer.bin_iin}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>
-          <p class="mt-1 text-xs text-gray-500">12 characters for BIN, 12 characters for IIN</p>
+          <p class="mt-1 text-xs text-gray-500"><%= gettext("12 characters for BIN, 12 characters for IIN") %></p>
         </div>
 
         <div class="sm:col-span-3">
           <label for="email" class="block text-sm font-medium leading-6 text-gray-900">
-            Email
+            <%= gettext("Email") %>
           </label>
           <div class="mt-2">
             <input
@@ -100,14 +100,14 @@
 
         <div class="sm:col-span-3">
           <label for="bank_id" class="block text-sm font-medium leading-6 text-gray-900">
-            Bank
+            <%= gettext("Bank") %>
           </label>
           <div class="mt-2">
             <select
               id="bank_id"
               name="buyer[bank_id]"
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-              <option value="">Select Bank...</option>
+              <option value=""><%= gettext("Select Bank...") %></option>
               <%= for bank <- @banks do %>
                 <option value={bank.id} selected={to_string(@bank_form["bank_id"]) == bank.id}>
                   <%= bank.name %>
@@ -119,7 +119,7 @@
 
         <div class="sm:col-span-3">
           <label for="iban" class="block text-sm font-medium leading-6 text-gray-900">
-            IBAN
+            <%= gettext("IBAN") %>
           </label>
           <div class="mt-2">
             <input
@@ -133,7 +133,7 @@
 
         <div class="sm:col-span-6">
           <label for="address" class="block text-sm font-medium leading-6 text-gray-900">
-            Address
+            <%= gettext("Address") %>
           </label>
           <div class="mt-2">
             <input
@@ -147,7 +147,7 @@
 
         <div class="sm:col-span-2">
           <label for="city" class="block text-sm font-medium leading-6 text-gray-900">
-            City
+            <%= gettext("City") %>
           </label>
           <div class="mt-2">
             <input
@@ -161,7 +161,7 @@
 
         <div class="sm:col-span-2">
           <label for="phone" class="block text-sm font-medium leading-6 text-gray-900">
-            Phone
+            <%= gettext("Phone") %>
           </label>
           <div class="mt-2">
             <input
@@ -169,14 +169,14 @@
               name="buyer[phone]"
               id="phone"
               value={if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :phone), else: @buyer.phone}
-              placeholder="+7 (7xx) xxx xx xx"
+              placeholder={gettext("+7 (7xx) xxx xx xx")}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>
         </div>
 
         <div class="sm:col-span-2">
           <label for="director_name" class="block text-sm font-medium leading-6 text-gray-900">
-            Director Name
+            <%= gettext("Director Name") %>
           </label>
           <div class="mt-2">
             <input
@@ -190,7 +190,7 @@
 
         <div class="sm:col-span-3">
           <label for="director_title" class="block text-sm font-medium leading-6 text-gray-900">
-            Director Title
+            <%= gettext("Director Title") %>
           </label>
           <div class="mt-2">
             <input
@@ -204,7 +204,7 @@
 
         <div class="sm:col-span-3">
           <label for="basis" class="block text-sm font-medium leading-6 text-gray-900">
-            Basis (Authority)
+            <%= gettext("Basis (Authority)") %>
           </label>
           <div class="mt-2">
             <input
@@ -221,12 +221,12 @@
         <a
           href="/buyers"
           class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-          Cancel
+          <%= gettext("Cancel") %>
         </a>
         <button
           type="submit"
           class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          Save Changes
+          <%= gettext("Save Changes") %>
         </button>
       </div>
     </form>

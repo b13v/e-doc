@@ -1,6 +1,6 @@
 <div class="bg-white shadow rounded-lg">
   <div class="px-6 py-4 border-b border-gray-200">
-    <h1 class="text-2xl font-bold text-gray-900">New Invoice</h1>
+    <h1 class="text-2xl font-bold text-gray-900"><%= gettext("New Invoice") %></h1>
   </div>
 
   <div class="px-6 py-6">
@@ -9,22 +9,22 @@
 
       <div class="grid grid-cols-2 gap-6">
         <div>
-          <label for="service_name" class="block text-sm font-medium text-gray-700">Service Name</label>
+          <label for="service_name" class="block text-sm font-medium text-gray-700"><%= gettext("Service name") %></label>
           <input type="text" name="invoice[service_name]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
 
         <div>
-          <label for="issue_date" class="block text-sm font-medium text-gray-700">Issue Date</label>
+          <label for="issue_date" class="block text-sm font-medium text-gray-700"><%= gettext("Issue date") %></label>
           <input type="date" name="invoice[issue_date]" required value={Date.utc_today()} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
 
         <div>
-          <label for="buyer_name" class="block text-sm font-medium text-gray-700">Buyer Name</label>
+          <label for="buyer_name" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer name") %></label>
           <input type="text" name="invoice[buyer_name]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
 
         <div>
-          <label for="buyer_bin_iin" class="block text-sm font-medium text-gray-700">Buyer BIN/IIN</label>
+          <label for="buyer_bin_iin" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer BIN/IIN") %></label>
           <input
             type="text"
             name="invoice[buyer_bin_iin]"
@@ -32,27 +32,27 @@
             pattern="\d{12}"
             minlength="12"
             maxlength="12"
-            title="BIN/IIN must be exactly 12 digits"
+            title={gettext("BIN/IIN must be exactly 12 digits")}
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           />
-          <p class="mt-1 text-xs text-gray-500">Enter exactly 12 digits</p>
+          <p class="mt-1 text-xs text-gray-500"><%= gettext("Enter exactly 12 digits") %></p>
         </div>
 
         <div>
-          <label for="buyer_address" class="block text-sm font-medium text-gray-700">Buyer Address</label>
+          <label for="buyer_address" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer address") %></label>
           <input type="text" name="invoice[buyer_address]" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Currency</label>
+          <label class="block text-sm font-medium text-gray-700"><%= gettext("Currency") %></label>
           <input type="hidden" name="invoice[currency]" value="KZT" />
           <div class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 px-3 py-2 text-gray-700">
-            KZT (Kazakhstani Tenge)
+            <%= gettext("KZT (Kazakhstani Tenge)") %>
           </div>
         </div>
 
         <div>
-          <label for="vat_rate" class="block text-sm font-medium text-gray-700">VAT Rate (%)</label>
+          <label for="vat_rate" class="block text-sm font-medium text-gray-700"><%= gettext("VAT rate (%)") %></label>
           <select name="invoice[vat_rate]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
             <option value="0">0%</option>
             <option value="16" selected>16%</option>
@@ -61,28 +61,28 @@
       </div>
 
       <div class="mt-8">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Invoice Items</h3>
+        <h3 class="text-lg font-medium text-gray-900 mb-4"><%= gettext("Invoice Items") %></h3>
         <div class="bg-gray-50 p-4 rounded-lg">
           <div id="items-container" class="space-y-2">
             <div class="item-row grid grid-cols-12 gap-2 items-end">
               <div class="col-span-2">
-                <label class="block text-xs text-gray-500">Code</label>
+                <label class="block text-xs text-gray-500"><%= gettext("Code") %></label>
                 <input type="text" name="items[0][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
               </div>
               <div class="col-span-5">
-                <label class="block text-xs text-gray-500">Description</label>
+                <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
                 <input type="text" name="items[0][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
               </div>
               <div class="col-span-2">
-                <label class="block text-xs text-gray-500">Qty</label>
+                <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
                 <input type="number" name="items[0][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
               </div>
               <div class="col-span-2">
-                <label class="block text-xs text-gray-500">Unit Price</label>
+                <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
                 <input type="number" name="items[0][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
               </div>
               <div class="col-span-1">
-                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm"><%= gettext("Remove") %></button>
               </div>
             </div>
           </div>
@@ -90,16 +90,16 @@
             type="button"
             onclick="addItemRow()"
             class="mt-2 text-sm text-blue-600 hover:text-blue-900">
-            + Add Item
+            + <%= gettext("Add Item") %>
           </button>
         </div>
       </div>
 
       <div class="mt-6">
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-          Create Invoice
+          <%= gettext("Create Invoice") %>
         </button>
-        <a href="/invoices" class="ml-4 text-gray-600 hover:text-gray-900">Cancel</a>
+        <a href="/invoices" class="ml-4 text-gray-600 hover:text-gray-900"><%= gettext("Cancel") %></a>
       </div>
     </form>
   </div>
@@ -114,23 +114,23 @@
     newRow.className = 'item-row grid grid-cols-12 gap-2 items-end';
     newRow.innerHTML = `
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Code</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Code") %></label>
         <input type="text" name="items[${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-5">
-        <label class="block text-xs text-gray-500">Description</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
         <input type="text" name="items[${itemIndex}][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Qty</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
         <input type="number" name="items[${itemIndex}][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Unit Price</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
         <input type="number" name="items[${itemIndex}][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-1">
-        <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm">Remove</button>
+        <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-900 text-sm"><%= gettext("Remove") %></button>
       </div>
     `;
     container.appendChild(newRow);

@@ -132,10 +132,10 @@
     end %>
 
   <div class="mb-4 flex items-center justify-between">
-    <a href="/acts" class="text-blue-600 hover:underline font-medium">&larr; Back to Acts</a>
+    <a href="/acts" class="text-blue-600 hover:underline font-medium">&larr; <%= gettext("Back to Acts") %></a>
     <div class="flex items-center gap-2">
       <details class="send-menu">
-        <summary class="rounded-md bg-gray-900 px-3 py-2 text-sm text-white cursor-pointer">Send</summary>
+        <summary class="rounded-md bg-gray-900 px-3 py-2 text-sm text-white cursor-pointer"><%= gettext("Send") %></summary>
         <div class="send-menu-panel">
           <button
             type="button"
@@ -143,19 +143,19 @@
             hx-get={"/documents/act/#{@act.id}/send/email"}
             hx-target={"#act-send-panel-#{@act.id}"}
             hx-swap="innerHTML">
-            Email
+            <%= gettext("Email") %>
           </button>
           <form action={"/documents/act/#{@act.id}/share/whatsapp"} method="post" class="send-menu-form">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <button type="submit" class="send-menu-item">WhatsApp</button>
+            <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
           </form>
           <form action={"/documents/act/#{@act.id}/share/telegram"} method="post" class="send-menu-form">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <button type="submit" class="send-menu-item">Telegram</button>
+            <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
           </form>
         </div>
       </details>
-      <a href={"/acts/#{@act.id}/pdf"} target="_blank" class="rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700">Download PDF</a>
+      <a href={"/acts/#{@act.id}/pdf"} target="_blank" class="rounded-md bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"><%= gettext("Download PDF") %></a>
     </div>
   </div>
 
@@ -322,7 +322,7 @@
         <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
         <td style="border: 1px solid #000; border-right: none; padding: 4px; text-align: center;">Итого</td>
         <td style="border: 1px solid #000; padding: 4px; text-align: center;"><%= Decimal.to_string(total_qty, :normal) %></td>
-        <td style="border: 1px solid #000; padding: 4px; text-align: center;">x</td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: center;">Не применяется</td>
         <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_amount) %></td>
         <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_vat) %></td>
       </tr>

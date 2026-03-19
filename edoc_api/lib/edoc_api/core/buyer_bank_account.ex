@@ -9,12 +9,12 @@ defmodule EdocApi.Core.BuyerBankAccount do
   @foreign_key_type :binary_id
 
   schema "buyer_bank_accounts" do
-    field :iban, :string
-    field :bic, :string
-    field :is_default, :boolean, default: false
+    field(:iban, :string)
+    field(:bic, :string)
+    field(:is_default, :boolean, default: false)
 
-    belongs_to :buyer, EdocApi.Core.Buyer
-    belongs_to :bank, Bank
+    belongs_to(:buyer, EdocApi.Core.Buyer)
+    belongs_to(:bank, Bank)
 
     timestamps(type: :utc_datetime)
   end

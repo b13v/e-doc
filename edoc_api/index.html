@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="kk">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +8,7 @@
       в Казахстане
     </title>
     <meta
+      id="page-description"
       name="description"
       content="Edocly - современная система выставления счетов и управления договорами для бизнеса в Казахстане. Соответствует требованиям РК, поддержка BIN/ИИН, ТОО, АО, ИП."
     />
@@ -21,1112 +22,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <style>
-      :root {
-        --primary: #0066cc;
-        --primary-dark: #0052a3;
-        --primary-light: #e6f0fa;
-        --secondary: #00a651;
-        --secondary-light: #e8f5e9;
-        --accent: #ff6b00;
-        --dark: #1a1a2e;
-        --dark-secondary: #16213e;
-        --gray-900: #1f2937;
-        --gray-700: #374151;
-        --gray-500: #6b7280;
-        --gray-300: #d1d5db;
-        --gray-100: #f3f4f6;
-        --white: #ffffff;
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow-md:
-          0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg:
-          0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --shadow-xl:
-          0 20px 25px -5px rgba(0, 0, 0, 0.1),
-          0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      body {
-        font-family:
-          'Inter',
-          -apple-system,
-          BlinkMacSystemFont,
-          'Segoe UI',
-          Roboto,
-          sans-serif;
-        color: var(--gray-700);
-        line-height: 1.6;
-        overflow-x: hidden;
-      }
-
-      /* Header */
-      .header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: var(--white);
-        box-shadow: var(--shadow-sm);
-        z-index: 1000;
-        transition: all 0.3s ease;
-      }
-
-      .header.scrolled {
-        box-shadow: var(--shadow-md);
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 24px;
-      }
-
-      .header-content {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 72px;
-      }
-
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 24px;
-        font-weight: 800;
-        color: var(--primary);
-        text-decoration: none;
-      }
-
-      .logo-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(
-          135deg,
-          var(--primary) 0%,
-          var(--secondary) 100%
-        );
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--white);
-        font-size: 20px;
-      }
-
-      .nav {
-        display: flex;
-        align-items: center;
-        gap: 32px;
-      }
-
-      .nav-link {
-        color: var(--gray-700);
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 15px;
-        transition: color 0.2s ease;
-        position: relative;
-      }
-
-      .nav-link:hover {
-        color: var(--primary);
-      }
-
-      .nav-link::after {
-        content: '';
-        position: absolute;
-        bottom: -4px;
-        left: 0;
-        width: 0;
-        height: 2px;
-        background: var(--primary);
-        transition: width 0.2s ease;
-      }
-
-      .nav-link:hover::after {
-        width: 100%;
-      }
-
-      .language-switcher {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: var(--gray-100);
-        border-radius: 8px;
-        padding: 4px;
-      }
-
-      .lang-btn {
-        padding: 6px 12px;
-        border: none;
-        background: transparent;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--gray-500);
-        transition: all 0.2s ease;
-      }
-
-      .lang-btn.active {
-        background: var(--white);
-        color: var(--primary);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-size: 15px;
-        font-weight: 600;
-        text-decoration: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-      }
-
-      .btn-primary {
-        background: var(--primary);
-        color: var(--white);
-      }
-
-      .btn-primary:hover {
-        background: var(--primary-dark);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
-      }
-
-      .btn-secondary {
-        background: var(--white);
-        color: var(--gray-700);
-        border: 1px solid var(--gray-300);
-      }
-
-      .btn-secondary:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-      }
-
-      /* Hero Section */
-      .hero {
-        padding: 160px 0 100px;
-        background: linear-gradient(
-          135deg,
-          var(--dark) 0%,
-          var(--dark-secondary) 100%
-        );
-        position: relative;
-        overflow: hidden;
-      }
-
-      .hero::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 80%;
-        height: 200%;
-        background: radial-gradient(
-          ellipse,
-          rgba(0, 102, 204, 0.15) 0%,
-          transparent 70%
-        );
-        pointer-events: none;
-      }
-
-      .hero::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: -10%;
-        width: 60%;
-        height: 100%;
-        background: radial-gradient(
-          ellipse,
-          rgba(0, 166, 81, 0.1) 0%,
-          transparent 60%
-        );
-        pointer-events: none;
-      }
-
-      .hero-content {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 60px;
-        align-items: center;
-        position: relative;
-        z-index: 1;
-      }
-
-      .hero-text h1 {
-        font-size: 52px;
-        font-weight: 800;
-        color: var(--white);
-        line-height: 1.15;
-        margin-bottom: 24px;
-      }
-
-      .hero-text h1 span {
-        background: linear-gradient(
-          135deg,
-          var(--primary) 0%,
-          var(--secondary) 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .hero-text p {
-        font-size: 18px;
-        color: var(--gray-300);
-        margin-bottom: 32px;
-        max-width: 500px;
-      }
-
-      .hero-buttons {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 40px;
-      }
-
-      .hero-btn {
-        padding: 14px 28px;
-        font-size: 16px;
-      }
-
-      .hero-features {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 24px;
-      }
-
-      .hero-feature {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--gray-300);
-        font-size: 14px;
-      }
-
-      .hero-feature i {
-        color: var(--secondary);
-      }
-
-      .hero-visual {
-        position: relative;
-      }
-
-      .hero-image {
-        width: 100%;
-        border-radius: 16px;
-        box-shadow: var(--shadow-xl);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .hero-card {
-        position: absolute;
-        background: var(--white);
-        border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: var(--shadow-lg);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        animation: float 3s ease-in-out infinite;
-      }
-
-      .hero-card-1 {
-        top: 10%;
-        right: -20px;
-        animation-delay: 0s;
-      }
-
-      .hero-card-2 {
-        bottom: 20%;
-        left: -30px;
-        animation-delay: 1s;
-      }
-
-      .hero-card-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-      }
-
-      .hero-card-icon.green {
-        background: var(--secondary-light);
-        color: var(--secondary);
-      }
-
-      .hero-card-icon.blue {
-        background: var(--primary-light);
-        color: var(--primary);
-      }
-
-      .hero-card-text {
-        font-size: 13px;
-      }
-
-      .hero-card-text strong {
-        display: block;
-        color: var(--gray-900);
-        font-weight: 600;
-      }
-
-      .hero-card-text span {
-        color: var(--gray-500);
-        font-size: 12px;
-      }
-
-      @keyframes float {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-10px);
-        }
-      }
-
-      /* Stats Section */
-      .stats {
-        padding: 60px 0;
-        background: var(--white);
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 40px;
-      }
-
-      .stat-item {
-        text-align: center;
-      }
-
-      .stat-number {
-        font-size: 42px;
-        font-weight: 800;
-        color: var(--primary);
-        margin-bottom: 8px;
-      }
-
-      .stat-label {
-        color: var(--gray-500);
-        font-size: 15px;
-      }
-
-      /* Features Section */
-      .features {
-        padding: 100px 0;
-        background: var(--gray-100);
-      }
-
-      .section-header {
-        text-align: center;
-        max-width: 700px;
-        margin: 0 auto 60px;
-      }
-
-      .section-header h2 {
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 16px;
-      }
-
-      .section-header p {
-        font-size: 17px;
-        color: var(--gray-500);
-      }
-
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-      }
-
-      .feature-card {
-        background: var(--white);
-        border-radius: 16px;
-        padding: 32px;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-      }
-
-      .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary-light);
-      }
-
-      .feature-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 26px;
-        margin-bottom: 20px;
-      }
-
-      .feature-icon.blue {
-        background: var(--primary-light);
-        color: var(--primary);
-      }
-
-      .feature-icon.green {
-        background: var(--secondary-light);
-        color: var(--secondary);
-      }
-
-      .feature-icon.orange {
-        background: #fff3e0;
-        color: var(--accent);
-      }
-
-      .feature-icon.purple {
-        background: #f3e5f5;
-        color: #9c27b0;
-      }
-
-      .feature-icon.teal {
-        background: #e0f7fa;
-        color: #00bcd4;
-      }
-
-      .feature-icon.red {
-        background: #ffebee;
-        color: #f44336;
-      }
-
-      .feature-card h3 {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin-bottom: 12px;
-      }
-
-      .feature-card p {
-        color: var(--gray-500);
-        font-size: 15px;
-        line-height: 1.7;
-      }
-
-      /* Kazakhstan Features */
-      .kz-features {
-        padding: 100px 0;
-        background: var(--white);
-      }
-
-      .kz-features-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 32px;
-        margin-top: 50px;
-      }
-
-      .kz-feature-item {
-        display: flex;
-        gap: 20px;
-        padding: 28px;
-        border-radius: 14px;
-        background: var(--gray-100);
-        transition: all 0.3s ease;
-      }
-
-      .kz-feature-item:hover {
-        background: var(--primary-light);
-      }
-
-      .kz-feature-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
-        background: var(--white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        color: var(--primary);
-        flex-shrink: 0;
-        box-shadow: var(--shadow-sm);
-      }
-
-      .kz-feature-content h4 {
-        font-size: 17px;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin-bottom: 8px;
-      }
-
-      .kz-feature-content p {
-        color: var(--gray-500);
-        font-size: 14px;
-      }
-
-      /* How It Works */
-      .how-it-works {
-        padding: 100px 0;
-        background: var(--gray-100);
-      }
-
-      .steps {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 24px;
-        margin-top: 50px;
-      }
-
-      .step {
-        text-align: center;
-        position: relative;
-      }
-
-      .step:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        top: 36px;
-        right: -12px;
-        width: calc(100% - 72px);
-        height: 2px;
-        background: var(--gray-300);
-      }
-
-      .step-number {
-        width: 72px;
-        height: 72px;
-        border-radius: 50%;
-        background: linear-gradient(
-          135deg,
-          var(--primary) 0%,
-          var(--primary-dark) 100%
-        );
-        color: var(--white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 auto 20px;
-      }
-
-      .step h4 {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin-bottom: 10px;
-      }
-
-      .step p {
-        font-size: 14px;
-        color: var(--gray-500);
-      }
-
-      /* Pricing */
-      .pricing {
-        padding: 100px 0;
-        background:
-          radial-gradient(
-            circle at top left,
-            rgba(0, 102, 204, 0.08),
-            transparent 32%
-          ),
-          linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-      }
-
-      .pricing-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-        margin-top: 50px;
-      }
-
-      .pricing-card {
-        position: relative;
-        background: var(--white);
-        border: 1px solid rgba(0, 102, 204, 0.12);
-        border-radius: 20px;
-        padding: 32px;
-        box-shadow: var(--shadow-md);
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-      }
-
-      .pricing-card:hover {
-        transform: translateY(-6px);
-        box-shadow: var(--shadow-xl);
-      }
-
-      .pricing-card.featured {
-        background: linear-gradient(180deg, #0f2749 0%, #15365f 100%);
-        border-color: rgba(255, 255, 255, 0.08);
-        color: var(--white);
-      }
-
-      .pricing-badge {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255, 107, 0, 0.12);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-      }
-
-      .pricing-card.featured .pricing-badge {
-        background: rgba(255, 255, 255, 0.14);
-        color: #ffd7bd;
-      }
-
-      .pricing-card h3 {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 10px;
-      }
-
-      .pricing-card.featured h3 {
-        color: var(--white);
-      }
-
-      .pricing-description {
-        font-size: 15px;
-        color: var(--gray-500);
-        margin-bottom: 28px;
-        max-width: 280px;
-      }
-
-      .pricing-card.featured .pricing-description {
-        color: rgba(255, 255, 255, 0.72);
-      }
-
-      .price-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-
-      .price-amount {
-        font-size: 44px;
-        font-weight: 800;
-        line-height: 1;
-        color: var(--gray-900);
-      }
-
-      .pricing-card.featured .price-amount {
-        color: var(--white);
-      }
-
-      .price-period {
-        font-size: 15px;
-        color: var(--gray-500);
-        margin-bottom: 6px;
-      }
-
-      .pricing-card.featured .price-period {
-        color: rgba(255, 255, 255, 0.72);
-      }
-
-      .price-note {
-        font-size: 13px;
-        color: var(--gray-500);
-        margin-bottom: 28px;
-      }
-
-      .pricing-card.featured .price-note {
-        color: rgba(255, 255, 255, 0.72);
-      }
-
-      .pricing-list {
-        list-style: none;
-        display: grid;
-        gap: 14px;
-        margin-bottom: 30px;
-      }
-
-      .pricing-list li {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        font-size: 15px;
-        color: var(--gray-700);
-      }
-
-      .pricing-card.featured .pricing-list li {
-        color: rgba(255, 255, 255, 0.88);
-      }
-
-      .pricing-list i {
-        color: var(--secondary);
-        margin-top: 3px;
-      }
-
-      .pricing-card.featured .pricing-list i {
-        color: #6ef2ad;
-      }
-
-      .pricing-card .btn {
-        width: 100%;
-      }
-
-      .pricing-footer {
-        margin-top: 28px;
-        padding: 20px 24px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(0, 102, 204, 0.1);
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        align-items: center;
-      }
-
-      .pricing-footer p {
-        color: var(--gray-500);
-        font-size: 14px;
-      }
-
-      .pricing-footer strong {
-        display: block;
-        color: var(--gray-900);
-        font-size: 16px;
-        margin-bottom: 4px;
-      }
-
-      .pricing-footer-meta {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-
-      .pricing-footer-meta span {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--gray-700);
-        font-size: 14px;
-        font-weight: 500;
-      }
-
-      .pricing-footer-meta i {
-        color: var(--primary);
-      }
-
-      /* CTA Section */
-      .cta {
-        padding: 100px 0;
-        background: linear-gradient(
-          135deg,
-          var(--dark) 0%,
-          var(--dark-secondary) 100%
-        );
-        position: relative;
-        overflow: hidden;
-      }
-
-      .cta::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        pointer-events: none;
-      }
-
-      .cta-content {
-        text-align: center;
-        position: relative;
-        z-index: 1;
-      }
-
-      .cta h2 {
-        font-size: 40px;
-        font-weight: 700;
-        color: var(--white);
-        margin-bottom: 16px;
-      }
-
-      .cta p {
-        font-size: 18px;
-        color: var(--gray-300);
-        margin-bottom: 32px;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .cta-buttons {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
-      }
-
-      .btn-white {
-        background: var(--white);
-        color: var(--primary);
-      }
-
-      .btn-white:hover {
-        background: var(--gray-100);
-        transform: translateY(-1px);
-      }
-
-      .btn-outline {
-        background: transparent;
-        color: var(--white);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-      }
-
-      .btn-outline:hover {
-        border-color: var(--white);
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      /* Footer */
-      .footer {
-        padding: 60px 0 30px;
-        background: var(--gray-900);
-      }
-
-      .footer-grid {
-        display: grid;
-        grid-template-columns: 2fr repeat(3, 1fr);
-        gap: 40px;
-        margin-bottom: 40px;
-      }
-
-      .footer-brand p {
-        color: var(--gray-400);
-        margin-top: 16px;
-        font-size: 14px;
-        line-height: 1.7;
-      }
-
-      .footer-social {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px;
-      }
-
-      .footer-social a {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--gray-300);
-        transition: all 0.2s ease;
-      }
-
-      .footer-social a:hover {
-        background: var(--primary);
-        color: var(--white);
-      }
-
-      .footer-column h4 {
-        color: var(--white);
-        font-size: 15px;
-        font-weight: 600;
-        margin-bottom: 20px;
-      }
-
-      .footer-links {
-        list-style: none;
-      }
-
-      .footer-links li {
-        margin-bottom: 12px;
-      }
-
-      .footer-links a {
-        color: var(--gray-400);
-        text-decoration: none;
-        font-size: 14px;
-        transition: color 0.2s ease;
-      }
-
-      .footer-links a:hover {
-        color: var(--white);
-      }
-
-      .footer-bottom {
-        padding-top: 30px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .footer-bottom p {
-        color: var(--gray-500);
-        font-size: 13px;
-      }
-
-      .footer-bottom-links {
-        display: flex;
-        gap: 24px;
-      }
-
-      .footer-bottom-links a {
-        color: var(--gray-500);
-        text-decoration: none;
-        font-size: 13px;
-      }
-
-      .footer-bottom-links a:hover {
-        color: var(--white);
-      }
-
-      /* Mobile Menu */
-      .mobile-menu-btn {
-        display: none;
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--gray-700);
-        cursor: pointer;
-      }
-
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .hero-content {
-          grid-template-columns: 1fr;
-          text-align: center;
-        }
-
-        .hero-text p {
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .hero-buttons {
-          justify-content: center;
-        }
-
-        .hero-features {
-          justify-content: center;
-        }
-
-        .hero-visual {
-          display: none;
-        }
-
-        .features-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .steps {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .step:not(:last-child)::after {
-          display: none;
-        }
-
-        .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .pricing-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .nav {
-          display: none;
-        }
-
-        .mobile-menu-btn {
-          display: block;
-        }
-
-        .hero {
-          padding: 120px 0 60px;
-        }
-
-        .hero-text h1 {
-          font-size: 36px;
-        }
-
-        .features-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .kz-features-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .steps {
-          grid-template-columns: 1fr;
-        }
-
-        .pricing-card {
-          padding: 28px 24px;
-        }
-
-        .pricing-footer {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .cta h2 {
-          font-size: 28px;
-        }
-
-        .cta-buttons {
-          flex-direction: column;
-        }
-
-        .footer-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .footer-bottom {
-          flex-direction: column;
-          gap: 16px;
-          text-align: center;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/assets/landing.css" />
   </head>
   <body>
     <!-- Header -->
@@ -1141,21 +37,20 @@
           </a>
 
           <nav class="nav">
-            <a href="#features" class="nav-link">Возможности</a>
-            <a href="#kz-features" class="nav-link">Казахстан</a>
-            <a href="#how-it-works" class="nav-link">Как это работает</a>
-            <a href="#pricing" class="nav-link">Цены</a>
+            <a href="#features" class="nav-link" data-i18n="nav.features">Возможности</a>
+            <a href="#how-it-works" class="nav-link" data-i18n="nav.how_it_works">Как это работает</a>
+            <a href="#pricing" class="nav-link" data-i18n="nav.pricing">Цены</a>
           </nav>
 
           <div class="language-switcher">
-            <button class="lang-btn" data-lang="kk">Қаз</button>
-            <button class="lang-btn active" data-lang="ru">Рус</button>
+            <button type="button" class="lang-btn" data-lang="kk">Қаз</button>
+            <button type="button" class="lang-btn active" data-lang="ru">Рус</button>
           </div>
 
           <div class="header-actions">
-            <a href="#" class="btn btn-secondary">Вход</a>
-            <a href="#" class="btn btn-primary">Регистрация</a>
-            <button class="mobile-menu-btn">
+            <a href="http://localhost:4000/login" class="btn btn-secondary" data-i18n="nav.login">Вход</a>
+            <a href="http://localhost:4000/signup" class="btn btn-primary" data-i18n="nav.signup">Регистрация</a>
+            <button type="button" class="mobile-menu-btn" aria-label="Open menu">
               <i class="fas fa-bars"></i>
             </button>
           </div>
@@ -1168,11 +63,11 @@
       <div class="container">
         <div class="hero-content">
           <div class="hero-text">
-            <h1>
+            <h1 data-i18n-html="hero.title">
               Современная система выставления счетов и
               <span>управления договорами</span>
             </h1>
-            <p>
+            <p data-i18n="hero.description">
               Edocly — инновационная платформа для казахстанского бизнеса.
               Создавайте профессиональные счета и договоры, соответствующие
               законодательству РК, за считанные минуты.
@@ -1181,26 +76,22 @@
             <div class="hero-buttons">
               <a href="#" class="btn btn-primary hero-btn">
                 <i class="fas fa-rocket"></i>
-                Начать бесплатно
-              </a>
-              <a href="#features" class="btn btn-secondary hero-btn">
-                <i class="fas fa-play"></i>
-                Демо
+                <span data-i18n="hero.cta">Начать бесплатно</span>
               </a>
             </div>
 
             <div class="hero-features">
               <div class="hero-feature">
                 <i class="fas fa-check-circle"></i>
-                <span>Без кредитной карты</span>
+                <span data-i18n="hero.feature_1">Без кредитной карты</span>
               </div>
               <div class="hero-feature">
                 <i class="fas fa-check-circle"></i>
-                <span>14 дней бесплатно</span>
+                <span data-i18n="hero.feature_2">14 дней бесплатно</span>
               </div>
               <div class="hero-feature">
                 <i class="fas fa-check-circle"></i>
-                <span>Казахстанские документы</span>
+                <span data-i18n="hero.feature_3">Казахстанские документы</span>
               </div>
             </div>
           </div>
@@ -1406,6 +297,7 @@
                 stroke="#E5E7EB"
               />
               <text
+                id="hero-invoice-label"
                 x="220"
                 y="310"
                 font-size="14"
@@ -1415,6 +307,7 @@
                 Счет №INV-2024-001
               </text>
               <text
+                id="hero-paid-label"
                 x="540"
                 y="310"
                 font-size="14"
@@ -1472,8 +365,8 @@
                 <i class="fas fa-check"></i>
               </div>
               <div class="hero-card-text">
-                <strong>Счет создан</strong>
-                <span>Только что</span>
+                <strong data-i18n="hero.card_invoice_title">Счет создан</strong>
+                <span data-i18n="hero.card_invoice_subtitle">Только что</span>
               </div>
             </div>
 
@@ -1482,8 +375,8 @@
                 <i class="fas fa-file-pdf"></i>
               </div>
               <div class="hero-card-text">
-                <strong>PDF готов</strong>
-                <span>Скачать</span>
+                <strong data-i18n="hero.card_pdf_title">PDF готов</strong>
+                <span data-i18n="hero.card_pdf_subtitle">Скачать</span>
               </div>
             </div>
           </div>
@@ -1496,20 +389,20 @@
       <div class="container">
         <div class="stats-grid">
           <div class="stat-item">
-            <div class="stat-number">10,000+</div>
-            <div class="stat-label">Казахстанских компаний</div>
+            <div class="stat-number">5,000+</div>
+            <div class="stat-label" data-i18n="stats.companies">Казахстанских компаний</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">500,000+</div>
-            <div class="stat-label">Созданных документов</div>
+            <div class="stat-number">50,000</div>
+            <div class="stat-label" data-i18n="stats.documents">Созданных документов</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">99.9%</div>
-            <div class="stat-label">Соответствие Законодательству РК</div>
+            <div class="stat-label" data-i18n="stats.compliance">Соответствие Законодательству РК</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">24/7</div>
-            <div class="stat-label">Техническая поддержка</div>
+            <div class="stat-label" data-i18n="stats.support">Техническая поддержка</div>
           </div>
         </div>
       </div>
@@ -1519,8 +412,8 @@
     <section class="features" id="features">
       <div class="container">
         <div class="section-header">
-          <h2>Все необходимое для вашего бизнеса</h2>
-          <p>
+          <h2 data-i18n="features.heading">Все необходимое для вашего бизнеса</h2>
+          <p data-i18n="features.subheading">
             Полный набор инструментов для создания, управления и отслеживания
             документов в одном месте
           </p>
@@ -1531,11 +424,10 @@
             <div class="feature-icon blue">
               <i class="fas fa-file-invoice-dollar"></i>
             </div>
-            <h3>Счета и счета-фактуры</h3>
-            <p>
+            <h3 data-i18n="features.invoice_title">Счета на оплату</h3>
+            <p data-i18n="features.invoice_body">
               Создавайте профессиональные счета, соответствующие требованиям
-              Казахстана. Автоматический расчет НДС и поддержка нескольких
-              валют.
+              Казахстана. Автоматический расчет НДС.
             </p>
           </div>
 
@@ -1543,8 +435,8 @@
             <div class="feature-icon green">
               <i class="fas fa-handshake"></i>
             </div>
-            <h3>Договоры и акты</h3>
-            <p>
+            <h3 data-i18n="features.contract_title">Договоры и акты</h3>
+            <p data-i18n="features.contract_body">
               Генерируйте юридически обязывающие договоры с настраиваемыми
               условиями. Автоматическое создание актов выполненных работ.
             </p>
@@ -1554,8 +446,8 @@
             <div class="feature-icon orange">
               <i class="fas fa-users"></i>
             </div>
-            <h3>База контрагентов</h3>
-            <p>
+            <h3 data-i18n="features.buyers_title">База контрагентов</h3>
+            <p data-i18n="features.buyers_body">
               Храните и управляйте информацией о покупателях. История
               коммуникаций и полная база данных казахстанских компаний.
             </p>
@@ -1565,8 +457,8 @@
             <div class="feature-icon purple">
               <i class="fas fa-file-pdf"></i>
             </div>
-            <h3>Генерация PDF</h3>
-            <p>
+            <h3 data-i18n="features.pdf_title">Генерация PDF</h3>
+            <p data-i18n="features.pdf_body">
               Мгновенная генерация PDF-документов в профессиональном оформлении.
               Полностью соответствующие стандартам РК.
             </p>
@@ -1576,8 +468,8 @@
             <div class="feature-icon teal">
               <i class="fas fa-envelope"></i>
             </div>
-            <h3>Email-верификация</h3>
-            <p>
+            <h3 data-i18n="features.auth_title">Email-верификация</h3>
+            <p data-i18n="features.auth_body">
               Безопасная аутентификация с подтверждением по электронной почте.
               Защита данных ваших клиентов и документов.
             </p>
@@ -1587,8 +479,8 @@
             <div class="feature-icon red">
               <i class="fas fa-globe"></i>
             </div>
-            <h3>Мультиязычность</h3>
-            <p>
+            <h3 data-i18n="features.locale_title">Мультиязычность</h3>
+            <p data-i18n="features.locale_body">
               Полная поддержка казахского и русского языков. Интерфейс и
               документы на обоих языках.
             </p>
@@ -1601,8 +493,8 @@
     <section class="kz-features" id="kz-features">
       <div class="container">
         <div class="section-header">
-          <h2>Специально для Казахстана</h2>
-          <p>
+          <h2 data-i18n="kz.heading">Специально для Казахстана</h2>
+          <p data-i18n="kz.subheading">
             Учтены все особенности казахстанского законодательства и деловой
             практики
           </p>
@@ -1614,8 +506,8 @@
               <i class="fas fa-id-card"></i>
             </div>
             <div class="kz-feature-content">
-              <h4>BIN/ИИН валидация</h4>
-              <p>
+              <h4 data-i18n="kz.bin_title">BIN/ИИН валидация</h4>
+              <p data-i18n="kz.bin_body">
                 Автоматическая проверка и валидация БИН (для юрлиц) и ИИН (для
                 ИП) по официальным реестрам РК.
               </p>
@@ -1627,8 +519,8 @@
               <i class="fas fa-building"></i>
             </div>
             <div class="kz-feature-content">
-              <h4>Типы юридических лиц</h4>
-              <p>
+              <h4 data-i18n="kz.entity_title">Типы юридических лиц</h4>
+              <p data-i18n="kz.entity_body">
                 Полная поддержка ТОО, АО, ИП и других форм собственности.
                 Корректное оформление реквизитов.
               </p>
@@ -1640,8 +532,8 @@
               <i class="fas fa-university"></i>
             </div>
             <div class="kz-feature-content">
-              <h4>КБЕ и КНП коды</h4>
-              <p>
+              <h4 data-i18n="kz.codes_title">КБЕ и КНП коды</h4>
+              <p data-i18n="kz.codes_body">
                 Встроенные справочники кодов КБЕ и КНП для банковских переводов.
                 Автоматическое заполнение платежных реквизитов.
               </p>
@@ -1653,23 +545,10 @@
               <i class="fas fa-percent"></i>
             </div>
             <div class="kz-feature-content">
-              <h4>Расчет НДС</h4>
-              <p>
-                Автоматический расчет НДС 12% и других ставок. Формирование
+              <h4 data-i18n="kz.vat_title">Расчет НДС</h4>
+              <p data-i18n="kz.vat_body">
+                Автоматический расчет НДС 16% и других ставок. Формирование
                 счетов-фактур в соответствии с НК РК.
-              </p>
-            </div>
-          </div>
-
-          <div class="kz-feature-item">
-            <div class="kz-feature-icon">
-              <i class="fas fa-money-bill-wave"></i>
-            </div>
-            <div class="kz-feature-content">
-              <h4>Мультивалютность</h4>
-              <p>
-                Поддержка тенге, долларов, евро и других валют. Автоматическая
-                конвертация по курсу НБ РК.
               </p>
             </div>
           </div>
@@ -1679,10 +558,9 @@
               <i class="fas fa-language"></i>
             </div>
             <div class="kz-feature-content">
-              <h4>Казахский и русский</h4>
-              <p>
-                Полная локализация на казахский и русский языки. Документы на
-                обоих языках без дополнительной оплаты.
+              <h4 data-i18n="kz.languages_title">Казахский и русский</h4>
+              <p data-i18n="kz.languages_body">
+                Полная локализация интерфейса на казахский и русский языки.
               </p>
             </div>
           </div>
@@ -1694,15 +572,15 @@
     <section class="how-it-works" id="how-it-works">
       <div class="container">
         <div class="section-header">
-          <h2>Как это работает</h2>
-          <p>Начните использовать Edocly за три простых шага</p>
+          <h2 data-i18n="how.heading">Как это работает</h2>
+          <p data-i18n="how.subheading">Начните использовать Edocly за три простых шага</p>
         </div>
 
         <div class="steps">
           <div class="step">
             <div class="step-number">1</div>
-            <h4>Регистрация</h4>
-            <p>
+            <h4 data-i18n="how.step1_title">Регистрация</h4>
+            <p data-i18n="how.step1_body">
               Создайте аккаунт за 2 минуты. Подтвердите email и войдите в
               систему.
             </p>
@@ -1710,22 +588,22 @@
 
           <div class="step">
             <div class="step-number">2</div>
-            <h4>Настройка</h4>
-            <p>Добавьте данные вашей компании, реквизиты и логотип.</p>
+            <h4 data-i18n="how.step2_title">Настройка</h4>
+            <p data-i18n="how.step2_body">Добавьте данные вашей компании, реквизиты и логотип.</p>
           </div>
 
           <div class="step">
             <div class="step-number">3</div>
-            <h4>Создание</h4>
-            <p>
+            <h4 data-i18n="how.step3_title">Создание</h4>
+            <p data-i18n="how.step3_body">
               Создавайте счета и договоры в несколько кликов. Скачивайте PDF.
             </p>
           </div>
 
           <div class="step">
             <div class="step-number">4</div>
-            <h4>Отправка</h4>
-            <p>Отправляйте документы клиентам прямо из системы.</p>
+            <h4 data-i18n="how.step4_title">Отправка</h4>
+            <p data-i18n="how.step4_body">Отправляйте документы клиентам прямо из системы.</p>
           </div>
         </div>
       </div>
@@ -1735,8 +613,8 @@
     <section class="pricing" id="pricing">
       <div class="container">
         <div class="section-header">
-          <h2>Прозрачные тарифы для любого масштаба</h2>
-          <p>
+          <h2 data-i18n="pricing.heading">Прозрачные тарифы для любого масштаба</h2>
+          <p data-i18n="pricing.subheading">
             Выберите подходящий план для ИП, растущей команды или компании с
             большим документооборотом. Все тарифы включают казахский и русский
             интерфейс.
@@ -1745,114 +623,83 @@
 
         <div class="pricing-grid">
           <div class="pricing-card">
-            <span class="pricing-badge">Старт</span>
-            <h3>Базовый</h3>
-            <p class="pricing-description">
+            <span class="pricing-badge" data-i18n="pricing.starter_badge">Старт</span>
+            <h3 data-i18n="pricing.starter_title">Стартовый</h3>
+            <p class="pricing-description" data-i18n="pricing.starter_description">
               Для ИП и небольших команд, которым нужно быстро выставлять счета и
               договоры без ручной рутины.
             </p>
             <div class="price-row">
-              <span class="price-amount">9 900 ₸</span>
-              <span class="price-period">/ месяц</span>
+              <span class="price-amount">2 900 ₸</span>
+              <span class="price-period" data-i18n="pricing.per_month">/ месяц</span>
             </div>
-            <p class="price-note">До 50 документов в месяц, 2 пользователя</p>
+            <p class="price-note" data-i18n="pricing.starter_note">До 50 документов в месяц, 2 пользователя</p>
             <ul class="pricing-list">
               <li>
                 <i class="fas fa-check-circle"></i>
-                Создание счетов, актов и договоров
+                <span data-i18n="pricing.starter_item_1">Создание счетов, актов и договоров</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Шаблоны с реквизитами РК и BIN/ИИН
+                <span data-i18n="pricing.starter_item_2">Шаблоны с реквизитами РК и BIN/ИИН</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                PDF-экспорт и отправка по email
+                <span data-i18n="pricing.starter_item_3">PDF-экспорт и отправка по email</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Базовая история оплат и статусов
+                <span data-i18n="pricing.starter_item_4">Базовая история оплат и статусов</span>
               </li>
             </ul>
-            <a href="#" class="btn btn-secondary">Выбрать тариф</a>
+            <a href="#" class="btn btn-secondary" data-i18n="pricing.starter_cta">Выбрать тариф</a>
           </div>
 
           <div class="pricing-card featured">
-            <span class="pricing-badge">Популярный</span>
-            <h3>Бизнес</h3>
-            <p class="pricing-description">
+            <span class="pricing-badge" data-i18n="pricing.base_badge">Популярный</span>
+            <h3 data-i18n="pricing.base_title">Базовый</h3>
+            <p class="pricing-description" data-i18n="pricing.base_description">
               Для компаний с регулярным документооборотом, которым нужна
               совместная работа, контроль статусов и быстрая обработка клиентов.
             </p>
             <div class="price-row">
-              <span class="price-amount">24 900 ₸</span>
-              <span class="price-period">/ месяц</span>
+              <span class="price-amount">5 900 ₸</span>
+              <span class="price-period" data-i18n="pricing.per_month">/ месяц</span>
             </div>
-            <p class="price-note">
+            <p class="price-note" data-i18n="pricing.base_note">
               До 500 документов в месяц, 10 пользователей
             </p>
             <ul class="pricing-list">
               <li>
                 <i class="fas fa-check-circle"></i>
-                Все из тарифа Базовый
+                <span data-i18n="pricing.base_item_1">Все из тарифа Базовый</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Общая база контрагентов и роли сотрудников
+                <span data-i18n="pricing.base_item_2">Общая база контрагентов и роли сотрудников</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Автоматический расчет НДС и мультивалютность
+                <span data-i18n="pricing.base_item_3">Автоматический расчет НДС и мультивалютность</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Напоминания по оплате и история изменений
+                <span data-i18n="pricing.base_item_4">Напоминания по оплате и история изменений</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
-                Приоритетная поддержка в рабочее время
+                <span data-i18n="pricing.base_item_5">Приоритетная поддержка в рабочее время</span>
               </li>
             </ul>
-            <a href="#" class="btn btn-white">Начать 14-дневный тест</a>
+            <a href="#" class="btn btn-white" data-i18n="pricing.base_cta">Начать 14-дневный тест</a>
           </div>
 
-          <div class="pricing-card">
-            <span class="pricing-badge">Custom</span>
-            <h3>Корпоративный</h3>
-            <p class="pricing-description">
-              Для крупных команд, которым нужны индивидуальные лимиты,
-              внедрение, доступ по API и отдельные процессы согласования.
-            </p>
-            <div class="price-row">
-              <span class="price-amount">По запросу</span>
-            </div>
-            <p class="price-note">Неограниченные пользователи и документы</p>
-            <ul class="pricing-list">
-              <li>
-                <i class="fas fa-check-circle"></i>
-                Все функции тарифа Бизнес
-              </li>
-              <li>
-                <i class="fas fa-check-circle"></i>
-                Индивидуальные лимиты, onboarding и SLA
-              </li>
-              <li>
-                <i class="fas fa-check-circle"></i>
-                Интеграции, API и кастомные шаблоны документов
-              </li>
-              <li>
-                <i class="fas fa-check-circle"></i>
-                Персональный менеджер и расширенная аналитика
-              </li>
-            </ul>
-            <a href="#" class="btn btn-primary">Обсудить внедрение</a>
-          </div>
         </div>
 
         <div class="pricing-footer">
           <div>
-            <strong>Все тарифы включают бесплатный перенос реквизитов</strong>
-            <p>
+            <strong data-i18n="pricing.footer_title">Все тарифы включают бесплатный перенос реквизитов</strong>
+            <p data-i18n="pricing.footer_body">
               Поможем загрузить данные компании, шаблоны документов и быстро
               запустить команду без простоя.
             </p>
@@ -1860,15 +707,15 @@
           <div class="pricing-footer-meta">
             <span>
               <i class="fas fa-shield-alt"></i>
-              14 дней теста
+              <span data-i18n="pricing.footer_meta_1">14 дней теста</span>
             </span>
             <span>
               <i class="fas fa-headset"></i>
-              Поддержка на русском и казахском
+              <span data-i18n="pricing.footer_meta_2">Поддержка на русском и казахском</span>
             </span>
             <span>
               <i class="fas fa-ban"></i>
-              Без скрытых платежей
+              <span data-i18n="pricing.footer_meta_3">Без скрытых платежей</span>
             </span>
           </div>
         </div>
@@ -1879,8 +726,8 @@
     <section class="cta">
       <div class="container">
         <div class="cta-content">
-          <h2>Готовы оптимизировать документооборот?</h2>
-          <p>
+          <h2 data-i18n="cta.heading">Готовы оптимизировать документооборот?</h2>
+          <p data-i18n="cta.body">
             Присоединяйтесь к тысячам казахстанских компаний, которые уже
             используют Edocly для управления документами.
           </p>
@@ -1888,11 +735,11 @@
           <div class="cta-buttons">
             <a href="#" class="btn btn-white">
               <i class="fas fa-user-plus"></i>
-              Зарегистрироваться бесплатно
+              <span data-i18n="cta.primary">Зарегистрироваться бесплатно</span>
             </a>
             <a href="#" class="btn btn-outline">
               <i class="fas fa-phone"></i>
-              Связаться с нами
+              <span data-i18n="cta.secondary">Связаться с нами</span>
             </a>
           </div>
         </div>
@@ -1910,7 +757,7 @@
               </div>
               Edocly
             </a>
-            <p>
+            <p data-i18n="footer.brand_body">
               Современная система выставления счетов и управления договорами для
               казахстанского бизнеса. Соответствует всем требованиям
               законодательства РК.
@@ -1924,42 +771,41 @@
           </div>
 
           <div class="footer-column">
-            <h4>Продукт</h4>
+            <h4 data-i18n="footer.product_title">Продукт</h4>
             <ul class="footer-links">
-              <li><a href="#">Возможности</a></li>
-              <li><a href="#">Цены</a></li>
-              <li><a href="#">Интеграции</a></li>
-              <li><a href="#">API</a></li>
+              <li><a href="#features" data-i18n="footer.product_features">Возможности</a></li>
+              <li><a href="#pricing" data-i18n="footer.product_pricing">Цены</a></li>
+              <li><a href="#how-it-works" data-i18n="footer.product_how">Как это работает</a></li>
             </ul>
           </div>
 
           <div class="footer-column">
-            <h4>Компания</h4>
+            <h4 data-i18n="footer.company_title">Компания</h4>
             <ul class="footer-links">
-              <li><a href="#">О нас</a></li>
-              <li><a href="#">Блог</a></li>
-              <li><a href="#">Карьера</a></li>
-              <li><a href="#">Контакты</a></li>
+              <li><a href="#" data-i18n="footer.company_about">О нас</a></li>
+              <li><a href="#" data-i18n="footer.company_blog">Блог</a></li>
+              <li><a href="#" data-i18n="footer.company_career">Карьера</a></li>
+              <li><a href="#" data-i18n="footer.company_contacts">Контакты</a></li>
             </ul>
           </div>
 
           <div class="footer-column">
-            <h4>Поддержка</h4>
+            <h4 data-i18n="footer.support_title">Поддержка</h4>
             <ul class="footer-links">
-              <li><a href="#">Справка</a></li>
-              <li><a href="#">Документация</a></li>
-              <li><a href="#">Частые вопросы</a></li>
-              <li><a href="#">Техподдержка</a></li>
+              <li><a href="#" data-i18n="footer.support_help">Справка</a></li>
+              <li><a href="#" data-i18n="footer.support_docs">Документация</a></li>
+              <li><a href="#" data-i18n="footer.support_faq">Частые вопросы</a></li>
+              <li><a href="#" data-i18n="footer.support_contact">Техподдержка</a></li>
             </ul>
           </div>
         </div>
 
         <div class="footer-bottom">
-          <p>© 2024 Edocly. Все права защищены.</p>
+          <p data-i18n-html="footer.copyright">© <span id="footer-year"></span> Edocly. Все права защищены.</p>
           <div class="footer-bottom-links">
-            <a href="#">Политика конфиденциальности</a>
-            <a href="#">Условия использования</a>
-            <a href="#">Лицензия</a>
+            <a href="#" data-i18n="footer.privacy">Политика конфиденциальности</a>
+            <a href="#" data-i18n="footer.terms">Условия использования</a>
+            <a href="#" data-i18n="footer.license">Лицензия</a>
           </div>
         </div>
       </div>
@@ -1977,15 +823,386 @@
         }
       });
 
+      const localeStorageKey = 'edocly_locale';
+      const localeCookieName = 'locale';
+
+      const landingTranslations = {
+        ru: {
+          title:
+            'Edocly - Инновационная система выставления счетов и управления договорами в Казахстане',
+          description:
+            'Edocly - современная система выставления счетов и управления договорами для бизнеса в Казахстане. Соответствует требованиям РК, поддержка BIN/ИИН, ТОО, АО, ИП.',
+          selectors: {
+            '.nav .nav-link[href="#features"]': 'Возможности',
+            '.nav .nav-link[href="#how-it-works"]': 'Как это работает',
+            '.nav .nav-link[href="#pricing"]': 'Цены',
+            '.header-actions .btn-secondary': 'Вход',
+            '.header-actions .btn-primary': 'Регистрация',
+            '.hero-text h1':
+              'Современная система выставления счетов и <span>управления договорами</span>',
+            '.hero-text p':
+              'Edocly — инновационная платформа для казахстанского бизнеса. Создавайте профессиональные счета и договоры, соответствующие законодательству РК, за считанные минуты.',
+            '.hero-buttons .hero-btn':
+              '<i class="fas fa-rocket"></i>Начать бесплатно',
+            '.hero-features .hero-feature:nth-child(1) span': 'Без кредитной карты',
+            '.hero-features .hero-feature:nth-child(2) span': '14 дней бесплатно',
+            '.hero-features .hero-feature:nth-child(3) span': 'Казахстанские документы',
+            '#hero-invoice-label': 'Счет №INV-2024-001',
+            '#hero-paid-label': 'Оплачен',
+            '.hero-card-1 strong': 'Счет создан',
+            '.hero-card-1 span': 'Только что',
+            '.hero-card-2 strong': 'PDF готов',
+            '.hero-card-2 span': 'Скачать',
+            '.stats-grid .stat-item:nth-child(1) .stat-label': 'Казахстанских компаний',
+            '.stats-grid .stat-item:nth-child(2) .stat-label': 'Созданных документов',
+            '.stats-grid .stat-item:nth-child(3) .stat-label': 'Соответствие Законодательству РК',
+            '.stats-grid .stat-item:nth-child(4) .stat-label': 'Техническая поддержка',
+            '#features .section-header h2': 'Все необходимое для вашего бизнеса',
+            '#features .section-header p':
+              'Полный набор инструментов для создания, управления и отслеживания документов в одном месте',
+            '#features .feature-card:nth-child(1) h3': 'Счета на оплату',
+            '#features .feature-card:nth-child(1) p':
+              'Создавайте профессиональные счета, соответствующие требованиям Казахстана. Автоматический расчет НДС.',
+            '#features .feature-card:nth-child(2) h3': 'Договоры и акты',
+            '#features .feature-card:nth-child(2) p':
+              'Генерируйте юридически обязывающие договоры с настраиваемыми условиями. Автоматическое создание актов выполненных работ.',
+            '#features .feature-card:nth-child(3) h3': 'База контрагентов',
+            '#features .feature-card:nth-child(3) p':
+              'Храните и управляйте информацией о покупателях. История коммуникаций и полная база данных казахстанских компаний.',
+            '#features .feature-card:nth-child(4) h3': 'Генерация PDF',
+            '#features .feature-card:nth-child(4) p':
+              'Мгновенная генерация PDF-документов в профессиональном оформлении. Полностью соответствующие стандартам РК.',
+            '#features .feature-card:nth-child(5) h3': 'Email-верификация',
+            '#features .feature-card:nth-child(5) p':
+              'Безопасная аутентификация с подтверждением по электронной почте. Защита данных ваших клиентов и документов.',
+            '#features .feature-card:nth-child(6) h3': 'Мультиязычность',
+            '#features .feature-card:nth-child(6) p':
+              'Полная поддержка казахского и русского языков. Интерфейс и документы на обоих языках.',
+            '#kz-features .section-header h2': 'Специально для Казахстана',
+            '#kz-features .section-header p':
+              'Учтены все особенности казахстанского законодательства и деловой практики',
+            '#kz-features .kz-feature-item:nth-child(1) h4': 'BIN/ИИН валидация',
+            '#kz-features .kz-feature-item:nth-child(1) p':
+              'Автоматическая проверка и валидация БИН (для юрлиц) и ИИН (для ИП) по официальным реестрам РК.',
+            '#kz-features .kz-feature-item:nth-child(2) h4': 'Типы юридических лиц',
+            '#kz-features .kz-feature-item:nth-child(2) p':
+              'Полная поддержка ТОО, АО, ИП и других форм собственности. Корректное оформление реквизитов.',
+            '#kz-features .kz-feature-item:nth-child(3) h4': 'КБЕ и КНП коды',
+            '#kz-features .kz-feature-item:nth-child(3) p':
+              'Встроенные справочники кодов КБЕ и КНП для банковских переводов. Автоматическое заполнение платежных реквизитов.',
+            '#kz-features .kz-feature-item:nth-child(4) h4': 'Расчет НДС',
+            '#kz-features .kz-feature-item:nth-child(4) p':
+              'Автоматический расчет НДС 16% и других ставок. Формирование счетов-фактур в соответствии с НК РК.',
+            '#kz-features .kz-feature-item:nth-child(5) h4': 'Казахский и русский',
+            '#kz-features .kz-feature-item:nth-child(5) p':
+              'Полная локализация интерфейса на казахский и русский языки.',
+            '#how-it-works .section-header h2': 'Как это работает',
+            '#how-it-works .section-header p': 'Начните использовать Edocly за три простых шага',
+            '.steps .step:nth-child(1) h4': 'Регистрация',
+            '.steps .step:nth-child(1) p':
+              'Создайте аккаунт за 2 минуты. Подтвердите email и войдите в систему.',
+            '.steps .step:nth-child(2) h4': 'Настройка',
+            '.steps .step:nth-child(2) p': 'Добавьте данные вашей компании, реквизиты и логотип.',
+            '.steps .step:nth-child(3) h4': 'Создание',
+            '.steps .step:nth-child(3) p':
+              'Создавайте счета и договоры в несколько кликов. Скачивайте PDF.',
+            '.steps .step:nth-child(4) h4': 'Отправка',
+            '.steps .step:nth-child(4) p': 'Отправляйте документы клиентам прямо из системы.',
+            '#pricing .section-header h2': 'Прозрачные тарифы для любого масштаба',
+            '#pricing .section-header p':
+              'Выберите подходящий план для ИП, растущей команды или компании с большим документооборотом. Все тарифы включают казахский и русский интерфейс.',
+            '.pricing-card:nth-child(1) .pricing-badge': 'Старт',
+            '.pricing-card:nth-child(1) h3': 'Стартовый',
+            '.pricing-card:nth-child(1) .pricing-description':
+              'Для ИП и небольших команд, которым нужно быстро выставлять счета и договоры без ручной рутины.',
+            '.pricing-card:nth-child(1) .price-period': '/ месяц',
+            '.pricing-card:nth-child(1) .price-note': 'До 50 документов в месяц, 2 пользователя',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(1)':
+              '<i class="fas fa-check-circle"></i>Создание счетов, актов и договоров',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(2)':
+              '<i class="fas fa-check-circle"></i>Шаблоны с реквизитами РК и BIN/ИИН',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(3)':
+              '<i class="fas fa-check-circle"></i>PDF-экспорт и отправка по email',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(4)':
+              '<i class="fas fa-check-circle"></i>Базовая история оплат и статусов',
+            '.pricing-card:nth-child(1) .btn': 'Выбрать тариф',
+            '.pricing-card:nth-child(2) .pricing-badge': 'Популярный',
+            '.pricing-card:nth-child(2) h3': 'Базовый',
+            '.pricing-card:nth-child(2) .pricing-description':
+              'Для компаний с регулярным документооборотом, которым нужна совместная работа, контроль статусов и быстрая обработка клиентов.',
+            '.pricing-card:nth-child(2) .price-period': '/ месяц',
+            '.pricing-card:nth-child(2) .price-note': 'До 500 документов в месяц, 10 пользователей',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(1)':
+              '<i class="fas fa-check-circle"></i>Все из тарифа Базовый',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(2)':
+              '<i class="fas fa-check-circle"></i>Общая база контрагентов и роли сотрудников',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(3)':
+              '<i class="fas fa-check-circle"></i>Автоматический расчет НДС и мультивалютность',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(4)':
+              '<i class="fas fa-check-circle"></i>Напоминания по оплате и история изменений',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(5)':
+              '<i class="fas fa-check-circle"></i>Приоритетная поддержка в рабочее время',
+            '.pricing-card:nth-child(2) .btn': 'Начать 14-дневный тест',
+            '.pricing-footer strong': 'Все тарифы включают бесплатный перенос реквизитов',
+            '.pricing-footer > div:first-child p':
+              'Поможем загрузить данные компании, шаблоны документов и быстро запустить команду без простоя.',
+            '.pricing-footer-meta span:nth-child(1)': '<i class="fas fa-shield-alt"></i>14 дней теста',
+            '.pricing-footer-meta span:nth-child(2)':
+              '<i class="fas fa-headset"></i>Поддержка на русском и казахском',
+            '.pricing-footer-meta span:nth-child(3)': '<i class="fas fa-ban"></i>Без скрытых платежей',
+            '.cta-content h2': 'Готовы оптимизировать документооборот?',
+            '.cta-content p':
+              'Присоединяйтесь к тысячам казахстанских компаний, которые уже используют Edocly для управления документами.',
+            '.cta-buttons .btn-white':
+              '<i class="fas fa-user-plus"></i>Зарегистрироваться бесплатно',
+            '.cta-buttons .btn-outline': '<i class="fas fa-phone"></i>Связаться с нами',
+            '.footer-brand p':
+              'Современная система выставления счетов и управления договорами для казахстанского бизнеса. Соответствует всем требованиям законодательства РК.',
+            '.footer-column:nth-child(2) h4': 'Продукт',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(1) a': 'Возможности',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(2) a': 'Цены',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(3) a': 'Как это работает',
+            '.footer-column:nth-child(3) h4': 'Компания',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(1) a': 'О нас',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(2) a': 'Блог',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(3) a': 'Карьера',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(4) a': 'Контакты',
+            '.footer-column:nth-child(4) h4': 'Поддержка',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(1) a': 'Справка',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(2) a': 'Документация',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(3) a': 'Частые вопросы',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(4) a': 'Техподдержка',
+            '.footer-bottom-links a:nth-child(1)': 'Политика конфиденциальности',
+            '.footer-bottom-links a:nth-child(2)': 'Условия использования',
+            '.footer-bottom-links a:nth-child(3)': 'Лицензия',
+            '.footer-bottom p': '© <span id="footer-year"></span> Edocly. Все права защищены.'
+          }
+        },
+        kk: {
+          title:
+            'Edocly - Қазақстандағы шот ұсыну және шарттарды басқаруға арналған инновациялық жүйе',
+          description:
+            'Edocly - Қазақстандағы бизнеске арналған шот ұсыну және шарттарды басқарудың заманауи жүйесі. ҚР талаптарына сай, БСН/ЖСН, ЖШС, АҚ, ЖК қолдауы бар.',
+          selectors: {
+            '.nav .nav-link[href="#features"]': 'Мүмкіндіктер',
+            '.nav .nav-link[href="#how-it-works"]': 'Қалай жұмыс істейді',
+            '.nav .nav-link[href="#pricing"]': 'Бағалар',
+            '.header-actions .btn-secondary': 'Кіру',
+            '.header-actions .btn-primary': 'Тіркелу',
+            '.hero-text h1':
+              'Шот ұсыну және <span>шарттарды басқарудың заманауи жүйесі</span>',
+            '.hero-text p':
+              'Edocly — Қазақстан бизнесіне арналған инновациялық платформа. ҚР заңнамасына сай кәсіби шоттар мен шарттарды санаулы минутта жасаңыз.',
+            '.hero-buttons .hero-btn':
+              '<i class="fas fa-rocket"></i>Тегін бастау',
+            '.hero-features .hero-feature:nth-child(1) span': 'Банк картасыз',
+            '.hero-features .hero-feature:nth-child(2) span': '14 күн тегін',
+            '.hero-features .hero-feature:nth-child(3) span': 'Қазақстандық құжаттар',
+            '#hero-invoice-label': 'Шот №INV-2024-001',
+            '#hero-paid-label': 'Төленді',
+            '.hero-card-1 strong': 'Шот жасалды',
+            '.hero-card-1 span': 'Жаңа ғана',
+            '.hero-card-2 strong': 'PDF дайын',
+            '.hero-card-2 span': 'Жүктеу',
+            '.stats-grid .stat-item:nth-child(1) .stat-label': 'Қазақстандық компания',
+            '.stats-grid .stat-item:nth-child(2) .stat-label': 'Жасалған құжат',
+            '.stats-grid .stat-item:nth-child(3) .stat-label': 'ҚР заңнамасына сәйкестік',
+            '.stats-grid .stat-item:nth-child(4) .stat-label': 'Техникалық қолдау',
+            '#features .section-header h2': 'Бизнесіңізге қажеттінің бәрі',
+            '#features .section-header p':
+              'Құжаттарды жасауға, басқаруға және бақылауға арналған толық құралдар жинағы бір жерде',
+            '#features .feature-card:nth-child(1) h3': 'Төлем шоттары',
+            '#features .feature-card:nth-child(1) p':
+              'Қазақстан талаптарына сай кәсіби шоттар жасаңыз. ҚҚС автоматты есептеледі.',
+            '#features .feature-card:nth-child(2) h3': 'Шарттар мен актілер',
+            '#features .feature-card:nth-child(2) p':
+              'Баптары баптауға болатын заңды күші бар шарттарды жасаңыз. Орындалған жұмыс актілері автоматты түрде қалыптасады.',
+            '#features .feature-card:nth-child(3) h3': 'Контрагенттер базасы',
+            '#features .feature-card:nth-child(3) p':
+              'Сатып алушылар туралы ақпаратты сақтап, басқарыңыз. Байланыс тарихы және қазақстандық компаниялардың толық дерекқоры.',
+            '#features .feature-card:nth-child(4) h3': 'PDF генерациясы',
+            '#features .feature-card:nth-child(4) p':
+              'Кәсіби безендірілген PDF құжаттарды лезде жасаңыз. ҚР стандарттарына толық сәйкес.',
+            '#features .feature-card:nth-child(5) h3': 'Email растау',
+            '#features .feature-card:nth-child(5) p':
+              'Электрондық пошта арқылы растаумен қауіпсіз аутентификация. Клиенттер мен құжаттар деректерін қорғау.',
+            '#features .feature-card:nth-child(6) h3': 'Көптілділік',
+            '#features .feature-card:nth-child(6) p':
+              'Қазақ және орыс тілдерін толық қолдау. Интерфейс пен құжаттар екі тілде де қолжетімді.',
+            '#kz-features .section-header h2': 'Қазақстан үшін арнайы',
+            '#kz-features .section-header p':
+              'Қазақстан заңнамасы мен іскерлік тәжірибесінің барлық ерекшеліктері ескерілген',
+            '#kz-features .kz-feature-item:nth-child(1) h4': 'БСН/ЖСН тексеруі',
+            '#kz-features .kz-feature-item:nth-child(1) p':
+              'БСН (заңды тұлғалар үшін) және ЖСН (ЖК үшін) ҚР ресми тізілімдері бойынша автоматты тексеріледі.',
+            '#kz-features .kz-feature-item:nth-child(2) h4': 'Заңды тұлға түрлері',
+            '#kz-features .kz-feature-item:nth-child(2) p':
+              'ЖШС, АҚ, ЖК және басқа меншік нысандарын толық қолдау. Деректемелерді дұрыс рәсімдеу.',
+            '#kz-features .kz-feature-item:nth-child(3) h4': 'КБЕ және КНП кодтары',
+            '#kz-features .kz-feature-item:nth-child(3) p':
+              'Банк аударымдарына арналған КБЕ және КНП кодтарының кіріктірілген анықтамалықтары. Төлем деректемелері автоматты толтырылады.',
+            '#kz-features .kz-feature-item:nth-child(4) h4': 'ҚҚС есебі',
+            '#kz-features .kz-feature-item:nth-child(4) p':
+              '16% ҚҚС және басқа мөлшерлемелер автоматты есептеледі. Шот-фактуралар ҚР СК талаптарына сай құрылады.',
+            '#kz-features .kz-feature-item:nth-child(5) h4': 'Қазақша және орысша',
+            '#kz-features .kz-feature-item:nth-child(5) p':
+              'Интерфейстің қазақ және орыс тілдеріне толық локализациясы.',
+            '#how-it-works .section-header h2': 'Қалай жұмыс істейді',
+            '#how-it-works .section-header p': 'Edocly-ді төрт қарапайым қадаммен бастаңыз',
+            '.steps .step:nth-child(1) h4': 'Тіркелу',
+            '.steps .step:nth-child(1) p':
+              '2 минутта аккаунт жасаңыз. Email-ді растаңыз да, жүйеге кіріңіз.',
+            '.steps .step:nth-child(2) h4': 'Баптау',
+            '.steps .step:nth-child(2) p': 'Компания деректерін, деректемелерді және логотипті қосыңыз.',
+            '.steps .step:nth-child(3) h4': 'Құру',
+            '.steps .step:nth-child(3) p':
+              'Шоттар мен шарттарды бірнеше батырмамен жасаңыз. PDF жүктеп алыңыз.',
+            '.steps .step:nth-child(4) h4': 'Жіберу',
+            '.steps .step:nth-child(4) p': 'Құжаттарды клиенттерге тікелей жүйеден жіберіңіз.',
+            '#pricing .section-header h2': 'Кез келген ауқымға арналған ашық тарифтер',
+            '#pricing .section-header p':
+              'ЖК, өсіп келе жатқан команда немесе құжат айналымы көп компания үшін қолайлы жоспарды таңдаңыз. Барлық тарифтерде қазақ және орыс интерфейсі бар.',
+            '.pricing-card:nth-child(1) .pricing-badge': 'Бастау',
+            '.pricing-card:nth-child(1) h3': 'Бастапқы',
+            '.pricing-card:nth-child(1) .pricing-description':
+              'ЖК мен шағын командаларға шоттар мен шарттарды қолмен қайталамай жылдам жасауға арналған.',
+            '.pricing-card:nth-child(1) .price-period': '/ ай',
+            '.pricing-card:nth-child(1) .price-note': 'Айына 50 құжатқа дейін, 2 пайдаланушы',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(1)':
+              '<i class="fas fa-check-circle"></i>Шоттар, актілер және шарттар жасау',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(2)':
+              '<i class="fas fa-check-circle"></i>ҚР деректемелері мен БСН/ЖСН бар қалыптар',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(3)':
+              '<i class="fas fa-check-circle"></i>PDF экспорт және email арқылы жіберу',
+            '.pricing-card:nth-child(1) .pricing-list li:nth-child(4)':
+              '<i class="fas fa-check-circle"></i>Төлемдер мен мәртебелердің базалық тарихы',
+            '.pricing-card:nth-child(1) .btn': 'Тарифті таңдау',
+            '.pricing-card:nth-child(2) .pricing-badge': 'Танымал',
+            '.pricing-card:nth-child(2) h3': 'Негізгі',
+            '.pricing-card:nth-child(2) .pricing-description':
+              'Құжат айналымы тұрақты, бірлескен жұмыс, мәртебені бақылау және клиенттерді жылдам өңдеу қажет компанияларға арналған.',
+            '.pricing-card:nth-child(2) .price-period': '/ ай',
+            '.pricing-card:nth-child(2) .price-note': 'Айына 500 құжатқа дейін, 10 пайдаланушы',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(1)':
+              '<i class="fas fa-check-circle"></i>Бастапқы тарифтің барлық мүмкіндігі',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(2)':
+              '<i class="fas fa-check-circle"></i>Ортақ контрагенттер базасы және қызметкер рөлдері',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(3)':
+              '<i class="fas fa-check-circle"></i>ҚҚС автоматты есебі және көпвалюталық қолдау',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(4)':
+              '<i class="fas fa-check-circle"></i>Төлем еске салғыштары және өзгерістер тарихы',
+            '.pricing-card:nth-child(2) .pricing-list li:nth-child(5)':
+              '<i class="fas fa-check-circle"></i>Жұмыс уақытында басым қолдау',
+            '.pricing-card:nth-child(2) .btn': '14 күндік тестті бастау',
+            '.pricing-footer strong': 'Барлық тарифтерде деректемелерді тегін көшіру бар',
+            '.pricing-footer > div:first-child p':
+              'Компания деректерін, құжат қалыптарын жүктеуге және команданы кідіріссіз іске қосуға көмектесеміз.',
+            '.pricing-footer-meta span:nth-child(1)': '<i class="fas fa-shield-alt"></i>14 күндік тест',
+            '.pricing-footer-meta span:nth-child(2)':
+              '<i class="fas fa-headset"></i>Қазақ және орыс тілдерінде қолдау',
+            '.pricing-footer-meta span:nth-child(3)': '<i class="fas fa-ban"></i>Жасырын төлемсіз',
+            '.cta-content h2': 'Құжат айналымын оңтайландыруға дайынсыз ба?',
+            '.cta-content p':
+              'Құжаттарды басқару үшін Edocly қолданатын мыңдаған қазақстандық компанияға қосылыңыз.',
+            '.cta-buttons .btn-white':
+              '<i class="fas fa-user-plus"></i>Тегін тіркелу',
+            '.cta-buttons .btn-outline': '<i class="fas fa-phone"></i>Бізбен байланысу',
+            '.footer-brand p':
+              'Қазақстан бизнесіне арналған шот ұсыну және шарттарды басқарудың заманауи жүйесі. ҚР заңнамасының барлық талабына сай.',
+            '.footer-column:nth-child(2) h4': 'Өнім',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(1) a': 'Мүмкіндіктер',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(2) a': 'Бағалар',
+            '.footer-column:nth-child(2) .footer-links li:nth-child(3) a': 'Қалай жұмыс істейді',
+            '.footer-column:nth-child(3) h4': 'Компания',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(1) a': 'Біз туралы',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(2) a': 'Блог',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(3) a': 'Мансап',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(4) a': 'Байланыс',
+            '.footer-column:nth-child(4) h4': 'Қолдау',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(1) a': 'Анықтама',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(2) a': 'Құжаттама',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(3) a': 'Жиі қойылатын сұрақтар',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(4) a': 'Техникалық қолдау',
+            '.footer-bottom-links a:nth-child(1)': 'Құпиялылық саясаты',
+            '.footer-bottom-links a:nth-child(2)': 'Пайдалану шарттары',
+            '.footer-bottom-links a:nth-child(3)': 'Лицензия',
+            '.footer-bottom p': '© <span id="footer-year"></span> Edocly. Барлық құқықтар қорғалған.'
+          }
+        }
+      };
+
+      function normalizeLocale(locale) {
+        return locale === 'kk' ? 'kk' : 'ru';
+      }
+
+      function readLocaleCookie() {
+        const cookie = document.cookie
+          .split('; ')
+          .find((item) => item.startsWith(`${localeCookieName}=`));
+
+        if (!cookie) {
+          return null;
+        }
+
+        return cookie.split('=').slice(1).join('=');
+      }
+
+      function persistLocale(locale) {
+        localStorage.setItem(localeStorageKey, locale);
+        document.cookie = `${localeCookieName}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+
+      function initialLocale() {
+        return normalizeLocale(readLocaleCookie() || localStorage.getItem(localeStorageKey) || 'ru');
+      }
+
+      function applyLocale(locale) {
+        const normalizedLocale = normalizeLocale(locale);
+        const translation = landingTranslations[normalizedLocale];
+        const descriptionMeta = document.querySelector('meta[name="description"]');
+
+        document.documentElement.lang = normalizedLocale;
+        document.title = translation.title;
+
+        if (descriptionMeta) {
+          descriptionMeta.setAttribute('content', translation.description);
+        }
+
+        Object.entries(translation.selectors).forEach(([selector, value]) => {
+          const element = document.querySelector(selector);
+
+          if (element) {
+            element.innerHTML = value;
+          }
+        });
+
+        langBtns.forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.lang === normalizedLocale);
+        });
+
+        syncFooterYear();
+      }
+
+      function syncFooterYear() {
+        const footerYear = document.getElementById('footer-year');
+
+        if (footerYear) {
+          footerYear.textContent = new Date().getFullYear();
+        }
+      }
+
       // Language switcher
       const langBtns = document.querySelectorAll('.lang-btn');
 
       langBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
-          langBtns.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
+          const locale = normalizeLocale(btn.dataset.lang);
+          persistLocale(locale);
+          applyLocale(locale);
         });
       });
+
+      applyLocale(initialLocale());
 
       // Smooth scroll for anchor links
       document.querySelectorAll('a[href^="#"]').forEach((anchor) => {

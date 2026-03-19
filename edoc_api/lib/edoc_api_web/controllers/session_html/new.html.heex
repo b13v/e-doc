@@ -1,6 +1,6 @@
 <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
-    <h2 class="text-2xl font-bold leading-9 tracking-tight text-gray-900">Sign in to your account</h2>
+    <h2 class="text-2xl font-bold leading-9 tracking-tight text-gray-900"><%= gettext("Sign in to your account") %></h2>
   </div>
 
   <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
@@ -11,7 +11,7 @@
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+          <label for="email" class="block text-sm font-medium text-gray-700"><%= gettext("Email address") %></label>
           <div class="mt-2">
             <input
               id="email"
@@ -24,7 +24,7 @@
         </div>
 
         <div class="mt-4">
-          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700"><%= gettext("Password") %></label>
           <div class="mt-2">
             <input
               id="password"
@@ -39,7 +39,7 @@
         <button
           type="submit"
           class="mt-6 flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          Sign in
+          <%= gettext("Sign In") %>
         </button>
       </form>
     </div>

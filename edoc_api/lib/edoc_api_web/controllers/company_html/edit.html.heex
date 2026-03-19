@@ -1,7 +1,7 @@
 <div class="lg:flex lg:items-center lg:justify-between">
   <div class="min-w-0 flex-1">
     <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-      Company Settings
+      <%= gettext("Company Settings") %>
     </h2>
   </div>
 </div>
@@ -16,7 +16,7 @@
       <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
 
         <div class="sm:col-span-4">
-          <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name</label>
+          <label for="company_name" class="block text-sm font-medium text-gray-700"><%= gettext("Company Name") %></label>
           <div class="mt-2">
             <input
               type="text"
@@ -29,7 +29,7 @@
         </div>
 
         <div class="sm:col-span-3">
-          <label for="company_bin_iin" class="block text-sm font-medium text-gray-700">BIN/IIN</label>
+          <label for="company_bin_iin" class="block text-sm font-medium text-gray-700"><%= gettext("BIN/IIN") %></label>
           <div class="mt-2">
             <input
               type="text"
@@ -38,19 +38,19 @@
               value={@company.bin_iin}
               required
               pattern="\d{12}"
-              title="12-digit BIN/IIN"
+              title={gettext("12-digit BIN/IIN")}
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>
         </div>
 
         <div class="sm:col-span-3">
-          <label for="company_kbe" class="block text-sm font-medium text-gray-700">KBE Code</label>
+          <label for="company_kbe" class="block text-sm font-medium text-gray-700"><%= gettext("KBE Code") %></label>
           <div class="mt-2">
             <select
               name="company[kbe_code_id]"
               id="company_kbe"
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-              <option value="">Select KBE Code</option>
+              <option value=""><%= gettext("Select KBE Code") %></option>
               <%= # TODO: Populate from dictionary %>
               <option value="1">01 - Производство продукции</option>
               <option value="2">02 - Выполнение работ</option>
@@ -60,7 +60,7 @@
         </div>
 
         <div class="sm:col-span-2">
-          <label for="company_city" class="block text-sm font-medium text-gray-700">City</label>
+          <label for="company_city" class="block text-sm font-medium text-gray-700"><%= gettext("City") %></label>
           <div class="mt-2">
             <input
               type="text"
@@ -72,7 +72,7 @@
         </div>
 
         <div class="sm:col-span-4">
-          <label for="company_address" class="block text-sm font-medium text-gray-700">Address</label>
+          <label for="company_address" class="block text-sm font-medium text-gray-700"><%= gettext("Address") %></label>
           <div class="mt-2">
             <input
               type="text"
@@ -84,7 +84,7 @@
         </div>
 
         <div class="sm:col-span-6">
-          <label for="company_contact_person" class="block text-sm font-medium text-gray-700">Contact Person</label>
+          <label for="company_contact_person" class="block text-sm font-medium text-gray-700"><%= gettext("Contact Person") %></label>
           <div class="mt-2">
             <input
               type="text"
@@ -96,7 +96,7 @@
         </div>
 
         <div class="sm:col-span-3">
-          <label for="company_phone" class="block text-sm font-medium text-gray-700">Phone</label>
+          <label for="company_phone" class="block text-sm font-medium text-gray-700"><%= gettext("Phone") %></label>
           <div class="mt-2">
             <input
               type="tel"
@@ -108,7 +108,7 @@
         </div>
 
         <div class="sm:col-span-3">
-          <label for="company_email" class="block text-sm font-medium text-gray-700">Email</label>
+          <label for="company_email" class="block text-sm font-medium text-gray-700"><%= gettext("Email") %></label>
           <div class="mt-2">
             <input
               type="email"
@@ -122,11 +122,11 @@
       </div>
 
       <div class="mt-6 flex items-center justify-end gap-x-6">
-        <a href="/invoices" class="text-sm font-semibold text-gray-900 hover:text-gray-700">Cancel</a>
+        <a href="/invoices" class="text-sm font-semibold text-gray-900 hover:text-gray-700"><%= gettext("Cancel") %></a>
         <button
           type="submit"
           class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          Save Changes
+          <%= gettext("Save Changes") %>
         </button>
       </div>
     </form>
@@ -135,7 +135,7 @@
   <!-- Quick Links Section -->
   <div class="bg-white shadow sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-lg font-medium leading-6 text-gray-900">Quick Actions</h3>
+      <h3 class="text-lg font-medium leading-6 text-gray-900"><%= gettext("Quick Actions") %></h3>
       <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <a href="/buyers" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
           <div class="flex-shrink-0">
@@ -144,8 +144,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-900">Manage Buyers</p>
-            <p class="text-xs text-gray-500">Add and manage your counterparties</p>
+            <p class="text-sm font-medium text-gray-900"><%= gettext("Manage Buyers") %></p>
+            <p class="text-xs text-gray-500"><%= gettext("Add and manage your counterparties") %></p>
           </div>
         </a>
 
@@ -156,8 +156,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-900">Contracts</p>
-            <p class="text-xs text-gray-500">Create and manage contracts</p>
+            <p class="text-sm font-medium text-gray-900"><%= gettext("Contracts") %></p>
+            <p class="text-xs text-gray-500"><%= gettext("Create and manage contracts") %></p>
           </div>
         </a>
 
@@ -168,8 +168,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-900">Invoices</p>
-            <p class="text-xs text-gray-500">Create and manage invoices</p>
+            <p class="text-sm font-medium text-gray-900"><%= gettext("Invoices") %></p>
+            <p class="text-xs text-gray-500"><%= gettext("Create and manage invoices") %></p>
           </div>
         </a>
       </div>

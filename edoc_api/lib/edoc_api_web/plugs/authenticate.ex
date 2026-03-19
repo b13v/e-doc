@@ -38,5 +38,4 @@ defmodule EdocApiWeb.Plugs.Authenticate do
       _ -> nil
     end
   end
-
 end

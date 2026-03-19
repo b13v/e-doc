@@ -4,8 +4,19 @@ defmodule EdocApi.Payments do
   alias EdocApi.Repo
   alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
+  alias EdocApi.Validators.Iban
 
   def list_company_bank_accounts_for_user(user_id) do
+    load_company_bank_accounts_for_user(user_id)
+  end
+
+  def list_visible_company_bank_accounts_for_user(user_id) do
+    user_id
+    |> load_company_bank_accounts_for_user()
+    |> Enum.filter(&valid_company_bank_account?/1)
+  end
+
+  defp load_company_bank_accounts_for_user(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
         []
@@ -26,7 +37,8 @@ defmodule EdocApi.Payments do
 
       company ->
         Repo.transaction(fn ->
-          with {:ok, attrs} <- merge_code_ids_for_create(company.id, attrs) do
+          with {:ok, attrs} <- merge_code_ids_for_create(company.id, attrs),
+               {:ok, attrs} <- ensure_create_label(company.id, attrs) do
             if requested_default?(attrs) do
               CompanyBankAccount.reset_all_defaults(company.id)
             end
@@ -166,6 +178,56 @@ defmodule EdocApi.Payments do
     end
   end
 
+  defp ensure_create_label(company_id, attrs) do
+    attrs = Map.new(attrs)
+
+    case attrs |> Map.get("label", Map.get(attrs, :label)) |> normalize_label() do
+      nil ->
+        label = default_create_label(company_id, attrs)
+        {:ok, Map.put(attrs, "label", label)}
+
+      label ->
+        {:ok, Map.put(attrs, "label", label)}
+    end
+  end
+
+  defp normalize_label(nil), do: nil
+
+  defp normalize_label(label) when is_binary(label) do
+    case String.trim(label) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp default_create_label(company_id, attrs) do
+    base_label =
+      attrs
+      |> Map.get("bank_id", Map.get(attrs, :bank_id))
+      |> then(&bank_name_for_label/1)
+      |> case do
+        nil -> "Bank account"
+        bank_name -> bank_name
+      end
+
+    account_number =
+      CompanyBankAccount
+      |> where([a], a.company_id == ^company_id)
+      |> Repo.aggregate(:count, :id)
+      |> Kernel.+(1)
+
+    "#{base_label} #{account_number}"
+  end
+
+  defp bank_name_for_label(nil), do: nil
+
+  defp bank_name_for_label(bank_id) do
+    case Repo.get(Bank, bank_id) do
+      %Bank{name: name} when is_binary(name) -> String.trim(name)
+      _ -> nil
+    end
+  end
+
   defp merge_code_ids_for_update(company_id, %CompanyBankAccount{} = bank_account, attrs) do
     with {:ok, default_kbe_code_id} <- resolve_default_kbe_code_id(company_id),
          {:ok, default_knp_code_id} <- resolve_default_knp_code_id(company_id) do
@@ -233,5 +295,9 @@ defmodule EdocApi.Payments do
       {:ok, true} -> true
       _ -> false
     end
+  end
+
+  defp valid_company_bank_account?(%CompanyBankAccount{iban: iban}) do
+    Iban.valid_checksum?(iban)
   end
 end

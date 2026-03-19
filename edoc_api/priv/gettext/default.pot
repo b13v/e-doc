@@ -1,0 +1,2028 @@
+## This is a PO Template file.
+msgid ""
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:63
+#: lib/edoc_api_web/controllers/about_controller.ex:5
+#, elixir-autogen
+msgid "About"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_controller.ex:39
+#, elixir-autogen
+msgid "Account created! Please verify your email to continue."
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:80
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:3
+#: lib/edoc_api_web/controllers/acts_controller.ex:19
+#, elixir-autogen
+msgid "Acts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:74
+#, elixir-autogen
+msgid "Already have an account? Sign in"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:81
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:5
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:22
+#, elixir-autogen
+msgid "Buyers"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:8
+#, elixir-autogen
+msgid "Check your email"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:82
+#, elixir-autogen
+msgid "Company"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:42
+#, elixir-autogen
+msgid "Confirm password"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:79
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:159
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:3
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:17
+#, elixir-autogen
+msgid "Contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:3
+#, elixir-autogen
+msgid "Create your account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:33
+#, elixir-autogen
+msgid "Didn't receive the email?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_html/new.html.heex:14
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:14
+#, elixir-autogen
+msgid "Email address"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:62
+#, elixir-autogen
+msgid "Home"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_controller.ex:47
+#, elixir-autogen
+msgid "If the email is eligible, verification instructions will be sent shortly."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_controller.ex:40
+#, elixir-autogen
+msgid "Invalid email address or password."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:38
+#, elixir-autogen
+msgid "Invalid or expired verification token. Please request a new one."
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:78
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:171
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:3
+#: lib/edoc_api_web/controllers/invoices_controller.ex:24
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:3
+#, elixir-autogen
+msgid "Invoices"
+msgstr ""
+
+msgid "Login"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:88
+#, elixir-autogen
+msgid "Logout"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:38
+#, elixir-autogen
+msgid "Minimum 8 characters"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:46
+#, elixir-autogen
+msgid "Missing verification token."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:68
+#, elixir-autogen
+msgid "Or"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_html/new.html.heex:27
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:27
+#, elixir-autogen
+msgid "Password"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_controller.ex:21
+#, elixir-autogen
+msgid "Passwords do not match."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:12
+#, elixir-autogen
+msgid "Please provide your email address."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_controller.ex:18
+#, elixir-autogen
+msgid "Please verify your email address before signing in."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:42
+#, elixir-autogen
+msgid "Resend verification email"
+msgstr ""
+
+#: lib/edoc_api_web/components/layouts.ex:66
+#: lib/edoc_api_web/controllers/session_controller.ex:8
+#: lib/edoc_api_web/controllers/session_controller.ex:41
+#: lib/edoc_api_web/controllers/session_html/new.html.heex:42
+#, elixir-autogen
+msgid "Sign In"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/signup_controller.ex:11
+#: lib/edoc_api_web/controllers/signup_controller.ex:22
+#: lib/edoc_api_web/controllers/signup_controller.ex:55
+#: lib/edoc_api_web/controllers/signup_controller.ex:63
+#: lib/edoc_api_web/controllers/signup_html/new.html.heex:58
+#, elixir-autogen
+msgid "Sign Up"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_html/new.html.heex:3
+#, elixir-autogen
+msgid "Sign in to your account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:51
+#, elixir-autogen
+msgid "Sign up again"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_controller.ex:48
+#, elixir-autogen
+msgid "Signed out successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:50
+#, elixir-autogen
+msgid "Use a different email?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:7
+#, elixir-autogen
+msgid "Verify Your Email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/session_controller.ex:34
+#, elixir-autogen
+msgid "Welcome!"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:10
+#, elixir-autogen
+msgid "We've sent a verification email to"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:22
+#, elixir-autogen
+msgid "Your email address has been verified. You can now sign in."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_controller.ex:30
+#, elixir-autogen
+msgid "Your email address is already verified. Please sign in."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:26
+#, elixir-autogen
+msgid "Click the link in the email to verify your account. The link will expire in 24 hours."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:203
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:252
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:199
+#, elixir-autogen, elixir-format
+msgid "0.00"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:194
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:243
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:190
+#, elixir-autogen, elixir-format
+msgid "1"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:71
+#, elixir-autogen, elixir-format
+msgid "12 digits for BIN, 12 digits for IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:624
+#, elixir-autogen, elixir-format
+msgid "A contract with this number already exists."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "A list of all acts in your account."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "A list of all invoices in your account."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "About Edocly"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:142
+#, elixir-autogen, elixir-format
+msgid "Act %{number}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:89
+#, elixir-autogen, elixir-format
+msgid "Act created successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:152
+#, elixir-autogen, elixir-format
+msgid "Act deleted successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:138
+#: lib/edoc_api_web/controllers/acts_controller.ex:162
+#: lib/edoc_api_web/controllers/acts_controller.ex:174
+#, elixir-autogen, elixir-format
+msgid "Act not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:29
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:238
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:39
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:70
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:82
+#, elixir-autogen, elixir-format
+msgid "Actual date is required when creating an act from a contract."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:137
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:156
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:153
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:227
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:170
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Add Item"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Add a new counterparty (buyer) for contracts and invoices"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:93
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:90
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "Add new buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:136
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:123
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:39
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:72
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:135
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:54
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "Address"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:69
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Almaty"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:104
+#: lib/edoc_api_web/controllers/acts_controller.ex:128
+#: lib/edoc_api_web/controllers/invoices_controller.ex:180
+#, elixir-autogen, elixir-format
+msgid "At least one item is required."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:72
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:48
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:59
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:27
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:36
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "BIN/IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "BIN/IIN number validation"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:4
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:4
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Back to Buyers"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:4
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:4
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Back to Contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:103
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:90
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:57
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:191
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:234
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:91
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:28
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Bank"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:11
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:14
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Bank Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Bank Account Information"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:96
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:135
+#, elixir-autogen, elixir-format
+msgid "Bank account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:147
+#, elixir-autogen, elixir-format
+msgid "Bank account added successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:216
+#, elixir-autogen, elixir-format
+msgid "Bank account deleted successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:195
+#: lib/edoc_api_web/controllers/companies_controller.ex:200
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:23
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:42
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:67
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:83
+#, elixir-autogen, elixir-format
+msgid "Bank account not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:57
+#, elixir-autogen, elixir-format
+msgid "Bank account updated successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:207
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:195
+#, elixir-autogen, elixir-format
+msgid "Basis (Authority)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:78
+#, elixir-autogen, elixir-format
+msgid "Basis (e.g., Director, Power of Attorney)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:25
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:66
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:11
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:57
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:76
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:73
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:65
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:74
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:30
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:98
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:59
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Buyer address"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:78
+#, elixir-autogen, elixir-format
+msgid "Buyer created successfully. %{name} is ready to use in contracts and invoices."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:271
+#, elixir-autogen, elixir-format
+msgid "Buyer deleted successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:49
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:155
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:231
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:236
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:288
+#, elixir-autogen, elixir-format
+msgid "Buyer not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:184
+#, elixir-autogen, elixir-format
+msgid "Buyer updated successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:144
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:224
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:213
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:104
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:217
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:61
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:125
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:273
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:220
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:9
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:234
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:179
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:102
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:278
+#, elixir-autogen, elixir-format
+msgid "Cannot delete buyer: used in %{contract_count} contract(s) and %{invoice_count} invoice(s)."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:150
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:51
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:137
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:43
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:60
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:130
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:42
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:63
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:61
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "City"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:14
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Company Information"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:29
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:28
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:27
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:115
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:19
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Company Name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:109
+#: lib/edoc_api_web/controllers/companies_controller.ex:135
+#: lib/edoc_api_web/controllers/companies_controller.ex:159
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Company Settings"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:55
+#, elixir-autogen, elixir-format
+msgid "Company created successfully. Now add your first buyer to start working with contracts."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:186
+#, elixir-autogen, elixir-format
+msgid "Company not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:120
+#, elixir-autogen, elixir-format
+msgid "Company updated successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Continue to Dashboard"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:44
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Contract"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:196
+#, elixir-autogen, elixir-format
+msgid "Contract %{number}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:26
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Contract Details"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:107
+#, elixir-autogen, elixir-format
+msgid "Contract created successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:441
+#, elixir-autogen, elixir-format
+msgid "Contract deleted successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:409
+#, elixir-autogen, elixir-format
+msgid "Contract issued successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "Contract items (Appendix 1)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:173
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:253
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:331
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:379
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:414
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:446
+#, elixir-autogen, elixir-format
+msgid "Contract not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Contract number"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:326
+#, elixir-autogen, elixir-format
+msgid "Contract updated successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:218
+#, elixir-autogen, elixir-format
+msgid "Create Buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:15
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:238
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Create Invoice"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Create a new contract with a buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:234
+#, elixir-autogen, elixir-format
+msgid "Create and Issue"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Create and manage professional invoices compliant with Kazakhstan regulations"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Create your first act"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:122
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Create your first invoice"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:118
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:115
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:192
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:69
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Currency"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:46
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:37
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:44
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Date"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:170
+#, elixir-autogen, elixir-format
+msgid "Default bank account updated."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:55
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:93
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:283
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:66
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:83
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:112
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Delete"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Delete this act?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:108
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Delete this invoice?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Direct (No Contract)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Direct Invoice"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:179
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Director Name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:193
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Director Title"
+msgstr ""
+
+#: lib/edoc_api_web/components/core_components.ex:95
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:78
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "Draft"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:124
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Due date"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:33
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:78
+#, elixir-autogen, elixir-format
+msgid "Edit Bank Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:11
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:165
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:198
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:212
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:226
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:252
+#, elixir-autogen, elixir-format
+msgid "Edit Buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:350
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:366
+#, elixir-autogen, elixir-format
+msgid "Edit Contract"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:11
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:284
+#, elixir-autogen, elixir-format
+msgid "Edit Contract %{number}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:496
+#: lib/edoc_api_web/controllers/invoices_controller.ex:530
+#: lib/edoc_api_web/controllers/invoices_controller.ex:543
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Edit Invoice %{number}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Edocly is a modern, streamlined invoicing and contract management system designed specifically for businesses in Kazakhstan."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "Edocly is built with Kazakhstan business requirements in mind, including support for:"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:146
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:89
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:54
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:76
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:31
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:66
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:140
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:48
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:111
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:97
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:201
+#, elixir-autogen, elixir-format
+msgid "Email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:96
+#, elixir-autogen, elixir-format
+msgid "Failed to create act: %{details}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:119
+#, elixir-autogen, elixir-format
+msgid "Failed to create act: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:130
+#, elixir-autogen, elixir-format
+msgid "Failed to create buyer. Please check the form and try again."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:149
+#, elixir-autogen, elixir-format
+msgid "Failed to create contract: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:138
+#: lib/edoc_api_web/controllers/invoices_controller.ex:149
+#, elixir-autogen, elixir-format
+msgid "Failed to create invoice: %{details}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:160
+#, elixir-autogen, elixir-format
+msgid "Failed to create invoice: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:65
+#, elixir-autogen, elixir-format
+msgid "Failed to create the bank account. Please try again."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:459
+#, elixir-autogen, elixir-format
+msgid "Failed to delete contract: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:465
+#: lib/edoc_api_web/controllers/invoices_controller.ex:469
+#, elixir-autogen, elixir-format
+msgid "Failed to delete invoice."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:220
+#, elixir-autogen, elixir-format
+msgid "Failed to delete the bank account."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:192
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:397
+#: lib/edoc_api_web/controllers/invoices_controller.ex:421
+#, elixir-autogen, elixir-format
+msgid "Failed to generate the PDF file."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:430
+#, elixir-autogen, elixir-format
+msgid "Failed to issue contract: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:569
+#, elixir-autogen, elixir-format
+msgid "Failed to issue invoice: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:607
+#, elixir-autogen, elixir-format
+msgid "Failed to mark invoice as paid: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:246
+#, elixir-autogen, elixir-format
+msgid "Failed to update buyer. Please check the form and try again."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:359
+#, elixir-autogen, elixir-format
+msgid "Failed to update contract: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:521
+#, elixir-autogen, elixir-format
+msgid "Failed to update invoice: %{details}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:537
+#, elixir-autogen, elixir-format
+msgid "Failed to update invoice: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:175
+#, elixir-autogen, elixir-format
+msgid "Failed to update the default bank account."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "For Kazakhstan Businesses"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:23
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "From Contract"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Generate legally-binding contracts with customizable terms"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Get Started"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:296
+#: lib/edoc_api_web/controllers/companies_controller.ex:229
+#, elixir-autogen, elixir-format
+msgid "Invalid BIN/IIN. Please enter a valid 12-digit BIN/IIN."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:40
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Invoice %{number}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:219
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:116
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "Invoice Items"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Invoice Type"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:129
+#, elixir-autogen, elixir-format
+msgid "Invoice created successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:437
+#, elixir-autogen, elixir-format
+msgid "Invoice deleted successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:564
+#, elixir-autogen, elixir-format
+msgid "Invoice has already been issued."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:590
+#: lib/edoc_api_web/controllers/invoices_controller.ex:600
+#, elixir-autogen, elixir-format
+msgid "Invoice has already been paid."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:554
+#, elixir-autogen, elixir-format
+msgid "Invoice issued successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:580
+#, elixir-autogen, elixir-format
+msgid "Invoice marked as paid."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:34
+#: lib/edoc_api_web/controllers/invoices_controller.ex:403
+#: lib/edoc_api_web/controllers/invoices_controller.ex:484
+#, elixir-autogen, elixir-format
+msgid "Invoice not found."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:512
+#, elixir-autogen, elixir-format
+msgid "Invoice updated successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:73
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:102
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:176
+#, elixir-autogen, elixir-format
+msgid "Issue"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:26
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:111
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:14
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:31
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:17
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Issue date"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:99
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:170
+#, elixir-autogen, elixir-format
+msgid "Issue this invoice?"
+msgstr ""
+
+#: lib/edoc_api_web/components/core_components.ex:96
+#, elixir-autogen, elixir-format
+msgid "Issued"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:259
+#, elixir-autogen, elixir-format
+msgid "Issued contracts cannot be edited."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:450
+#: lib/edoc_api_web/controllers/invoices_controller.ex:454
+#, elixir-autogen, elixir-format
+msgid "Issued invoices cannot be deleted."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:174
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:226
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "Item description"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "Item name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "KBE and KNP code selection for bank transactions"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:109
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "KBE code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:120
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "KNP code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Key Features"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:44
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:43
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:33
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:120
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Legal Form"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Legal entity types (Товарищество с ограниченной ответственностью, Акционерное общество, Индивидуальный предприниматель)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:140
+#, elixir-autogen, elixir-format
+msgid "Loading..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Multi-language support (Kazakh, Russian)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:10
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:4
+#: lib/edoc_api_web/controllers/acts_controller.ex:53
+#, elixir-autogen, elixir-format
+msgid "New Act"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:35
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:11
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:32
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:95
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:108
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:121
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:136
+#, elixir-autogen, elixir-format
+msgid "New Buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:8
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:11
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:52
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:127
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:142
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:160
+#, elixir-autogen, elixir-format
+msgid "New Contract"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:4
+#: lib/edoc_api_web/controllers/invoices_controller.ex:88
+#: lib/edoc_api_web/controllers/invoices_controller.ex:286
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:5
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "New Invoice"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "No acts yet."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:122
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "No invoices yet."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:24
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:36
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:64
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Number"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:157
+#, elixir-autogen, elixir-format
+msgid "Only draft acts can be deleted."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:452
+#, elixir-autogen, elixir-format
+msgid "Only draft contracts can be deleted."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:500
+#, elixir-autogen, elixir-format
+msgid "Only draft invoices can be edited."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:559
+#, elixir-autogen, elixir-format
+msgid "Only draft invoices can be issued."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:585
+#: lib/edoc_api_web/controllers/invoices_controller.ex:595
+#, elixir-autogen, elixir-format
+msgid "Only issued invoices can be marked as paid."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "PDF generation for all documents"
+msgstr ""
+
+#: lib/edoc_api_web/components/core_components.ex:97
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:61
+#, elixir-autogen, elixir-format
+msgid "Paid"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:164
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:151
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:35
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:78
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:145
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:60
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Phone"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:67
+#, elixir-autogen, elixir-format
+msgid "Please add at least one bank account first."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:419
+#, elixir-autogen, elixir-format
+msgid "Please add buyer details before issuing."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:231
+#, elixir-autogen, elixir-format
+msgid "Please correct the errors below."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:34
+#, elixir-autogen, elixir-format
+msgid "Please create at least one buyer before creating a contract."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:62
+#, elixir-autogen, elixir-format
+msgid "Please create at least one buyer first."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Please enter your company information and bank account to get started."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:109
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:117
+#, elixir-autogen, elixir-format
+msgid "Please select a buyer."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:114
+#: lib/edoc_api_web/controllers/invoices_controller.ex:389
+#, elixir-autogen, elixir-format
+msgid "Please select an issued contract."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:28
+#: lib/edoc_api_web/controllers/acts_controller.ex:73
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:17
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:42
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:69
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:148
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:177
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:264
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:18
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:37
+#: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:62
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:26
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:80
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:112
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:265
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:302
+#: lib/edoc_api_web/controllers/invoices_controller.ex:51
+#: lib/edoc_api_web/controllers/invoices_controller.ex:117
+#: lib/edoc_api_web/controllers/invoices_controller.ex:176
+#: lib/edoc_api_web/controllers/invoices_controller.ex:392
+#, elixir-autogen, elixir-format
+msgid "Please set up your company first."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:48
+#, elixir-autogen, elixir-format
+msgid "Primary Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:161
+#, elixir-autogen, elixir-format
+msgid "Quantity"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Ready to streamline your invoicing and contract workflow?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:157
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:213
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:261
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:208
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:277
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:161
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:210
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:85
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Remove"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Representative name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "Representative title"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:227
+#, elixir-autogen, elixir-format
+msgid "Save as Draft"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Secure authentication with email verification"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:110
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:97
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:194
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:94
+#, elixir-autogen, elixir-format
+msgid "Select Bank..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Select KBE..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:123
+#, elixir-autogen, elixir-format
+msgid "Select KNP..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:72
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:84
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:81
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:80
+#, elixir-autogen, elixir-format
+msgid "Select a buyer..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:51
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Select an issued contract..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:106
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:103
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:141
+#, elixir-autogen, elixir-format
+msgid "Select bank account..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:156
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:182
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:233
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Select unit..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Select..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "Selecting a contract pre-fills buyer, bank account, and items."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:234
+#: lib/edoc_api_web/controllers/invoices_controller.ex:237
+#, elixir-autogen, elixir-format
+msgid "Services"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:26
+#: lib/edoc_api_web/controllers/companies_controller.ex:72
+#: lib/edoc_api_web/controllers/companies_controller.ex:84
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Set Up Your Company"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Sign up"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:27
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:38
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:68
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:4
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:33
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Status"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Support for VAT calculations"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:82
+#, elixir-autogen, elixir-format
+msgid "The selected contract has no items to copy."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:337
+#, elixir-autogen, elixir-format
+msgid "This contract cannot be edited."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:425
+#, elixir-autogen, elixir-format
+msgid "This contract cannot be issued."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:67
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:32
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "Total"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Track buyer information and communication history"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:163
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Unit"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Unit price"
+msgstr ""
+
+#: lib/edoc_api_web/components/core_components.ex:99
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:54
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "Unknown"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:205
+#, elixir-autogen, elixir-format
+msgid "VAT rate"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:130
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:77
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "VAT rate (%)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:626
+#, elixir-autogen, elixir-format
+msgid "Validation failed: %{details}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:49
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:81
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:270
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:56
+#: lib/edoc_api_web/controllers/invoice_html/index.html.heex:93
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "View"
+msgstr ""
+
+#: lib/edoc_api_web/components/core_components.ex:98
+#, elixir-autogen, elixir-format
+msgid "Void"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:205
+#, elixir-autogen, elixir-format
+msgid "You cannot delete the only bank account."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "for a free account today."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:172
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "+7 (7xx) xxx xx xx"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:84
+#, elixir-autogen, elixir-format
+msgid "12 characters for BIN, 12 characters for IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "12-digit BIN/IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Act Type"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "Action"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:172
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:220
+#, elixir-autogen, elixir-format
+msgid "Add Bank Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Add Buyer"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:181
+#, elixir-autogen, elixir-format
+msgid "Add New Bank Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "Add and manage your counterparties"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:279
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this bank account?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this buyer?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to issue this invoice? Once issued, it cannot be edited."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:63
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:235
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "BIC"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:54
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "BIN / IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:51
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "BIN/IIN must be exactly 12 digits"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:135
+#, elixir-autogen, elixir-format
+msgid "Back to Acts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:107
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:4
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Back to Company"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:165
+#, elixir-autogen, elixir-format
+msgid "Back to Invoices"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Back to List"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:170
+#, elixir-autogen, elixir-format
+msgid "Bank Accounts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:53
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:96
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Basis"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Buyer Address"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Buyer BIN/IIN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:33
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Buyer name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:69
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:117
+#, elixir-autogen, elixir-format
+msgid "Code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Contact Person"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:151
+#, elixir-autogen, elixir-format
+msgid "Contract Items (Appendix 1)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Contract Number"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "Create Act"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Create and manage contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:172
+#, elixir-autogen, elixir-format
+msgid "Create and manage invoices"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Create your first contract"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:237
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:247
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Default"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:65
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "Delete this draft contract?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:280
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:123
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:194
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:73
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "Description"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:12
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Details"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Director"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:158
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:110
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:214
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Download PDF"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:84
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:15
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:16
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:274
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:15
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:58
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:70
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:169
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:66
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Edit"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:55
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Enter exactly 12 digits"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Get started by creating your first buyer."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:122
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:109
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:69
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:202
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:236
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:102
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:42
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "IBAN"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:203
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "IBAN must be exactly 20 alphanumeric characters"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Issue Invoice"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Item Name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:47
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "KBE Code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "KNP Code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:203
+#: lib/edoc_api_web/controllers/companies_html/setup.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "KZ..."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "KZT (Kazakhstani Tenge)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:185
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:233
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:15
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Label"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:147
+#, elixir-autogen, elixir-format
+msgid "Manage Buyers"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Manage your counterparties (buyers) for contracts and invoices"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:187
+#, elixir-autogen, elixir-format
+msgid "Mark as Paid"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:181
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "Mark this invoice as paid?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:45
+#: lib/edoc_api_web/controllers/buyer_html/show.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "No"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:227
+#, elixir-autogen, elixir-format
+msgid "No bank accounts configured. Click \"+ Add Bank Account\" to add one."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "No buyers"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "No contracts yet."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "Once you've added your buyers, you can create contracts and invoices."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "PDF"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:164
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:288
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:140
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:202
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:77
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Qty"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:138
+#, elixir-autogen, elixir-format
+msgid "Quick Actions"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:119
+#, elixir-autogen, elixir-format
+msgid "Ready to create contracts?"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "Representative"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:84
+#, elixir-autogen, elixir-format
+msgid "Representative Name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:90
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:155
+#, elixir-autogen, elixir-format
+msgid "Representative Title"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:229
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:107
+#: lib/edoc_api_web/controllers/company_bank_account_html/edit.html.heex:64
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:129
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:278
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:177
+#, elixir-autogen, elixir-format
+msgid "Save Changes"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_html/edit.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Select KBE Code"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Seller"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:138
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:89
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Send"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/show.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Service"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Service name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:263
+#, elixir-autogen, elixir-format
+msgid "Set as Default"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:210
+#, elixir-autogen, elixir-format
+msgid "Set as default"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:154
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:105
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:209
+#, elixir-autogen, elixir-format
+msgid "Telegram"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:165
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:292
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:150
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:206
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:81
+#: lib/edoc_api_web/controllers/invoices_html/new.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "Unit Price"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Update buyer information"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Update contract details"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "VAT Rate (%)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "View Contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:150
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:101
+#: lib/edoc_api_web/controllers/invoice_html/show.html.heex:205
+#, elixir-autogen, elixir-format
+msgid "WhatsApp"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_bank_account_html/show.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Yes"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:186
+#, elixir-autogen, elixir-format
+msgid "e.g., Primary Account"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Без Договора"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "Дата выполнения работ(оказания услуг)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:115
+#, elixir-autogen, elixir-format
+msgid "Дата подписания (принятия) работ(услуг)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Дата составления"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:187
+#, elixir-autogen, elixir-format
+msgid "Директора"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:161
+#, elixir-autogen, elixir-format
+msgid "Ед. изм."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Из Договора"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Кол-во"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:158
+#, elixir-autogen, elixir-format
+msgid "Наименование"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "Работы (услуги)"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Сведения об отчете"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/new.html.heex:202
+#, elixir-autogen, elixir-format
+msgid "Устава"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/new.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "Цена"
+msgstr ""

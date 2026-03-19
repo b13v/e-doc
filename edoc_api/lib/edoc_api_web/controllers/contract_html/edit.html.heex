@@ -1,16 +1,16 @@
 <div class="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">
   <div class="mb-6">
     <a href="/contracts" class="text-sm text-blue-600 hover:text-blue-500">
-      &larr; Back to Contracts
+      &larr; <%= gettext("Back to Contracts") %>
     </a>
   </div>
 
   <div class="md:flex md:items-center md:justify-between mb-6">
     <div class="min-w-0 flex-1">
       <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-        Edit Contract <%= @contract.number %>
+        <%= gettext("Edit Contract %{number}", number: @contract.number) %>
       </h2>
-      <p class="mt-1 text-sm text-gray-500">Update contract details</p>
+      <p class="mt-1 text-sm text-gray-500"><%= gettext("Update contract details") %></p>
     </div>
   </div>
 
@@ -23,12 +23,12 @@
     <div class="bg-white shadow sm:rounded-lg divide-y divide-gray-200">
       <!-- Contract Basic Info -->
       <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Contract Details</h3>
+        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4"><%= gettext("Contract Details") %></h3>
 
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div class="sm:col-span-2">
             <label for="number" class="block text-sm font-medium text-gray-700">
-              Contract Number *
+              <%= gettext("Contract Number") %> *
             </label>
             <div class="mt-1">
               <input
@@ -43,7 +43,7 @@
 
           <div class="sm:col-span-2">
             <label for="issue_date" class="block text-sm font-medium text-gray-700">
-              Date *
+              <%= gettext("Date") %> *
             </label>
             <div class="mt-1">
               <input
@@ -58,7 +58,7 @@
 
           <div class="sm:col-span-2">
             <label for="city" class="block text-sm font-medium text-gray-700">
-              City
+              <%= gettext("City") %>
             </label>
             <div class="mt-1">
               <input
@@ -66,14 +66,14 @@
                 name="contract[city]"
                 id="city"
                 value={@contract.city}
-                placeholder="Almaty"
+                placeholder={gettext("Almaty")}
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
             </div>
           </div>
 
           <div class="sm:col-span-3">
             <label for="buyer_id" class="block text-sm font-medium text-gray-700">
-              Buyer *
+              <%= gettext("Buyer") %> *
             </label>
             <div class="mt-1">
               <select
@@ -81,7 +81,7 @@
                 name="contract[buyer_id]"
                 required
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-                <option value="">Select a buyer...</option>
+                <option value=""><%= gettext("Select a buyer...") %></option>
                 <%= for buyer <- @buyers do %>
                   <option value={buyer.id} selected={@contract.buyer_id == buyer.id}>
                     <%= buyer.name %> (<%= buyer.bin_iin %>)
@@ -90,20 +90,20 @@
               </select>
             </div>
             <p class="mt-1 text-xs text-gray-500">
-              <a href="/buyers/new" class="text-blue-600 hover:text-blue-500">Add new buyer</a>
+              <a href="/buyers/new" class="text-blue-600 hover:text-blue-500"><%= gettext("Add new buyer") %></a>
             </p>
           </div>
 
           <div class="sm:col-span-3">
             <label for="bank_account_id" class="block text-sm font-medium text-gray-700">
-              Bank Account
+              <%= gettext("Bank Account") %>
             </label>
             <div class="mt-1">
               <select
                 id="bank_account_id"
                 name="contract[bank_account_id]"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-                <option value="">Select bank account...</option>
+                <option value=""><%= gettext("Select bank account...") %></option>
                 <%= for bank_account <- @bank_accounts do %>
                   <option value={bank_account.id} selected={@contract.bank_account_id == bank_account.id}>
                     <%= bank_account.bank.name %> - <%= bank_account.iban %>
@@ -115,7 +115,7 @@
 
           <div class="sm:col-span-3">
             <label for="currency" class="block text-sm font-medium text-gray-700">
-              Currency
+              <%= gettext("Currency") %>
             </label>
             <div class="mt-1">
               <input
@@ -130,7 +130,7 @@
 
           <div class="sm:col-span-3">
             <label for="vat_rate" class="block text-sm font-medium text-gray-700">
-              VAT Rate (%)
+              <%= gettext("VAT Rate (%)") %>
             </label>
             <div class="mt-1">
               <select
@@ -148,21 +148,21 @@
       <!-- Contract Items -->
       <div class="px-4 py-5 sm:p-6">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-medium leading-6 text-gray-900">Contract Items (Appendix 1)</h3>
+          <h3 class="text-lg font-medium leading-6 text-gray-900"><%= gettext("Contract Items (Appendix 1)") %></h3>
           <button
             type="button"
             id="add-item-btn"
             class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
-            + Add Item
+            + <%= gettext("Add Item") %>
           </button>
         </div>
 
         <div id="items-container" class="space-y-4">
           <div class="item-row grid grid-cols-12 gap-4 items-center text-sm font-medium text-gray-500 pb-2 border-b">
-            <div class="col-span-5">Item Name</div>
-            <div class="col-span-2">Unit</div>
-            <div class="col-span-2">Qty</div>
-            <div class="col-span-2">Unit Price</div>
+            <div class="col-span-5"><%= gettext("Item Name") %></div>
+            <div class="col-span-2"><%= gettext("Unit") %></div>
+            <div class="col-span-2"><%= gettext("Qty") %></div>
+            <div class="col-span-2"><%= gettext("Unit Price") %></div>
             <div class="col-span-1"></div>
           </div>
           <%= for {item, idx} <- Enum.with_index(@contract.contract_items) do %>
@@ -171,7 +171,7 @@
                 <input
                   type="text"
                   name={"items[#{idx}][name]"}
-                  placeholder="Item description"
+                  placeholder={gettext("Item description")}
                   value={item.name}
                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
               </div>
@@ -179,7 +179,7 @@
                 <select
                   name={"items[#{idx}][code]"}
                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-                  <option value="">Select unit...</option>
+                  <option value=""><%= gettext("Select unit...") %></option>
                   <%= for unit <- @units do %>
                     <option value={unit.symbol} selected={item.code == unit.symbol}>
                       <%= unit.symbol %> — <%= unit.name %>
@@ -191,7 +191,7 @@
                 <input
                   type="number"
                   name={"items[#{idx}][qty]"}
-                  placeholder="1"
+                  placeholder={gettext("1")}
                   min="1"
                   value={Decimal.to_string(item.qty || Decimal.new(1))}
                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
@@ -200,7 +200,7 @@
                 <input
                   type="number"
                   name={"items[#{idx}][unit_price]"}
-                  placeholder="0.00"
+                  placeholder={gettext("0.00")}
                   min="0"
                   step="0.01"
                   value={if item.unit_price, do: Decimal.to_string(item.unit_price), else: ""}
@@ -210,7 +210,7 @@
                 <button
                   type="button"
                   class="remove-item-btn text-red-600 hover:text-red-900 font-medium">
-                  Remove
+                  <%= gettext("Remove") %>
                 </button>
               </div>
             </div>
@@ -223,14 +223,14 @@
               <input
                 type="text"
                 data-name="items[][name]"
-                placeholder="Item description"
+                placeholder={gettext("Item description")}
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
             </div>
             <div class="col-span-2">
               <select
                 data-name="items[][code]"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-                <option value="">Select unit...</option>
+                <option value=""><%= gettext("Select unit...") %></option>
                 <%= for unit <- @units do %>
                   <option value={unit.symbol}><%= unit.symbol %> — <%= unit.name %></option>
                 <% end %>
@@ -240,7 +240,7 @@
               <input
                 type="number"
                 data-name="items[][qty]"
-                placeholder="1"
+                placeholder={gettext("1")}
                 min="1"
                 value="1"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
@@ -249,7 +249,7 @@
               <input
                 type="number"
                 data-name="items[][unit_price]"
-                placeholder="0.00"
+                placeholder={gettext("0.00")}
                 min="0"
                 step="0.01"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" />
@@ -258,7 +258,7 @@
               <button
                 type="button"
                 class="remove-item-btn text-red-600 hover:text-red-900 font-medium">
-                Remove
+                <%= gettext("Remove") %>
               </button>
             </div>
           </div>
@@ -270,12 +270,12 @@
         <a
           href={"/contracts/#{@contract.id}"}
           class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-          Cancel
+          <%= gettext("Cancel") %>
         </a>
         <button
           type="submit"
           class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-          Save Changes
+          <%= gettext("Save Changes") %>
         </button>
       </div>
     </div>

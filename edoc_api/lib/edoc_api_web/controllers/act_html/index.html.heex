@@ -1,13 +1,13 @@
 <div class="sm:flex sm:items-center">
   <div class="sm:flex-auto">
-    <h1 class="text-2xl font-semibold leading-6 text-gray-900">Acts</h1>
-    <p class="mt-2 text-sm text-gray-700">A list of all acts in your account.</p>
+    <h1 class="text-2xl font-semibold leading-6 text-gray-900"><%= gettext("Acts") %></h1>
+    <p class="mt-2 text-sm text-gray-700"><%= gettext("A list of all acts in your account.") %></p>
   </div>
   <div class="mt-4 sm:ml-4 sm:mt-0 sm:flex-none">
     <a
       href="/acts/new"
       class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-      New Act
+      <%= gettext("New Act") %>
     </a>
   </div>
 </div>
@@ -21,12 +21,12 @@
         <table class="min-w-full divide-y divide-gray-300">
           <thead class="bg-gray-50">
             <tr>
-              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Number</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Buyer</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Issue Date</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"><%= gettext("Number") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Buyer") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Issue date") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Status") %></th>
               <th scope="col" class="relative py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 sm:pr-6">
-                Actions
+                <%= gettext("Actions") %>
               </th>
             </tr>
           </thead>
@@ -43,16 +43,16 @@
                   <%= EdocApiWeb.ActHTML.fmt_date(act.issue_date) %>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  <%= String.capitalize(to_string(act.status || "draft")) %>
+                  <%= status_badge(act.status || "draft") %>
                 </td>
                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <a href={"/acts/#{act.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
-                  <a href={"/acts/#{act.id}/pdf"} class="text-red-600 hover:text-red-900 mr-4" target="_blank">PDF</a>
+                  <a href={"/acts/#{act.id}"} class="text-blue-600 hover:text-blue-900 mr-4"><%= gettext("View") %></a>
+                  <a href={"/acts/#{act.id}/pdf"} class="text-red-600 hover:text-red-900 mr-4" target="_blank"><%= gettext("PDF") %></a>
                   <%= if act.status == "draft" do %>
                     <form method="post" action={"/acts/#{act.id}"} class="inline">
                       <input type="hidden" name="_method" value="delete" />
                       <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                      <button type="submit" class="text-red-700 hover:text-red-900" onclick="return confirm('Delete this act?')">Delete</button>
+                      <button type="submit" class="text-red-700 hover:text-red-900" onclick={"return confirm(#{Jason.encode!(gettext("Delete this act?"))})"}><%= gettext("Delete") %></button>
                     </form>
                   <% end %>
                 </td>
@@ -62,7 +62,7 @@
             <%= if @acts == [] do %>
               <tr>
                 <td colspan="5" class="px-3 py-8 text-center text-sm text-gray-500">
-                  No acts yet. <a href="/acts/new" class="text-blue-600 hover:text-blue-900">Create your first act</a>.
+                  <%= gettext("No acts yet.") %> <a href="/acts/new" class="text-blue-600 hover:text-blue-900"><%= gettext("Create your first act") %></a>.
                 </td>
               </tr>
             <% end %>

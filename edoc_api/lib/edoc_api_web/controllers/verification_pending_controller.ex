@@ -4,12 +4,12 @@ defmodule EdocApiWeb.VerificationPendingController do
   alias EdocApi.EmailVerification
 
   def new(conn, %{"email" => email}) do
-    render(conn, :new, email: email, page_title: "Verify Your Email")
+    render(conn, :new, email: email, page_title: gettext("Verify Your Email"))
   end
 
   def new(conn, _params) do
     conn
-    |> put_flash(:error, "Пожалуйста, укажите свой адрес электронной почты.")
+    |> put_flash(:error, gettext("Please provide your email address."))
     |> redirect(to: "/signup")
   end
 
@@ -19,7 +19,7 @@ defmodule EdocApiWeb.VerificationPendingController do
         conn
         |> put_flash(
           :info,
-          "Адрес электронной почты успешно подтвержден! Теперь вы можете войти в систему."
+          gettext("Your email address has been verified. You can now sign in.")
         )
         |> redirect(to: "/login")
 
@@ -27,7 +27,7 @@ defmodule EdocApiWeb.VerificationPendingController do
         conn
         |> put_flash(
           :info,
-          "Адрес электронной почты уже подтвержден. Пожалуйста, войдите в систему."
+          gettext("Your email address is already verified. Please sign in.")
         )
         |> redirect(to: "/login")
 
@@ -35,7 +35,7 @@ defmodule EdocApiWeb.VerificationPendingController do
         conn
         |> put_flash(
           :error,
-          "Недействительный или просроченный токен подтверждения. Пожалуйста, запросите новый."
+          gettext("Invalid or expired verification token. Please request a new one.")
         )
         |> redirect(to: "/verify-email-pending")
     end
@@ -43,7 +43,7 @@ defmodule EdocApiWeb.VerificationPendingController do
 
   def verify(conn, _params) do
     conn
-    |> put_flash(:error, "Отсутствует токен подтверждения.")
+    |> put_flash(:error, gettext("Missing verification token."))
     |> redirect(to: "/signup")
   end
 end

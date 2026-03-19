@@ -1,7 +1,7 @@
 <div class="sm:flex sm:items-center">
   <div class="sm:flex-auto">
-    <h1 class="text-2xl font-semibold leading-6 text-gray-900">Invoices</h1>
-    <p class="mt-2 text-sm text-gray-700">A list of all invoices in your account.</p>
+    <h1 class="text-2xl font-semibold leading-6 text-gray-900"><%= gettext("Invoices") %></h1>
+    <p class="mt-2 text-sm text-gray-700"><%= gettext("A list of all invoices in your account.") %></p>
   </div>
   <div class="mt-4 sm:ml-4 sm:mt-0 sm:flex-none">
     <div class="flex gap-2">
@@ -12,15 +12,15 @@
           class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           aria-expanded="true"
           aria-haspopup="true">
-          Create Invoice
+          <%= gettext("Create Invoice") %>
           <svg class="-mr-1 ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
           </svg>
         </button>
         <div class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="invoice-dropdown">
           <div role="none">
-            <a href="/invoices/new" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Direct Invoice</a>
-            <a href="/invoices/new?from_contract=true" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">From Contract</a>
+            <a href="/invoices/new" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"><%= gettext("Direct Invoice") %></a>
+            <a href="/invoices/new?from_contract=true" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"><%= gettext("From Contract") %></a>
           </div>
         </div>
       </div>
@@ -61,13 +61,13 @@
         <table class="min-w-full divide-y divide-gray-300">
           <thead class="bg-gray-50">
             <tr>
-              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Number</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Customer</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Total</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"><%= gettext("Number") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Buyer") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Date") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Total") %></th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"><%= gettext("Status") %></th>
               <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                <span class="sr-only">Actions</span>
+                <span class="sr-only"><%= gettext("Actions") %></span>
               </th>
             </tr>
           </thead>
@@ -75,7 +75,7 @@
             <%= for invoice <- @invoices do %>
               <tr id={"invoice-#{invoice.id}"} class="hover:bg-gray-50">
                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                  <%= invoice.number || "Draft" %>
+                  <%= invoice.number || gettext("Draft") %>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                   <%= invoice.buyer_name %>
@@ -90,26 +90,26 @@
                   <%= status_badge(invoice.status) %>
                 </td>
                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4">View</a>
+                  <a href={"/invoices/#{invoice.id}"} class="text-blue-600 hover:text-blue-900 mr-4"><%= gettext("View") %></a>
 
                   <%= if invoice.status == "draft" do %>
                     <button
                       type="button"
                       hx-post={"/invoices/#{invoice.id}/issue"}
-                      hx-confirm="Issue this invoice?"
+                      hx-confirm={gettext("Issue this invoice?")}
                       hx-target={"#invoice-#{invoice.id}"}
                       class="text-green-600 hover:text-green-900 mr-4">
-                      Issue
+                      <%= gettext("Issue") %>
                     </button>
 
                     <button
                       type="button"
                       hx-delete={"/invoices/#{invoice.id}"}
-                      hx-confirm="Delete this invoice?"
+                      hx-confirm={gettext("Delete this invoice?")}
                       hx-target={"#invoice-#{invoice.id}"}
                       hx-swap="outerHTML"
                       class="text-red-600 hover:text-red-900">
-                      Delete
+                      <%= gettext("Delete") %>
                     </button>
                   <% end %>
                 </td>
@@ -119,7 +119,7 @@
             <%= if @invoices == [] do %>
               <tr>
                 <td colspan="6" class="px-3 py-8 text-center text-sm text-gray-500">
-                  No invoices yet. <a href="/invoices/new" class="text-blue-600 hover:text-blue-900">Create your first invoice</a>.
+                  <%= gettext("No invoices yet.") %> <a href="/invoices/new" class="text-blue-600 hover:text-blue-900"><%= gettext("Create your first invoice") %></a>.
                 </td>
               </tr>
             <% end %>
@@ -137,6 +137,6 @@
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
-    <span class="text-sm text-gray-600">Loading...</span>
+    <span class="text-sm text-gray-600"><%= gettext("Loading...") %></span>
   </div>
 </div>

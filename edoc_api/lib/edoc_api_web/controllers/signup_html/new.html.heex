@@ -1,6 +1,6 @@
 <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
-    <h2 class="text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">Create your account</h2>
+    <h2 class="text-center text-2xl font-bold leading-9 tracking-tight text-gray-900"><%= gettext("Create your account") %></h2>
   </div>
 
   <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
@@ -11,7 +11,7 @@
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+          <label for="email" class="block text-sm font-medium text-gray-700"><%= gettext("Email address") %></label>
           <div class="mt-2">
             <input
               id="email"
@@ -24,7 +24,7 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700"><%= gettext("Password") %></label>
           <div class="mt-2">
             <input
               id="password"
@@ -35,11 +35,11 @@
               minlength="8"
               class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
           </div>
-          <p class="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
+          <p class="mt-1 text-xs text-gray-500"><%= gettext("Minimum 8 characters") %></p>
         </div>
 
         <div>
-          <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm password</label>
+          <label for="password_confirmation" class="block text-sm font-medium text-gray-700"><%= gettext("Confirm password") %></label>
           <div class="mt-2">
             <input
               id="password_confirmation"
@@ -55,7 +55,7 @@
         <button
           type="submit"
           class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          Sign up
+          <%= gettext("Sign Up") %>
         </button>
       </form>
 
@@ -65,13 +65,13 @@
             <div class="w-full border-t border-gray-300"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="bg-white px-2 text-gray-500">Or</span>
+            <span class="bg-white px-2 text-gray-500"><%= gettext("Or") %></span>
           </div>
         </div>
 
         <div class="mt-6 text-center">
           <a href="/login" class="text-sm font-medium text-blue-600 hover:text-blue-500">
-            Already have an account? Sign in
+            <%= gettext("Already have an account? Sign in") %>
           </a>
         </div>
       </div>
