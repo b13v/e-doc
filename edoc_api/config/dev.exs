@@ -74,10 +74,8 @@ config :swoosh, :api_client, false
 config :edoc_api, Oban,
   repo: EdocApi.Repo,
   queues: [default: 10, pdf_generation: 5],
-  crontab: false,
   plugins: [
-    # 24 hours
-    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
-    {Oban.Plugins.Lifeline, max_age: 60 * 60 * 24},
-    {Oban.Plugins.Repeater, abort_on: :discard}
+    Oban.Plugins.Pruner,
+    Oban.Plugins.Lifeline,
+    Oban.Plugins.Repeater
   ]

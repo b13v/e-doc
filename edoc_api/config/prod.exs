@@ -16,13 +16,10 @@ config :edoc_api, :secure_cookies, true
 config :edoc_api, Oban,
   repo: EdocApi.Repo,
   queues: [default: 10, pdf_generation: 5],
-  crontab: false,
   plugins: [
-    # 7 days
-    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
-    {Oban.Plugins.Lifeline, max_age: 60 * 60 * 24 * 7},
-    {Oban.Plugins.Repeater, abort_on: :discard},
-    {Oban.Web.Plugin, crontab: false}
+    Oban.Plugins.Pruner,
+    Oban.Plugins.Lifeline,
+    Oban.Plugins.Repeater
   ]
 
 # Runtime production configuration, including reading
