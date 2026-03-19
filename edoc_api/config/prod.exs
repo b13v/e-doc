@@ -12,5 +12,18 @@ config :logger, level: :info
 # Secure cookies in production
 config :edoc_api, :secure_cookies, true
 
+# Configure Oban for background jobs in production
+config :edoc_api, Oban,
+  repo: EdocApi.Repo,
+  queues: [default: 10, pdf_generation: 5],
+  crontab: false,
+  plugins: [
+    # 7 days
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
+    {Oban.Plugins.Lifeline, ignore: :oban_periods, max_age: 60 * 60 * 24 * 7},
+    {Oban.Plugins.Repeater, abort_on: :discard},
+    {Oban.Web.Plugin, crontab: false}
+  ]
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

@@ -69,3 +69,15 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure Oban for background jobs
+config :edoc_api, Oban,
+  repo: EdocApi.Repo,
+  queues: [default: 10, pdf_generation: 5],
+  crontab: false,
+  plugins: [
+    # 24 hours
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
+    {Oban.Plugins.Lifeline, ignore: :oban_periods, max_age: 60 * 60 * 24},
+    {Oban.Plugins.Repeater, abort_on: :discard}
+  ]

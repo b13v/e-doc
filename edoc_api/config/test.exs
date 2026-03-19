@@ -30,6 +30,12 @@ config :edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Test
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 
+# Configure Oban for testing (fake mode)
+config :edoc_api, Oban,
+  repo: EdocApi.Repo,
+  queues: [default: 10, pdf_generation: 5],
+  testing: :inline
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

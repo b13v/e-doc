@@ -48,6 +48,7 @@ defmodule EdocApi.MixProject do
       {:argon2_elixir, "~> 4.0"},
       {:joken, "~> 2.6"},
       {:html_sanitize_ex, "~> 1.4"},
+      {:oban, "~> 2.17"},
       {:tidewave, "~> 0.5", only: :dev}
     ]
   end
