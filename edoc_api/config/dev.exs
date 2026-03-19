@@ -76,6 +76,5 @@ config :edoc_api, Oban,
   queues: [default: 10, pdf_generation: 5],
   plugins: [
     Oban.Plugins.Pruner,
-    Oban.Plugins.Lifeline,
-    Oban.Plugins.Repeater
+    Oban.Plugins.Lifeline
   ]
