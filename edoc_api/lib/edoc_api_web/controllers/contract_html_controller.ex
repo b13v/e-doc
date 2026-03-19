@@ -8,12 +8,12 @@ defmodule EdocApiWeb.ContractHTMLController do
   alias EdocApi.Companies
   alias EdocApi.Payments
   alias EdocApi.ContractStatus
-  alias EdocApi.LegalForms
+  alias EdocApiWeb.ErrorHelpers
 
   def index(conn, _params) do
     user = conn.assigns.current_user
     contracts = Core.list_contracts_for_user(user.id)
-    render(conn, :index, contracts: contracts, page_title: "Contracts")
+    render(conn, :index, contracts: contracts, page_title: gettext("Contracts"))
   end
 
   def new(conn, _params) do
@@ -22,7 +22,7 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Please set up your company first")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
@@ -30,7 +30,10 @@ defmodule EdocApiWeb.ContractHTMLController do
 
         if Enum.empty?(buyers) do
           conn
-          |> put_flash(:error, "Please create at least one buyer before creating a contract")
+          |> put_flash(
+            :error,
+            gettext("Please create at least one buyer before creating a contract.")
+          )
           |> redirect(to: "/buyers/new")
         else
           bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
@@ -48,7 +51,7 @@ defmodule EdocApiWeb.ContractHTMLController do
             knp_codes: knp_codes,
             units: units,
             changeset: nil,
-            page_title: "New Contract"
+            page_title: gettext("New Contract")
           )
         end
     end
@@ -76,7 +79,7 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Please set up your company first")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
@@ -103,17 +106,17 @@ defmodule EdocApiWeb.ContractHTMLController do
         case Core.create_contract_for_user(user.id, contract_params, items) do
           {:ok, contract} ->
             conn
-            |> put_flash(:info, "Contract created successfully")
+            |> put_flash(:info, gettext("Contract created successfully."))
             |> redirect(to: "/contracts/#{contract.id}")
 
           {:error, :company_required} ->
             conn
-            |> put_flash(:error, "Please set up your company first")
+            |> put_flash(:error, gettext("Please set up your company first."))
             |> redirect(to: "/company/setup")
 
           {:error, :business_rule, %{rule: :buyer_required}} ->
             conn
-            |> put_flash(:error, "Please select a buyer")
+            |> put_flash(:error, gettext("Please select a buyer."))
             |> render(:new,
               contract: nil,
               buyers: buyers,
@@ -123,7 +126,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: nil,
-              page_title: "New Contract"
+              page_title: gettext("New Contract")
             )
 
           {:error, :validation, %{changeset: changeset}} ->
@@ -138,12 +141,15 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: changeset,
-              page_title: "New Contract"
+              page_title: gettext("New Contract")
             )
 
           {:error, reason} when is_atom(reason) or is_binary(reason) ->
             conn
-            |> put_flash(:error, "Failed to create contract: #{inspect(reason)}")
+            |> put_flash(
+              :error,
+              gettext("Failed to create contract: %{reason}", reason: inspect(reason))
+            )
             |> render(:new,
               contract: nil,
               buyers: buyers,
@@ -153,7 +159,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: nil,
-              page_title: "New Contract"
+              page_title: gettext("New Contract")
             )
         end
     end
@@ -166,7 +172,7 @@ defmodule EdocApiWeb.ContractHTMLController do
       {:error, :not_found, _details} ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, gettext("Contract not found."))
         |> redirect(to: "/contracts")
 
       {:ok, contract} ->
@@ -189,7 +195,7 @@ defmodule EdocApiWeb.ContractHTMLController do
           bank: bank,
           items: items,
           totals: totals,
-          page_title: "Contract #{contract.number}"
+          page_title: gettext("Contract %{number}", number: contract.number)
         )
     end
   end
@@ -246,19 +252,19 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Core.get_contract_for_user(user.id, id) do
       {:error, :not_found, _details} ->
         conn
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, gettext("Contract not found."))
         |> redirect(to: "/contracts")
 
       {:ok, contract} ->
         if ContractStatus.is_issued?(contract) do
           conn
-          |> put_flash(:error, "Cannot edit issued contract")
+          |> put_flash(:error, gettext("Issued contracts cannot be edited."))
           |> redirect(to: "/contracts/#{id}")
         else
           case Companies.get_company_by_user_id(user.id) do
             nil ->
               conn
-              |> put_flash(:error, "Please set up your company first")
+              |> put_flash(:error, gettext("Please set up your company first."))
               |> redirect(to: "/company/setup")
 
             company ->
@@ -277,7 +283,7 @@ defmodule EdocApiWeb.ContractHTMLController do
                 kbe_codes: kbe_codes,
                 knp_codes: knp_codes,
                 units: units,
-                page_title: "Edit Contract #{contract.number}"
+                page_title: gettext("Edit Contract %{number}", number: contract.number)
               )
           end
         end
@@ -295,7 +301,7 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Please set up your company first")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
@@ -319,18 +325,18 @@ defmodule EdocApiWeb.ContractHTMLController do
         case Core.update_contract_for_user(user.id, id, contract_params, items) do
           {:ok, contract} ->
             conn
-            |> put_flash(:info, "Contract updated successfully")
+            |> put_flash(:info, gettext("Contract updated successfully."))
             |> redirect(to: "/contracts/#{contract.id}")
 
           {:error, :not_found, _details} ->
             conn
-            |> put_flash(:error, "Contract not found")
+            |> put_flash(:error, gettext("Contract not found."))
             |> redirect(to: "/contracts")
 
           {:error, :business_rule, %{rule: rule}}
           when rule in [:contract_not_editable, :contract_already_issued] ->
             conn
-            |> put_flash(:error, "Contract cannot be edited")
+            |> put_flash(:error, gettext("This contract cannot be edited."))
             |> redirect(to: "/contracts/#{id}")
 
           {:error, :validation, %{changeset: changeset}} ->
@@ -343,20 +349,23 @@ defmodule EdocApiWeb.ContractHTMLController do
               buyers: buyers,
               bank_accounts: bank_accounts,
               units: units,
-              page_title: "Edit Contract"
+              page_title: gettext("Edit Contract")
             )
 
           {:error, reason} when is_atom(reason) or is_binary(reason) ->
             contract = Core.get_contract_for_user(user.id, id) |> elem(1)
 
             conn
-            |> put_flash(:error, "Failed to update contract: #{inspect(reason)}")
+            |> put_flash(
+              :error,
+              gettext("Failed to update contract: %{reason}", reason: inspect(reason))
+            )
             |> render(:edit,
               contract: contract,
               buyers: buyers,
               bank_accounts: bank_accounts,
               units: units,
-              page_title: "Edit Contract"
+              page_title: gettext("Edit Contract")
             )
         end
     end
@@ -369,11 +378,14 @@ defmodule EdocApiWeb.ContractHTMLController do
       {:error, :not_found, _details} ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, gettext("Contract not found."))
         |> redirect(to: "/contracts")
 
       {:ok, contract} ->
-        case EdocApi.Documents.ContractPdf.render(contract) do
+        # Pre-render HTML in web layer, then pass to PDF module
+        html = EdocApiWeb.PdfTemplates.contract_html(contract)
+
+        case EdocApi.Documents.ContractPdf.render(html) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)
@@ -387,7 +399,7 @@ defmodule EdocApiWeb.ContractHTMLController do
           {:error, _reason} ->
             conn
             |> put_status(:internal_server_error)
-            |> put_flash(:error, "Failed to generate PDF")
+            |> put_flash(:error, gettext("Failed to generate the PDF file."))
             |> redirect(to: "/contracts/#{id}")
         end
     end
@@ -399,28 +411,31 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Core.issue_contract_for_user(user.id, id) do
       {:ok, _contract} ->
         conn
-        |> put_flash(:info, "Contract issued successfully")
+        |> put_flash(:info, gettext("Contract issued successfully."))
         |> redirect(to: "/contracts/#{id}")
 
       {:error, :not_found, _details} ->
         conn
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, gettext("Contract not found."))
         |> redirect(to: "/contracts")
 
       {:error, :business_rule, %{rule: :buyer_required}} ->
         conn
-        |> put_flash(:error, "Please add buyer details before issuing")
+        |> put_flash(:error, gettext("Please add buyer details before issuing."))
         |> redirect(to: "/contracts/#{id}/edit")
 
       {:error, :business_rule, %{rule: rule}}
       when rule in [:contract_already_issued, :contract_not_editable] ->
         conn
-        |> put_flash(:error, "Contract cannot be issued")
+        |> put_flash(:error, gettext("This contract cannot be issued."))
         |> redirect(to: "/contracts/#{id}")
 
       {:error, reason} ->
         conn
-        |> put_flash(:error, "Failed to issue contract: #{inspect(reason)}")
+        |> put_flash(
+          :error,
+          gettext("Failed to issue contract: %{reason}", reason: inspect(reason))
+        )
         |> redirect(to: "/contracts/#{id}")
     end
   end
@@ -431,162 +446,44 @@ defmodule EdocApiWeb.ContractHTMLController do
     case Core.delete_contract_for_user(user.id, id) do
       {:ok, _contract} ->
         conn
-        |> put_flash(:info, "Contract deleted successfully")
+        |> put_flash(:info, gettext("Contract deleted successfully."))
         |> redirect(to: "/contracts")
 
       {:error, :not_found, _details} ->
         conn
-        |> put_flash(:error, "Contract not found")
+        |> put_flash(:error, gettext("Contract not found."))
         |> redirect(to: "/contracts")
 
       {:error, :business_rule, %{rule: rule}}
       when rule in [:contract_not_editable, :contract_already_issued] ->
         conn
-        |> put_flash(:error, "Only draft contracts can be deleted")
+        |> put_flash(:error, gettext("Only draft contracts can be deleted."))
         |> redirect(to: "/contracts/#{id}")
 
       {:error, reason} ->
         conn
-        |> put_flash(:error, "Failed to delete contract: #{inspect(reason)}")
+        |> put_flash(
+          :error,
+          gettext("Failed to delete contract: %{reason}", reason: inspect(reason))
+        )
         |> redirect(to: "/contracts/#{id}")
     end
   end
 
-  defp build_seller_data(contract) do
-    company = contract.company || %{}
+  defp build_seller_data(contract),
+    do: EdocApi.Documents.Builders.ContractDataBuilder.build_seller_data(contract)
 
-    %{
-      name: Map.get(company, :name) || "",
-      legal_form: LegalForms.display(Map.get(company, :legal_form)),
-      bin_iin: Map.get(company, :bin_iin) || "",
-      city: Map.get(company, :city) || contract.city || "",
-      address: Map.get(company, :address) || "",
-      director_name: Map.get(company, :representative_name) || "",
-      director_title: "директор",
-      basis: "Устав",
-      phone: Map.get(company, :phone) || "",
-      email: Map.get(company, :email) || ""
-    }
-  end
+  defp build_buyer_data(contract),
+    do: EdocApi.Documents.Builders.ContractDataBuilder.build_buyer_data(contract)
 
-  defp build_buyer_data(contract) do
-    if contract.buyer do
-      buyer = contract.buyer
-      buyer_bank_account = default_buyer_bank_account(buyer)
-      buyer_bank = if buyer_bank_account, do: buyer_bank_account.bank, else: nil
+  defp build_bank_data(contract),
+    do: EdocApi.Documents.Builders.ContractDataBuilder.build_bank_data(contract)
 
-      %{
-        name: buyer.name || "",
-        legal_form: LegalForms.display(buyer.legal_form),
-        bin_iin: buyer.bin_iin || "",
-        city: buyer.city || "",
-        address: buyer.address || "",
-        director_name: buyer.director_name || "",
-        director_title: buyer.director_title || "директор",
-        basis: buyer.basis || "Устав",
-        phone: buyer.phone || "",
-        email: buyer.email || "",
-        bank_name: if(buyer_bank, do: buyer_bank.name || "", else: ""),
-        iban: if(buyer_bank_account, do: buyer_bank_account.iban || "", else: ""),
-        bic:
-          cond do
-            buyer_bank_account && buyer_bank_account.bic ->
-              buyer_bank_account.bic
+  defp build_items_data(contract),
+    do: EdocApi.Documents.Builders.ContractDataBuilder.build_items_data(contract)
 
-            buyer_bank ->
-              buyer_bank.bic || ""
-
-            true ->
-              ""
-          end
-      }
-    else
-      %{
-        name: contract.buyer_name || "",
-        legal_form: LegalForms.display(contract.buyer_legal_form),
-        bin_iin: contract.buyer_bin_iin || "",
-        city: "",
-        address: contract.buyer_address || "",
-        director_name: contract.buyer_director_name || "",
-        director_title: contract.buyer_director_title || "директор",
-        basis: contract.buyer_basis || "Устав",
-        phone: contract.buyer_phone || "",
-        email: contract.buyer_email || "",
-        bank_name: "",
-        iban: "",
-        bic: ""
-      }
-    end
-  end
-
-  defp default_buyer_bank_account(buyer) do
-    bank_accounts =
-      case buyer.bank_accounts do
-        %Ecto.Association.NotLoaded{} -> []
-        accounts -> accounts
-      end
-
-    Enum.find(bank_accounts, & &1.is_default) || List.first(bank_accounts)
-  end
-
-  defp build_bank_data(contract) do
-    if contract.bank_account do
-      acc = contract.bank_account
-      bank = acc.bank || %{}
-      kbe = acc.kbe_code || %{}
-      knp = acc.knp_code || %{}
-
-      %{
-        bank_name: Map.get(bank, :name) || "",
-        iban: Map.get(acc, :iban) || "",
-        bic: Map.get(bank, :bic) || "",
-        kbe: Map.get(kbe, :code) || "",
-        knp: Map.get(knp, :code) || ""
-      }
-    else
-      %{
-        bank_name: "",
-        iban: "",
-        bic: "",
-        kbe: "",
-        knp: ""
-      }
-    end
-  end
-
-  defp build_items_data(contract) do
-    items = contract.contract_items || []
-
-    Enum.map(items, fn item ->
-      %{
-        name: item.name || "",
-        qty: item.qty || Decimal.new(0),
-        unit_price: item.unit_price || Decimal.new(0),
-        amount: item.amount || Decimal.new(0),
-        code: item.code
-      }
-    end)
-  end
-
-  defp build_totals(items, vat_rate) do
-    subtotal =
-      Enum.reduce(items, Decimal.new(0), fn item, acc ->
-        Decimal.add(acc, item.amount || Decimal.new(0))
-      end)
-
-    vat_rate_dec = Decimal.new(vat_rate || 0)
-
-    vat =
-      Decimal.mult(subtotal, vat_rate_dec) |> Decimal.div(Decimal.new(100)) |> Decimal.round(2)
-
-    total = Decimal.add(subtotal, vat)
-
-    %{
-      subtotal: subtotal,
-      vat: vat,
-      total: total
-    }
-  end
+  defp build_totals(items, vat_rate),
+    do: EdocApi.Documents.Builders.ContractDataBuilder.build_totals(items, vat_rate)
 
   defp normalize_items_params(items_params) when is_list(items_params), do: items_params
 
@@ -611,18 +508,11 @@ defmodule EdocApiWeb.ContractHTMLController do
       end)
 
     if has_duplicate_number_error? do
-      "Такой номер Договора уже существует"
+      gettext("A contract with this number already exists.")
     else
-      details =
-        Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-          Enum.reduce(opts, msg, fn {key, value}, acc ->
-            String.replace(acc, "%{#{key}}", to_string(value))
-          end)
-        end)
-        |> Enum.map(fn {field, errors} -> "#{field}: #{Enum.join(errors, ", ")}" end)
-        |> Enum.join("; ")
-
-      "Validation failed: #{details}"
+      gettext("Validation failed: %{details}",
+        details: ErrorHelpers.format_changeset_errors(changeset)
+      )
     end
   end
 end

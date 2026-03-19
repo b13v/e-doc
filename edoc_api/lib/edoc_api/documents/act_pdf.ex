@@ -1,11 +1,15 @@
 defmodule EdocApi.Documents.ActPdf do
-  alias EdocApi.Pdf
-  alias EdocApiWeb.PdfTemplates
+  @moduledoc """
+  Renders act HTML to PDF.
 
-  @spec render(term()) :: {:ok, binary()} | {:error, term()}
-  def render(act) do
-    act
-    |> PdfTemplates.act_html()
-    |> Pdf.html_to_pdf(orientation: :landscape)
+  HTML must be pre-rendered by the web layer using PdfTemplates.
+  This module only handles the conversion to PDF binary.
+  """
+
+  alias EdocApi.Pdf
+
+  @spec render(binary()) :: {:ok, binary()} | {:error, term()}
+  def render(html) when is_binary(html) do
+    Pdf.html_to_pdf(html, orientation: :landscape)
   end
 end

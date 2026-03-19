@@ -102,7 +102,9 @@ defmodule EdocApiWeb.InvoiceController do
         ErrorMapper.not_found(conn, "invoice_not_found")
 
       invoice ->
-        result = InvoicePdf.render(invoice)
+        # Pre-render HTML in web layer, then pass to PDF module
+        html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
+        result = InvoicePdf.render(html)
 
         error_map = %{
           pdf_generation_failed: fn conn ->

@@ -7,6 +7,7 @@ defmodule EdocApi.DocumentDelivery do
   alias EdocApi.DocumentDelivery.EmailBuilder
   alias EdocApi.DocumentDelivery.PublicAccessToken
   alias EdocApi.DocumentDelivery.ShareTemplates
+  alias EdocApi.Documents.PdfRenderer
   alias EdocApi.Mailer
   alias EdocApi.Repo
   alias EdocApi.Validators.Email, as: EmailValidator
@@ -328,7 +329,7 @@ defmodule EdocApi.DocumentDelivery do
 
   defp renderer do
     Application.get_env(:edoc_api, :document_delivery, [])
-    |> Keyword.get(:renderer, DocumentRenderer)
+    |> Keyword.get(:renderer, PdfRenderer)
   end
 
   defp now, do: DateTime.utc_now() |> DateTime.truncate(:second)

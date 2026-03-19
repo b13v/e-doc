@@ -10,6 +10,7 @@ defmodule EdocApiWeb.InvoicesController do
   alias EdocApi.Invoicing
   alias EdocApi.InvoiceStatus
   alias EdocApi.Documents.InvoicePdf
+  alias EdocApiWeb.ErrorHelpers
   alias EdocApiWeb.UnifiedErrorHandler
   alias EdocApi.Companies
   alias EdocApi.Buyers
@@ -20,7 +21,7 @@ defmodule EdocApiWeb.InvoicesController do
   def index(conn, _params) do
     user = current_user(conn)
     invoices = Invoicing.list_invoices_for_user(user.id)
-    render(conn, :index, invoices: invoices, page_title: "Invoices")
+    render(conn, :index, invoices: invoices, page_title: gettext("Invoices"))
   end
 
   def show(conn, %{"id" => id}) do
@@ -30,11 +31,14 @@ defmodule EdocApiWeb.InvoicesController do
       nil ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Счёт на оплату не найден.")
+        |> put_flash(:error, gettext("Invoice not found."))
         |> redirect(to: "/invoices")
 
       invoice ->
-        render(conn, :show, invoice: invoice, page_title: "Invoice #{invoice.number}")
+        render(conn, :show,
+          invoice: invoice,
+          page_title: gettext("Invoice %{number}", number: invoice.number)
+        )
     end
   end
 
@@ -44,7 +48,7 @@ defmodule EdocApiWeb.InvoicesController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Зарегистрируйте сначала вашу компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company/setup")
 
       company ->
@@ -55,12 +59,12 @@ defmodule EdocApiWeb.InvoicesController do
         cond do
           Enum.empty?(buyers) ->
             conn
-            |> put_flash(:error, "Пожалуйста, сначала создайте хотя бы одного покупателя.")
+            |> put_flash(:error, gettext("Please create at least one buyer first."))
             |> redirect(to: "/buyers/new")
 
           Enum.empty?(bank_accounts) ->
             conn
-            |> put_flash(:error, "Пожалуйста, сначала добавьте хотя бы один банковский счет.")
+            |> put_flash(:error, gettext("Please add at least one bank account first."))
             |> redirect(to: "/company")
 
           true ->
@@ -75,13 +79,13 @@ defmodule EdocApiWeb.InvoicesController do
 
             conn =
               if contract_id && prefill.prefill_items == [] do
-                put_flash(conn, :info, "В выбранном контракте нет позиций для копирования.")
+                put_flash(conn, :info, gettext("The selected contract has no items to copy."))
               else
                 conn
               end
 
             render(conn, :new,
-              page_title: "New Invoice",
+              page_title: gettext("New Invoice"),
               contracts: contracts,
               buyers: buyers,
               bank_accounts: bank_accounts,
@@ -110,7 +114,7 @@ defmodule EdocApiWeb.InvoicesController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company")
 
       company ->
@@ -122,7 +126,7 @@ defmodule EdocApiWeb.InvoicesController do
             case Invoicing.create_invoice_for_user(user.id, company.id, invoice_params_final) do
               {:ok, invoice} ->
                 conn
-                |> put_flash(:info, "Счет на оплату успешно создан.")
+                |> put_flash(:info, gettext("Invoice created successfully."))
                 |> redirect(to: "/invoices/#{invoice.id}")
 
               {:error, %Ecto.Changeset{} = changeset} ->
@@ -131,7 +135,9 @@ defmodule EdocApiWeb.InvoicesController do
                   user,
                   company,
                   invoice_params,
-                  "Failed to create invoice: #{format_changeset_errors(changeset)}"
+                  gettext("Failed to create invoice: %{details}",
+                    details: ErrorHelpers.format_changeset_errors(changeset)
+                  )
                 )
 
               {:error, :validation, %{changeset: changeset}} ->
@@ -140,7 +146,9 @@ defmodule EdocApiWeb.InvoicesController do
                   user,
                   company,
                   invoice_params,
-                  "Failed to create invoice: #{format_changeset_errors(changeset)}"
+                  gettext("Failed to create invoice: %{details}",
+                    details: ErrorHelpers.format_changeset_errors(changeset)
+                  )
                 )
 
               {:error, reason} ->
@@ -149,7 +157,7 @@ defmodule EdocApiWeb.InvoicesController do
                   user,
                   company,
                   invoice_params,
-                  "Failed to create invoice: #{reason}"
+                  gettext("Failed to create invoice: %{reason}", reason: inspect(reason))
                 )
             end
 
@@ -165,11 +173,11 @@ defmodule EdocApiWeb.InvoicesController do
     case Companies.get_company_by_user_id(user.id) do
       nil ->
         conn
-        |> put_flash(:error, "Пожалуйста, сначала зарегистрируйте свою компанию.")
+        |> put_flash(:error, gettext("Please set up your company first."))
         |> redirect(to: "/company")
 
       company ->
-        render_with_data(conn, user, company, %{}, "Требуется как минимум один позиция.")
+        render_with_data(conn, user, company, %{}, gettext("At least one item is required."))
     end
   end
 
@@ -223,10 +231,10 @@ defmodule EdocApiWeb.InvoicesController do
 
   defp derive_service_name(_service_name, [first_item | _]) do
     candidate = String.trim(to_string(first_item["name"] || ""))
-    if byte_size(candidate) >= 3, do: candidate, else: "Services"
+    if byte_size(candidate) >= 3, do: candidate, else: gettext("Services")
   end
 
-  defp derive_service_name(_service_name, _items), do: "Services"
+  defp derive_service_name(_service_name, _items), do: gettext("Services")
 
   defp copy_buyer_from_contract_or_selection(invoice_params, user) do
     buyer_id = invoice_params["buyer_id"]
@@ -275,7 +283,7 @@ defmodule EdocApiWeb.InvoicesController do
     conn
     |> put_flash(:error, error_message)
     |> render(:new,
-      page_title: "New Invoice",
+      page_title: gettext("New Invoice"),
       contracts: contracts,
       buyers: buyers,
       bank_accounts: bank_accounts,
@@ -378,21 +386,11 @@ defmodule EdocApiWeb.InvoicesController do
         :ok
 
       {:error, :not_found} ->
-        {:error, "Пожалуйста, выберите заключенный договор."}
+        {:error, gettext("Please select an issued contract.")}
 
       {:error, :company_required} ->
-        {:error, "Пожалуйста, сначала зарегистрируйте свою компанию."}
+        {:error, gettext("Please set up your company first.")}
     end
-  end
-
-  defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
-    end)
-    |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
-    |> Enum.join("; ")
   end
 
   def pdf(conn, %{"id" => id}) do
@@ -402,11 +400,14 @@ defmodule EdocApiWeb.InvoicesController do
       nil ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Счёт на оплату не найден.")
+        |> put_flash(:error, gettext("Invoice not found."))
         |> redirect(to: "/invoices")
 
       invoice ->
-        case InvoicePdf.render(invoice) do
+        # Pre-render HTML in web layer, then pass to PDF module
+        html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
+
+        case InvoicePdf.render(html) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)
@@ -420,7 +421,7 @@ defmodule EdocApiWeb.InvoicesController do
           {:error, _reason} ->
             conn
             |> put_status(:internal_server_error)
-            |> put_flash(:error, "Не удалось сгенерировать PDF-файл.")
+            |> put_flash(:error, gettext("Failed to generate the PDF file."))
             |> redirect(to: "/invoices/#{id}")
         end
     end
@@ -436,7 +437,7 @@ defmodule EdocApiWeb.InvoicesController do
           send_resp(conn, :no_content, "")
         else
           conn
-          |> put_flash(:info, "Счёт на оплату удалён успешно.")
+          |> put_flash(:info, gettext("Invoice deleted successfully."))
           |> redirect(to: "/invoices")
         end
       end,
@@ -448,11 +449,12 @@ defmodule EdocApiWeb.InvoicesController do
               |> put_resp_content_type("text/html")
               |> send_resp(
                 403,
-                "<span class='text-red-600'>Невозможно удалить выставленный счет.</span>"
+                "<span class='text-red-600'>" <>
+                  gettext("Issued invoices cannot be deleted.") <> "</span>"
               )
             else
               conn
-              |> put_flash(:error, "Невозможно удалить выставленный счет.")
+              |> put_flash(:error, gettext("Issued invoices cannot be deleted."))
               |> redirect(to: "/invoices")
             end
 
@@ -460,9 +462,15 @@ defmodule EdocApiWeb.InvoicesController do
             if UnifiedErrorHandler.htmx_request?(conn) do
               conn
               |> put_resp_content_type("text/html")
-              |> send_resp(404, "<span class='text-red-600'>Ошибка при удалении счета.</span>")
+              |> send_resp(
+                404,
+                "<span class='text-red-600'>" <>
+                  gettext("Failed to delete invoice.") <> "</span>"
+              )
             else
-              conn |> put_flash(:error, "Ошибка при удалении счета.") |> redirect(to: "/invoices")
+              conn
+              |> put_flash(:error, gettext("Failed to delete invoice."))
+              |> redirect(to: "/invoices")
             end
         end
       end
@@ -476,7 +484,7 @@ defmodule EdocApiWeb.InvoicesController do
       nil ->
         conn
         |> put_status(:not_found)
-        |> put_flash(:error, "Счёт на оплату не найден.")
+        |> put_flash(:error, gettext("Invoice not found."))
         |> redirect(to: "/invoices")
 
       invoice ->
@@ -488,11 +496,11 @@ defmodule EdocApiWeb.InvoicesController do
             changeset: changeset,
             kbe_codes: Payments.list_kbe_codes(),
             knp_codes: Payments.list_knp_codes(),
-            page_title: "Edit Invoice #{invoice.number}"
+            page_title: gettext("Edit Invoice %{number}", number: invoice.number)
           )
         else
           conn
-          |> put_flash(:error, "Редактировать можно только черновики счетов.")
+          |> put_flash(:error, gettext("Only draft invoices can be edited."))
           |> redirect(to: "/invoices/#{id}")
         end
     end
@@ -504,33 +512,41 @@ defmodule EdocApiWeb.InvoicesController do
     case Invoicing.update_invoice_for_user(user.id, id, invoice_params) do
       {:ok, invoice} ->
         conn
-        |> put_flash(:info, "Счет успешно обновлен.")
+        |> put_flash(:info, gettext("Invoice updated successfully."))
         |> redirect(to: "/invoices/#{invoice.id}")
 
       {:error, %Ecto.Changeset{} = changeset} ->
         invoice = Invoicing.get_invoice_for_user(user.id, id)
 
         conn
-        |> put_flash(:error, "Не удалось обновить счет: #{format_changeset_errors(changeset)}")
+        |> put_flash(
+          :error,
+          gettext("Failed to update invoice: %{details}",
+            details: ErrorHelpers.format_changeset_errors(changeset)
+          )
+        )
         |> render(:edit,
           invoice: invoice,
           changeset: changeset,
           kbe_codes: Payments.list_kbe_codes(),
           knp_codes: Payments.list_knp_codes(),
-          page_title: "Edit Invoice #{invoice.number}"
+          page_title: gettext("Edit Invoice %{number}", number: invoice.number)
         )
 
       {:error, reason} ->
         invoice = Invoicing.get_invoice_for_user(user.id, id)
 
         conn
-        |> put_flash(:error, "Не удалось обновить счет: #{reason}")
+        |> put_flash(
+          :error,
+          gettext("Failed to update invoice: %{reason}", reason: inspect(reason))
+        )
         |> render(:edit,
           invoice: invoice,
           changeset: Ecto.Changeset.change(invoice, invoice_params),
           kbe_codes: Payments.list_kbe_codes(),
           knp_codes: Payments.list_knp_codes(),
-          page_title: "Edit Invoice #{invoice.number}"
+          page_title: gettext("Edit Invoice %{number}", number: invoice.number)
         )
     end
   end
@@ -541,20 +557,25 @@ defmodule EdocApiWeb.InvoicesController do
     case Invoicing.issue_invoice_for_user(user.id, id) do
       {:ok, invoice} ->
         conn
-        |> put_flash(:info, "Счёт на оплату создан успешно.")
+        |> put_flash(:info, gettext("Invoice issued successfully."))
         |> redirect(to: "/invoices/#{invoice.id}")
 
       {:error, {:business_rule, %{rule: :cannot_issue}}} ->
         conn
-        |> put_flash(:error, "Выставляться могут только черновые счета.")
+        |> put_flash(:error, gettext("Only draft invoices can be issued."))
         |> redirect(to: "/invoices/#{id}")
 
       {:error, {:business_rule, %{rule: :already_issued}}} ->
-        conn |> put_flash(:error, "Invoice is already issued") |> redirect(to: "/invoices/#{id}")
+        conn
+        |> put_flash(:error, gettext("Invoice has already been issued."))
+        |> redirect(to: "/invoices/#{id}")
 
       {:error, reason} ->
         conn
-        |> put_flash(:error, "Failed to issue invoice: #{inspect(reason)}")
+        |> put_flash(
+          :error,
+          gettext("Failed to issue invoice: %{reason}", reason: inspect(reason))
+        )
         |> redirect(to: "/invoices/#{id}")
     end
   end
@@ -565,32 +586,35 @@ defmodule EdocApiWeb.InvoicesController do
     case Invoicing.pay_invoice_for_user(user.id, id) do
       {:ok, invoice} ->
         conn
-        |> put_flash(:info, "Invoice marked as paid")
+        |> put_flash(:info, gettext("Invoice marked as paid."))
         |> redirect(to: "/invoices/#{invoice.id}")
 
       {:error, :business_rule, %{rule: :cannot_mark_paid}} ->
         conn
-        |> put_flash(:error, "Only issued invoices can be marked as paid")
+        |> put_flash(:error, gettext("Only issued invoices can be marked as paid."))
         |> redirect(to: "/invoices/#{id}")
 
       {:error, :business_rule, %{rule: :already_paid}} ->
         conn
-        |> put_flash(:error, "Invoice is already paid")
+        |> put_flash(:error, gettext("Invoice has already been paid."))
         |> redirect(to: "/invoices/#{id}")
 
       {:error, {:business_rule, %{rule: :cannot_mark_paid}}} ->
         conn
-        |> put_flash(:error, "Only issued invoices can be marked as paid")
+        |> put_flash(:error, gettext("Only issued invoices can be marked as paid."))
         |> redirect(to: "/invoices/#{id}")
 
       {:error, {:business_rule, %{rule: :already_paid}}} ->
         conn
-        |> put_flash(:error, "Invoice is already paid")
+        |> put_flash(:error, gettext("Invoice has already been paid."))
         |> redirect(to: "/invoices/#{id}")
 
       {:error, reason} ->
         conn
-        |> put_flash(:error, "Failed to mark invoice as paid: #{inspect(reason)}")
+        |> put_flash(
+          :error,
+          gettext("Failed to mark invoice as paid: %{reason}", reason: inspect(reason))
+        )
         |> redirect(to: "/invoices/#{id}")
     end
   end

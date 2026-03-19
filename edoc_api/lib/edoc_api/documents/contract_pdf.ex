@@ -1,11 +1,15 @@
 defmodule EdocApi.Documents.ContractPdf do
-  alias EdocApi.Pdf
-  alias EdocApiWeb.PdfTemplates
+  @moduledoc """
+  Renders contract HTML to PDF.
 
-  @spec render(term()) :: {:ok, binary()} | {:error, term()}
-  def render(contract) do
-    contract
-    |> PdfTemplates.contract_html()
-    |> Pdf.html_to_pdf()
+  HTML must be pre-rendered by the web layer using PdfTemplates.
+  This module only handles the conversion to PDF binary.
+  """
+
+  alias EdocApi.Pdf
+
+  @spec render(binary()) :: {:ok, binary()} | {:error, term()}
+  def render(html) when is_binary(html) do
+    Pdf.html_to_pdf(html)
   end
 end

@@ -90,7 +90,9 @@ defmodule EdocApiWeb.ContractController do
         ErrorMapper.not_found(conn, "contract_not_found")
 
       {:ok, contract} ->
-        result = ContractPdf.render(contract)
+        # Pre-render HTML in web layer, then pass to PDF module
+        html = EdocApiWeb.PdfTemplates.contract_html(contract)
+        result = ContractPdf.render(html)
 
         error_map = %{
           pdf_generation_failed: fn conn ->
