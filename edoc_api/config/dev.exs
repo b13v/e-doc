@@ -78,6 +78,6 @@ config :edoc_api, Oban,
   plugins: [
     # 24 hours
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
-    {Oban.Plugins.Lifeline, ignore: :oban_periods, max_age: 60 * 60 * 24},
+    {Oban.Plugins.Lifeline, max_age: 60 * 60 * 24},
     {Oban.Plugins.Repeater, abort_on: :discard}
   ]
