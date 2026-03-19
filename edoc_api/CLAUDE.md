@@ -123,6 +123,12 @@ If code would violate ANY of these, you MUST:
 **OTP**:
 10. NO process without runtime reason — processes are for concurrency/state/isolation
 
+**Architecture**:
+11. NO core→web imports — `edoc_api/` must never import from `EdocApiWeb` (umbrella boundary violation)
+    - Core depends on web = circular dependency
+    - Use dependency inversion: web pushes data to core, not core pulls from web
+    - If core needs web functionality, create isolated bridge module with `@moduledoc` documenting coupling
+
 
 ## Tidewave — Use MCP tools
 
