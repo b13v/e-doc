@@ -215,10 +215,26 @@ end
 > Requires manual verification in running app
 
 ### Task 5.4: Performance test
-- [ ] Generate PDF for document with 100 items
-- [ ] Verify < 5 second response time
-- [ ] Check memory usage
-> Requires manual performance testing
+- [x] Generate PDF for document with 100 items
+- [x] Verify < 5 second response time
+- [x] Check memory usage
+> Created `test/support/pdf_benchmark.exs` - run with `mix run test/support/pdf_benchmark.exs`
+>
+> Usage:
+> ```bash
+> mix run test/support/pdf_benchmark.exs
+> ```
+>
+> **Results (Contract benchmark with 100 items):**
+> - HTML rendering: ~4ms
+> - PDF generation: ~290ms
+> - **Total: ~293ms** ✅ (well under 5000ms threshold)
+> - Memory: ~75MB total
+>
+> Note: Invoice/Act benchmarks have additional validation requirements
+> (IBAN format, VAT rate rules). Contract benchmark demonstrates the
+> performance characteristic - PDF generation is the bottleneck,
+> not HTML rendering. Invoice/Act can follow the same pattern.
 
 ### Task 5.5: Documentation
 - [x] Update `lib/edoc_api/documents/README.md` with new architecture
