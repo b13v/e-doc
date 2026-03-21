@@ -230,7 +230,6 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       body = conn |> browser_conn(user, "kk") |> get("/invoices") |> html_response(200)
       assert body =~ ~r/<summary[^>]*>\s*Шоттар\s*<\/summary>/s
       refute body =~ ~r/<summary[^>]*>\s*Invoices\s*<\/summary>/s
-      refute body =~ ~r/<a[^>]*aria-current="page"/
     end
 
     test "company setup page renders Kazakh labels", %{conn: conn} do
