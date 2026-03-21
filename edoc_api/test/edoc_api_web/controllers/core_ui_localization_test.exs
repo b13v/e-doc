@@ -227,6 +227,8 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       _invoice = insert_invoice!(user, company)
 
       body = conn |> browser_conn(user, "kk") |> get("/invoices") |> html_response(200)
+      assert body =~ ~s(<details class="lg:hidden")
+      assert body =~ ~s(<summary class="flex cursor-pointer list-none items-center justify-between)
       assert body =~ "Шоттар"
       refute body =~ ">Invoices<"
     end
