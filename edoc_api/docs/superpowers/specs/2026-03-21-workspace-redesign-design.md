@@ -84,6 +84,20 @@ Required changes:
 
 The shell should read as a stable product frame before the user engages with any page content.
 
+### Responsive shell rules
+
+The shell behavior must be explicit so the redesign does not become desktop-only.
+
+- Desktop: brand at left, primary nav in the center/right flow, account cluster at the far right
+- Tablet: nav spacing compresses before typography does
+- Mobile: nav collapses into a compact menu trigger that opens a vertical disclosure panel; account and locale controls move into that opened panel
+- Active section must remain visible in all breakpoints
+- On mobile, the collapsed nav trigger should include the current section label when `current_section` is present
+- When `current_section` is absent on untouched signed-in pages, the trigger should use a generic localized `Menu` label
+- Locale switcher and account actions must remain reachable without hover
+
+Hover-only interaction is not acceptable for navigation-critical actions.
+
 ### Page header pattern
 
 Overview pages should share a common page-header pattern:
@@ -94,6 +108,74 @@ Overview pages should share a common page-header pattern:
 - optional supporting context region below or beside the header
 
 This pattern should be reusable across invoices, buyers, and later pages.
+
+### Reusable units and ownership
+
+The redesign should introduce a small set of reusable presentation units in `lib/edoc_api_web/components/core_components.ex`.
+
+Required units:
+
+- `workspace_page_header`
+  - responsibility: shared header structure for overview pages
+  - inputs: title, support copy, primary action slot, optional secondary content slot
+  - consumers: invoices index, buyers index, later overview pages
+- `workspace_support_panel`
+  - responsibility: quiet contextual region beside or below a primary working surface
+  - inputs: heading, optional subtitle, list/body slot
+  - consumers: invoices index, buyers index
+- `workspace_empty_state`
+  - responsibility: cleaner empty-state presentation with one primary action
+  - inputs: title, support text, action label, action href
+  - consumers: invoices index, buyers index
+- `workspace_row_actions`
+  - responsibility: consistent row-action presentation across overview tables
+  - inputs: always-visible primary action descriptor, list of secondary action descriptors, responsive mode
+  - phase-1 scope: support only the action transports already needed by invoices and buyers overview pages
+  - action descriptor shape:
+    - `label`
+    - `transport` (`link`, `form`, or `htmx_delete`)
+    - `method` (`get`, `post`, or `delete`)
+    - target field (`href`, `action`, or `hx_delete`)
+    - optional `_method` override for form-based non-GET/POST actions
+    - optional `confirm_text`
+    - optional visibility already resolved by the page before passing the descriptor
+    - `htmx_delete` additionally requires:
+      - `row_dom_id`
+      - fixed component contract: target `#row_dom_id`, swap `outerHTML`
+      - fixed success behavior for this phase: preserve the current invoice-delete behavior after successful delete
+  - fixed behavior in this phase:
+    - `link` renders a normal anchor
+    - `form` renders a normal form/button pair, including optional hidden `_method`
+    - `htmx_delete` renders the existing delete interaction pattern used on invoice rows with a fixed component-owned HTMX rendering contract
+  - desktop behavior: primary action visible inline, secondary actions visually quieter
+  - mobile/touch behavior: compact overflow/menu trigger that reveals the row actions in a touch-friendly list
+  - consumers: invoices index, buyers index
+
+These units should remain presentational only. They must not own business logic, determine visibility rules, or fetch data. Pages/controllers decide which actions exist; the component only renders the passed descriptors consistently.
+
+### Shell interface contract
+
+The active navigation state should be driven by an explicit `current_section` assign passed from touched controllers into the shared shell.
+
+First-pass scope in this redesign:
+
+- the invoices overview route in `lib/edoc_api_web/controllers/invoices_controller.ex` passes `current_section: :invoices`
+- the buyers overview route in `lib/edoc_api_web/controllers/buyer_html_controller.ex` passes `current_section: :buyers`
+- untouched signed-in pages may omit the assign in this phase
+
+When `current_section` is absent, the shell should render with no active-highlight state rather than guessing.
+
+Expected future section values after broader rollout:
+
+- `:invoices`
+- `:buyers`
+- `:contracts`
+- `:acts`
+- `:company`
+
+The shell should not infer active state through brittle text matching in templates.
+
+The shell owns the localized section-label mapping for these section atoms using gettext. Controllers pass only the section atom; layouts/components resolve the human-readable label.
 
 ## Overview Page Redesign
 
@@ -108,9 +190,20 @@ Make the invoices screen feel like the central daily ledger view.
 The page should use a two-part structure:
 
 - primary area: invoice table
-- secondary area: light contextual summary, such as draft count, issued count, paid count, or readiness cues
+- secondary area: light contextual summary with exact first-pass content:
+  - draft invoice count
+  - issued invoice count
+  - paid invoice count
+  - short static note reinforcing that invoices depend on ready buyer and company data
+
+Support-count rule for this phase:
+
+- count only `draft`, `issued`, and `paid`
+- any other statuses are excluded from the summary counts
 
 This secondary region should stay narrow and quiet. It should support the page, not compete with the table.
+
+No new backend data contract is required in this phase for the support panel. If only the invoice list is currently available, the page may derive counts from the already-rendered collection and show the static support note.
 
 ### Table behavior
 
@@ -124,9 +217,39 @@ The table should be visually calmer and easier to scan:
 
 The current header-to-cell structure also needs correction so the columns accurately match their data.
 
+Final first-pass invoice table schema:
+
+- column 1: `Number`
+  - source: `invoice.number` or localized `Draft`
+  - treatment: dominant row link
+- column 2: `Buyer`
+  - source: `invoice.buyer_name`
+  - treatment: standard secondary text
+- column 3: `Issue date`
+  - source: `invoice.issue_date`
+  - treatment: quiet date text in the app’s existing localized date format
+  - fallback: localized em dash / neutral placeholder (`-`) when `issue_date` is absent
+- column 4: `Total`
+  - source: formatted `invoice.total`
+  - treatment: right-aligned or visually emphasized numeric value
+- column 5: `Status`
+  - source: `invoice.status`
+  - treatment: compact status badge
+- column 6: `Actions`
+  - desktop: `View` always visible; state-dependent secondary actions (`Paid`, `Edit`, `Delete`) visually quieter
+  - mobile/touch: actions must not rely on hover; use one compact overflow/menu trigger per row that reveals the row actions in a touch-friendly list
+
+No extra invoice columns should be added in this phase.
+
 ### Empty state
 
 The empty state should feel like part of the same system, not a fallback afterthought. It should keep one clear next action and avoid oversized empty chrome.
+
+### Primary action
+
+The primary action remains `New Invoice`. No additional top-level invoice CTA should compete with it in this phase.
+
+In this phase, `New Invoice` remains a single primary button linking to the existing invoice creation entry point. It should not become a split button or disclosure menu.
 
 ## Buyers
 
@@ -142,6 +265,14 @@ The page should mirror the invoices rhythm so the workspace feels coherent:
 - primary table/list area
 - one supporting context area instead of a detached callout block
 
+The buyers support region should contain exact first-pass content:
+
+- total buyer count
+- short reminder that buyers are used for contracts and invoices
+- one contextual link to contracts as a downstream action, but only when at least one buyer exists
+
+This replaces the current detached callout pattern with a built-in page support surface.
+
 ### Table behavior
 
 - keep buyer name as the dominant row content
@@ -149,9 +280,51 @@ The page should mirror the invoices rhythm so the workspace feels coherent:
 - keep legal form and secondary info visually subordinate
 - support quick scanning across buyer identity, city, and contact information
 
+On touch and small screens, secondary row actions must not rely on hover. The fallback can be always-visible compact actions or a simple overflow/menu pattern, but the actions must remain directly usable.
+
+For this phase, buyers should use the same compact per-row overflow/menu trigger pattern as invoices on mobile/touch screens.
+
+Final first-pass buyers table schema:
+
+- column 1: `Name`
+  - source: `buyer.name`
+  - treatment: dominant row text
+  - secondary line: `buyer.legal_form` when present, visually muted
+- column 2: `BIN/IIN`
+  - source: `buyer.bin_iin`
+  - treatment: standard ledger-style identifier text
+- column 3: `City`
+  - source: `buyer.city`
+  - fallback: `-`
+- column 4: `Email`
+  - source: `buyer.email`
+  - fallback: `-`
+- column 5: `Actions`
+  - desktop: `View` always visible as the primary action; `Edit` and `Delete` present inline as quieter secondary actions
+  - mobile/touch: one compact overflow/menu trigger per row using the shared `workspace_row_actions` pattern
+
+No extra buyers columns should be added in this phase.
+
 ### Empty state
 
 The empty state should feel cleaner and more intentional, with less “default illustration card” energy.
+
+In the zero-buyers state, the page should expose only the primary `Add Buyer` action. The downstream contracts link should not appear in that state.
+
+The existing secondary footer navigation back to company should be removed from the buyers overview in this phase so the page keeps one clear support region and one clear primary action.
+
+### Primary action
+
+The primary action remains `Add Buyer`. It should be the only prominent action in the page header.
+
+### Acceptance focus for buyers
+
+The redesigned buyers page should be considered complete for this phase when:
+
+- the buyer name remains the strongest row element
+- the support region replaces the detached blue callout
+- actions are clearer but less noisy than the current inline-link row
+- empty and populated states feel like the same design system
 
 ## Interaction Model
 
@@ -164,11 +337,39 @@ Expected interaction refinements:
 - improved row action discoverability without constant clutter
 - consistent header actions across pages
 
+### Shared feedback states
+
+The visual system update must also cover shared feedback behavior on touched screens:
+
+- flash success and error messages
+- table row action feedback consistency
+- empty and normal overview states on redesigned pages
+
+This phase does not include redesigning create/edit form validation states. Feedback-state work is limited to the shared shell and the touched overview surfaces.
+
+Ownership:
+
+- shared flash presentation styling belongs in `lib/edoc_api_web/components/core_components.ex`
+- page-specific placement remains the responsibility of each overview page template
+
+Concrete phase-1 feedback acceptance:
+
+- invoice row delete actions continue to present consistent confirmation and success behavior within the redesigned table
+- invoice pay form actions and buyer delete form actions use the redesigned button treatment and preserve existing submission behavior
+- flash success and error surfaces on invoices and buyers match the new visual system
+
+Interaction implementation constraint for this phase:
+
+- the mobile shell menu and overview row-action overflow may use only minimal JavaScript already shipped with the app or small inline behavior consistent with current patterns
+- this phase does not introduce a new client-side framework or interaction system
+
 Optional motion should stay minimal:
 
 - subtle page-header entrance
 - gentle hover reveal on row actions
 - no ornamental animation
+
+Motion is stretch work for this phase, not an acceptance requirement.
 
 ## Architecture And Implementation Shape
 
@@ -180,11 +381,22 @@ Primary files:
 - `lib/edoc_api_web/components/core_components.ex`
 - `lib/edoc_api_web/controllers/invoices_html/index.html.heex`
 - `lib/edoc_api_web/controllers/buyer_html/index.html.heex`
+- `lib/edoc_api_web/controllers/invoices_controller.ex`
+- `lib/edoc_api_web/controllers/buyer_html_controller.ex`
+
+Overview invoice target in this phase:
+
+- `lib/edoc_api_web/controllers/invoices_controller.ex`
+- `lib/edoc_api_web/controllers/invoices_html/index.html.heex`
 
 Possible supporting work:
 
 - small reusable view helpers for page headers, support panels, or summary strips
 - localized copy refinements only where needed to support the new structure
+
+### Localization constraint
+
+All new or revised UI copy introduced by this redesign must continue to flow through the existing gettext localization system. The redesign must not hardcode new visible English strings on localized surfaces.
 
 ## Non-Goals
 
@@ -238,6 +450,23 @@ Success for this phase means:
 - action hierarchy is clearer
 - the app feels less like a generic Tailwind CRUD surface
 - existing workflows and routes continue to work unchanged
+
+### Acceptance checklist
+
+- normal state: invoices and buyers pages render the new shell/header/support rhythm correctly
+- empty state: invoices and buyers empty states feel visually integrated and still expose one clear next action
+- responsive state: header/nav and support regions remain usable on mobile widths without hover dependence
+- feedback state: flash/error surfaces on touched pages match the new visual system
+- localization state: all revised visible copy remains translatable in the existing gettext flow
+
+### Acceptance focus for invoices
+
+The redesigned invoices page should be considered complete for this phase when:
+
+- the table columns map correctly to number, buyer, issue date, total, status, and actions
+- the support region shows the defined counts and static support note without needing new backend endpoints
+- desktop and mobile row actions follow the shared `workspace_row_actions` pattern
+- empty and populated states feel like the same design system
 
 ## Follow-On Work
 
