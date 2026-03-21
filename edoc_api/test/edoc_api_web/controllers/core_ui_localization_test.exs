@@ -117,6 +117,15 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ ">Add Bank Account<"
     end
 
+    test "company shell falls back to localized menu label in Russian", %{
+      conn: conn,
+      user: user
+    } do
+      body = conn |> browser_conn(user, "ru") |> get("/company") |> html_response(200)
+      assert body =~ "Меню"
+      refute body =~ ">Menu<"
+    end
+
     test "company settings page localizes legal form label in Russian and Kazakh", %{
       conn: conn,
       user: user
@@ -208,6 +217,18 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
 
       assert body =~ "Бас тарту"
       refute body =~ ~s(>Cancel<)
+    end
+
+    test "invoice shell trigger shows localized current-section label in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      _invoice = insert_invoice!(user, company)
+
+      body = conn |> browser_conn(user, "kk") |> get("/invoices") |> html_response(200)
+      assert body =~ "Шоттар"
+      refute body =~ ">Invoices<"
     end
 
     test "company setup page renders Kazakh labels", %{conn: conn} do
