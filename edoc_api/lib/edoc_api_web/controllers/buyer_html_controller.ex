@@ -19,7 +19,12 @@ defmodule EdocApiWeb.BuyerHTMLController do
 
       company ->
         buyers = Buyers.list_buyers_for_company(company.id)
-        render(conn, :index, buyers: buyers, page_title: gettext("Buyers"))
+
+        render(conn, :index,
+          buyers: buyers,
+          current_section: :buyers,
+          page_title: gettext("Buyers")
+        )
     end
   end
 

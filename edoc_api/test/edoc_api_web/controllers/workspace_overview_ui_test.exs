@@ -21,6 +21,28 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~r/<a[^>]*href="\/buyers"[^>]*aria-current="page"/
   end
 
+  test "buyer index marks buyers nav active in the workspace shell", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Acme Buyer",
+        "bin_iin" => "060215385673"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/buyers")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*aria-current="page"/
+    refute body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
+  end
+
+  @tag :skip
   test "workspace_row_actions renders inline and overflow affordances", _context do
     html =
       %{

@@ -73,21 +73,78 @@ defmodule EdocApiWeb.Layouts do
   Authenticated user navigation
   """
   def auth_nav(assigns) do
+    assigns = Map.put_new(assigns, :current_section, nil)
+
     ~H"""
-    <nav class="flex items-center space-x-6">
-      <a href="/invoices" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Invoices") %></a>
-      <a href="/contracts" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Contracts") %></a>
-      <a href="/acts" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Acts") %></a>
-      <a href="/buyers" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Buyers") %></a>
-      <a href="/company" class="text-gray-600 hover:text-gray-900 font-medium"><%= gettext("Company") %></a>
-      <%= locale_switcher(assigns) %>
-      <span class="text-gray-500 text-sm"><%= @current_user.email %></span>
-      <form method="post" action="/logout" class="inline">
-        <input type="hidden" name="_method" value="delete" />
-        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <button type="submit" class="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-none cursor-pointer p-0"><%= gettext("Logout") %></button>
-      </form>
-    </nav>
+    <div class="flex w-full flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:justify-end">
+      <nav class="hidden items-center gap-2 lg:flex" aria-label={gettext("Menu")}>
+        <%= for {section, path} <- workspace_sections() do %>
+          <% active? = section == @current_section %>
+          <a
+            href={path}
+            aria-current={if active?, do: "page", else: nil}
+            class={nav_link_class(active?)}
+          >
+            <%= section_label(section) %>
+          </a>
+        <% end %>
+      </nav>
+
+      <details class="rounded-2xl bg-white/80 ring-1 ring-stone-200 lg:hidden">
+        <summary class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-slate-900">
+          <span><%= section_label(@current_section) %></span>
+          <span class="text-slate-400">+</span>
+        </summary>
+        <div class="border-t border-stone-200 px-3 py-3">
+          <div class="space-y-1">
+            <%= for {section, path} <- workspace_sections() do %>
+              <a
+                href={path}
+                aria-current={if section == @current_section, do: "page", else: nil}
+                class={[
+                  "block rounded-xl px-3 py-2 text-sm",
+                  if(
+                    section == @current_section,
+                    do: "bg-stone-100 font-semibold text-slate-900",
+                    else: "text-slate-600"
+                  )
+                ]}
+              >
+                <%= section_label(section) %>
+              </a>
+            <% end %>
+          </div>
+          <div class="mt-3 border-t border-stone-200 pt-3">
+            <%= locale_switcher(assigns) %>
+            <p class="mt-3 text-sm text-slate-500"><%= @current_user.email %></p>
+            <form method="post" action="/logout" class="mt-3">
+              <input type="hidden" name="_method" value="delete" />
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="w-full rounded-xl border border-stone-200 px-3 py-2 text-left text-sm font-medium text-slate-600"
+              >
+                <%= gettext("Logout") %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </details>
+
+      <div class="hidden items-center gap-3 lg:flex">
+        <%= locale_switcher(assigns) %>
+        <div class="flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200">
+          <span class="text-slate-500"><%= @current_user.email %></span>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_method" value="delete" />
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <button type="submit" class="font-medium text-slate-600 hover:text-slate-900">
+              <%= gettext("Logout") %>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
     """
   end
 
@@ -96,9 +153,9 @@ defmodule EdocApiWeb.Layouts do
   """
   def app(assigns) do
     ~H"""
-    <header class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
+    <header class="border-b border-stone-200 bg-stone-50/95 backdrop-blur">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-center">
             <%= brand_logo(assigns) %>
           </div>
@@ -111,7 +168,7 @@ defmodule EdocApiWeb.Layouts do
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {@inner_content}
     </main>
     """
@@ -150,12 +207,12 @@ defmodule EdocApiWeb.Layouts do
       })
 
     ~H"""
-    <div class="inline-flex items-center rounded-md bg-gray-100 p-1">
+    <div class="inline-flex items-center rounded-full bg-stone-100 p-1 ring-1 ring-stone-200">
       <a
         href={locale_path("kk", @current_path)}
         class={[
-          "rounded px-2 py-1 text-sm font-medium",
-          if(@locale == "kk", do: "bg-white text-blue-600 shadow-sm", else: "text-gray-500")
+          "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+          if(@locale == "kk", do: "bg-white text-slate-900 shadow-sm", else: "text-slate-500")
         ]}
       >
         Қаз
@@ -163,14 +220,46 @@ defmodule EdocApiWeb.Layouts do
       <a
         href={locale_path("ru", @current_path)}
         class={[
-          "rounded px-2 py-1 text-sm font-medium",
-          if(@locale == "ru", do: "bg-white text-blue-600 shadow-sm", else: "text-gray-500")
+          "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+          if(@locale == "ru", do: "bg-white text-slate-900 shadow-sm", else: "text-slate-500")
         ]}
       >
         Рус
       </a>
     </div>
     """
+  end
+
+  defp section_label(:invoices), do: gettext("Invoices")
+  defp section_label(:buyers), do: gettext("Buyers")
+  defp section_label(:contracts), do: gettext("Contracts")
+  defp section_label(:acts), do: gettext("Acts")
+  defp section_label(:company), do: gettext("Company")
+
+  defp section_label(_) do
+    case Gettext.get_locale(EdocApiWeb.Gettext) do
+      "kk" -> "Мәзір"
+      "ru" -> "Меню"
+      _ -> gettext("Menu")
+    end
+  end
+
+  defp nav_link_class(active?) do
+    if active? do
+      "inline-flex items-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200"
+    else
+      "inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900"
+    end
+  end
+
+  defp workspace_sections do
+    [
+      {:invoices, "/invoices"},
+      {:contracts, "/contracts"},
+      {:acts, "/acts"},
+      {:buyers, "/buyers"},
+      {:company, "/company"}
+    ]
   end
 
   defp locale_path(locale, current_path) do

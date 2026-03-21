@@ -21,7 +21,12 @@ defmodule EdocApiWeb.InvoicesController do
   def index(conn, _params) do
     user = current_user(conn)
     invoices = Invoicing.list_invoices_for_user(user.id)
-    render(conn, :index, invoices: invoices, page_title: gettext("Invoices"))
+
+    render(conn, :index,
+      invoices: invoices,
+      current_section: :invoices,
+      page_title: gettext("Invoices")
+    )
   end
 
   def show(conn, %{"id" => id}) do
