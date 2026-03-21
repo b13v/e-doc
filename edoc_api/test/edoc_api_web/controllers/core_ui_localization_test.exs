@@ -122,8 +122,9 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       user: user
     } do
       body = conn |> browser_conn(user, "ru") |> get("/company") |> html_response(200)
-      assert body =~ "Меню"
-      refute body =~ ">Menu<"
+      assert body =~ ~r/<summary[^>]*>\s*Меню\s*<\/summary>/s
+      refute body =~ ~r/<a[^>]*aria-current="page"/
+      refute body =~ ~r/<summary[^>]*>\s*Компания\s*<\/summary>/s
     end
 
     test "company settings page localizes legal form label in Russian and Kazakh", %{
@@ -227,10 +228,9 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       _invoice = insert_invoice!(user, company)
 
       body = conn |> browser_conn(user, "kk") |> get("/invoices") |> html_response(200)
-      assert body =~ ~s(<details class="lg:hidden")
-      assert body =~ ~s(<summary class="flex cursor-pointer list-none items-center justify-between)
-      assert body =~ "Шоттар"
-      refute body =~ ">Invoices<"
+      assert body =~ ~r/<summary[^>]*>\s*Шоттар\s*<\/summary>/s
+      refute body =~ ~r/<summary[^>]*>\s*Invoices\s*<\/summary>/s
+      refute body =~ ~r/<a[^>]*aria-current="page"/
     end
 
     test "company setup page renders Kazakh labels", %{conn: conn} do

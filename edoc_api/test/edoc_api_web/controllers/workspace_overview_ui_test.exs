@@ -16,10 +16,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> get("/invoices")
       |> html_response(200)
 
-    assert body =~ ~s(href="/invoices")
-    assert body =~ ~s(aria-current="page")
+    assert body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
     assert body =~ ~s(action="/logout")
-    refute body =~ ~s(href="/buyers" aria-current="page")
+    refute body =~ ~r/<a[^>]*href="\/buyers"[^>]*aria-current="page"/
   end
 
   test "workspace_row_actions renders inline and overflow affordances", _context do
@@ -43,10 +42,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
-    assert html =~ "View"
-    assert html =~ "Actions"
-    assert html =~ "hx-delete"
-    assert html =~ "invoice-1"
+    assert html =~ ~r/<a[^>]*href="\/invoices\/1"[^>]*>\s*View\s*<\/a>/s
+    assert html =~ ~r/<(button|summary)[^>]*>\s*Actions\s*<\/(button|summary)>/s
+    assert html =~ ~r/hx-delete="\/invoices\/1"/
+    assert html =~ ~r/id="invoice-1"/
   end
 
   test "flash_error renders the shared error surface", _context do
