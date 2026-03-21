@@ -108,6 +108,11 @@ msgstr ""
 msgid "Logout"
 msgstr ""
 
+#: lib/edoc_api_web/components/layouts.ex:178
+#, elixir-autogen
+msgid "Menu"
+msgstr ""
+
 #: lib/edoc_api_web/controllers/signup_html/new.html.heex:38
 #, elixir-autogen
 msgid "Minimum 8 characters"

@@ -236,13 +236,7 @@ defmodule EdocApiWeb.Layouts do
   defp section_label(:acts), do: gettext("Acts")
   defp section_label(:company), do: gettext("Company")
 
-  defp section_label(_) do
-    case Gettext.get_locale(EdocApiWeb.Gettext) do
-      "kk" -> "Мәзір"
-      "ru" -> "Меню"
-      _ -> gettext("Menu")
-    end
-  end
+  defp section_label(_), do: gettext("Menu")
 
   defp nav_link_class(active?) do
     if active? do

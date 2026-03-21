@@ -195,6 +195,16 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
   end
 
   describe "Kazakh browser UI" do
+    test "menu label is available in the gettext catalog for Russian and Kazakh" do
+      assert Gettext.with_locale(EdocApiWeb.Gettext, "ru", fn ->
+               Gettext.gettext(EdocApiWeb.Gettext, "Menu")
+             end) == "Меню"
+
+      assert Gettext.with_locale(EdocApiWeb.Gettext, "kk", fn ->
+               Gettext.gettext(EdocApiWeb.Gettext, "Menu")
+             end) == "Мәзір"
+    end
+
     test "company settings page localizes bank table actions header in Kazakh", %{
       conn: conn,
       user: user,
