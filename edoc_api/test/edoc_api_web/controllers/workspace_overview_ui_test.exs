@@ -131,6 +131,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "buyer@example.com"
     assert body =~ ">1<"
     assert body =~ "Покупатели используются для договоров и счетов."
+    assert body =~ "Держите данные покупателей актуальными перед созданием договоров и счетов."
     assert body =~ "Просмотреть договоры"
     assert body =~ "Действия"
     refute body =~ "Назад к компании"
