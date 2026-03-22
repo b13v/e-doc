@@ -106,6 +106,54 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ "xl:grid-cols-[minmax(0,1fr)_18rem]"
   end
 
+  test "buyers overview replaces the detached callout with an integrated support panel", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Acme Buyer",
+        "bin_iin" => "080215385677",
+        "city" => "Алматы",
+        "email" => "buyer@example.com"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    assert body =~ "Алматы"
+    assert body =~ "buyer@example.com"
+    assert body =~ ">1<"
+    assert body =~ "Покупатели используются для договоров и счетов."
+    assert body =~ "Просмотреть договоры"
+    assert body =~ "Действия"
+    refute body =~ "Назад к компании"
+  end
+
+  test "buyers overview empty state keeps one primary action and omits the contracts link", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    assert body =~ "Покупателей пока нет."
+    assert body =~ ~s(href="/buyers/new")
+    refute body =~ "Просмотреть договоры"
+  end
+
   test "workspace_row_actions renders inline and overflow affordances", _context do
     html =
       render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
