@@ -144,20 +144,26 @@ defmodule EdocApiWeb.CoreComponents do
   Render a consistent flash error summary for forms.
   """
   attr(:flash, :map, required: true)
+  attr(:include_info, :boolean, default: true)
   attr(:class, :string, default: nil)
 
   def flash_error(assigns) do
+    assigns =
+      assigns
+      |> assign(:show_info, assigns.include_info && assigns.flash["info"])
+      |> assign(:show_error, assigns.flash["error"])
+
     ~H"""
-    <div :if={@flash["info"] || @flash["error"]} class={["mb-4 space-y-3", @class]}>
+    <div :if={@show_info || @show_error} class={["mb-4 space-y-3", @class]}>
       <div
-        :if={@flash["info"]}
+        :if={@show_info}
         class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-sm"
       >
         <p class="text-sm font-medium leading-6"><%= @flash["info"] %></p>
       </div>
 
       <div
-        :if={@flash["error"]}
+        :if={@show_error}
         class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900 shadow-sm"
       >
         <p class="text-sm font-medium leading-6"><%= @flash["error"] %></p>
@@ -270,16 +276,17 @@ defmodule EdocApiWeb.CoreComponents do
       |> assign(:action, action)
       |> assign(:classes, row_action_classes(tone, :form))
       |> assign(:form_method, form_method(action))
+      |> assign(:csrf_token, csrf_token(action))
       |> assign(:method_override, method_override(action))
 
     ~H"""
     <form action={@action.action} method={@form_method} class={row_action_form_classes(@tone)}>
-      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input :if={@csrf_token} type="hidden" name="_csrf_token" value={@csrf_token} />
       <input :if={@method_override} type="hidden" name="_method" value={@method_override} />
       <button
         type="submit"
         class={@classes}
-        onclick={if @action[:confirm_text], do: "return confirm('#{@action.confirm_text}')", else: nil}
+        onclick={if @action[:confirm_text], do: "return confirm(#{inspect(@action.confirm_text)})", else: nil}
       >
         <%= @action.label %>
       </button>
@@ -321,10 +328,12 @@ defmodule EdocApiWeb.CoreComponents do
     do: "text-sm font-medium text-slate-600 transition hover:text-slate-900"
 
   defp row_action_classes(:mobile, :htmx_delete),
-    do: "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+    do:
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
 
   defp row_action_classes(:mobile, _transport),
-    do: "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+    do:
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
 
   defp row_action_form_classes(:mobile), do: "block"
   defp row_action_form_classes(_tone), do: "inline"
@@ -332,6 +341,9 @@ defmodule EdocApiWeb.CoreComponents do
   defp form_method(%{method: :get}), do: "get"
   defp form_method(%{method: :post}), do: "post"
   defp form_method(_action), do: "post"
+
+  defp csrf_token(%{method: :get}), do: nil
+  defp csrf_token(_action), do: Phoenix.Controller.get_csrf_token()
 
   defp method_override(%{_method: override}), do: override
 

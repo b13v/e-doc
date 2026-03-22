@@ -66,21 +66,126 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert html =~ ~r/hx-delete="\/invoices\/1"/
     assert html =~ ~r/hx-target="#invoice-1"/
     assert html =~ ~r/hx-swap="outerHTML"/
-    assert html =~ ~r/hx-on::after-request="if\(event\.detail\.successful\) window\.location\.reload\(\)"/
+
+    assert html =~
+             ~r/hx-on::after-request="if\(event\.detail\.successful\) window\.location\.reload\(\)"/
+
     assert html =~ ~r/<details[^>]*>/
   end
 
-  test "flash_error renders shared info and error surfaces", _context do
+  test "workspace_row_actions form transport escapes confirm text and keeps phase-1 post semantics",
+       _context do
     html =
-      %{flash: %{"info" => "Saved", "error" => "Validation failed"}}
-      |> EdocApiWeb.CoreComponents.flash_error()
-      |> Phoenix.HTML.Safe.to_iodata()
-      |> IO.iodata_to_binary()
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: %{
+          label: "Paid",
+          transport: :form,
+          method: :post,
+          action: "/invoices/1/pay",
+          confirm_text: "Mark invoice as paid? It's final."
+        },
+        secondary: [],
+        mobile_mode: :overflow
+      )
+
+    assert html =~ ~s(<form action="/invoices/1/pay" method="post")
+    assert html =~ ~s(name="_csrf_token")
+    refute html =~ ~s(name="_method")
+    refute html =~ ~s|return confirm('Mark invoice as paid? It's final.')|
+    assert html =~ ~s|return confirm(&quot;Mark invoice as paid? It&#39;s final.&quot;)|
+  end
+
+  test "workspace_row_actions get forms preserve method semantics without CSRF fields", _context do
+    html =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: %{
+          label: "Search",
+          transport: :form,
+          method: :get,
+          action: "/invoices"
+        },
+        secondary: [],
+        mobile_mode: :overflow
+      )
+
+    assert html =~ ~s(<form action="/invoices" method="get")
+    refute html =~ ~s(name="_csrf_token")
+    refute html =~ ~s(name="_method")
+  end
+
+  test "flash_error keeps shared info and error surfaces by default", _context do
+    html =
+      render_component(&EdocApiWeb.CoreComponents.flash_error/1,
+        flash: %{"info" => "Saved", "error" => "Validation failed"}
+      )
 
     assert html =~ "Saved"
     assert html =~ "Validation failed"
     assert html =~ "bg-emerald-50"
     assert html =~ "bg-rose-50"
+  end
+
+  test "flash_error omits the wrapper when only info exists and info rendering is disabled", _context do
+    html =
+      render_component(&EdocApiWeb.CoreComponents.flash_error/1,
+        flash: %{"info" => "Saved"},
+        include_info: false
+      )
+
+    assert html == ""
+  end
+
+  test "flash_error can opt out of info surfaces while still showing errors", _context do
+    html =
+      render_component(&EdocApiWeb.CoreComponents.flash_error/1,
+        flash: %{"info" => "Saved", "error" => "Validation failed"},
+        include_info: false
+      )
+
+    assert html =~ "Validation failed"
+    assert html =~ "bg-rose-50"
+    refute html =~ "Saved"
+    refute html =~ "bg-emerald-50"
+  end
+
+  test "invoices and buyers overview pages render the shared flash rhythm explicitly", %{
+    conn: _conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Acme Buyer",
+        "bin_iin" => "060215385673"
+      })
+
+    invoice_body =
+      build_conn()
+      |> browser_conn(user, "en")
+      |> fetch_flash()
+      |> put_flash(:info, "Saved")
+      |> put_flash(:error, "Failed")
+      |> get("/invoices")
+      |> html_response(200)
+
+    buyers_body =
+      build_conn()
+      |> browser_conn(user, "en")
+      |> fetch_flash()
+      |> put_flash(:info, "Saved")
+      |> put_flash(:error, "Failed")
+      |> get("/buyers")
+      |> html_response(200)
+
+    for body <- [invoice_body, buyers_body] do
+      assert body =~ "Saved"
+      assert body =~ "Failed"
+      assert body =~ "bg-emerald-50"
+      assert body =~ "bg-rose-50"
+      assert length(Regex.scan(~r/>Saved</, body)) == 1
+    end
   end
 
   defp browser_conn(conn, user, locale) do

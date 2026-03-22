@@ -17,6 +17,8 @@
     </div>
   </div>
 
+  <.flash_error flash={@flash} include_info={true} class="mt-4" />
+
   <div class="mt-8">
     <%= if Enum.empty?(@buyers) do %>
       <div class="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">

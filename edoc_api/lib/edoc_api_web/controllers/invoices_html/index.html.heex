@@ -6,13 +6,7 @@
     </a>
   </div>
 
-  <%= if @flash["info"] do %>
-    <div class="px-6 py-3 bg-green-50 text-green-800 border-b border-green-200">
-      <%= @flash["info"] %>
-    </div>
-  <% end %>
-
-  <.flash_error flash={@flash} class="mx-6 mt-3" />
+  <.flash_error flash={@flash} include_info={true} class="mx-6 mt-3" />
 
   <div class="px-6 py-4">
     <%= if Enum.empty?(@invoices) do %>
