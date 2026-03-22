@@ -78,6 +78,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert body =~ "INV-2026-2"
     assert body =~ "100.00 KZT"
+    assert body =~ "xl:grid-cols-[minmax(0,1fr)_18rem]"
     assert body =~ ~r/<td[^>]*>\s*-\s*<\/td>/
     assert body =~ "Обзор"
     assert body =~ "Черновики"
@@ -102,6 +103,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Создайте первый счет, когда данные компании и покупателя будут готовы."
     assert body =~ ~s(href="/invoices/new")
     refute body =~ "Черновики"
+    refute body =~ "xl:grid-cols-[minmax(0,1fr)_18rem]"
   end
 
   test "workspace_row_actions renders inline and overflow affordances", _context do

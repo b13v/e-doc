@@ -46,7 +46,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
         |> get("/invoices")
         |> html_response(200)
 
-      assert body =~ "Спокойный реестр для черновиков, выставленных и оплаченных счетов."
+      assert body =~ "Реестр для черновиков, выставленных и оплаченных счетов."
       refute body =~ "Track draft, issued, and paid invoices from one calm ledger view."
     end
 

@@ -2032,3 +2032,38 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Цена"
 msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Create your first invoice when your buyer and company details are ready."
+msgstr "Компания мен сатып алушы деректері дайын болғанда алғашқы шотыңызды жасаңыз."
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Draft invoices"
+msgstr "Шот жобалары"
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Invoices depend on ready buyer and company data."
+msgstr "Шоттар компания мен сатып алушы деректері дайын болғанда ғана жасалады."
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Issued invoices"
+msgstr "Шығарылған шоттар"
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "Overview"
+msgstr "Шолу"
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:103
+#, elixir-autogen, elixir-format
+msgid "Paid invoices"
+msgstr "Төленген шоттар"
+
+#: lib/edoc_api_web/controllers/invoices_html/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Track draft, issued, and paid invoices from one calm ledger view."
+msgstr "Бір тізімде жоба, шығарылған және төленген шоттарды бақылаңыз."
