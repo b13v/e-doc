@@ -2067,3 +2067,13 @@ msgstr "Төленген шоттар"
 #, elixir-autogen, elixir-format
 msgid "Track draft, issued, and paid invoices from one calm ledger view."
 msgstr "Бір тізімде жоба, шығарылған және төленген шоттарды бақылаңыз."
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Buyers are used for contracts and invoices."
+msgstr "Сатып алушылар келісімшарттар мен шоттар үшін пайдаланылады."
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Keep buyer details current before creating contracts and invoices."
+msgstr "Келісімшарттар мен шоттарды жасамас бұрын сатып алушы деректерін өзекті күйде ұстаңыз."

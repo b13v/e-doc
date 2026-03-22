@@ -2066,3 +2066,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Track draft, issued, and paid invoices from one calm ledger view."
 msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Buyers are used for contracts and invoices."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/buyer_html/index.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Keep buyer details current before creating contracts and invoices."
+msgstr ""

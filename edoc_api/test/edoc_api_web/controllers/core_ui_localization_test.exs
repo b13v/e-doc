@@ -379,6 +379,10 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
         "Back to Company" => "Назад к компании",
         "Bank Accounts" => "Банковские счета",
         "Basis" => "Основание",
+        "Buyers are used for contracts and invoices." =>
+          "Покупатели используются для договоров и счетов.",
+        "Keep buyer details current before creating contracts and invoices." =>
+          "Держите данные покупателей актуальными перед созданием договоров и счетов.",
         "Create Act" => "Создать акт",
         "Create and manage contracts" => "Создавайте договоры и управляйте ими",
         "Create and manage invoices" => "Создавайте счета и управляйте ими",
@@ -404,6 +408,10 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
         "Bank account not found." => "Банк шоты табылмады.",
         "Back to Company" => "Компанияға оралу",
         "Bank Accounts" => "Банк шоттары",
+        "Buyers are used for contracts and invoices." =>
+          "Сатып алушылар келісімшарттар мен шоттар үшін пайдаланылады.",
+        "Keep buyer details current before creating contracts and invoices." =>
+          "Келісімшарттар мен шоттарды жасамас бұрын сатып алушы деректерін өзекті күйде ұстаңыз.",
         "Default bank account updated." => "Негізгі банк шоты жаңартылды.",
         "Create your first contract" => "Алғашқы келісімшартты жасаңыз",
         "Details" => "Толығырақ",
