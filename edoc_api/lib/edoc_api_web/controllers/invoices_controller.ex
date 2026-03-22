@@ -24,6 +24,7 @@ defmodule EdocApiWeb.InvoicesController do
 
     render(conn, :index,
       invoices: invoices,
+      invoice_summary: invoice_summary(invoices),
       current_section: :invoices,
       page_title: gettext("Invoices")
     )
@@ -190,6 +191,17 @@ defmodule EdocApiWeb.InvoicesController do
 
   def create_from_contract(conn, %{"contract_id" => contract_id}) do
     redirect(conn, to: "/invoices/new?invoice_type=contract&contract_id=#{contract_id}")
+  end
+
+  defp invoice_summary(invoices) do
+    Enum.reduce(invoices, %{draft: 0, issued: 0, paid: 0}, fn invoice, acc ->
+      case invoice.status do
+        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
+        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
+        "paid" -> Map.update!(acc, :paid, &(&1 + 1))
+        _ -> acc
+      end
+    end)
   end
 
   defp process_items(items_params) do
