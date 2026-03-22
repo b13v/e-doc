@@ -2,6 +2,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
   use EdocApiWeb.ConnCase
 
   import EdocApi.TestFixtures
+  import Phoenix.LiveViewTest
 
   test "invoice index marks invoices nav active in the workspace shell", %{conn: conn} do
     user = create_user!()
@@ -42,10 +43,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
   end
 
-  @tag :skip
   test "workspace_row_actions renders inline and overflow affordances", _context do
     html =
-      %{
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
         primary: %{label: "View", transport: :link, method: :get, href: "/invoices/1"},
         secondary: [
           %{
@@ -59,26 +59,28 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
         ],
         mobile_mode: :overflow,
         row_id: "invoice-1"
-      }
-      |> EdocApiWeb.CoreComponents.workspace_row_actions()
-      |> Phoenix.HTML.Safe.to_iodata()
-      |> IO.iodata_to_binary()
+      )
 
     assert html =~ ~r/<a[^>]*href="\/invoices\/1"[^>]*>\s*View\s*<\/a>/s
-    assert html =~ ~r/<(button|summary)[^>]*>\s*Actions\s*<\/(button|summary)>/s
+    assert html =~ ~r/<summary[^>]*>\s*Actions\s*<\/summary>/s
     assert html =~ ~r/hx-delete="\/invoices\/1"/
-    assert html =~ ~r/id="invoice-1"/
+    assert html =~ ~r/hx-target="#invoice-1"/
+    assert html =~ ~r/hx-swap="outerHTML"/
+    assert html =~ ~r/hx-on::after-request="if\(event\.detail\.successful\) window\.location\.reload\(\)"/
+    assert html =~ ~r/<details[^>]*>/
   end
 
-  test "flash_error renders the shared error surface", _context do
+  test "flash_error renders shared info and error surfaces", _context do
     html =
-      %{flash: %{"error" => "Validation failed"}}
+      %{flash: %{"info" => "Saved", "error" => "Validation failed"}}
       |> EdocApiWeb.CoreComponents.flash_error()
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
+    assert html =~ "Saved"
     assert html =~ "Validation failed"
-    assert html =~ "bg-red-50"
+    assert html =~ "bg-emerald-50"
+    assert html =~ "bg-rose-50"
   end
 
   defp browser_conn(conn, user, locale) do

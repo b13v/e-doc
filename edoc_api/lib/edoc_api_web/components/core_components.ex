@@ -19,6 +19,128 @@ defmodule EdocApiWeb.CoreComponents do
   end
 
   @doc """
+  Shared workspace page header with a primary action area.
+  """
+  attr(:title, :string, required: true)
+  attr(:support_text, :string, default: nil)
+  attr(:class, :string, default: nil)
+
+  slot(:primary_action, required: true)
+  slot(:secondary_content)
+
+  def workspace_page_header(assigns) do
+    ~H"""
+    <header class={["flex flex-col gap-4 md:flex-row md:items-end md:justify-between", @class]}>
+      <div class="min-w-0 space-y-2">
+        <h1 class="text-3xl font-semibold tracking-tight text-slate-900"><%= @title %></h1>
+        <p :if={@support_text} class="max-w-2xl text-sm leading-6 text-slate-600">
+          <%= @support_text %>
+        </p>
+        <div :if={@secondary_content != []} class="text-sm text-slate-500">
+          <%= render_slot(@secondary_content) %>
+        </div>
+      </div>
+      <div class="flex shrink-0 items-center gap-3">
+        <%= render_slot(@primary_action) %>
+      </div>
+    </header>
+    """
+  end
+
+  @doc """
+  Quiet support panel for workspace overview pages.
+  """
+  attr(:heading, :string, required: true)
+  attr(:subtitle, :string, default: nil)
+  attr(:class, :string, default: nil)
+
+  slot(:inner_block, required: true)
+
+  def workspace_support_panel(assigns) do
+    ~H"""
+    <aside class={["rounded-2xl border border-slate-200 bg-slate-50/80 p-5", @class]}>
+      <div class="space-y-1">
+        <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <%= @heading %>
+        </h2>
+        <p :if={@subtitle} class="text-sm leading-6 text-slate-600"><%= @subtitle %></p>
+      </div>
+      <div class="mt-4 text-sm leading-6 text-slate-700">
+        <%= render_slot(@inner_block) %>
+      </div>
+    </aside>
+    """
+  end
+
+  @doc """
+  Cleaner empty state with one clear next action.
+  """
+  attr(:title, :string, required: true)
+  attr(:support_text, :string, required: true)
+  attr(:action_label, :string, required: true)
+  attr(:action_href, :string, required: true)
+  attr(:class, :string, default: nil)
+
+  def workspace_empty_state(assigns) do
+    ~H"""
+    <section class={["rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm", @class]}>
+      <div class="mx-auto max-w-lg space-y-4">
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900"><%= @title %></h2>
+        <p class="text-sm leading-6 text-slate-600"><%= @support_text %></p>
+        <div>
+          <a
+            href={@action_href}
+            class="inline-flex items-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            <%= @action_label %>
+          </a>
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  @doc """
+  Presentational row actions for workspace overview tables.
+  """
+  attr(:primary, :map, required: true)
+  attr(:secondary, :list, default: [])
+  attr(:mobile_mode, :atom, default: :overflow)
+  attr(:class, :string, default: nil)
+
+  def workspace_row_actions(assigns) do
+    assigns = assign(assigns, :all_actions, [assigns.primary | assigns.secondary])
+
+    ~H"""
+    <div class={["flex items-center justify-end gap-2", @class]}>
+      <div class="hidden items-center justify-end gap-3 whitespace-nowrap md:flex">
+        <div class="font-medium text-slate-900">
+          <.row_action action={@primary} tone={:primary} />
+        </div>
+        <div :if={@secondary != []} class="flex items-center justify-end gap-3 text-slate-600">
+          <%= for action <- @secondary do %>
+            <.row_action action={action} tone={:secondary} />
+          <% end %>
+        </div>
+      </div>
+
+      <details :if={@mobile_mode == :overflow} class="relative md:hidden">
+        <summary class="cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
+          <%= gettext("Actions") %>
+        </summary>
+        <div class="absolute right-0 z-10 mt-2 min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+          <div class="flex flex-col items-stretch gap-1">
+            <%= for action <- @all_actions do %>
+              <.row_action action={action} tone={:mobile} />
+            <% end %>
+          </div>
+        </div>
+      </details>
+    </div>
+    """
+  end
+
+  @doc """
   Render a consistent flash error summary for forms.
   """
   attr(:flash, :map, required: true)
@@ -26,11 +148,21 @@ defmodule EdocApiWeb.CoreComponents do
 
   def flash_error(assigns) do
     ~H"""
-    <%= if @flash["error"] do %>
-      <div class={["rounded-md bg-red-50 p-4 mb-4", @class]}>
-        <p class="text-sm font-medium text-red-800"><%= @flash["error"] %></p>
+    <div :if={@flash["info"] || @flash["error"]} class={["mb-4 space-y-3", @class]}>
+      <div
+        :if={@flash["info"]}
+        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-sm"
+      >
+        <p class="text-sm font-medium leading-6"><%= @flash["info"] %></p>
       </div>
-    <% end %>
+
+      <div
+        :if={@flash["error"]}
+        class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900 shadow-sm"
+      >
+        <p class="text-sm font-medium leading-6"><%= @flash["error"] %></p>
+      </div>
+    </div>
     """
   end
 
@@ -117,4 +249,94 @@ defmodule EdocApiWeb.CoreComponents do
     </span>
     """
   end
+
+  attr(:action, :map, required: true)
+  attr(:tone, :atom, default: :secondary)
+
+  defp row_action(%{action: %{transport: :link} = action, tone: tone} = assigns) do
+    assigns =
+      assigns
+      |> assign(:action, action)
+      |> assign(:classes, row_action_classes(tone, :link))
+
+    ~H"""
+    <a href={@action.href} class={@classes}><%= @action.label %></a>
+    """
+  end
+
+  defp row_action(%{action: %{transport: :form} = action, tone: tone} = assigns) do
+    assigns =
+      assigns
+      |> assign(:action, action)
+      |> assign(:classes, row_action_classes(tone, :form))
+      |> assign(:form_method, form_method(action))
+      |> assign(:method_override, method_override(action))
+
+    ~H"""
+    <form action={@action.action} method={@form_method} class={row_action_form_classes(@tone)}>
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input :if={@method_override} type="hidden" name="_method" value={@method_override} />
+      <button
+        type="submit"
+        class={@classes}
+        onclick={if @action[:confirm_text], do: "return confirm('#{@action.confirm_text}')", else: nil}
+      >
+        <%= @action.label %>
+      </button>
+    </form>
+    """
+  end
+
+  defp row_action(%{action: %{transport: :htmx_delete} = action, tone: tone} = assigns) do
+    assigns =
+      assigns
+      |> assign(:action, action)
+      |> assign(:classes, row_action_classes(tone, :htmx_delete))
+
+    ~H"""
+    <button
+      type="button"
+      hx-delete={@action.hx_delete}
+      hx-confirm={@action[:confirm_text]}
+      hx-target={"##{@action.row_dom_id}"}
+      hx-swap="outerHTML"
+      hx-on::after-request="if(event.detail.successful) window.location.reload()"
+      class={@classes}
+    >
+      <%= @action.label %>
+    </button>
+    """
+  end
+
+  defp row_action_classes(:primary, :link),
+    do: "text-sm font-semibold text-slate-900 transition hover:text-slate-700"
+
+  defp row_action_classes(:primary, _transport),
+    do: "text-sm font-semibold text-slate-900 transition hover:text-slate-700"
+
+  defp row_action_classes(:secondary, :htmx_delete),
+    do: "text-sm font-medium text-rose-700 transition hover:text-rose-900"
+
+  defp row_action_classes(:secondary, _transport),
+    do: "text-sm font-medium text-slate-600 transition hover:text-slate-900"
+
+  defp row_action_classes(:mobile, :htmx_delete),
+    do: "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+
+  defp row_action_classes(:mobile, _transport),
+    do: "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+
+  defp row_action_form_classes(:mobile), do: "block"
+  defp row_action_form_classes(_tone), do: "inline"
+
+  defp form_method(%{method: :get}), do: "get"
+  defp form_method(%{method: :post}), do: "post"
+  defp form_method(_action), do: "post"
+
+  defp method_override(%{_method: override}), do: override
+
+  defp method_override(%{method: method}) when method in [:put, :patch, :delete],
+    do: Atom.to_string(method)
+
+  defp method_override(_action), do: nil
 end
