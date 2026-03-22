@@ -16,7 +16,7 @@ defmodule EdocApiWeb.ActsController do
     user = current_user(conn)
     acts = Acts.list_acts_for_user(user.id)
 
-    render(conn, :index, page_title: gettext("Acts"), acts: acts)
+    render(conn, :index, page_title: gettext("Acts"), acts: acts, current_section: :acts)
   end
 
   def new(conn, params) do
@@ -51,6 +51,7 @@ defmodule EdocApiWeb.ActsController do
 
         render(conn, :new,
           page_title: gettext("New Act"),
+          current_section: :acts,
           act_type: act_type,
           contracts: contracts,
           buyers: buyers,
@@ -145,7 +146,11 @@ defmodule EdocApiWeb.ActsController do
         |> redirect(to: "/acts/new")
 
       act ->
-        render(conn, :show, page_title: gettext("Act %{number}", number: act.number), act: act)
+        render(conn, :show,
+          page_title: gettext("Act %{number}", number: act.number),
+          act: act,
+          current_section: :acts
+        )
     end
   end
 

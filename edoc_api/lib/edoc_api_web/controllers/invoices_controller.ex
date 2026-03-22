@@ -42,6 +42,7 @@ defmodule EdocApiWeb.InvoicesController do
       invoice ->
         render(conn, :show,
           invoice: invoice,
+          current_section: :invoices,
           page_title: gettext("Invoice %{number}", number: invoice.number)
         )
     end
@@ -91,6 +92,7 @@ defmodule EdocApiWeb.InvoicesController do
 
             render(conn, :new,
               page_title: gettext("New Invoice"),
+              current_section: :invoices,
               contracts: contracts,
               buyers: buyers,
               bank_accounts: bank_accounts,
@@ -289,6 +291,7 @@ defmodule EdocApiWeb.InvoicesController do
     |> put_flash(:error, error_message)
     |> render(:new,
       page_title: gettext("New Invoice"),
+      current_section: :invoices,
       contracts: contracts,
       buyers: buyers,
       bank_accounts: bank_accounts,
@@ -501,6 +504,7 @@ defmodule EdocApiWeb.InvoicesController do
             changeset: changeset,
             kbe_codes: Payments.list_kbe_codes(),
             knp_codes: Payments.list_knp_codes(),
+            current_section: :invoices,
             page_title: gettext("Edit Invoice %{number}", number: invoice.number)
           )
         else
@@ -535,6 +539,7 @@ defmodule EdocApiWeb.InvoicesController do
           changeset: changeset,
           kbe_codes: Payments.list_kbe_codes(),
           knp_codes: Payments.list_knp_codes(),
+          current_section: :invoices,
           page_title: gettext("Edit Invoice %{number}", number: invoice.number)
         )
 
@@ -551,6 +556,7 @@ defmodule EdocApiWeb.InvoicesController do
           changeset: Ecto.Changeset.change(invoice, invoice_params),
           kbe_codes: Payments.list_kbe_codes(),
           knp_codes: Payments.list_knp_codes(),
+          current_section: :invoices,
           page_title: gettext("Edit Invoice %{number}", number: invoice.number)
         )
     end

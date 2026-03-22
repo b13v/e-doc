@@ -13,7 +13,12 @@ defmodule EdocApiWeb.ContractHTMLController do
   def index(conn, _params) do
     user = conn.assigns.current_user
     contracts = Core.list_contracts_for_user(user.id)
-    render(conn, :index, contracts: contracts, page_title: gettext("Contracts"))
+
+    render(conn, :index,
+      contracts: contracts,
+      current_section: :contracts,
+      page_title: gettext("Contracts")
+    )
   end
 
   def new(conn, _params) do
@@ -51,6 +56,7 @@ defmodule EdocApiWeb.ContractHTMLController do
             knp_codes: knp_codes,
             units: units,
             changeset: nil,
+            current_section: :contracts,
             page_title: gettext("New Contract")
           )
         end
@@ -126,6 +132,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: nil,
+              current_section: :contracts,
               page_title: gettext("New Contract")
             )
 
@@ -141,6 +148,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: changeset,
+              current_section: :contracts,
               page_title: gettext("New Contract")
             )
 
@@ -159,6 +167,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               knp_codes: knp_codes,
               units: units,
               changeset: nil,
+              current_section: :contracts,
               page_title: gettext("New Contract")
             )
         end
@@ -195,6 +204,7 @@ defmodule EdocApiWeb.ContractHTMLController do
           bank: bank,
           items: items,
           totals: totals,
+          current_section: :contracts,
           page_title: gettext("Contract %{number}", number: contract.number)
         )
     end
@@ -283,6 +293,7 @@ defmodule EdocApiWeb.ContractHTMLController do
                 kbe_codes: kbe_codes,
                 knp_codes: knp_codes,
                 units: units,
+                current_section: :contracts,
                 page_title: gettext("Edit Contract %{number}", number: contract.number)
               )
           end
@@ -349,6 +360,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               buyers: buyers,
               bank_accounts: bank_accounts,
               units: units,
+              current_section: :contracts,
               page_title: gettext("Edit Contract")
             )
 
@@ -365,6 +377,7 @@ defmodule EdocApiWeb.ContractHTMLController do
               buyers: buyers,
               bank_accounts: bank_accounts,
               units: units,
+              current_section: :contracts,
               page_title: gettext("Edit Contract")
             )
         end

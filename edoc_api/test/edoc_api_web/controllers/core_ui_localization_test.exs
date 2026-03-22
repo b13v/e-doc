@@ -50,6 +50,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "Новый договор"
       assert body =~ "Данные договора"
       assert body =~ "Добавить нового покупателя"
+      assert body =~ ~r/<summary[^>]*>.*?<span>\s*Договоры\s*<\/span>/s
       refute body =~ "New Contract"
       refute body =~ "Contract Details"
     end
@@ -61,6 +62,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "Акты"
       assert body =~ "Номер"
       assert body =~ "Дата выставления"
+      assert body =~ ~r/<summary[^>]*>.*?<span>\s*Акты\s*<\/span>/s
       refute body =~ ">Acts<"
       refute body =~ ">Issue Date<"
     end
@@ -98,6 +100,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~
                "Таңдалған келісімшарт сатып алушыны, банк шотын және позицияларды автоматты түрде толтырады."
 
+      assert body =~ ~r/<summary[^>]*>.*?<span>\s*Шоттар\s*<\/span>/s
       refute body =~ "Selecting a contract pre-fills buyer, bank account, and items."
     end
 

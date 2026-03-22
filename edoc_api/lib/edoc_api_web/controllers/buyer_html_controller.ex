@@ -35,6 +35,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
       buyer: nil,
       banks: banks,
       bank_form: %{},
+      current_section: :buyers,
       page_title: gettext("New Buyer")
     )
   end
@@ -61,6 +62,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
             render(conn, :show,
               buyer: buyer,
               bank_account: bank_account,
+              current_section: :buyers,
               page_title: gettext("Buyer")
             )
         end
@@ -99,6 +101,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("New Buyer")
             )
 
@@ -112,6 +115,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("New Buyer")
             )
 
@@ -125,6 +129,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("New Buyer")
             )
 
@@ -140,6 +145,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               buyer: nil,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("New Buyer")
             )
         end
@@ -169,6 +175,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               buyer: buyer,
               banks: banks,
               bank_form: bank_form_from_buyer(buyer),
+              current_section: :buyers,
               page_title: gettext("Edit Buyer")
             )
         end
@@ -202,6 +209,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("Edit Buyer")
             )
 
@@ -216,6 +224,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("Edit Buyer")
             )
 
@@ -230,6 +239,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               changeset: changeset,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("Edit Buyer")
             )
 
@@ -256,6 +266,7 @@ defmodule EdocApiWeb.BuyerHTMLController do
               buyer: buyer,
               banks: banks,
               bank_form: bank_form_from_params(buyer_params),
+              current_section: :buyers,
               page_title: gettext("Edit Buyer")
             )
         end
