@@ -33,6 +33,23 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ ">Draft<"
     end
 
+    test "invoice overview localizes the new support copy in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      _invoice = insert_invoice!(user, company, %{status: "draft"})
+
+      body =
+        conn
+        |> browser_conn(user, "ru")
+        |> get("/invoices")
+        |> html_response(200)
+
+      assert body =~ "Спокойный реестр для черновиков, выставленных и оплаченных счетов."
+      refute body =~ "Track draft, issued, and paid invoices from one calm ledger view."
+    end
+
     test "contract creation page renders localized copy", %{
       conn: conn,
       user: user,

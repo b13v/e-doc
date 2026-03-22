@@ -43,6 +43,67 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
   end
 
+  test "invoice overview renders corrected table columns and derived counts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _draft =
+      insert_invoice!(user, company, %{
+        status: "draft",
+        number: nil,
+        total: Decimal.new("100.00"),
+        issue_date: nil
+      })
+
+    _issued =
+      insert_invoice!(user, company, %{
+        status: "issued",
+        number: "INV-2026-2",
+        total: Decimal.new("200.00")
+      })
+
+    _paid =
+      insert_invoice!(user, company, %{
+        status: "paid",
+        number: "INV-2026-3",
+        total: Decimal.new("300.00")
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    assert body =~ "INV-2026-2"
+    assert body =~ "100.00 KZT"
+    assert body =~ ~r/<td[^>]*>\s*-\s*<\/td>/
+    assert body =~ "Обзор"
+    assert body =~ "Черновики"
+    assert body =~ ">1<"
+    assert body =~ "Выставленные счета"
+    assert body =~ "Оплаченные счета"
+    assert body =~ "Счета зависят от готовых данных компании и покупателя."
+  end
+
+  test "invoice overview empty state uses the shared CTA surface", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    assert body =~ "Счетов пока нет."
+    assert body =~ "Создайте первый счет, когда данные компании и покупателя будут готовы."
+    assert body =~ ~s(href="/invoices/new")
+    refute body =~ "Черновики"
+  end
+
   test "workspace_row_actions renders inline and overflow affordances", _context do
     html =
       render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
