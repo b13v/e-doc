@@ -2140,3 +2140,12 @@ msgstr "Buyers are used for contracts and invoices."
 #, elixir-autogen, elixir-format
 msgid "Keep buyer details current before creating contracts and invoices."
 msgstr "Keep buyer details current before creating contracts and invoices."
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:118
+msgid "Buyer and banking details"
+msgstr "Buyer and banking details"
+
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:117
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:171
+msgid "Document preview"
+msgstr "Document preview"

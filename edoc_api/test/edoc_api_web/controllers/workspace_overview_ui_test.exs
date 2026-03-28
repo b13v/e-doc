@@ -331,6 +331,131 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end
 
+  test "contract new uses workspace form chrome and keeps contracts nav active", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Contract Buyer",
+        "bin_iin" => "060215385673"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/new")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Данные договора"
+    refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
+  end
+
+  test "act new uses workspace form chrome and keeps acts nav active", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=direct")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/acts"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Тип акта"
+    refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
+  end
+
+  test "contract show uses workspace detail chrome and keeps contracts nav active", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    contract = create_contract!(company, %{"status" => "draft", "number" => "C-1"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Статус"
+    assert body =~ "Просмотр документа"
+    refute body =~ ~s(<div class="nav-bar">)
+  end
+
+  test "contract edit uses workspace form chrome and keeps contracts nav active", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Contract Buyer",
+        "bin_iin" => "060215385673"
+      })
+
+    contract = create_contract!(company, %{"status" => "draft", "number" => "C-2"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}/edit")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Данные договора"
+    assert body =~ "Покупатель и банковские реквизиты"
+    refute body =~ ~s(<div class="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">)
+  end
+
+  test "act show uses workspace detail chrome and keeps acts nav active", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "draft")
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/acts"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Статус"
+    assert body =~ "Просмотр документа"
+    refute body =~ ~s(<div class="mb-4 flex items-center justify-between">)
+  end
+
   test "workspace_row_actions renders inline and overflow affordances", _context do
     html =
       render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,

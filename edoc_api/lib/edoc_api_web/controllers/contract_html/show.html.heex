@@ -53,65 +53,110 @@
   .contract-doc .send-panel { margin-bottom: 16px; }
 </style>
 
-<div class="contract-doc">
-    <% c = @contract || %{} %>
-    <% seller = @seller || %{} %>
-    <% buyer = @buyer || %{} %>
-    <% bank = @bank || %{} %>
-    <% items = @items || [] %>
-    <% totals = @totals || %{subtotal: Decimal.new(0), vat: Decimal.new(0), total: Decimal.new(0)} %>
+<% c = @contract || %{} %>
+<% seller = @seller || %{} %>
+<% buyer = @buyer || %{} %>
+<% bank = @bank || %{} %>
+<% items = @items || [] %>
+<% totals = @totals || %{subtotal: Decimal.new(0), vat: Decimal.new(0), total: Decimal.new(0)} %>
+<%
+  {status_class, status_label} =
+    case c.status do
+      "draft" -> {"bg-slate-100 text-slate-700", gettext("Draft")}
+      "issued" -> {"bg-sky-100 text-sky-700", gettext("Issued")}
+      "signed" -> {"bg-emerald-100 text-emerald-700", gettext("Signed")}
+      _ -> {"bg-slate-100 text-slate-700", gettext("Unknown")}
+    end
+%>
 
-    <div class="nav-bar">
-      <div class="nav-links">
-        <a href="/contracts">&larr; <%= gettext("Back to Contracts") %></a>
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <%= if EdocApi.ContractStatus.is_draft?(c) do %>
-          <a href={"/contracts/#{c.id}/edit"} class="btn" style="background: #16a34a; color: white;"><%= gettext("Edit") %></a>
-          <form action={"/contracts/#{c.id}/issue"} method="post" style="display: inline;">
-            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <button type="submit" class="btn" style="background: #0066cc; color: white;"><%= gettext("Issue") %></button>
-          </form>
-          <form action={"/contracts/#{c.id}"} method="post" style="display: inline;">
-            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <input type="hidden" name="_method" value="delete" />
-            <button
-              type="submit"
-              class="btn"
-              style="background: #b91c1c; color: white;"
-              onclick={"return confirm(#{Jason.encode!(gettext("Delete this draft contract?"))})"}>
-              <%= gettext("Delete") %>
-            </button>
-          </form>
-        <% end %>
-        <%= if not EdocApi.ContractStatus.is_draft?(c) do %>
-          <details class="send-menu">
-            <summary class="btn" style="background: #111827; color: white;"><%= gettext("Send") %></summary>
-            <div class="send-menu-panel">
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("Contract %{number}", number: c.number)}
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href="/contracts"
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Back to Contracts") %>
+          </a>
+          <%= if EdocApi.ContractStatus.is_draft?(c) do %>
+            <a
+              href={"/contracts/#{c.id}/edit"}
+              class="inline-flex items-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+            >
+              <%= gettext("Edit") %>
+            </a>
+            <form action={"/contracts/#{c.id}/issue"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
               <button
-                type="button"
-                class="send-menu-item"
-                hx-get={"/documents/contract/#{c.id}/send/email"}
-                hx-target={"#contract-send-panel-#{c.id}"}
-                hx-swap="innerHTML">
-                <%= gettext("Email") %>
+                type="submit"
+                class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              >
+                <%= gettext("Issue") %>
               </button>
-              <form action={"/documents/contract/#{c.id}/share/whatsapp"} method="post" class="send-menu-form">
-                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
-              </form>
-              <form action={"/documents/contract/#{c.id}/share/telegram"} method="post" class="send-menu-form">
-                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
-              </form>
-            </div>
-          </details>
-        <% end %>
-        <a href={"/contracts/#{c.id}/pdf"} class="btn" style="background: #dc2626; color: white;"><%= gettext("Download PDF") %></a>
-      </div>
-    </div>
+            </form>
+            <form action={"/contracts/#{c.id}"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <input type="hidden" name="_method" value="delete" />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+                onclick={"return confirm(#{Jason.encode!(gettext("Delete this draft contract?"))})"}
+              >
+                <%= gettext("Delete") %>
+              </button>
+            </form>
+          <% else %>
+            <details class="send-menu">
+              <summary class="inline-flex cursor-pointer list-none items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
+                <%= gettext("Send") %>
+              </summary>
+              <div class="send-menu-panel">
+                <button
+                  type="button"
+                  class="send-menu-item"
+                  hx-get={"/documents/contract/#{c.id}/send/email"}
+                  hx-target={"#contract-send-panel-#{c.id}"}
+                  hx-swap="innerHTML"
+                >
+                  <%= gettext("Email") %>
+                </button>
+                <form action={"/documents/contract/#{c.id}/share/whatsapp"} method="post" class="send-menu-form">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
+                </form>
+                <form action={"/documents/contract/#{c.id}/share/telegram"} method="post" class="send-menu-form">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
+                </form>
+              </div>
+            </details>
+          <% end %>
+          <a
+            href={"/contracts/#{c.id}/pdf"}
+            class="inline-flex items-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          >
+            <%= gettext("Download PDF") %>
+          </a>
+        </:primary_action>
+      </.workspace_page_header>
 
-    <div id={"contract-send-panel-#{c.id}"} class="send-panel"></div>
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
+          </div>
+
+          <div id={"contract-send-panel-#{c.id}"} class="send-panel"></div>
+
+          <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
+            <div class="contract-doc min-w-[720px]">
 
     <h1>ДОГОВОР № <%= c.number || "____" %></h1>
     <div class="center muted">
@@ -347,4 +392,37 @@
         </td>
       </tr>
     </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Status") %></dt>
+          <dd class="mt-2">
+            <span class={["inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", status_class]}>
+              <%= status_label %>
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Buyer") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= buyer.name || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Date") %></dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= EdocApiWeb.ContractHTML.fmt_date(c.issue_date) || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Total") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= EdocApiWeb.ContractHTML.money(totals.total) %> <%= c.currency || "KZT" %>
+          </dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
 </div>

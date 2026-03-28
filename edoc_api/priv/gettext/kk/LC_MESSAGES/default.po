@@ -2138,3 +2138,12 @@ msgstr "Сатып алушылар келісімшарттар мен шотт
 #, elixir-autogen, elixir-format
 msgid "Keep buyer details current before creating contracts and invoices."
 msgstr "Келісімшарттар мен шоттарды жасамас бұрын сатып алушы деректерін өзекті күйде ұстаңыз."
+
+#: lib/edoc_api_web/controllers/contract_html/edit.html.heex:118
+msgid "Buyer and banking details"
+msgstr "Сатып алушы және банк деректемелері"
+
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:117
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:171
+msgid "Document preview"
+msgstr "Құжатты алдын ала қарау"
