@@ -1,184 +1,299 @@
-<div class="bg-white shadow rounded-lg">
-  <div class="px-6 py-4 border-b border-gray-200">
-    <h1 class="text-2xl font-bold text-gray-900"><%= gettext("Edit Invoice %{number}", number: @invoice.number) %></h1>
-    <p class="text-sm text-gray-500 mt-1"><%= gettext("Status") %>: <%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %></p>
-  </div>
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
 
-  <div class="px-6 py-6">
-    <form action={"/invoices/#{@invoice.id}"} method="post">
-      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-      <input type="hidden" name="_method" value="put" />
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("Edit Invoice %{number}", number: @invoice.number)}
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href={"/invoices/#{@invoice.id}"}
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
+        </:primary_action>
+      </.workspace_page_header>
 
-      <div class="grid grid-cols-2 gap-6">
-        <div>
-          <label for="issue_date" class="block text-sm font-medium text-gray-700"><%= gettext("Issue date") %></label>
-          <input
-            type="date"
-            name="invoice[issue_date]"
-            required
-            value={@invoice.issue_date}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
+      <form action={"/invoices/#{@invoice.id}"} method="post" class="space-y-6">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <input type="hidden" name="_method" value="put" />
 
-        <div>
-          <label for="due_date" class="block text-sm font-medium text-gray-700"><%= gettext("Due date") %></label>
-          <input
-            type="date"
-            name="invoice[due_date]"
-            value={@invoice.due_date}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice details") %></h2>
+            </div>
 
-        <div>
-          <label for="buyer_name" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer name") %></label>
-          <input
-            type="text"
-            name="invoice[buyer_name]"
-            required
-            value={@invoice.buyer_name}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-6">
+              <div class="sm:col-span-2">
+                <label for="issue_date" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Issue date") %>
+                </label>
+                <input
+                  type="date"
+                  name="invoice[issue_date]"
+                  required
+                  value={@invoice.issue_date}
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+              </div>
 
-        <div>
-          <label for="buyer_bin_iin" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer BIN/IIN") %></label>
-          <input
-            type="text"
-            name="invoice[buyer_bin_iin]"
-            required
-            pattern="\d{12}"
-            minlength="12"
-            maxlength="12"
-            title={gettext("BIN/IIN must be exactly 12 digits")}
-            value={@invoice.buyer_bin_iin}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-          />
-          <p class="mt-1 text-xs text-gray-500"><%= gettext("Enter exactly 12 digits") %></p>
-        </div>
+              <div class="sm:col-span-2">
+                <label for="due_date" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Due date") %>
+                </label>
+                <input
+                  type="date"
+                  name="invoice[due_date]"
+                  value={@invoice.due_date}
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+              </div>
 
-        <div>
-          <label for="buyer_address" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer address") %></label>
-          <input
-            type="text"
-            name="invoice[buyer_address]"
-            required
-            value={@invoice.buyer_address}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700"><%= gettext("Currency") %></label>
-          <input type="hidden" name="invoice[currency]" value={@invoice.currency} />
-          <div class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 px-3 py-2 text-gray-700">
-            <%= @invoice.currency %>
+              <div class="sm:col-span-2">
+                <label for="vat_rate" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("VAT rate (%)") %>
+                </label>
+                <select
+                  name="invoice[vat_rate]"
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  <option value="0" selected={@invoice.vat_rate == 0}>0%</option>
+                  <option value="16" selected={@invoice.vat_rate == 16}>16%</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <label for="vat_rate" class="block text-sm font-medium text-gray-700"><%= gettext("VAT rate (%)") %></label>
-          <select name="invoice[vat_rate]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            <option value="0" selected={@invoice.vat_rate == 0}>0%</option>
-            <option value="16" selected={@invoice.vat_rate == 16}>16%</option>
-          </select>
-        </div>
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900">
+                <%= gettext("Buyer and payment details") %>
+              </h2>
+            </div>
 
-        <div>
-          <label for="kbe_code_id" class="block text-sm font-medium text-gray-700"><%= gettext("KBE Code") %></label>
-          <select
-            id="kbe_code_id"
-            name="invoice[kbe_code_id]"
-            required
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            <%= for code <- @kbe_codes do %>
-              <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :kbe_code_id), else: @invoice.kbe_code_id) == code.id}>
-                <%= code.code %> - <%= code.description %>
-              </option>
-            <% end %>
-          </select>
-        </div>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-6">
+              <div class="sm:col-span-3">
+                <label for="buyer_name" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Buyer name") %>
+                </label>
+                <input
+                  type="text"
+                  name="invoice[buyer_name]"
+                  required
+                  value={@invoice.buyer_name}
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+              </div>
 
-        <div>
-          <label for="knp_code_id" class="block text-sm font-medium text-gray-700"><%= gettext("KNP Code") %></label>
-          <select
-            id="knp_code_id"
-            name="invoice[knp_code_id]"
-            required
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            <%= for code <- @knp_codes do %>
-              <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :knp_code_id), else: @invoice.knp_code_id) == code.id}>
-                <%= code.code %> - <%= code.description %>
-              </option>
-            <% end %>
-          </select>
-        </div>
-      </div>
+              <div class="sm:col-span-3">
+                <label for="buyer_bin_iin" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Buyer BIN/IIN") %>
+                </label>
+                <input
+                  type="text"
+                  name="invoice[buyer_bin_iin]"
+                  required
+                  pattern="\d{12}"
+                  minlength="12"
+                  maxlength="12"
+                  title={gettext("BIN/IIN must be exactly 12 digits")}
+                  value={@invoice.buyer_bin_iin}
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+                <p class="mt-2 text-xs text-slate-500"><%= gettext("Enter exactly 12 digits") %></p>
+              </div>
 
-      <div class="mt-8">
-        <h3 class="text-lg font-medium text-gray-900 mb-4"><%= gettext("Invoice Items") %></h3>
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <div id="items-container" class="space-y-2">
-            <%= for {item, index} <- Enum.with_index(@invoice.items) do %>
-              <div class="item-row grid grid-cols-12 gap-2 items-end">
-                <input type="hidden" name={"invoice[items][#{index}][id]"} value={item.id} />
-                <div class="col-span-5">
-                  <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
-                  <input
-                    type="text"
-                    name={"invoice[items][#{index}][name]"}
-                    required
-                    value={item.name}
-                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500">Ед. Изм.</label>
-                  <input
-                    type="text"
-                    name={"invoice[items][#{index}][code]"}
-                    value={item.code}
-                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
-                  <input
-                    type="number"
-                    name={"invoice[items][#{index}][qty]"}
-                    value={item.qty}
-                    min="1"
-                    required
-                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
-                  <input
-                    type="number"
-                    name={"invoice[items][#{index}][unit_price]"}
-                    step="0.01"
-                    value={item.unit_price}
-                    required
-                    class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
-                </div>
-                <div class="col-span-1">
-                  <input type="hidden" name={"invoice[items][#{index}][_destroy]"} value="false" />
-                  <button type="button" onclick="removeItemRow(this)" class="text-red-600 hover:text-red-900 text-sm"><%= gettext("Remove") %></button>
+              <div class="sm:col-span-6">
+                <label for="buyer_address" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Buyer address") %>
+                </label>
+                <input
+                  type="text"
+                  name="invoice[buyer_address]"
+                  required
+                  value={@invoice.buyer_address}
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Currency") %>
+                </label>
+                <input type="hidden" name="invoice[currency]" value={@invoice.currency} />
+                <div class="mt-2 rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm">
+                  <%= @invoice.currency %>
                 </div>
               </div>
-            <% end %>
+
+              <div class="sm:col-span-2">
+                <label for="kbe_code_id" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("KBE Code") %>
+                </label>
+                <select
+                  id="kbe_code_id"
+                  name="invoice[kbe_code_id]"
+                  required
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  <%= for code <- @kbe_codes do %>
+                    <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :kbe_code_id), else: @invoice.kbe_code_id) == code.id}>
+                      <%= code.code %> - <%= code.description %>
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="knp_code_id" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("KNP Code") %>
+                </label>
+                <select
+                  id="knp_code_id"
+                  name="invoice[knp_code_id]"
+                  required
+                  class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  <%= for code <- @knp_codes do %>
+                    <option value={code.id} selected={(if assigns[:changeset], do: Ecto.Changeset.get_field(assigns[:changeset], :knp_code_id), else: @invoice.knp_code_id) == code.id}>
+                      <%= code.code %> - <%= code.description %>
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+            </div>
           </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice Items") %></h2>
+              <button
+                type="button"
+                onclick="addItemRow()"
+                class="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+              >
+                + <%= gettext("Add Item") %>
+              </button>
+            </div>
+
+            <div class="rounded-2xl bg-slate-50 p-4">
+              <div id="items-container" class="space-y-2">
+                <%= for {item, index} <- Enum.with_index(@invoice.items) do %>
+                  <div class="item-row grid grid-cols-12 gap-2 items-end">
+                    <input type="hidden" name={"invoice[items][#{index}][id]"} value={item.id} />
+                    <div class="col-span-5">
+                      <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
+                      <input
+                        type="text"
+                        name={"invoice[items][#{index}][name]"}
+                        required
+                        value={item.name}
+                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                      />
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-xs text-gray-500"><%= gettext("Invoice item unit") %></label>
+                      <input
+                        type="text"
+                        name={"invoice[items][#{index}][code]"}
+                        value={item.code}
+                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                      />
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
+                      <input
+                        type="number"
+                        name={"invoice[items][#{index}][qty]"}
+                        value={item.qty}
+                        min="1"
+                        required
+                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                      />
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
+                      <input
+                        type="number"
+                        name={"invoice[items][#{index}][unit_price]"}
+                        step="0.01"
+                        value={item.unit_price}
+                        required
+                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                      />
+                    </div>
+                    <div class="col-span-1">
+                      <input type="hidden" name={"invoice[items][#{index}][_destroy]"} value="false" />
+                      <button
+                        type="button"
+                        onclick="removeItemRow(this)"
+                        class="inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                      >
+                        <%= gettext("Remove") %>
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
+          <a
+            href={"/invoices/#{@invoice.id}"}
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
           <button
-            type="button"
-            onclick="addItemRow()"
-            class="mt-2 text-sm text-blue-600 hover:text-blue-900">
-            + <%= gettext("Add Item") %>
+            type="submit"
+            class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            <%= gettext("Save Changes") %>
           </button>
         </div>
-      </div>
+      </form>
+    </div>
 
-      <div class="mt-6">
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-          <%= gettext("Save Changes") %>
-        </button>
-        <a href={"/invoices/#{@invoice.id}"} class="ml-4 text-gray-600 hover:text-gray-900"><%= gettext("Cancel") %></a>
-      </div>
-    </form>
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Status") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Buyer") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @invoice.buyer_name %></dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Currency") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @invoice.currency %></dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Invoice Items") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= length(@invoice.items) %></dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
   </div>
 </div>
 
@@ -195,7 +310,7 @@
         <input type="text" name="invoice[items][${itemIndex}][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Ед. Изм.</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Invoice item unit") %></label>
         <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
@@ -207,7 +322,7 @@
         <input type="number" name="invoice[items][${itemIndex}][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-1">
-        <button type="button" onclick="removeItemRow(this)" class="text-red-600 hover:text-red-900 text-sm"><%= gettext("Remove") %></button>
+        <button type="button" onclick="removeItemRow(this)" class="inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50"><%= gettext("Remove") %></button>
       </div>
     `;
     container.appendChild(newRow);

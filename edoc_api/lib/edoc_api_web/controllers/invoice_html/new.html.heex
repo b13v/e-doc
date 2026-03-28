@@ -1,244 +1,367 @@
-<div class="lg:flex lg:items-center lg:justify-between">
-  <div class="min-w-0 flex-1">
-    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-      <%= gettext("New Invoice") %>
-    </h2>
-  </div>
-  <div class="mt-5 flex lg:ml-4 lg:mt-0">
-    <a href="/invoices" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-      <%= gettext("Cancel") %>
-    </a>
-  </div>
-</div>
+<% selected_buyer = Enum.find(@buyers, &(&1.id == @selected_buyer_id)) %>
+<% selected_bank_account = Enum.find(@bank_accounts, &(&1.id == @selected_bank_account_id)) %>
+<% invoice_mode = if @invoice_type == "direct", do: gettext("Direct (No Contract)"), else: gettext("From Contract") %>
 
-<.flash_error flash={@flash} class="mt-4" />
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
 
-<div class="mt-8">
-  <div class="bg-white shadow sm:rounded-lg">
-    <form action="/invoices" method="post" class="px-4 py-5 sm:px-6">
-      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("New Invoice")}
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href="/invoices"
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
+        </:primary_action>
+        <:secondary_content>
+          <%= if @invoice_type != "direct" do %>
+            <%= gettext("Selecting a contract pre-fills buyer, bank account, and items.") %>
+          <% end %>
+        </:secondary_content>
+      </.workspace_page_header>
 
-      <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 class="text-sm font-medium text-blue-800 mb-3"><%= gettext("Invoice Type") %></h3>
-        <div class="flex gap-4">
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="invoice_type"
-              value="contract"
-              checked={@invoice_type != "direct"}
-              class="mr-2"
-              id="invoice_type_contract" />
-            <span class="text-sm text-gray-700"><%= gettext("From Contract") %></span>
-          </label>
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="invoice_type"
-              value="direct"
-              checked={@invoice_type == "direct"}
-              class="mr-2"
-              id="invoice_type_direct" />
-            <span class="text-sm text-gray-700"><%= gettext("Direct (No Contract)") %></span>
-          </label>
+      <form action="/invoices" method="post" class="space-y-6">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice details") %></h2>
+              <p class="text-sm text-slate-500"><%= gettext("Invoice mode") %></p>
+            </div>
+
+            <div class="rounded-2xl border border-sky-200 bg-sky-50/80 p-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                <label class="inline-flex items-center text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="invoice_type"
+                    value="contract"
+                    checked={@invoice_type != "direct"}
+                    class="mr-2"
+                    id="invoice_type_contract"
+                  />
+                  <span><%= gettext("From Contract") %></span>
+                </label>
+                <label class="inline-flex items-center text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="invoice_type"
+                    value="direct"
+                    checked={@invoice_type == "direct"}
+                    class="mr-2"
+                    id="invoice_type_direct"
+                  />
+                  <span><%= gettext("Direct (No Contract)") %></span>
+                </label>
+              </div>
+            </div>
+
+            <div id="contract-section" class={["space-y-2", @invoice_type == "direct" && "hidden"]}>
+              <label for="contract_select" class="block text-sm font-medium text-slate-700">
+                <%= gettext("Contract") %>
+              </label>
+              <select
+                id="contract_select"
+                name="contract_id"
+                onchange="onContractSelectChange(this.value)"
+                class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              >
+                <option value=""><%= gettext("Select an issued contract...") %></option>
+                <%= for contract <- @contracts do %>
+                  <option value={contract.id} selected={@selected_contract_id == contract.id}>
+                    <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: gettext("Unknown") %> (<%= contract.issue_date %>)
+                  </option>
+                <% end %>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <input
+          type="hidden"
+          id="invoice_contract_id_hidden"
+          name="invoice[contract_id]"
+          value={@selected_contract_id || ""}
+        />
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900">
+                <%= gettext("Buyer and payment details") %>
+              </h2>
+            </div>
+
+            <div class="space-y-6">
+              <div>
+                <label for="buyer_select" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Buyer") %> *
+                </label>
+                <div class="mt-2">
+                  <select
+                    id="buyer_select"
+                    name="invoice[buyer_id]"
+                    class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  >
+                    <option value=""><%= gettext("Select a buyer...") %></option>
+                    <%= for buyer <- @buyers do %>
+                      <option
+                        value={buyer.id}
+                        data-address={buyer.address || ""}
+                        selected={@selected_buyer_id == buyer.id}
+                      >
+                        <%= buyer.name %> (<%= buyer.bin_iin %>)
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+                <p
+                  id="add-buyer-link"
+                  class={["mt-2 text-xs text-slate-500", @invoice_type != "direct" && "hidden"]}
+                >
+                  <a href="/buyers/new" class="font-medium text-sky-700 hover:text-sky-900">
+                    <%= gettext("Add new buyer") %>
+                  </a>
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 gap-5 sm:grid-cols-6">
+                <div class="sm:col-span-6">
+                  <label
+                    for="invoice_buyer_address"
+                    class="block text-sm font-medium text-slate-700"
+                  >
+                    <%= gettext("Buyer address") %> *
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="text"
+                      name="invoice[buyer_address]"
+                      id="invoice_buyer_address"
+                      required
+                      value={@buyer_address || ""}
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_issue_date" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Issue date") %> *
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="date"
+                      name="invoice[issue_date]"
+                      id="invoice_issue_date"
+                      required
+                      value={Date.utc_today()}
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_due_date" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Due date") %>
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="date"
+                      name="invoice[due_date]"
+                      id="invoice_due_date"
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label
+                    for="invoice_bank_account_id"
+                    class="block text-sm font-medium text-slate-700"
+                  >
+                    <%= gettext("Bank account") %>
+                  </label>
+                  <div class="mt-2">
+                    <select
+                      name="invoice[bank_account_id]"
+                      id="invoice_bank_account_id"
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    >
+                      <option value=""><%= gettext("Select bank account...") %></option>
+                      <%= for bank_account <- @bank_accounts do %>
+                        <option
+                          value={bank_account.id}
+                          data-kbe-code-id={bank_account.kbe_code_id}
+                          data-knp-code-id={bank_account.knp_code_id}
+                          selected={@selected_bank_account_id == bank_account.id}
+                        >
+                          <%= bank_account.bank.name %> - <%= bank_account.iban %>
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_kbe_code_id" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("KBE code") %>
+                  </label>
+                  <div class="mt-2">
+                    <select
+                      name="invoice[kbe_code_id]"
+                      id="invoice_kbe_code_id"
+                      required
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    >
+                      <%= for code <- @kbe_codes do %>
+                        <option value={code.id} selected={@selected_kbe_code_id == code.id}>
+                          <%= code.code %> - <%= code.description %>
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_knp_code_id" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("KNP code") %>
+                  </label>
+                  <div class="mt-2">
+                    <select
+                      name="invoice[knp_code_id]"
+                      id="invoice_knp_code_id"
+                      required
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    >
+                      <%= for code <- @knp_codes do %>
+                        <option value={code.id} selected={@selected_knp_code_id == code.id}>
+                          <%= code.code %> - <%= code.description %>
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_currency" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Currency") %>
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="text"
+                      name="invoice[currency]"
+                      id="invoice_currency"
+                      value="KZT"
+                      readonly
+                      class="block w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="invoice_vat_rate" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("VAT rate") %>
+                  </label>
+                  <div class="mt-2">
+                    <select
+                      name="invoice[vat_rate]"
+                      id="invoice_vat_rate"
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    >
+                      <option value="0">0%</option>
+                      <option value="16" selected>16%</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice Items") %></h2>
+              <button
+                id="add-item-btn"
+                type="button"
+                onclick="addItemRow()"
+                class={[
+                  "inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900",
+                  @invoice_type != "direct" && "hidden"
+                ]}
+              >
+                + <%= gettext("Add Item") %>
+              </button>
+            </div>
+
+            <div class="rounded-2xl bg-slate-50 p-4">
+              <div id="items-container" class="space-y-2"></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
+          <a
+            href="/invoices"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            <%= gettext("Create Invoice") %>
+          </button>
         </div>
-      </div>
+      </form>
+    </div>
 
-      <div id="contract-section" class={["space-y-6", @invoice_type == "direct" && "hidden"]}>
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
         <div>
-          <label for="contract_select" class="block text-sm font-medium text-gray-700"><%= gettext("Contract") %></label>
-          <div class="mt-1">
-            <select
-              id="contract_select"
-              name="contract_id"
-              onchange="onContractSelectChange(this.value)"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-              <option value=""><%= gettext("Select an issued contract...") %></option>
-              <%= for contract <- @contracts do %>
-                <option value={contract.id} selected={@selected_contract_id == contract.id}>
-                  <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: gettext("Unknown") %> (<%= contract.issue_date %>)
-                </option>
-              <% end %>
-            </select>
-          </div>
-          <p class="mt-1 text-xs text-gray-500"><%= gettext("Selecting a contract pre-fills buyer, bank account, and items.") %></p>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Invoice mode") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= invoice_mode %></dd>
         </div>
-      </div>
-
-      <div class="border-t border-gray-200 my-6"></div>
-
-      <input type="hidden" id="invoice_contract_id_hidden" name="invoice[contract_id]" value={@selected_contract_id || ""} />
-
-      <div class="space-y-6">
         <div>
-          <label for="buyer_select" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer") %> *</label>
-          <div class="mt-1">
-            <select
-              id="buyer_select"
-              name="invoice[buyer_id]"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-              <option value=""><%= gettext("Select a buyer...") %></option>
-              <%= for buyer <- @buyers do %>
-                <option
-                  value={buyer.id}
-                  data-address={buyer.address || ""}
-                  selected={@selected_buyer_id == buyer.id}>
-                  <%= buyer.name %> (<%= buyer.bin_iin %>)
-                </option>
-              <% end %>
-            </select>
-          </div>
-          <p id="add-buyer-link" class={["mt-1 text-xs text-gray-500", @invoice_type != "direct" && "hidden"]}>
-            <a href="/buyers/new" class="text-blue-600 hover:text-blue-500"><%= gettext("Add new buyer") %></a>
-          </p>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Buyer") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= if selected_buyer, do: selected_buyer.name, else: "-" %>
+          </dd>
         </div>
-
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
-          <div class="sm:col-span-6">
-            <label for="invoice_buyer_address" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer address") %> *</label>
-            <div class="mt-2">
-              <input
-                type="text"
-                name="invoice[buyer_address]"
-                id="invoice_buyer_address"
-                required
-                value={@buyer_address || ""}
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_issue_date" class="block text-sm font-medium text-gray-700"><%= gettext("Issue date") %> *</label>
-            <div class="mt-2">
-              <input
-                type="date"
-                name="invoice[issue_date]"
-                id="invoice_issue_date"
-                required
-                value={Date.utc_today()}
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_due_date" class="block text-sm font-medium text-gray-700"><%= gettext("Due date") %></label>
-            <div class="mt-2">
-              <input
-                type="date"
-                name="invoice[due_date]"
-                id="invoice_due_date"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_bank_account_id" class="block text-sm font-medium text-gray-700"><%= gettext("Bank account") %></label>
-            <div class="mt-2">
-              <select
-                name="invoice[bank_account_id]"
-                id="invoice_bank_account_id"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-                <option value=""><%= gettext("Select bank account...") %></option>
-                <%= for bank_account <- @bank_accounts do %>
-                  <option
-                    value={bank_account.id}
-                    data-kbe-code-id={bank_account.kbe_code_id}
-                    data-knp-code-id={bank_account.knp_code_id}
-                    selected={@selected_bank_account_id == bank_account.id}>
-                    <%= bank_account.bank.name %> - <%= bank_account.iban %>
-                  </option>
-                <% end %>
-              </select>
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_kbe_code_id" class="block text-sm font-medium text-gray-700"><%= gettext("KBE code") %></label>
-            <div class="mt-2">
-              <select
-                name="invoice[kbe_code_id]"
-                id="invoice_kbe_code_id"
-                required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-                <%= for code <- @kbe_codes do %>
-                  <option value={code.id} selected={@selected_kbe_code_id == code.id}>
-                    <%= code.code %> - <%= code.description %>
-                  </option>
-                <% end %>
-              </select>
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_knp_code_id" class="block text-sm font-medium text-gray-700"><%= gettext("KNP code") %></label>
-            <div class="mt-2">
-              <select
-                name="invoice[knp_code_id]"
-                id="invoice_knp_code_id"
-                required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-                <%= for code <- @knp_codes do %>
-                  <option value={code.id} selected={@selected_knp_code_id == code.id}>
-                    <%= code.code %> - <%= code.description %>
-                  </option>
-                <% end %>
-              </select>
-            </div>
-          </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Bank account") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= if selected_bank_account do %>
+              <%= selected_bank_account.bank.name %> - <%= selected_bank_account.iban %>
+            <% else %>
+              -
+            <% end %>
+          </dd>
         </div>
-
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
-          <div class="sm:col-span-2">
-            <label for="invoice_currency" class="block text-sm font-medium text-gray-700"><%= gettext("Currency") %></label>
-            <div class="mt-2">
-              <input
-                type="text"
-                name="invoice[currency]"
-                id="invoice_currency"
-                value="KZT"
-                readonly
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3 bg-gray-100" />
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="invoice_vat_rate" class="block text-sm font-medium text-gray-700"><%= gettext("VAT rate") %></label>
-            <div class="mt-2">
-              <select
-                name="invoice[vat_rate]"
-                id="invoice_vat_rate"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3">
-                <option value="0">0%</option>
-                <option value="16" selected>16%</option>
-              </select>
-            </div>
-          </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Currency") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">KZT</dd>
         </div>
-
-        <div class="mt-8">
-          <h3 class="text-lg font-medium text-gray-900 mb-4"><%= gettext("Invoice Items") %></h3>
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <div id="items-container" class="space-y-2"></div>
-            <button
-              id="add-item-btn"
-              type="button"
-              onclick="addItemRow()"
-              class={["mt-2 text-sm text-blue-600 hover:text-blue-900", @invoice_type != "direct" && "hidden"]}>
-              + <%= gettext("Add Item") %>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-6 flex items-center justify-end gap-x-6">
-        <a href="/invoices" class="text-sm font-semibold text-gray-900 hover:text-gray-700"><%= gettext("Cancel") %></a>
-        <button
-          type="submit"
-          class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          <%= gettext("Create Invoice") %>
-        </button>
-      </div>
-    </form>
+      </dl>
+    </.workspace_support_panel>
   </div>
 </div>
 
@@ -274,14 +397,14 @@
     const unitPrice = escapeHtml(normalizeNumber(data.unit_price, ''));
     const removeButtonHtml = lockContractItems
       ? ''
-      : "<button type=\"button\" onclick=\"this.closest('.item-row').remove()\" class=\"text-red-600 hover:text-red-900 text-sm font-medium\"><%= gettext("Remove") %></button>";
+      : "<button type=\"button\" onclick=\"this.closest('.item-row').remove()\" class=\"inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50\"><%= gettext("Remove") %></button>";
     newRow.innerHTML = `
       <div class="col-span-5">
         <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
         <input type="text" name="items[${idx}][name]" value="${name}" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500">Ед. Изм.</label>
+        <label class="block text-xs text-gray-500"><%= gettext("Invoice item unit") %></label>
         <input type="text" name="items[${idx}][code]" value="${code}" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
       </div>
       <div class="col-span-2">
@@ -318,125 +441,127 @@
       if (!hidden) {
         hidden = document.createElement('input');
         hidden.type = 'hidden';
-        hidden.id = 'buyer_id_hidden';
         hidden.name = 'invoice[buyer_id]';
-        buyerSelect.parentNode.appendChild(hidden);
+        hidden.id = 'buyer_id_hidden';
+        buyerSelect.parentElement.appendChild(hidden);
       }
-      hidden.value = buyerSelect.value || buyerId || "";
+      hidden.value = buyerSelect.value;
     } else {
       buyerSelect.disabled = false;
       if (hidden) hidden.remove();
     }
   }
 
-  function setBuyerAddress(address) {
-    const addressInput = document.getElementById('invoice_buyer_address');
-    if (addressInput) {
-      addressInput.value = address || "";
-    }
+  function setBankAccountSelection(bankAccountId) {
+    const bankAccountSelect = document.getElementById('invoice_bank_account_id');
+    if (!bankAccountSelect || !bankAccountId) return;
+    bankAccountSelect.value = bankAccountId;
+    updateSettlementCodesFromBankAccount();
   }
 
-  function selectedBuyerAddress() {
-    const buyerSelect = document.getElementById('buyer_select');
-    if (!buyerSelect) return "";
-
-    const option = buyerSelect.options[buyerSelect.selectedIndex];
-    if (!option) return "";
-
-    return option.dataset.address || "";
+  function setBuyerAddress(value) {
+    const input = document.getElementById('invoice_buyer_address');
+    if (input) input.value = value || '';
   }
 
-  function syncCodeSelectionsFromBank() {
-    const bankSelect = document.getElementById('invoice_bank_account_id');
-    if (!bankSelect) return;
-
-    const selectedOption = bankSelect.options[bankSelect.selectedIndex];
-    if (!selectedOption) return;
-
-    const kbeCodeId = selectedOption.dataset.kbeCodeId || "";
-    const knpCodeId = selectedOption.dataset.knpCodeId || "";
-
+  function updateSettlementCodesFromBankAccount() {
+    const bankAccountSelect = document.getElementById('invoice_bank_account_id');
     const kbeSelect = document.getElementById('invoice_kbe_code_id');
     const knpSelect = document.getElementById('invoice_knp_code_id');
+    if (!bankAccountSelect || !kbeSelect || !knpSelect) return;
 
-    if (kbeSelect && kbeCodeId) kbeSelect.value = kbeCodeId;
-    if (knpSelect && knpCodeId) knpSelect.value = knpCodeId;
+    const selected = bankAccountSelect.options[bankAccountSelect.selectedIndex];
+    if (!selected) return;
+
+    const kbeCodeId = selected.getAttribute('data-kbe-code-id');
+    const knpCodeId = selected.getAttribute('data-knp-code-id');
+
+    if (kbeCodeId) kbeSelect.value = kbeCodeId;
+    if (knpCodeId) knpSelect.value = knpCodeId;
   }
 
-  function setInvoiceType(type) {
-    const contractSection = document.getElementById('contract-section');
-    const contractHiddenInput = document.getElementById('invoice_contract_id_hidden');
-    const contractSelect = document.getElementById('contract_select');
-    const addBuyerLink = document.getElementById('add-buyer-link');
-    const addItemBtn = document.getElementById('add-item-btn');
+  function lockContractMode(lock) {
+    const addButton = document.getElementById('add-item-btn');
+    if (!addButton) return;
 
-    if (type === 'direct') {
-      lockContractItems = false;
-      if (contractSection) contractSection.classList.add('hidden');
-      if (contractHiddenInput) contractHiddenInput.value = "";
-      if (contractSelect) contractSelect.value = "";
-      if (addBuyerLink) addBuyerLink.classList.remove('hidden');
-      if (addItemBtn) addItemBtn.classList.remove('hidden');
-      setBuyerSelection("", false);
-      clearItems();
-      addItemRow();
+    if (lock) {
+      addButton.classList.add('hidden');
     } else {
-      lockContractItems = true;
-      if (contractSection) contractSection.classList.remove('hidden');
-      if (addBuyerLink) addBuyerLink.classList.add('hidden');
-      if (addItemBtn) addItemBtn.classList.add('hidden');
+      addButton.classList.remove('hidden');
     }
   }
 
   function onContractSelectChange(contractId) {
-    const params = new URLSearchParams();
-    params.set('invoice_type', 'contract');
-    if (contractId) params.set('contract_id', contractId);
-    window.location.href = `/invoices/new?${params.toString()}`;
+    const invoiceType = document.getElementById('invoice_type_contract').checked ? 'contract' : 'direct';
+    const hidden = document.getElementById('invoice_contract_id_hidden');
+    if (hidden) hidden.value = contractId || '';
+
+    if (invoiceType !== 'contract') return;
+
+    if (!contractId) {
+      lockContractItems = false;
+      clearItems();
+      lockContractMode(false);
+      setBuyerSelection('', false);
+      return;
+    }
+
+    const url = new URL(window.location.origin + '/invoices/new');
+    url.searchParams.set('invoice_type', 'contract');
+    url.searchParams.set('contract_id', contractId);
+    window.location.href = url.toString();
   }
 
-  function initItems() {
-    const invoiceTypeContract = document.getElementById('invoice_type_contract');
-    const invoiceTypeDirect = document.getElementById('invoice_type_direct');
-    const buyerSelect = document.getElementById('buyer_select');
+  function onInvoiceTypeChange() {
+    const invoiceType = document.getElementById('invoice_type_contract').checked ? 'contract' : 'direct';
+    const contractSection = document.getElementById('contract-section');
+    const addBuyerLink = document.getElementById('add-buyer-link');
+    const contractHidden = document.getElementById('invoice_contract_id_hidden');
 
-    if (buyerSelect) {
-      buyerSelect.addEventListener('change', () => {
-        const contractHiddenInput = document.getElementById('invoice_contract_id_hidden');
-        const activeContractId = contractHiddenInput ? contractHiddenInput.value : "";
-        if (!activeContractId && !buyerSelect.disabled) {
-          setBuyerAddress(selectedBuyerAddress());
-        }
-      });
+    if (invoiceType === 'contract') {
+      contractSection.classList.remove('hidden');
+      if (addBuyerLink) addBuyerLink.classList.add('hidden');
+      if (!contractHidden.value && document.getElementById('contract_select')) {
+        onContractSelectChange(document.getElementById('contract_select').value);
+      }
+    } else {
+      contractSection.classList.add('hidden');
+      if (addBuyerLink) addBuyerLink.classList.remove('hidden');
+      if (contractHidden) contractHidden.value = '';
+      lockContractItems = false;
+      lockContractMode(false);
+      setBuyerSelection('', false);
+      clearItems();
+      addItemRow();
     }
+  }
 
-    if (invoiceTypeContract) {
-      invoiceTypeContract.addEventListener('change', () => setInvoiceType('contract'));
-    }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('invoice_type_contract')?.addEventListener('change', onInvoiceTypeChange);
+    document.getElementById('invoice_type_direct')?.addEventListener('change', onInvoiceTypeChange);
+    document.getElementById('invoice_bank_account_id')?.addEventListener('change', updateSettlementCodesFromBankAccount);
 
-    if (invoiceTypeDirect) {
-      invoiceTypeDirect.addEventListener('change', () => setInvoiceType('direct'));
-    }
+    document.getElementById('buyer_select')?.addEventListener('change', function(event) {
+      const option = event.target.options[event.target.selectedIndex];
+      if (option) {
+        setBuyerAddress(option.getAttribute('data-address') || '');
+      }
+    });
 
-    if (prefillItems && prefillItems.length > 0) {
-      prefillItems.forEach(item => addItemRow(item));
+    updateSettlementCodesFromBankAccount();
+
+    if (prefillItems.length > 0) {
+      clearItems();
+      prefillItems.forEach(addItemRow);
+      lockContractMode(true);
+    } else if (selectedContractId) {
+      lockContractMode(true);
     } else {
       addItemRow();
     }
 
-    if (selectedBuyerId) {
-      const contractHiddenInput = document.getElementById('invoice_contract_id_hidden');
-      const isFromContract = contractHiddenInput && contractHiddenInput.value;
-      setBuyerSelection(selectedBuyerId, !!isFromContract);
+    if (selectedBuyerId && selectedContractId) {
+      setBuyerSelection(selectedBuyerId, true);
     }
-
-    const bankAccountSelect = document.getElementById('invoice_bank_account_id');
-    if (bankAccountSelect) {
-      bankAccountSelect.addEventListener('change', syncCodeSelectionsFromBank);
-    }
-
-    syncCodeSelectionsFromBank();
-  }
-
-  document.addEventListener('DOMContentLoaded', initItems);
+  });
 </script>
