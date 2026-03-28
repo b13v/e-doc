@@ -936,6 +936,18 @@ msgstr ""
 msgid "Invoice Items"
 msgstr ""
 
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:35
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Invoice details"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:36
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:333
+#, elixir-autogen, elixir-format
+msgid "Invoice mode"
+msgstr ""
+
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Invoice Type"
@@ -984,6 +996,11 @@ msgstr ""
 msgid "Invoice updated successfully."
 msgstr ""
 
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:271
+#, elixir-autogen, elixir-format
+msgid "Invoice status"
+msgstr ""
+
 #: lib/edoc_api_web/controllers/contract_html/show.html.heex:73
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:102
 #: lib/edoc_api_web/controllers/invoice_html/show.html.heex:176
@@ -999,6 +1016,12 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/show.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Issue date"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:98
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Buyer and payment details"
 msgstr ""
 
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:99
@@ -2055,6 +2078,38 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Overview"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:84
+msgid "Draft acts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:88
+msgid "Issued acts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:92
+msgid "Signed acts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:84
+msgid "Draft contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:88
+msgid "Issued contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:92
+msgid "Signed contracts"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:19
+msgid "Create your first act when your company and buyer details are ready."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:24
+msgid "Create your first contract when your company and buyer details are ready."
 msgstr ""
 
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:103

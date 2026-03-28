@@ -305,7 +305,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Add Item"
-msgstr ""
+msgstr "Тармақ қосу"
 
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:14
 #, elixir-autogen, elixir-format
@@ -351,7 +351,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/company_html/edit.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "BIN/IIN"
-msgstr ""
+msgstr "БСН/ЖСН"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:27
 #, elixir-autogen, elixir-format
@@ -431,7 +431,7 @@ msgstr "Банк шоты сәтті жаңартылды."
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Basis (Authority)"
-msgstr ""
+msgstr "Негіздеме (өкілеттік)"
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:78
 #, elixir-autogen, elixir-format
@@ -457,7 +457,7 @@ msgstr "Сатып алушы"
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Buyer address"
-msgstr ""
+msgstr "Сатып алушының мекенжайы"
 
 #: lib/edoc_api_web/controllers/buyer_html_controller.ex:78
 #, elixir-autogen, elixir-format
@@ -665,7 +665,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Currency"
-msgstr ""
+msgstr "Валюта"
 
 #: lib/edoc_api_web/controllers/contract_html/edit.html.heex:46
 #: lib/edoc_api_web/controllers/contract_html/index.html.heex:37
@@ -689,7 +689,7 @@ msgstr "Негізгі банк шоты жаңартылды."
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Delete"
-msgstr ""
+msgstr "Бас тарту"
 
 #: lib/edoc_api_web/controllers/act_html/index.html.heex:55
 #, elixir-autogen, elixir-format
@@ -716,26 +716,26 @@ msgstr ""
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Director Name"
-msgstr ""
+msgstr "Аты-жөні"
 
 #: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:193
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Director Title"
-msgstr ""
+msgstr "Лауазымы"
 
 #: lib/edoc_api_web/components/core_components.ex:95
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:78
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Draft"
-msgstr ""
+msgstr "Нобай"
 
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:124
 #: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Due date"
-msgstr ""
+msgstr "Төлеу мерзімі"
 
 #: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:33
 #: lib/edoc_api_web/controllers/company_bank_account_html_controller.ex:78
@@ -751,7 +751,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/buyer_html_controller.ex:252
 #, elixir-autogen, elixir-format
 msgid "Edit Buyer"
-msgstr ""
+msgstr "Сатып алушыны өңдеу"
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:350
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:366
@@ -771,7 +771,13 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Edit Invoice %{number}"
-msgstr ""
+msgstr "Шотты өңдеу %{number}"
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:132
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Invoice item unit"
+msgstr "Өлшем бірлігі"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:6
 #, elixir-autogen, elixir-format
@@ -937,6 +943,18 @@ msgstr ""
 msgid "Invoice Items"
 msgstr "Шот тармақтары"
 
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:35
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Invoice details"
+msgstr "Шот деректері"
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:36
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:333
+#, elixir-autogen, elixir-format
+msgid "Invoice mode"
+msgstr "Шот режимі"
+
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:22
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Invoice Type"
@@ -985,6 +1003,11 @@ msgstr ""
 msgid "Invoice updated successfully."
 msgstr "Жүйеден сәтті шықтыңыз."
 
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:271
+#, elixir-autogen, elixir-format
+msgid "Invoice status"
+msgstr "Шот мәртебесі"
+
 #: lib/edoc_api_web/controllers/contract_html/show.html.heex:73
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:102
 #: lib/edoc_api_web/controllers/invoice_html/show.html.heex:176
@@ -1000,7 +1023,13 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/show.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Issue date"
-msgstr ""
+msgstr "Шығарылған күні"
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:98
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Buyer and payment details"
+msgstr "Сатып алушы және төлем деректері"
 
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:99
 #: lib/edoc_api_web/controllers/invoice_html/show.html.heex:170
@@ -1011,7 +1040,7 @@ msgstr ""
 #: lib/edoc_api_web/components/core_components.ex:96
 #, elixir-autogen, elixir-format
 msgid "Issued"
-msgstr ""
+msgstr "Шығарылған"
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:259
 #, elixir-autogen, elixir-format
@@ -1278,7 +1307,7 @@ msgstr "Шоттар мен келісімшарттар бойынша жұмы
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Remove"
-msgstr ""
+msgstr "Жою"
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:66
 #, elixir-autogen, elixir-format
@@ -1411,7 +1440,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/show.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Total"
-msgstr ""
+msgstr "Жалпы сома"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:14
 #, elixir-autogen, elixir-format
@@ -1422,7 +1451,7 @@ msgstr "Сатып алушылар туралы мәліметтер мен б�
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Unit"
-msgstr ""
+msgstr "Өлшем бірлігі"
 
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:162
 #, elixir-autogen, elixir-format
@@ -1446,7 +1475,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "VAT rate (%)"
-msgstr ""
+msgstr "ҚҚС мөлшерлемесі (%)"
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:626
 #, elixir-autogen, elixir-format
@@ -1681,7 +1710,7 @@ msgstr "Толығырақ"
 #: lib/edoc_api_web/controllers/buyer_html/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Director"
-msgstr "Директор"
+msgstr "Аты-жөні"
 
 #: lib/edoc_api_web/controllers/act_html/show.html.heex:158
 #: lib/edoc_api_web/controllers/contract_html/show.html.heex:110
@@ -2057,6 +2086,38 @@ msgstr "Шығарылған шоттар"
 #, elixir-autogen, elixir-format
 msgid "Overview"
 msgstr "Шолу"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:84
+msgid "Draft acts"
+msgstr "Акт жобалары"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:88
+msgid "Issued acts"
+msgstr "Шығарылған актілер"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:92
+msgid "Signed acts"
+msgstr "Қол қойылған актілер"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:84
+msgid "Draft contracts"
+msgstr "Келісімшарт жобалары"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:88
+msgid "Issued contracts"
+msgstr "Шығарылған келісімшарттар"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:92
+msgid "Signed contracts"
+msgstr "Қол қойылған келісімшарттар"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:19
+msgid "Create your first act when your company and buyer details are ready."
+msgstr "Компания мен сатып алушы деректері дайын болғанда алғашқы актіні жасаңыз."
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:24
+msgid "Create your first contract when your company and buyer details are ready."
+msgstr "Компания мен сатып алушы деректері дайын болғанда алғашқы келісімшартты жасаңыз."
 
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:103
 #, elixir-autogen, elixir-format

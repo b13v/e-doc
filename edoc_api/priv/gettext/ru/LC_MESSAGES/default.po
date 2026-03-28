@@ -351,7 +351,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/company_html/edit.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "BIN/IIN"
-msgstr ""
+msgstr "БИН/ИИН"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:27
 #, elixir-autogen, elixir-format
@@ -431,7 +431,7 @@ msgstr "Банковский счет успешно обновлен."
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Basis (Authority)"
-msgstr ""
+msgstr "Основание (полномочия)"
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:78
 #, elixir-autogen, elixir-format
@@ -716,13 +716,13 @@ msgstr "Прямой счет"
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Director Name"
-msgstr "ФИО директора"
+msgstr "ФИО"
 
 #: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:193
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Director Title"
-msgstr "Должность директора"
+msgstr "Должность"
 
 #: lib/edoc_api_web/components/core_components.ex:95
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:78
@@ -751,7 +751,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/buyer_html_controller.ex:252
 #, elixir-autogen, elixir-format
 msgid "Edit Buyer"
-msgstr ""
+msgstr "Редактировать покупателя"
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:350
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:366
@@ -771,7 +771,13 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Edit Invoice %{number}"
-msgstr ""
+msgstr "Редактировать счет %{number}"
+
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:132
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Invoice item unit"
+msgstr "Ед.изм"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:6
 #, elixir-autogen, elixir-format
@@ -937,6 +943,18 @@ msgstr ""
 msgid "Invoice Items"
 msgstr "Позиции счета"
 
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:35
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Invoice details"
+msgstr "Реквизиты счета"
+
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:36
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:333
+#, elixir-autogen, elixir-format
+msgid "Invoice mode"
+msgstr "Режим счета"
+
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:22
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Invoice Type"
@@ -985,6 +1003,11 @@ msgstr ""
 msgid "Invoice updated successfully."
 msgstr "Выход из системы выполнен успешно."
 
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:271
+#, elixir-autogen, elixir-format
+msgid "Invoice status"
+msgstr "Статус счета"
+
 #: lib/edoc_api_web/controllers/contract_html/show.html.heex:73
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:102
 #: lib/edoc_api_web/controllers/invoice_html/show.html.heex:176
@@ -1002,6 +1025,12 @@ msgstr "Выпустить"
 msgid "Issue date"
 msgstr "Дата выставления"
 
+#: lib/edoc_api_web/controllers/invoice_html/new.html.heex:98
+#: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Buyer and payment details"
+msgstr "Реквизиты покупателя и оплаты"
+
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:99
 #: lib/edoc_api_web/controllers/invoice_html/show.html.heex:170
 #, elixir-autogen, elixir-format
@@ -1011,7 +1040,7 @@ msgstr "Выпустить этот счет?"
 #: lib/edoc_api_web/components/core_components.ex:96
 #, elixir-autogen, elixir-format
 msgid "Issued"
-msgstr "Выпущен"
+msgstr "Выставлен"
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:259
 #, elixir-autogen, elixir-format
@@ -1226,7 +1255,7 @@ msgstr "Выберите покупателя."
 #: lib/edoc_api_web/controllers/invoices_controller.ex:389
 #, elixir-autogen, elixir-format
 msgid "Please select an issued contract."
-msgstr "Выберите выпущенный договор."
+msgstr "Выберите выставленный договор."
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:28
 #: lib/edoc_api_web/controllers/acts_controller.ex:73
@@ -1278,7 +1307,7 @@ msgstr "Готовы упростить работу со счетами и до
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Remove"
-msgstr ""
+msgstr "Удалить"
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:66
 #, elixir-autogen, elixir-format
@@ -1330,7 +1359,7 @@ msgstr "Выберите покупателя..."
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Select an issued contract..."
-msgstr "Выберите выпущенный договор..."
+msgstr "Выберите выставленный договор..."
 
 #: lib/edoc_api_web/controllers/contract_html/edit.html.heex:106
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:103
@@ -1422,7 +1451,7 @@ msgstr "Ведите учет данных покупателей и истор�
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Unit"
-msgstr ""
+msgstr "Ед.изм"
 
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:162
 #, elixir-autogen, elixir-format
@@ -1681,7 +1710,7 @@ msgstr "Подробности"
 #: lib/edoc_api_web/controllers/buyer_html/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Director"
-msgstr "ФИО директора"
+msgstr "ФИО"
 
 #: lib/edoc_api_web/controllers/act_html/show.html.heex:158
 #: lib/edoc_api_web/controllers/contract_html/show.html.heex:110
@@ -1865,7 +1894,7 @@ msgstr "Имя представителя"
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Representative Title"
-msgstr "Должность представителя"
+msgstr "Должность"
 
 #: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:229
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:107
@@ -2057,6 +2086,38 @@ msgstr "Выставленные счета"
 #, elixir-autogen, elixir-format
 msgid "Overview"
 msgstr "Обзор"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:84
+msgid "Draft acts"
+msgstr "Черновики актов"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:88
+msgid "Issued acts"
+msgstr "Выставленные акты"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:92
+msgid "Signed acts"
+msgstr "Подписанные акты"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:84
+msgid "Draft contracts"
+msgstr "Черновики договоров"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:88
+msgid "Issued contracts"
+msgstr "Выставленные договоры"
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:92
+msgid "Signed contracts"
+msgstr "Подписанные договоры"
+
+#: lib/edoc_api_web/controllers/act_html/index.html.heex:19
+msgid "Create your first act when your company and buyer details are ready."
+msgstr "Создайте первый акт, когда данные компании и покупателя будут готовы."
+
+#: lib/edoc_api_web/controllers/contract_html/index.html.heex:24
+msgid "Create your first contract when your company and buyer details are ready."
+msgstr "Создайте первый договор, когда данные компании и покупателя будут готовы."
 
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:103
 #, elixir-autogen, elixir-format

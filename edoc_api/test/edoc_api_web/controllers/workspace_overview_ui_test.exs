@@ -78,14 +78,14 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert body =~ "INV-2026-2"
     assert body =~ "100.00 KZT"
-    assert body =~ "xl:grid-cols-[minmax(0,1fr)_18rem]"
+    assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
     assert body =~ ~r/<td[^>]*>\s*-\s*<\/td>/
     assert body =~ "Обзор"
     assert body =~ "Черновики"
     assert body =~ ">1<"
     assert body =~ "Выставленные счета"
     assert body =~ "Оплаченные счета"
-    assert body =~ "Счета зависят от готовых данных компании и покупателя."
+    refute body =~ "Счета зависят от готовых данных компании и покупателя."
   end
 
   test "invoice overview empty state uses the shared CTA surface", %{conn: conn} do
@@ -134,6 +134,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Держите данные покупателей актуальными перед созданием договоров и счетов."
     assert body =~ "Просмотреть договоры"
     assert body =~ "Действия"
+    assert body =~ "w-px whitespace-nowrap px-6 py-4 text-right"
+    assert body =~ "min-w-44"
+    refute body =~ "whitespace-nowrap md:flex"
     refute body =~ "Назад к компании"
   end
 
@@ -153,6 +156,107 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Покупателей пока нет."
     assert body =~ ~s(href="/buyers/new")
     refute body =~ "Просмотреть договоры"
+  end
+
+  test "contracts overview renders status counts in a right-side panel", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _draft = create_contract!(company, %{"status" => "draft", "number" => "C-1"})
+    _issued = create_contract!(company, %{"status" => "issued", "number" => "C-2"})
+    _signed = create_contract!(company, %{"status" => "signed", "number" => "C-3"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    assert body =~ "Обзор"
+    assert body =~ "Черновики договоров"
+    assert body =~ "Выставленные договоры"
+    assert body =~ "Подписанные договоры"
+    assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
+    assert body =~ ~r/>1<\/dd>/
+  end
+
+  test "acts overview renders status counts in a right-side panel", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, draft} = create_act_for_overview(user, company, buyer, "draft")
+    {:ok, issued} = create_act_for_overview(user, company, buyer, "issued")
+    {:ok, _signed} = create_act_for_overview(user, company, buyer, "signed")
+
+    assert draft.status == "draft"
+    assert issued.status == "issued"
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    assert body =~ "Обзор"
+    assert body =~ "Черновики актов"
+    assert body =~ "Выставленные акты"
+    assert body =~ "Подписанные акты"
+    assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
+    assert body =~ ~r/>1<\/dd>/
+  end
+
+  test "invoice new uses workspace form chrome and keeps invoices nav active", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Acme Buyer",
+        "bin_iin" => "060215385673",
+        "address" => "Buyer Address"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/new?invoice_type=direct")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Режим счета"
+    assert body =~ "Реквизиты покупателя и оплаты"
+    refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
+  end
+
+  test "invoice edit uses workspace form chrome and keeps invoices nav active", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    invoice = create_invoice_with_items!(user, company)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}/edit")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Статус"
+    assert body =~ "Реквизиты покупателя и оплаты"
+    refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end
 
   test "workspace_row_actions renders inline and overflow affordances", _context do
@@ -175,6 +279,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert html =~ ~r/<a[^>]*href="\/invoices\/1"[^>]*>\s*View\s*<\/a>/s
     assert html =~ ~r/<summary[^>]*>\s*Actions\s*<\/summary>/s
+    assert html =~ ~s(mt-2)
+    refute html =~ ~s(bottom-full)
+    refute html =~ ~s(mb-2)
     assert html =~ ~r/hx-delete="\/invoices\/1"/
     assert html =~ ~r/hx-target="#invoice-1"/
     assert html =~ ~r/hx-swap="outerHTML"/
@@ -207,7 +314,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert html =~ ~s|return confirm(&quot;Mark invoice as paid? It&#39;s final.&quot;)|
   end
 
-  test "workspace_row_actions get forms preserve method semantics without CSRF fields", _context do
+  test "workspace_row_actions get forms preserve method semantics without CSRF fields",
+       _context do
     html =
       render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
         primary: %{
@@ -237,7 +345,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert html =~ "bg-rose-50"
   end
 
-  test "flash_error omits the wrapper when only info exists and info rendering is disabled", _context do
+  test "flash_error omits the wrapper when only info exists and info rendering is disabled",
+       _context do
     html =
       render_component(&EdocApiWeb.CoreComponents.flash_error/1,
         flash: %{"info" => "Saved"},
@@ -305,5 +414,30 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     |> Plug.Test.init_test_session(%{user_id: user.id, locale: locale})
     |> put_private(:plug_skip_csrf_protection, true)
     |> put_req_header("accept", "text/html")
+  end
+
+  defp create_buyer_for_acts!(company, attrs) do
+    {:ok, buyer} = EdocApi.Buyers.create_buyer_for_company(company.id, attrs)
+    buyer
+  end
+
+  defp create_act_for_overview(user, company, buyer, status) do
+    attrs = %{
+      "issue_date" => Date.utc_today(),
+      "buyer_id" => buyer.id,
+      "buyer_address" => "Buyer Address",
+      "items" => [
+        %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+      ]
+    }
+
+    with {:ok, act} <- EdocApi.Acts.create_act_for_user(user.id, company.id, attrs) do
+      updated_act =
+        act
+        |> Ecto.Changeset.change(status: status)
+        |> EdocApi.Repo.update!()
+
+      {:ok, updated_act}
+    end
   end
 end
