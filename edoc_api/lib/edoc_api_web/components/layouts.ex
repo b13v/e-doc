@@ -32,6 +32,52 @@ defmodule EdocApiWeb.Layouts do
               });
             }
           });
+
+          window.positionWorkspaceRowActions = function(detailsEl) {
+            var menu = detailsEl.querySelector('[data-row-actions-menu]');
+            var summary = detailsEl.querySelector('summary');
+
+            if (!menu || !summary) return;
+
+            if (!detailsEl.open) {
+              menu.classList.add('hidden');
+              return;
+            }
+
+            menu.classList.remove('hidden');
+
+            requestAnimationFrame(function() {
+              var triggerRect = summary.getBoundingClientRect();
+              var menuRect = menu.getBoundingClientRect();
+              var gutter = 12;
+              var gap = 8;
+              var left = Math.min(
+                Math.max(gutter, triggerRect.right - menuRect.width),
+                window.innerWidth - menuRect.width - gutter
+              );
+              var top = Math.max(gutter, triggerRect.top - menuRect.height - gap);
+
+              menu.style.left = left + 'px';
+              menu.style.top = top + 'px';
+            });
+          };
+
+          document.addEventListener('click', function(event) {
+            document.querySelectorAll('details[data-row-actions-root][open]').forEach(function(detailsEl) {
+              if (detailsEl.contains(event.target)) return;
+
+              detailsEl.open = false;
+
+              var menu = detailsEl.querySelector('[data-row-actions-menu]');
+              if (menu) menu.classList.add('hidden');
+            });
+          });
+
+          window.addEventListener('resize', function() {
+            document.querySelectorAll('details[data-row-actions-root][open]').forEach(function(detailsEl) {
+              window.positionWorkspaceRowActions(detailsEl);
+            });
+          });
         </script>
 
         <!-- Tailwind CSS from CDN (pinned version) -->

@@ -85,6 +85,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ">1<"
     assert body =~ "Выставленные счета"
     assert body =~ "Оплаченные счета"
+    assert body =~ "overflow-y-visible"
+    assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
     refute body =~ "Счета зависят от готовых данных компании и покупателя."
   end
 
@@ -178,6 +180,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Выставленные договоры"
     assert body =~ "Подписанные договоры"
     assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
+    assert body =~ "overflow-y-visible"
+    assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
     assert body =~ ~r/>1<\/dd>/
   end
 
@@ -212,6 +216,74 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Подписанные акты"
     assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
     assert body =~ ~r/>1<\/dd>/
+  end
+
+  test "workspace overview tables render fixed upward action overlays above short tables", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    _contract = create_contract!(company, %{"status" => "draft", "number" => "C-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    assert invoice_body =~
+             "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+
+    assert invoice_body =~ "overflow-x-auto overflow-y-visible"
+
+    assert invoice_body =~ "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
+    assert invoice_body =~ "data-row-actions-menu"
+    assert invoice_body =~ "fixed left-0 top-0 z-[80]"
+    assert invoice_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
+
+    assert contract_body =~
+             "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+
+    assert contract_body =~ "overflow-x-auto overflow-y-visible"
+
+    assert contract_body =~
+             "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
+
+    assert contract_body =~ "data-row-actions-menu"
+    assert contract_body =~ "fixed left-0 top-0 z-[80]"
+    assert contract_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
+
+    assert act_body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+    assert act_body =~ "overflow-x-auto overflow-y-visible"
+
+    assert act_body =~ "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
+    assert act_body =~ "data-row-actions-menu"
+    assert act_body =~ "fixed left-0 top-0 z-[80]"
+    assert act_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
   end
 
   test "invoice new uses workspace form chrome and keeps invoices nav active", %{conn: conn} do
@@ -279,9 +351,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert html =~ ~r/<a[^>]*href="\/invoices\/1"[^>]*>\s*View\s*<\/a>/s
     assert html =~ ~r/<summary[^>]*>\s*Actions\s*<\/summary>/s
-    assert html =~ ~s(mt-2)
-    refute html =~ ~s(bottom-full)
-    refute html =~ ~s(mb-2)
+    assert html =~ ~s(data-row-actions-menu)
+    assert html =~ ~s(fixed left-0 top-0 z-[80])
+    assert html =~ ~s(ontoggle="window.positionWorkspaceRowActions)
     assert html =~ ~r/hx-delete="\/invoices\/1"/
     assert html =~ ~r/hx-target="#invoice-1"/
     assert html =~ ~r/hx-swap="outerHTML"/

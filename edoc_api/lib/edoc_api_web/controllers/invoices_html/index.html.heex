@@ -13,7 +13,7 @@
     </:primary_action>
   </.workspace_page_header>
 
-  <div class={["grid gap-6", if(@invoices != [], do: "xl:grid-cols-[minmax(0,1fr)_18rem]")]}>
+  <div class={["grid gap-6", if(@invoices != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
     <div class="space-y-4">
       <.flash_error flash={@flash} />
 
@@ -25,8 +25,8 @@
           action_href="/invoices/new"
         />
       <% else %>
-        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-          <div class="overflow-x-auto">
+        <div class="overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <div class="overflow-x-auto overflow-y-visible">
             <table class="min-w-full divide-y divide-stone-200">
               <thead class="bg-stone-50/80">
                 <tr>
@@ -45,7 +45,7 @@
                   <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Status") %>
                   </th>
-                  <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Actions") %>
                   </th>
                 </tr>
@@ -71,10 +71,11 @@
                     <td class="px-6 py-4 text-sm">
                       <%= EdocApiWeb.CoreComponents.status_badge(invoice.status) %>
                     </td>
-                    <td class="px-6 py-4 text-right">
+                    <td class="relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right">
                       <.workspace_row_actions
                         primary={actions.primary}
                         secondary={actions.secondary}
+                        desktop_mode={:overflow}
                         mobile_mode={:overflow}
                       />
                     </td>
@@ -90,7 +91,6 @@
     <.workspace_support_panel
       :if={@invoices != []}
       heading={gettext("Overview")}
-      subtitle={gettext("Invoices depend on ready buyer and company data.")}
     >
       <dl class="space-y-3 text-sm text-slate-600">
         <div class="flex items-center justify-between gap-4">

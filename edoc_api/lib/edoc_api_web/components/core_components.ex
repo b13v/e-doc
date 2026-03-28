@@ -105,6 +105,7 @@ defmodule EdocApiWeb.CoreComponents do
   """
   attr(:primary, :map, required: true)
   attr(:secondary, :list, default: [])
+  attr(:desktop_mode, :atom, default: :inline)
   attr(:mobile_mode, :atom, default: :overflow)
   attr(:class, :string, default: nil)
 
@@ -112,23 +113,41 @@ defmodule EdocApiWeb.CoreComponents do
     assigns = assign(assigns, :all_actions, [assigns.primary | assigns.secondary])
 
     ~H"""
-    <div class={["flex items-center justify-end gap-2", @class]}>
-      <div class="hidden items-center justify-end gap-3 whitespace-nowrap md:flex">
-        <div class="font-medium text-slate-900">
-          <.row_action action={@primary} tone={:primary} />
-        </div>
-        <div :if={@secondary != []} class="flex items-center justify-end gap-3 text-slate-600">
-          <%= for action <- @secondary do %>
-            <.row_action action={action} tone={:secondary} />
-          <% end %>
-        </div>
-      </div>
-
-      <details :if={@mobile_mode == :overflow} class="relative md:hidden">
+    <div class={["relative flex items-center justify-end gap-2", @class]}>
+      <details
+        :if={@desktop_mode == :overflow}
+        class="relative hidden md:block"
+        data-row-actions-root
+        ontoggle="window.positionWorkspaceRowActions && window.positionWorkspaceRowActions(this)"
+      >
         <summary class="cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
           <%= gettext("Actions") %>
         </summary>
-        <div class="absolute right-0 z-10 mt-2 min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+        <div
+          data-row-actions-menu
+          class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+        >
+          <div class="flex flex-col items-stretch gap-1">
+            <%= for action <- @all_actions do %>
+              <.row_action action={action} tone={:mobile} />
+            <% end %>
+          </div>
+        </div>
+      </details>
+
+      <details
+        :if={@mobile_mode == :overflow}
+        class="relative md:hidden"
+        data-row-actions-root
+        ontoggle="window.positionWorkspaceRowActions && window.positionWorkspaceRowActions(this)"
+      >
+        <summary class="cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
+          <%= gettext("Actions") %>
+        </summary>
+        <div
+          data-row-actions-menu
+          class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+        >
           <div class="flex flex-col items-stretch gap-1">
             <%= for action <- @all_actions do %>
               <.row_action action={action} tone={:mobile} />
@@ -263,7 +282,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, row_action_classes(tone, :link))
+      |> assign(:classes, action[:class] || row_action_classes(tone, :link))
 
     ~H"""
     <a href={@action.href} class={@classes}><%= @action.label %></a>
@@ -274,7 +293,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, row_action_classes(tone, :form))
+      |> assign(:classes, action[:class] || row_action_classes(tone, :form))
       |> assign(:form_method, form_method(action))
       |> assign(:csrf_token, csrf_token(action))
       |> assign(:method_override, method_override(action))
@@ -298,7 +317,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, row_action_classes(tone, :htmx_delete))
+      |> assign(:classes, action[:class] || row_action_classes(tone, :htmx_delete))
 
     ~H"""
     <button
