@@ -37,6 +37,10 @@ defmodule EdocApi.ContractStatus do
   def can_issue?(contract), do: is_draft?(contract)
   def already_issued?(contract), do: not is_draft?(contract)
 
+  # A contract can be marked as signed if it's already issued
+  def can_sign?(contract), do: is_issued?(contract)
+  def already_signed?(contract), do: is_signed?(contract)
+
   # A contract can be modified only in draft status
   def can_edit?(%{status: status}), do: status == @status_draft
   def can_edit?(status) when is_binary(status), do: status == @status_draft

@@ -1247,6 +1247,11 @@ msgstr ""
 msgid "Please enter your company information and bank account to get started."
 msgstr ""
 
+#: lib/edoc_api_web/controllers/contract_html/new.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Please fill out this field."
+msgstr "Please fill out this field."
+
 #: lib/edoc_api_web/controllers/acts_controller.ex:109
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:117
 #, elixir-autogen, elixir-format
@@ -1765,6 +1770,11 @@ msgstr ""
 msgid "IBAN must be exactly 20 alphanumeric characters"
 msgstr ""
 
+#: lib/edoc_api_web/controllers/buyer_html_controller.ex:312
+#, elixir-autogen, elixir-format
+msgid "Check the IBAN number. It must be exactly 20 alphanumeric characters."
+msgstr ""
+
 #: lib/edoc_api_web/controllers/invoices_html/show.html.heex:18
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Issue Invoice"
@@ -2149,3 +2159,40 @@ msgstr "Buyer and banking details"
 #: lib/edoc_api_web/controllers/act_html/show.html.heex:171
 msgid "Document preview"
 msgstr "Document preview"
+
+#: lib/edoc_api_web/controllers/contract_html.ex:68
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:110
+#, elixir-autogen, elixir-format
+msgid "Signed"
+msgstr "Signed"
+
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:106
+#, elixir-autogen, elixir-format
+msgid "Mark as Signed"
+msgstr "Mark as Signed"
+
+#: lib/edoc_api_web/controllers/contract_html.ex:76
+#: lib/edoc_api_web/controllers/contract_html/show.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Mark this contract as signed?"
+msgstr "Mark this contract as signed?"
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:471
+#, elixir-autogen, elixir-format
+msgid "Contract marked as signed."
+msgstr "Contract marked as signed."
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:481
+#, elixir-autogen, elixir-format
+msgid "Only issued contracts can be marked as signed."
+msgstr "Only issued contracts can be marked as signed."
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:486
+#, elixir-autogen, elixir-format
+msgid "Contract has already been marked as signed."
+msgstr "Contract has already been marked as signed."
+
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:493
+#, elixir-autogen, elixir-format
+msgid "Failed to mark contract as signed: %{reason}"
+msgstr "Failed to mark contract as signed: %{reason}"

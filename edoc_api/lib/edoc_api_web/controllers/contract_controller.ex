@@ -81,6 +81,26 @@ defmodule EdocApiWeb.ContractController do
     )
   end
 
+  def sign(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+    result = Core.sign_contract_for_user(user.id, id)
+
+    error_map = %{
+      not_found: &ErrorMapper.not_found(&1, "contract_not_found"),
+      contract_not_issued: &ErrorMapper.unprocessable(&1, "contract_not_issued"),
+      contract_already_signed: &ErrorMapper.unprocessable(&1, "contract_already_signed")
+    }
+
+    ControllerHelpers.handle_result(
+      conn,
+      result,
+      fn conn, contract ->
+        render(conn, :show, contract: contract)
+      end,
+      error_map
+    )
+  end
+
   def pdf(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     conn = put_layout(conn, false)

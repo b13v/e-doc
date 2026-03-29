@@ -169,6 +169,7 @@ defmodule EdocApiWeb.Router do
     put("/invoices/:id", InvoiceController, :update)
     post("/contracts", ContractController, :create)
     post("/contracts/:id/issue", ContractController, :issue)
+    post("/contracts/:id/sign", ContractController, :sign)
     post("/invoices/:id/issue", InvoiceController, :issue)
     post("/invoices/:id/pay", InvoiceController, :pay)
     post("/documents/:type/:id/send-email", DocumentDeliveryController, :send_email)
@@ -234,6 +235,7 @@ defmodule EdocApiWeb.Router do
     delete("/contracts/:id", ContractHTMLController, :delete)
     get("/contracts/:id/pdf", ContractHTMLController, :pdf)
     post("/contracts/:id/issue", ContractHTMLController, :issue)
+    post("/contracts/:id/sign", ContractHTMLController, :sign)
 
     # Buyer management routes
     get("/buyers", BuyerHTMLController, :index)

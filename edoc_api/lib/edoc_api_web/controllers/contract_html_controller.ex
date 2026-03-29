@@ -16,6 +16,7 @@ defmodule EdocApiWeb.ContractHTMLController do
 
     render(conn, :index,
       contracts: contracts,
+      contract_summary: contract_summary(contracts),
       current_section: :contracts,
       page_title: gettext("Contracts")
     )
@@ -79,6 +80,17 @@ defmodule EdocApiWeb.ContractHTMLController do
   def create(conn, %{"contract" => contract_params, "items" => items_params}) do
     user = conn.assigns.current_user
     create_contract_with_params(conn, user, contract_params, items_params)
+  end
+
+  defp contract_summary(contracts) do
+    Enum.reduce(contracts, %{draft: 0, issued: 0, signed: 0}, fn contract, acc ->
+      case contract.status do
+        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
+        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
+        "signed" -> Map.update!(acc, :signed, &(&1 + 1))
+        _ -> acc
+      end
+    end)
   end
 
   defp create_contract_with_params(conn, user, contract_params, items_params) do
@@ -448,6 +460,40 @@ defmodule EdocApiWeb.ContractHTMLController do
         |> put_flash(
           :error,
           gettext("Failed to issue contract: %{reason}", reason: inspect(reason))
+        )
+        |> redirect(to: "/contracts/#{id}")
+    end
+  end
+
+  def sign(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Core.sign_contract_for_user(user.id, id) do
+      {:ok, _contract} ->
+        conn
+        |> put_flash(:info, gettext("Contract marked as signed."))
+        |> redirect(to: "/contracts/#{id}")
+
+      {:error, :not_found, _details} ->
+        conn
+        |> put_flash(:error, gettext("Contract not found."))
+        |> redirect(to: "/contracts")
+
+      {:error, :business_rule, %{rule: :contract_not_issued}} ->
+        conn
+        |> put_flash(:error, gettext("Only issued contracts can be marked as signed."))
+        |> redirect(to: "/contracts/#{id}")
+
+      {:error, :business_rule, %{rule: :contract_already_signed}} ->
+        conn
+        |> put_flash(:error, gettext("Contract has already been marked as signed."))
+        |> redirect(to: "/contracts/#{id}")
+
+      {:error, reason} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Failed to mark contract as signed: %{reason}", reason: inspect(reason))
         )
         |> redirect(to: "/contracts/#{id}")
     end

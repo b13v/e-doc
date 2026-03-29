@@ -52,6 +52,7 @@ defmodule EdocApi.Core do
           desc: fragment("COALESCE(?, ?)", c.issue_date, fragment("?::date", c.inserted_at)),
           desc: c.inserted_at
         )
+        |> preload(:buyer)
         |> apply_pagination(opts)
         |> Repo.all()
     end
@@ -211,6 +212,43 @@ defmodule EdocApi.Core do
             issued_at: DateTime.utc_now() |> DateTime.truncate(:second)
           )
           |> RepoHelpers.update_or_abort()
+      end
+    end)
+    |> Errors.normalize()
+  end
+
+  def sign_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    RepoHelpers.transaction(fn ->
+      case Companies.get_company_by_user_id(user_id) do
+        nil ->
+          RepoHelpers.abort({:not_found, %{resource: :company}})
+
+        %Company{id: company_id} ->
+          contract =
+            RepoHelpers.fetch_or_abort(
+              from(c in Contract, where: c.company_id == ^company_id and c.id == ^contract_id),
+              :contract
+            )
+
+          cond do
+            ContractStatus.already_signed?(contract) ->
+              RepoHelpers.abort(
+                {:business_rule, %{rule: :contract_already_signed, contract_id: contract.id}}
+              )
+
+            not ContractStatus.can_sign?(contract) ->
+              RepoHelpers.abort(
+                {:business_rule, %{rule: :contract_not_issued, contract_id: contract.id}}
+              )
+
+            true ->
+              contract
+              |> Ecto.Changeset.change(
+                status: ContractStatus.signed(),
+                signed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+              )
+              |> RepoHelpers.update_or_abort()
+          end
       end
     end)
     |> Errors.normalize()

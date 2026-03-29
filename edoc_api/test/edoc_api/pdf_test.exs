@@ -37,6 +37,17 @@ defmodule EdocApi.PdfTest do
       assert {:ok, pdf_binary} = Pdf.html_to_pdf(html)
       assert byte_size(pdf_binary) > 0
     end
+
+    test "signed contract html includes signed watermark" do
+      user = create_user!()
+      company = create_company!(user)
+      contract = create_contract!(company, %{"status" => "signed"})
+
+      contract = Repo.preload(contract, :company)
+      html = PdfTemplates.contract_html(contract)
+
+      assert html =~ "Подписан - Қол қойылған"
+    end
   else
     @tag skip: "wkhtmltopdf is not available in PATH"
     test "generates a PDF from invoice html" do

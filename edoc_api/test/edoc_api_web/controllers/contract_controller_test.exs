@@ -45,6 +45,27 @@ defmodule EdocApiWeb.ContractControllerTest do
     end
   end
 
+  describe "sign/2" do
+    test "marks issued contract as signed", %{conn: conn, company: company} do
+      contract = create_contract!(company, %{"status" => "issued"})
+
+      conn = post(conn, "/v1/contracts/#{contract.id}/sign")
+      assert response(conn, 200)
+
+      body = json_response(conn, 200)
+      assert body["data"]["status"] == "signed"
+      assert body["data"]["signed_at"]
+    end
+
+    test "returns 422 for draft contract", %{conn: conn, company: company} do
+      contract = create_contract!(company, %{"status" => "draft"})
+
+      conn = post(conn, "/v1/contracts/#{contract.id}/sign")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "contract_not_issued"
+    end
+  end
+
   describe "index/2" do
     test "returns normalized pagination metadata", %{conn: conn, company: company} do
       _contract_1 = create_contract!(company)

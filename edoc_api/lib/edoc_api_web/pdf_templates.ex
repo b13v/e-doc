@@ -737,7 +737,7 @@ defmodule EdocApiWeb.PdfTemplates do
       <head>
         <meta charset="utf-8" />
         <style>
-          body { font-family: Arial, sans-serif; font-size: 12px; color:#000; line-height: 1.35; }
+          body { font-family: Arial, sans-serif; font-size: 12px; color:#000; line-height: 1.35; position: relative; }
           h1 { font-size: 16px; text-align:center; margin: 8px 0; }
           h2 { font-size: 13px; margin: 12px 0 6px; }
           .center { text-align:center; }
@@ -751,6 +751,23 @@ defmodule EdocApiWeb.PdfTemplates do
           .sign td { border: none; padding-top: 18px; }
           .stamp { border: 1px dashed #777; height: 60px; width: 170px; margin-top: 8px; }
           .small { font-size: 11px; }
+          .signed-watermark {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            margin-top: -28px;
+            text-align: center;
+            -webkit-transform: rotate(-24deg);
+            transform: rotate(-24deg);
+            font-size: 56px;
+            font-weight: 700;
+            color: rgba(5, 150, 105, 0.18);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            z-index: 999;
+          }
         </style>
       </head>
 
@@ -761,6 +778,9 @@ defmodule EdocApiWeb.PdfTemplates do
         <% bank = @bank %>
         <% items = @items %>
         <% totals = @totals %>
+        <%= if c.status == "signed" do %>
+          <div class="signed-watermark">Подписан - Қол қойылған</div>
+        <% end %>
 
         <h1>ДОГОВОР № <%= c.number || "____" %></h1>
         <div class="center muted">

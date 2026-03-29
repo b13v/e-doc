@@ -22,6 +22,7 @@ defmodule EdocApiWeb.CoreComponents do
   Shared workspace page header with a primary action area.
   """
   attr(:title, :string, required: true)
+  attr(:title_class, :string, default: nil)
   attr(:support_text, :string, default: nil)
   attr(:class, :string, default: nil)
 
@@ -32,7 +33,9 @@ defmodule EdocApiWeb.CoreComponents do
     ~H"""
     <header class={["flex flex-col gap-4 md:flex-row md:items-end md:justify-between", @class]}>
       <div class="min-w-0 space-y-2">
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-900"><%= @title %></h1>
+        <h1 class={["font-semibold tracking-tight text-slate-900", @title_class || "text-3xl"]}>
+          <%= @title %>
+        </h1>
         <p :if={@support_text} class="max-w-2xl text-sm leading-6 text-slate-600">
           <%= @support_text %>
         </p>
@@ -251,6 +254,7 @@ defmodule EdocApiWeb.CoreComponents do
   """
   def status_badge("draft"), do: badge(gettext("Draft"), "gray")
   def status_badge("issued"), do: badge(gettext("Issued"), "blue")
+  def status_badge("signed"), do: badge(gettext("Signed"), "green")
   def status_badge("paid"), do: badge(gettext("Paid"), "green")
   def status_badge("void"), do: badge(gettext("Void"), "red")
   def status_badge(_), do: badge(gettext("Unknown"), "gray")

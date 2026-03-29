@@ -53,4 +53,58 @@ defmodule EdocApiWeb.ContractHTML do
       "без НДС"
     end
   end
+
+  def contract_row_actions(contract) do
+    primary = %{
+      label: gettext("View"),
+      transport: :link,
+      method: :get,
+      href: "/contracts/#{contract.id}",
+      class:
+        "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-50 hover:text-blue-900"
+    }
+
+    secondary =
+      cond do
+        EdocApi.ContractStatus.is_draft?(contract) ->
+          [
+            %{
+              label: gettext("Edit"),
+              transport: :link,
+              method: :get,
+              href: "/contracts/#{contract.id}/edit",
+              class:
+                "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-green-600 transition hover:bg-green-50 hover:text-green-900"
+            },
+            %{
+              label: gettext("Delete"),
+              transport: :form,
+              method: :post,
+              action: "/contracts/#{contract.id}",
+              _method: "delete",
+              class:
+                "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-900",
+              confirm_text: gettext("Delete this draft contract?")
+            }
+          ]
+
+        EdocApi.ContractStatus.is_issued?(contract) ->
+          [
+            %{
+              label: gettext("Signed"),
+              transport: :form,
+              method: :post,
+              action: "/contracts/#{contract.id}/sign",
+              class:
+                "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-900",
+              confirm_text: gettext("Mark this contract as signed?")
+            }
+          ]
+
+        true ->
+          []
+      end
+
+    %{primary: primary, secondary: secondary}
+  end
 end

@@ -165,9 +165,26 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
 
-    _draft = create_contract!(company, %{"status" => "draft", "number" => "C-1"})
-    _issued = create_contract!(company, %{"status" => "issued", "number" => "C-2"})
-    _signed = create_contract!(company, %{"status" => "signed", "number" => "C-3"})
+    _draft =
+      create_contract!(company, %{
+        "status" => "draft",
+        "number" => "C-1",
+        "buyer_name" => "Draft Buyer"
+      })
+
+    _issued =
+      create_contract!(company, %{
+        "status" => "issued",
+        "number" => "C-2",
+        "buyer_name" => "Issued Buyer"
+      })
+
+    _signed =
+      create_contract!(company, %{
+        "status" => "signed",
+        "number" => "C-3",
+        "buyer_name" => "Signed Buyer"
+      })
 
     body =
       conn
@@ -179,10 +196,78 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Черновики договоров"
     assert body =~ "Выставленные договоры"
     assert body =~ "Подписанные договоры"
+    assert body =~ "Покупатель"
+    assert body =~ "Draft Buyer"
+    assert body =~ "Issued Buyer"
+    assert body =~ "Signed Buyer"
     assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
     assert body =~ "overflow-y-visible"
     assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
     assert body =~ ~r/>1<\/dd>/
+  end
+
+  test "contracts overview shows buyer names for buyer-backed contracts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Overview Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _contract} =
+      EdocApi.Core.create_contract_for_user(user.id, %{
+        "number" => "C-REAL-1",
+        "issue_date" => Date.utc_today(),
+        "buyer_id" => buyer.id,
+        "status" => "issued"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    assert body =~ "Покупатель"
+    assert body =~ "Overview Buyer"
+  end
+
+  test "contracts overview exposes a signed action for issued contracts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _draft = create_contract!(company, %{"status" => "draft", "number" => "C-DRAFT-1"})
+    issued = create_contract!(company, %{"status" => "issued", "number" => "C-ISS-1"})
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/contracts")
+      |> html_response(200)
+
+    assert body =~ ~s(action="/contracts/#{issued.id}/sign" method="post")
+  end
+
+  test "signed contract show page renders watermark", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    contract = create_contract!(company, %{"status" => "signed", "number" => "C-SIGNED-1"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    assert body =~ "Подписан - Қол қойылған"
+    assert body =~ "signed-watermark"
   end
 
   test "acts overview renders status counts in a right-side panel", %{conn: conn} do
@@ -331,6 +416,47 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end
 
+  test "invoice show uses workspace detail chrome and keeps invoices nav active", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    invoice = create_invoice_with_items!(user, company)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
+    assert body =~ "Обзор"
+    assert body =~ "Статус"
+    assert body =~ "Просмотр документа"
+    assert body =~ ~r/<h1[^>]*class="[^"]*text-2xl[^"]*"/
+    refute body =~ ~r/<h1[^>]*class="[^"]*text-3xl[^"]*"/
+    refute body =~ ~s(<div class="nav-bar">)
+  end
+
+  test "invoice show renders send menu as a fixed overlay above the trigger", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-2026-2"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    assert body =~ "data-send-menu-root"
+    assert body =~ "data-send-menu-panel"
+    assert body =~ "fixed left-0 top-0 z-[80] hidden"
+    assert body =~ ~s(ontoggle="window.positionWorkspaceSendMenu)
+  end
+
   test "contract new uses workspace form chrome and keeps contracts nav active", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
@@ -398,6 +524,24 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Статус"
     assert body =~ "Просмотр документа"
     refute body =~ ~s(<div class="nav-bar">)
+  end
+
+  test "contract show renders send menu as a fixed overlay above the trigger", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    contract = create_contract!(company, %{"status" => "issued", "number" => "C-9"})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    assert body =~ "data-send-menu-root"
+    assert body =~ "data-send-menu-panel"
+    assert body =~ "fixed left-0 top-0 z-[80] hidden"
+    assert body =~ ~s(ontoggle="window.positionWorkspaceSendMenu)
   end
 
   test "contract edit uses workspace form chrome and keeps contracts nav active", %{
