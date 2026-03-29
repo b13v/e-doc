@@ -45,6 +45,23 @@ defmodule EdocApi.Validators.String do
   end
 
   @doc """
+  Normalizes a buyer/company display name to always use double quotes.
+
+  Matching outer single or double quotes are removed first, then one pair
+  of double quotes is applied around the normalized value.
+  """
+  @spec normalize_quoted_name(String.t() | nil) :: String.t() | nil
+  def normalize_quoted_name(nil), do: nil
+
+  def normalize_quoted_name(value) when is_binary(value) do
+    with normalized when not is_nil(normalized) <- normalize(value),
+         inner <- strip_matching_outer_quotes(normalized),
+         present_inner when not is_nil(present_inner) <- normalize(inner) do
+      ~s("#{present_inner}")
+    end
+  end
+
+  @doc """
   Trims whitespace from a string but keeps empty strings as empty strings.
 
   Use this when you need to distinguish between nil and "".
@@ -180,4 +197,22 @@ defmodule EdocApi.Validators.String do
   def normalize_change(changeset, field) do
     Ecto.Changeset.update_change(changeset, field, &normalize/1)
   end
+
+  defp strip_matching_outer_quotes(<<"\"", rest::binary>>) do
+    if String.ends_with?(rest, "\"") do
+      binary_part(rest, 0, byte_size(rest) - 1)
+    else
+      <<"\"", rest::binary>>
+    end
+  end
+
+  defp strip_matching_outer_quotes(<<"'", rest::binary>>) do
+    if String.ends_with?(rest, "'") do
+      binary_part(rest, 0, byte_size(rest) - 1)
+    else
+      <<"'", rest::binary>>
+    end
+  end
+
+  defp strip_matching_outer_quotes(value), do: value
 end

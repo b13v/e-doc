@@ -149,16 +149,21 @@ defmodule EdocApi.Acts do
     last_number =
       Act
       |> where([a], a.company_id == ^company_id)
-      |> order_by([a], desc: a.inserted_at)
-      |> limit(1)
       |> select([a], a.number)
-      |> Repo.one()
+      |> Repo.all()
+      |> Enum.flat_map(fn
+        nil ->
+          []
 
-    seq =
-      case last_number && Integer.parse(last_number) do
-        {n, ""} -> n + 1
-        _ -> 1
-      end
+        number ->
+          case Integer.parse(number) do
+            {value, ""} -> [value]
+            _ -> []
+          end
+      end)
+      |> Enum.max(fn -> 0 end)
+
+    seq = if last_number > 0, do: last_number + 1, else: 1
 
     String.pad_leading(Integer.to_string(seq), 11, "0")
   end

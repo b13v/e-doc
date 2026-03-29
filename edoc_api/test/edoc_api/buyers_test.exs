@@ -57,7 +57,7 @@ defmodule EdocApi.BuyersTest do
                  company.id
                )
 
-      assert updated_buyer.name == "Buyer Two Updated"
+      assert updated_buyer.name == ~s("Buyer Two Updated")
       assert length(updated_buyer.bank_accounts) == 1
 
       account = hd(updated_buyer.bank_accounts)

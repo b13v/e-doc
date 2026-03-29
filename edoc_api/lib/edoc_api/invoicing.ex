@@ -583,34 +583,17 @@ defmodule EdocApi.Invoicing do
   end
 
   defp get_next_number_from_counter(company_id, sequence_name) do
-    # Check for existing counter
     current_counter =
       Repo.get_by(InvoiceCounter, company_id: company_id, sequence_name: sequence_name)
 
     cond do
-      # Counter doesn't exist - create it starting at 2
       current_counter == nil ->
         create_and_increment_counter(company_id, sequence_name)
 
-      # Counter was manually set with a specific value (not the initial 2)
-      # Use it as-is without incrementing on first call
-      current_counter.next_seq > @initial_next_seq ->
-        seq = current_counter.next_seq - 1
-
-        if seq > @max_invoice_number do
-          raise RuntimeError,
-                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
-        end
-
-        # Mark as used by incrementing for next call
-        Repo.update!(
-          InvoiceCounter.changeset(current_counter, %{next_seq: current_counter.next_seq + 1})
-        )
-
-        format_invoice_number(seq, sequence_name)
-
-      # Counter exists and was created normally - proceed with increment
       true ->
+        current_counter =
+          sync_counter_with_existing_invoices(current_counter, company_id, sequence_name)
+
         if current_counter.next_seq > @max_invoice_number + 1 do
           raise RuntimeError,
                 "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence #{sequence_name}"
@@ -642,6 +625,8 @@ defmodule EdocApi.Invoicing do
   end
 
   defp create_and_increment_counter(company_id, sequence_name) do
+    next_seq = seed_next_seq_from_existing_invoices(company_id, sequence_name)
+
     {:ok, number} =
       Repo.transaction(fn ->
         %{next_seq: next_seq} =
@@ -649,7 +634,7 @@ defmodule EdocApi.Invoicing do
             %InvoiceCounter{
               company_id: company_id,
               sequence_name: sequence_name,
-              next_seq: @initial_next_seq
+              next_seq: next_seq
             },
             on_conflict: [inc: [next_seq: 1]],
             conflict_target: [:company_id, :sequence_name],
@@ -661,6 +646,52 @@ defmodule EdocApi.Invoicing do
       end)
 
     number
+  end
+
+  defp sync_counter_with_existing_invoices(current_counter, company_id, sequence_name) do
+    minimum_next_seq = minimum_counter_next_seq(company_id, sequence_name)
+
+    if current_counter.next_seq < minimum_next_seq do
+      current_counter
+      |> InvoiceCounter.changeset(%{next_seq: minimum_next_seq})
+      |> Repo.update!()
+    else
+      current_counter
+    end
+  end
+
+  defp seed_next_seq_from_existing_invoices(company_id, sequence_name) do
+    max(
+      @initial_next_seq,
+      next_free_sequence_from_existing_invoices(company_id, sequence_name) + 1
+    )
+  end
+
+  defp minimum_counter_next_seq(company_id, sequence_name) do
+    max(@initial_next_seq, next_free_sequence_from_existing_invoices(company_id, sequence_name))
+  end
+
+  defp next_free_sequence_from_existing_invoices(company_id, _sequence_name) do
+    max_number =
+      Invoice
+      |> where([i], i.company_id == ^company_id and not is_nil(i.number) and i.number != "")
+      |> select([i], max(i.number))
+      |> Repo.one()
+
+    case max_number do
+      nil ->
+        1
+
+      number ->
+        seq = String.to_integer(number)
+
+        if seq >= @max_invoice_number do
+          raise RuntimeError,
+                "invoice number counter overflow: maximum invoice number (#{@max_invoice_number_formatted}) exceeded for company #{company_id}, sequence default"
+        end
+
+        seq + 1
+    end
   end
 
   defp increment_and_get_number(company_id, sequence_name) do

@@ -16,7 +16,12 @@ defmodule EdocApiWeb.ActsController do
     user = current_user(conn)
     acts = Acts.list_acts_for_user(user.id)
 
-    render(conn, :index, page_title: gettext("Acts"), acts: acts, current_section: :acts)
+    render(conn, :index,
+      page_title: gettext("Acts"),
+      acts: acts,
+      act_summary: act_summary(acts),
+      current_section: :acts
+    )
   end
 
   def new(conn, params) do
@@ -213,6 +218,17 @@ defmodule EdocApiWeb.ActsController do
   defp normalize_id(""), do: nil
   defp normalize_id(v) when is_binary(v), do: v
   defp normalize_id(_), do: nil
+
+  defp act_summary(acts) do
+    Enum.reduce(acts, %{draft: 0, issued: 0, signed: 0}, fn act, acc ->
+      case act.status do
+        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
+        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
+        "signed" -> Map.update!(acc, :signed, &(&1 + 1))
+        _ -> acc
+      end
+    end)
+  end
 
   defp blank?(value) when value in [nil, ""], do: true
   defp blank?(value) when is_binary(value), do: String.trim(value) == ""

@@ -33,8 +33,8 @@ defmodule EdocApiWeb.Layouts do
             }
           });
 
-          window.positionWorkspaceRowActions = function(detailsEl) {
-            var menu = detailsEl.querySelector('[data-row-actions-menu]');
+          function positionWorkspaceOverlay(detailsEl, menuSelector) {
+            var menu = detailsEl.querySelector(menuSelector);
             var summary = detailsEl.querySelector('summary');
 
             if (!menu || !summary) return;
@@ -60,22 +60,44 @@ defmodule EdocApiWeb.Layouts do
               menu.style.left = left + 'px';
               menu.style.top = top + 'px';
             });
+          }
+
+          function closeWorkspaceOverlay(detailsEl, menuSelector) {
+            detailsEl.open = false;
+
+            var menu = detailsEl.querySelector(menuSelector);
+            if (menu) menu.classList.add('hidden');
+          }
+
+          window.positionWorkspaceRowActions = function(detailsEl) {
+            positionWorkspaceOverlay(detailsEl, '[data-row-actions-menu]');
+          };
+
+          window.positionWorkspaceSendMenu = function(detailsEl) {
+            positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]');
           };
 
           document.addEventListener('click', function(event) {
             document.querySelectorAll('details[data-row-actions-root][open]').forEach(function(detailsEl) {
               if (detailsEl.contains(event.target)) return;
 
-              detailsEl.open = false;
+              closeWorkspaceOverlay(detailsEl, '[data-row-actions-menu]');
+            });
 
-              var menu = detailsEl.querySelector('[data-row-actions-menu]');
-              if (menu) menu.classList.add('hidden');
+            document.querySelectorAll('details[data-send-menu-root][open]').forEach(function(detailsEl) {
+              if (detailsEl.contains(event.target)) return;
+
+              closeWorkspaceOverlay(detailsEl, '[data-send-menu-panel]');
             });
           });
 
           window.addEventListener('resize', function() {
             document.querySelectorAll('details[data-row-actions-root][open]').forEach(function(detailsEl) {
               window.positionWorkspaceRowActions(detailsEl);
+            });
+
+            document.querySelectorAll('details[data-send-menu-root][open]').forEach(function(detailsEl) {
+              window.positionWorkspaceSendMenu(detailsEl);
             });
           });
         </script>

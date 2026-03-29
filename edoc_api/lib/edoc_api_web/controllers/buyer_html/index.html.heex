@@ -42,7 +42,7 @@
                   <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Email") %>
                   </th>
-                  <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Actions") %>
                   </th>
                 </tr>
@@ -68,10 +68,11 @@
                     <td class="px-6 py-4 text-sm text-slate-600">
                       <%= buyer.email || "-" %>
                     </td>
-                    <td class="px-6 py-4 text-right">
+                    <td class="w-px whitespace-nowrap px-6 py-4 text-right">
                       <.workspace_row_actions
                         primary={actions.primary}
                         secondary={actions.secondary}
+                        desktop_mode={:overflow}
                         mobile_mode={:overflow}
                       />
                     </td>

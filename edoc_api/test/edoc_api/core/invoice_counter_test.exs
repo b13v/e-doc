@@ -13,6 +13,7 @@ defmodule EdocApi.Invoicing.InvoiceCounterTest do
 
     assert Invoicing.next_invoice_number!(company.id) == "00000000001"
     assert Invoicing.next_invoice_number!(company.id) == "00000000002"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000003"
   end
 
   test "sequences are independent per company" do
@@ -31,16 +32,30 @@ defmodule EdocApi.Invoicing.InvoiceCounterTest do
     user = create_user!()
     company = create_company!(user)
 
-    # Set counter to near maximum (9,999,999,998)
+    # Seed the next allocatable sequence near the maximum.
     Repo.insert!(%InvoiceCounter{
       company_id: company.id,
-      next_seq: 9_999_999_999
+      next_seq: 9_999_999_998
     })
 
     # Should get 9,999,999,998
     assert Invoicing.next_invoice_number!(company.id) == "09999999998"
     # Should get 9,999,999,999
     assert Invoicing.next_invoice_number!(company.id) == "09999999999"
+  end
+
+  test "advances past existing invoice numbers when the counter is stale" do
+    user = create_user!()
+    company = create_company!(user)
+
+    _existing_invoice = insert_invoice!(user, company, %{number: "00000000005"})
+
+    Repo.insert!(%InvoiceCounter{
+      company_id: company.id,
+      next_seq: 2
+    })
+
+    assert Invoicing.next_invoice_number!(company.id) == "00000000006"
   end
 
   test "raises error when counter overflows maximum" do

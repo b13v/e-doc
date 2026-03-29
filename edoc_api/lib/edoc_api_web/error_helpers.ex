@@ -63,9 +63,7 @@ defmodule EdocApiWeb.ErrorHelpers do
   end
 
   def field_label(field) when is_atom(field) do
-    @field_labels
-    |> Map.get(field, Phoenix.Naming.humanize(field))
-    |> Gettext.gettext(EdocApiWeb.Gettext)
+    Gettext.gettext(EdocApiWeb.Gettext, Map.get(@field_labels, field, Phoenix.Naming.humanize(field)))
   end
 
   def field_label(field), do: field

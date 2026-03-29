@@ -315,7 +315,11 @@ defmodule EdocApiWeb.BuyerHTMLController do
     if Keyword.has_key?(changeset.errors, :bin_iin) do
       gettext("Invalid BIN/IIN. Please enter a valid 12-digit BIN/IIN.")
     else
-      ErrorHelpers.format_changeset_errors(changeset)
+      if Keyword.has_key?(changeset.errors, :iban) do
+        gettext("Check the IBAN number. It must be exactly 20 alphanumeric characters.")
+      else
+        ErrorHelpers.format_changeset_errors(changeset)
+      end
     end
   end
 

@@ -4,6 +4,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
   import EdocApi.TestFixtures
 
   alias EdocApi.Accounts
+  alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
   alias EdocApi.Repo
 
@@ -46,6 +47,29 @@ defmodule EdocApiWeb.CompaniesControllerTest do
 
       assert html_response(conn, 200) =~ @bin_iin_error
     end
+
+    test "wraps an unquoted company name in double quotes on setup", %{
+      conn: conn,
+      bank: bank,
+      kbe_code: kbe_code,
+      knp_code: knp_code
+    } do
+      user_id = get_session(conn, :user_id)
+
+      conn =
+        post(conn, "/company/setup", %{
+          "company" => company_attrs(%{"name" => "Acme LLC"}),
+          "bank_account" => %{
+            "bank_id" => bank.id,
+            "iban" => valid_kz_iban("1234567890"),
+            "kbe_code_id" => kbe_code.id,
+            "knp_code_id" => knp_code.id
+          }
+        })
+
+      assert redirected_to(conn) == "/buyers/new"
+      assert Companies.get_company_by_user_id(user_id).name == ~s("Acme LLC")
+    end
   end
 
   describe "update/2" do
@@ -73,6 +97,19 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert html_response(conn, 200) =~ @bin_iin_error
     end
 
+    test "replaces single quotes with double quotes in the company name", %{
+      conn: conn,
+      company: company
+    } do
+      conn =
+        put(conn, "/company", %{
+          "company" => company_attrs(%{"name" => "'Updated Company'"})
+        })
+
+      assert redirected_to(conn) == "/company"
+      assert Companies.get_company_by_user_id(company.user_id).name == ~s("Updated Company")
+    end
+
     test "renders add bank account toggle as a non-submit button", %{conn: conn, company: company} do
       create_company_bank_account!(company, %{"label" => "Primary"})
       create_company_bank_account!(company, %{"label" => "Secondary"})
@@ -82,6 +119,26 @@ defmodule EdocApiWeb.CompaniesControllerTest do
 
       assert body =~
                ~S|<button type="button" onclick="toggleEdit('add-bank-form')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">|
+    end
+
+    test "renders company bank-account actions as a compact overflow menu", %{
+      conn: conn,
+      company: company
+    } do
+      create_company_bank_account!(company, %{"label" => "Primary"})
+      account = create_company_bank_account!(company, %{"label" => "Secondary"})
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ "w-px whitespace-nowrap px-6 py-4 text-right"
+      assert body =~ "min-w-44"
+      refute body =~ "whitespace-nowrap md:flex"
+      assert body =~ ~s(href="/company/bank-accounts/#{account.id}/edit")
+      assert body =~ ~s(href="/company/bank-accounts/#{account.id}")
+      assert body =~ ~s(>Действия<)
     end
 
     test "adds a third bank account from company settings", %{

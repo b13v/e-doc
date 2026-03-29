@@ -34,6 +34,21 @@ defmodule EdocApiWeb.BuyerHTMLControllerTest do
 
       assert html_response(conn, 200) =~ @bin_iin_error
     end
+
+    test "wraps an unquoted buyer name in double quotes", %{conn: conn, company: company} do
+      conn =
+        post(conn, "/buyers", %{
+          "buyer" => %{
+            "name" => "Buyer One",
+            "bin_iin" => "060215385673"
+          }
+        })
+
+      assert redirected_to(conn) == "/buyers"
+
+      [buyer] = Buyers.list_buyers_for_company(company.id)
+      assert buyer.name == ~s("Buyer One")
+    end
   end
 
   describe "update/2" do
@@ -53,6 +68,28 @@ defmodule EdocApiWeb.BuyerHTMLControllerTest do
         })
 
       assert html_response(conn, 200) =~ @bin_iin_error
+    end
+
+    test "replaces single quotes with double quotes in the buyer name", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Buyer For Update",
+          "bin_iin" => "080215385677"
+        })
+
+      conn =
+        put(conn, "/buyers/#{buyer.id}", %{
+          "buyer" => %{
+            "name" => "'Updated Buyer'",
+            "bin_iin" => buyer.bin_iin
+          }
+        })
+
+      assert redirected_to(conn) == "/buyers"
+      assert Buyers.get_buyer(buyer.id).name == ~s("Updated Buyer")
     end
   end
 end

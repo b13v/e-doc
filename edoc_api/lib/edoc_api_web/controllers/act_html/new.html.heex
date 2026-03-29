@@ -1,154 +1,238 @@
-<div class="lg:flex lg:items-center lg:justify-between">
-  <div class="min-w-0 flex-1">
-    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-      <%= gettext("New Act") %>
-    </h2>
-  </div>
-</div>
+<% selected_buyer = Enum.find(@buyers, &(&1.id == @selected_buyer_id)) %>
+<% selected_contract = Enum.find(@contracts, &(&1.id == @selected_contract_id)) %>
+<% act_mode = if @act_type == "direct", do: gettext("Без Договора"), else: gettext("Из Договора") %>
 
-<.flash_error flash={@flash} class="mt-4" />
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
 
-<div class="mt-8">
-  <div class="bg-white shadow sm:rounded-lg">
-    <form action="/acts" method="post" class="px-4 py-5 sm:px-6">
-      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("New Act")}
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href="/acts"
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
+        </:primary_action>
+      </.workspace_page_header>
 
-      <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 class="text-sm font-medium text-blue-800 mb-3"><%= gettext("Act Type") %></h3>
-        <div class="flex gap-4">
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="act[act_type]"
-              value="contract"
-              checked={@act_type != "direct"}
-              class="mr-2"
-              id="act_type_contract" />
-            <span class="text-sm text-gray-700"><%= gettext("Из Договора") %></span>
-          </label>
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="act[act_type]"
-              value="direct"
-              checked={@act_type == "direct"}
-              class="mr-2"
-              id="act_type_direct" />
-            <span class="text-sm text-gray-700"><%= gettext("Без Договора") %></span>
-          </label>
+      <form action="/acts" method="post" class="space-y-6">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Act Type") %></h2>
+            </div>
+
+            <div class="rounded-2xl border border-sky-200 bg-sky-50/80 p-4">
+              <div class="flex gap-4">
+                <label class="inline-flex items-center text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="act[act_type]"
+                    value="contract"
+                    checked={@act_type != "direct"}
+                    class="mr-2"
+                    id="act_type_contract"
+                  />
+                  <span><%= gettext("Из Договора") %></span>
+                </label>
+                <label class="inline-flex items-center text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="act[act_type]"
+                    value="direct"
+                    checked={@act_type == "direct"}
+                    class="mr-2"
+                    id="act_type_direct"
+                  />
+                  <span><%= gettext("Без Договора") %></span>
+                </label>
+              </div>
+            </div>
+
+            <div id="contract-section" class={["space-y-2", @act_type == "direct" && "hidden"]}>
+              <label for="contract_select" class="block text-sm font-medium text-slate-700">
+                <%= gettext("Contract") %>
+              </label>
+              <div class="mt-2">
+                <select
+                  id="contract_select"
+                  name="act[contract_id]"
+                  onchange="onContractSelectChange(this.value)"
+                  class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  <option value=""><%= gettext("Select an issued contract...") %></option>
+                  <%= for contract <- @contracts do %>
+                    <option value={contract.id} selected={@selected_contract_id == contract.id}>
+                      <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: gettext("Unknown") %> (<%= contract.issue_date %>)
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Buyer") %></h2>
+            </div>
+
+            <div class="space-y-6">
+              <div>
+                <label for="buyer_select" class="block text-sm font-medium text-slate-700">
+                  <%= gettext("Buyer") %> *
+                </label>
+                <div class="mt-2">
+                  <select
+                    id="buyer_select"
+                    name="act[buyer_id]"
+                    class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  >
+                    <option value=""><%= gettext("Select a buyer...") %></option>
+                    <%= for buyer <- @buyers do %>
+                      <option
+                        value={buyer.id}
+                        data-address={buyer.address || ""}
+                        selected={@selected_buyer_id == buyer.id}
+                      >
+                        <%= buyer.name %> (<%= buyer.bin_iin %>)
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-5 sm:grid-cols-6">
+                <div class="sm:col-span-6">
+                  <label for="act_buyer_address" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Buyer Address") %> *
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="text"
+                      name="act[buyer_address]"
+                      id="act_buyer_address"
+                      required
+                      value={@buyer_address || ""}
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-3">
+                  <label for="act_issue_date" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Дата составления") %> *
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="date"
+                      name="act[issue_date]"
+                      id="act_issue_date"
+                      required
+                      value={Date.utc_today()}
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-3">
+                  <label for="act_actual_date" class="block text-sm font-medium text-slate-700">
+                    <%= gettext("Дата подписания (принятия) работ(услуг)") %>
+                  </label>
+                  <div class="mt-2">
+                    <input
+                      type="date"
+                      name="act[actual_date]"
+                      id="act_actual_date"
+                      class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <input type="hidden" name="act[vat_rate]" id="act_vat_rate" value={@vat_rate} />
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="space-y-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Работы (услуги)") %></h2>
+              <button
+                id="add-item-btn"
+                type="button"
+                onclick="addItemRow()"
+                class="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+              >
+                + <%= gettext("Add Item") %>
+              </button>
+            </div>
+
+            <div class="rounded-2xl bg-slate-50 p-4">
+              <div id="items-container" class="space-y-2"></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
+          <a
+            href="/acts"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Cancel") %>
+          </a>
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            <%= gettext("Create Act") %>
+          </button>
         </div>
-      </div>
+      </form>
+    </div>
 
-      <div id="contract-section" class={["space-y-6", @act_type == "direct" && "hidden"]}>
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
         <div>
-          <label for="contract_select" class="block text-sm font-medium text-gray-700"><%= gettext("Contract") %></label>
-          <div class="mt-1">
-            <select
-              id="contract_select"
-              name="act[contract_id]"
-              onchange="onContractSelectChange(this.value)"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-              <option value=""><%= gettext("Select an issued contract...") %></option>
-              <%= for contract <- @contracts do %>
-                <option value={contract.id} selected={@selected_contract_id == contract.id}>
-                  <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: gettext("Unknown") %> (<%= contract.issue_date %>)
-                </option>
-              <% end %>
-            </select>
-          </div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Act Type") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= act_mode %></dd>
         </div>
-      </div>
-
-      <div class="border-t border-gray-200 my-6"></div>
-
-      <div class="space-y-6">
         <div>
-          <label for="buyer_select" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer") %> *</label>
-          <div class="mt-1">
-            <select
-              id="buyer_select"
-              name="act[buyer_id]"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
-              <option value=""><%= gettext("Select a buyer...") %></option>
-              <%= for buyer <- @buyers do %>
-                <option
-                  value={buyer.id}
-                  data-address={buyer.address || ""}
-                  selected={@selected_buyer_id == buyer.id}>
-                  <%= buyer.name %> (<%= buyer.bin_iin %>)
-                </option>
-              <% end %>
-            </select>
-          </div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Contract") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= if selected_contract, do: selected_contract.number, else: "-" %>
+          </dd>
         </div>
-
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
-          <div class="sm:col-span-6">
-            <label for="act_buyer_address" class="block text-sm font-medium text-gray-700"><%= gettext("Buyer Address") %> *</label>
-            <div class="mt-2">
-              <input
-                type="text"
-                name="act[buyer_address]"
-                id="act_buyer_address"
-                required
-                value={@buyer_address || ""}
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label for="act_issue_date" class="block text-sm font-medium text-gray-700"><%= gettext("Дата составления") %> *</label>
-            <div class="mt-2">
-              <input
-                type="date"
-                name="act[issue_date]"
-                id="act_issue_date"
-                required
-                value={Date.utc_today()}
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
-
-          
-
-          <div class="sm:col-span-2">
-            <label for="act_actual_date" class="block text-sm font-medium text-gray-700"><%= gettext("Дата подписания (принятия) работ(услуг)") %></label>
-            <div class="mt-2">
-              <input
-                type="date"
-                name="act[actual_date]"
-                id="act_actual_date"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
-            </div>
-          </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("Buyer") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= if selected_buyer, do: selected_buyer.name, else: "-" %>
+          </dd>
         </div>
-
-        <input type="hidden" name="act[vat_rate]" id="act_vat_rate" value={@vat_rate} />
-
-        <div class="mt-8">
-          <h3 class="text-lg font-medium text-gray-900 mb-4"><%= gettext("Работы (услуги)") %></h3>
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <div id="items-container" class="space-y-2"></div>
-            <button
-              id="add-item-btn"
-              type="button"
-              onclick="addItemRow()"
-              class="mt-2 text-sm text-blue-600 hover:text-blue-900">
-              + <%= gettext("Add Item") %>
-            </button>
-          </div>
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <%= gettext("VAT rate (%)") %>
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @vat_rate %>%</dd>
         </div>
-      </div>
-
-      <div class="mt-6 flex items-center justify-end gap-x-6">
-        <a href="/acts" class="text-sm font-semibold text-gray-900 hover:text-gray-700"><%= gettext("Cancel") %></a>
-        <button
-          type="submit"
-          class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-          <%= gettext("Create Act") %>
-        </button>
-      </div>
-    </form>
+      </dl>
+    </.workspace_support_panel>
   </div>
 </div>
 
@@ -193,7 +277,7 @@
 
     const removeBtn = lockContractItems
       ? ""
-      : `<button type="button" onclick="this.closest('.item-row').remove()" class="text-red-600 hover:text-red-900 text-sm font-medium">${escapeHtml(removeLabel)}</button>`;
+      : `<button type="button" onclick="this.closest('.item-row').remove()" class="inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50">${escapeHtml(removeLabel)}</button>`;
 
     row.innerHTML = `
       <div class="col-span-4">
@@ -260,25 +344,10 @@
   document.getElementById("act_type_contract").addEventListener("change", () => handleTypeChange("contract"));
   document.getElementById("act_type_direct").addEventListener("change", () => handleTypeChange("direct"));
 
-  document.getElementById("buyer_select").addEventListener("change", function() {
-    const option = this.options[this.selectedIndex];
-    const address = option ? option.getAttribute("data-address") : "";
-    document.getElementById("act_buyer_address").value = address || "";
-  });
-
-  (function init() {
-    const addBtn = document.getElementById("add-item-btn");
-    if (lockContractItems) {
-      addBtn.classList.add("hidden");
-    } else {
-      addBtn.classList.remove("hidden");
-    }
-
+  if (Array.isArray(prefillItems) && prefillItems.length > 0) {
     clearItems();
-    if (prefillItems && prefillItems.length > 0) {
-      prefillItems.forEach((item) => addItemRow(item));
-    } else {
-      addItemRow();
-    }
-  })();
+    prefillItems.forEach((item) => addItemRow(item));
+  } else {
+    addItemRow();
+  }
 </script>

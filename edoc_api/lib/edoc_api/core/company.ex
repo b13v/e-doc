@@ -67,7 +67,7 @@ defmodule EdocApi.Core.Company do
     |> update_change(:email, &Email.normalize/1)
     |> update_change(:city, &String.normalize/1)
     |> update_change(:address, &String.normalize/1)
-    |> update_change(:name, &String.normalize/1)
+    |> update_change(:name, &String.normalize_quoted_name/1)
     |> update_change(:legal_form, &LegalForms.normalize/1)
     |> update_change(:representative_name, &String.normalize/1)
     |> update_change(:representative_title, &String.normalize/1)

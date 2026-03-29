@@ -13,7 +13,7 @@ defmodule EdocApi.CompaniesTest do
       updated = create_company!(user, %{"name" => "Updated Company"})
 
       assert updated.id == company.id
-      assert updated.name == "Updated Company"
+      assert updated.name == ~s("Updated Company")
       assert Companies.get_company_by_user_id(user.id).id == company.id
     end
   end
