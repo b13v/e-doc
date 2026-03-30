@@ -15,17 +15,34 @@ defmodule EdocApiWeb.ActHTML do
       href: "/acts/#{act.id}"
     }
 
-    secondary = [
-      %{
-        label: gettext("PDF"),
-        transport: :link,
-        method: :get,
-        href: "/acts/#{act.id}/pdf"
-      }
-    ] ++ delete_action(act)
+    secondary =
+      sign_action(act) ++
+        [
+          %{
+            label: gettext("PDF"),
+            transport: :link,
+            method: :get,
+            href: "/acts/#{act.id}/pdf"
+          }
+        ] ++ delete_action(act)
 
     %{primary: primary, secondary: secondary}
   end
+
+  defp sign_action(%{status: "issued"} = act) do
+    [
+      %{
+        label: gettext("Signed"),
+        tone: :success,
+        transport: :form,
+        method: :post,
+        action: "/acts/#{act.id}/sign",
+        confirm_text: gettext("Mark this act as signed?")
+      }
+    ]
+  end
+
+  defp sign_action(_act), do: []
 
   defp delete_action(%{status: "draft"} = act) do
     [

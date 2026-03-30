@@ -321,6 +321,31 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute index_body =~ ">Signed<"
     end
 
+    test "act signed flow actions are localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company, "issued")
+
+      show_body =
+        conn
+        |> browser_conn(user, "ru")
+        |> get("/acts/#{act.id}")
+        |> html_response(200)
+
+      index_body =
+        conn
+        |> browser_conn(user, "ru")
+        |> get("/acts")
+        |> html_response(200)
+
+      assert show_body =~ "Отметить как подписан"
+      assert index_body =~ "Подписан"
+      refute show_body =~ "Mark as Signed"
+      refute index_body =~ ">Signed<"
+    end
+
     test "buyer creation success flash is localized in Russian", %{
       conn: conn,
       user: user
@@ -461,7 +486,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ "Contract deleted successfully."
     end
 
-    test "contracts index renders compact actions while preserving action colors", %{
+    test "contracts index renders compact actions for draft rows", %{
       conn: conn,
       user: user,
       company: company
@@ -474,15 +499,8 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "w-px whitespace-nowrap px-6 py-4 text-right"
       refute body =~ "inline-flex items-center gap-3"
       assert body =~ ~s(href="/contracts/#{contract.id}")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-50 hover:text-blue-900")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-green-600 transition hover:bg-green-50 hover:text-green-900")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-900")
+      assert body =~ "data-row-actions-menu"
+      assert body =~ ~s(action="/contracts/#{contract.id}" method="post")
     end
 
     test "act index renders localized headings", %{conn: conn, user: user} do
@@ -500,7 +518,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ ">Issue Date<"
     end
 
-    test "acts index renders compact actions while preserving requested action colors", %{
+    test "acts index renders compact actions for draft rows", %{
       conn: conn,
       user: user,
       company: company
@@ -515,15 +533,8 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
       refute body =~ "text-blue-600 hover:text-blue-900 mr-4"
       assert body =~ ~s(href="/acts/#{act.id}")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-50 hover:text-blue-900")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-green-600 transition hover:bg-green-50 hover:text-green-900")
-
-      assert body =~
-               ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-700 transition hover:bg-red-50 hover:text-red-900")
+      assert body =~ "data-row-actions-menu"
+      assert body =~ ~s(action="/acts/#{act.id}" method="post")
     end
 
     test "act show keeps raw x in totals row", %{
@@ -1355,6 +1366,31 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute index_body =~ ">Signed<"
     end
 
+    test "act signed flow actions are localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company, "issued")
+
+      show_body =
+        conn
+        |> browser_conn(user, "kk")
+        |> get("/acts/#{act.id}")
+        |> html_response(200)
+
+      index_body =
+        conn
+        |> browser_conn(user, "kk")
+        |> get("/acts")
+        |> html_response(200)
+
+      assert show_body =~ "Қол қойылған деп белгілеу"
+      assert index_body =~ "Қол қойылған"
+      refute show_body =~ "Mark as Signed"
+      refute index_body =~ ">Signed<"
+    end
+
     test "contract delete success flash is localized and rendered once in Kazakh", %{
       conn: conn,
       user: user,
@@ -1382,6 +1418,8 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
     test "remaining browser-ui translations are filled in both locales" do
       assert_catalog_translations("ru", %{
         "Act %{number}" => "Акт № %{number}",
+        "Act has already been marked as signed." => "Акт уже отмечен как подписанный.",
+        "Act marked as signed." => "Акт отмечен как подписанный.",
         "Almaty" => "Алматы",
         "Back to Acts" => "Назад к актам",
         "Back to Company" => "Назад к компании",
@@ -1413,7 +1451,10 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
         "Item name" => "Наименование",
         "Label" => "Название",
         "Mark as Signed" => "Отметить как подписан",
+        "Mark this act as signed?" => "Отметить этот акт как подписанный?",
         "No buyers" => "Покупателей пока нет.",
+        "Only issued acts can be marked as signed." =>
+          "Только выставленные акты можно отметить как подписанные.",
         "Only issued contracts can be marked as signed." =>
           "Только выставленные договоры можно отметить как подписанные.",
         "Please fill out this field." => "Пожалуйста, заполните это поле.",
@@ -1428,6 +1469,9 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
 
       assert_catalog_translations("kk", %{
         "Act %{number}" => "Акт № %{number}",
+        "Act has already been marked as signed." =>
+          "Акт бұрыннан қол қойылған деп белгіленген.",
+        "Act marked as signed." => "Акт қол қойылған деп белгіленді.",
         "Add Bank Account" => "Банк шотын қосу",
         "Add New Bank Account" => "Жаңа банк шотын қосу",
         "Almaty" => "Алматы",
@@ -1466,7 +1510,10 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
         "Legal Form" => "Құқықтық нысаны",
         "Label" => "Атауы",
         "Mark as Signed" => "Қол қойылған деп белгілеу",
+        "Mark this act as signed?" => "Бұл актіні қол қойылған деп белгілеу керек пе?",
         "No buyers" => "Әзірге сатып алушылар жоқ.",
+        "Only issued acts can be marked as signed." =>
+          "Тек шығарылған актілерді қол қойылған деп белгілеуге болады.",
         "Only issued contracts can be marked as signed." =>
           "Тек шығарылған келісімшарттарды қол қойылған деп белгілеуге болады.",
         "Please fill out this field." => "Осы өрісті толтырыңыз.",
@@ -1510,7 +1557,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
     end
   end
 
-  defp create_act!(user, company) do
+  defp create_act!(user, company, status \\ "draft") do
     {:ok, buyer} =
       Buyers.create_buyer_for_company(company.id, %{
         "name" => "Act Buyer",
@@ -1529,6 +1576,13 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
     }
 
     {:ok, act} = Acts.create_act_for_user(user.id, company.id, attrs)
-    act
+
+    if status == "draft" do
+      act
+    else
+      act
+      |> Ecto.Changeset.change(status: status)
+      |> EdocApi.Repo.update!()
+    end
   end
 end

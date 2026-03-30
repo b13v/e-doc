@@ -2,12 +2,14 @@ defmodule EdocApi.Core.Act do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias EdocApi.ActStatus
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
   schema "acts" do
     field(:number, :string)
-    field(:status, :string, default: "draft")
+    field(:status, :string, default: ActStatus.default())
     field(:issue_date, :date)
     field(:actual_date, :date)
     field(:currency, :string, default: "KZT")
@@ -56,13 +58,11 @@ defmodule EdocApi.Core.Act do
     contract_id
   )a
 
-  @allowed_statuses ~w(draft issued signed)
-
   def changeset(act, attrs) do
     act
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:status, @allowed_statuses)
+    |> validate_inclusion(:status, ActStatus.all())
     |> validate_number(:vat_rate, greater_than_or_equal_to: 0)
     |> unique_constraint(:number, name: :acts_company_id_number_index)
     |> foreign_key_constraint(:company_id)

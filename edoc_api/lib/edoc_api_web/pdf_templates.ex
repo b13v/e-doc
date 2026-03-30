@@ -449,11 +449,29 @@ defmodule EdocApiWeb.PdfTemplates do
             font-size: 15px;
             font-weight: 700;
           }
+          .act-doc .signed-watermark {
+            position: absolute;
+            top: 46%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-24deg);
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: rgba(5, 150, 105, 0.2);
+            border: 6px solid rgba(5, 150, 105, 0.18);
+            padding: 18px 28px;
+            text-transform: uppercase;
+            pointer-events: none;
+            white-space: nowrap;
+          }
         </style>
       </head>
       <body>
         <% act = @act %>
-        <div class="act-doc">
+        <div class="act-doc" style="position: relative;">
+          <%= if act.status == "signed" do %>
+            <div class="signed-watermark">Подписан - Қол қойылған</div>
+          <% end %>
           <% items = act.items || [] %>
           <% vat_rate = Decimal.new(act.vat_rate || 0) %>
           <% total_qty = Enum.reduce(items, Decimal.new(0), fn i, acc -> Decimal.add(acc, i.qty || Decimal.new(0)) end) %>
