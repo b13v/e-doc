@@ -223,6 +223,8 @@ defmodule EdocApiWeb.Router do
     post("/acts", ActsController, :create)
     get("/acts/:id", ActsController, :show)
     get("/acts/:id/pdf", ActsController, :pdf)
+    post("/acts/:id/issue", ActsController, :issue)
+    post("/acts/:id/sign", ActsController, :sign)
     delete("/acts/:id", ActsController, :delete)
     get("/invoices/from-contract/:contract_id", InvoicesController, :create_from_contract)
     post("/invoices/from-contract/:contract_id", InvoicesController, :create_from_contract)

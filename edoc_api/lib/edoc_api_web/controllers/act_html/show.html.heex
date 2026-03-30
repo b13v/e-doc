@@ -88,6 +88,21 @@
   .act-doc .send-panel {
     margin-bottom: 16px;
   }
+  .act-doc .signed-watermark {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-24deg);
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: rgba(5, 150, 105, 0.2);
+    border: 6px solid rgba(5, 150, 105, 0.18);
+    padding: 18px 28px;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+  }
 </style>
 
 <% items = @act.items || [] %>
@@ -132,6 +147,32 @@
           >
             <%= gettext("Back to Acts") %>
           </a>
+          <%= if EdocApi.ActStatus.is_draft?(@act) do %>
+            <form action={"/acts/#{@act.id}/issue"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              >
+                <%= gettext("Issue") %>
+              </button>
+            </form>
+          <% end %>
+          <%= if EdocApi.ActStatus.is_issued?(@act) do %>
+            <form
+              action={"/acts/#{@act.id}/sign"}
+              method="post"
+              onsubmit={"return confirm(#{Jason.encode!(gettext("Mark this act as signed?"))})"}
+            >
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              >
+                <%= gettext("Mark as Signed") %>
+              </button>
+            </form>
+          <% end %>
           <details
             class="send-menu"
             data-send-menu-root
@@ -181,7 +222,10 @@
           <div id={"act-send-panel-#{@act.id}"} class="send-panel"></div>
 
           <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
-            <div class="act-doc min-w-[720px]">
+            <div class="act-doc relative min-w-[720px]">
+  <%= if EdocApi.ActStatus.is_signed?(@act) do %>
+    <div class="signed-watermark">Подписан - Қол қойылған</div>
+  <% end %>
 
   <div class="small right">Приложение 50</div>
   <div class="small right">к приказу Министра финансов Республики Казахстан</div>

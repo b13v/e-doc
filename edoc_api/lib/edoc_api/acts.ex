@@ -2,6 +2,7 @@ defmodule EdocApi.Acts do
   import Ecto.Query, warn: false
 
   alias EdocApi.Repo
+  alias EdocApi.ActStatus
   alias EdocApi.Core.Act
   alias EdocApi.Core.ActItem
   alias EdocApi.Core.Company
@@ -32,11 +33,51 @@ defmodule EdocApi.Acts do
       nil ->
         {:error, :not_found}
 
-      %Act{status: status} when status != "draft" ->
-        {:error, :business_rule, %{rule: :cannot_delete_non_draft_act}}
+      %Act{} = act ->
+        if ActStatus.is_draft?(act) do
+          Repo.delete(act)
+        else
+          {:error, :business_rule, %{rule: :cannot_delete_non_draft_act}}
+        end
+    end
+  end
+
+  def sign_act_for_user(user_id, act_id) when is_binary(user_id) and is_binary(act_id) do
+    case get_act_for_user(user_id, act_id) do
+      nil ->
+        {:error, :not_found}
 
       %Act{} = act ->
-        Repo.delete(act)
+        cond do
+          ActStatus.already_signed?(act) ->
+            {:error, :business_rule, %{rule: :act_already_signed}}
+
+          not ActStatus.can_sign?(act) ->
+            {:error, :business_rule, %{rule: :act_not_issued}}
+
+          true ->
+            act
+            |> Ecto.Changeset.change(status: ActStatus.signed())
+            |> Repo.update()
+        end
+    end
+  end
+
+  def issue_act_for_user(user_id, act_id) when is_binary(user_id) and is_binary(act_id) do
+    case get_act_for_user(user_id, act_id) do
+      nil ->
+        {:error, :not_found}
+
+      %Act{} = act ->
+        cond do
+          ActStatus.already_issued?(act) ->
+            {:error, :business_rule, %{rule: :act_not_editable}}
+
+          true ->
+            act
+            |> Ecto.Changeset.change(status: ActStatus.issued())
+            |> Repo.update()
+        end
     end
   end
 
@@ -83,7 +124,7 @@ defmodule EdocApi.Acts do
       act_attrs =
         %{
           "number" => number,
-          "status" => "draft",
+          "status" => ActStatus.default(),
           "issue_date" => Map.get(attrs, "issue_date"),
           "actual_date" => blank_to_nil(Map.get(attrs, "actual_date")),
           "currency" => "KZT",

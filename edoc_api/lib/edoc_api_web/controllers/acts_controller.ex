@@ -159,6 +159,69 @@ defmodule EdocApiWeb.ActsController do
     end
   end
 
+  def sign(conn, %{"id" => id}) do
+    user = current_user(conn)
+
+    case Acts.sign_act_for_user(user.id, id) do
+      {:ok, _act} ->
+        conn
+        |> put_flash(:info, gettext("Act marked as signed."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, :not_found} ->
+        conn
+        |> put_flash(:error, gettext("Act not found."))
+        |> redirect(to: "/acts")
+
+      {:error, :business_rule, %{rule: :act_not_issued}} ->
+        conn
+        |> put_flash(:error, gettext("Only issued acts can be marked as signed."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, :business_rule, %{rule: :act_already_signed}} ->
+        conn
+        |> put_flash(:error, gettext("Act has already been marked as signed."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, reason} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Failed to mark act as signed: %{reason}", reason: inspect(reason))
+        )
+        |> redirect(to: "/acts/#{id}")
+    end
+  end
+
+  def issue(conn, %{"id" => id}) do
+    user = current_user(conn)
+
+    case Acts.issue_act_for_user(user.id, id) do
+      {:ok, _act} ->
+        conn
+        |> put_flash(:info, gettext("Act issued successfully."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, :not_found} ->
+        conn
+        |> put_flash(:error, gettext("Act not found."))
+        |> redirect(to: "/acts")
+
+      {:error, :business_rule, %{rule: :act_not_editable}} ->
+        conn
+        |> put_flash(:error, gettext("This act cannot be issued."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, reason} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Failed to issue act: %{reason}", reason: inspect(reason))
+        )
+        |> redirect(to: "/acts/#{id}")
+    end
+  end
+
   def delete(conn, %{"id" => id}) do
     user = current_user(conn)
 

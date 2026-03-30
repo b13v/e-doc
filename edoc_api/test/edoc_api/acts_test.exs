@@ -4,6 +4,7 @@ defmodule EdocApi.ActsTest do
   import EdocApi.TestFixtures
 
   alias EdocApi.Acts
+  alias EdocApi.ActStatus
   alias EdocApi.Buyers
   alias EdocApi.Repo
 
@@ -55,6 +56,60 @@ defmodule EdocApi.ActsTest do
     end
   end
 
+  describe "sign_act_for_user/2" do
+    test "marks an issued act as signed" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+      act = create_act!(user, company, buyer, ActStatus.issued())
+
+      assert {:ok, signed} = Acts.sign_act_for_user(user.id, act.id)
+      assert signed.status == ActStatus.signed()
+    end
+
+    test "returns business rule error for draft acts" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+      act = create_act!(user, company, buyer, ActStatus.draft())
+
+      assert {:error, :business_rule, %{rule: :act_not_issued}} =
+               Acts.sign_act_for_user(user.id, act.id)
+    end
+
+    test "returns business rule error for already signed acts" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+      act = create_act!(user, company, buyer, ActStatus.signed())
+
+      assert {:error, :business_rule, %{rule: :act_already_signed}} =
+               Acts.sign_act_for_user(user.id, act.id)
+    end
+  end
+
+  describe "issue_act_for_user/2" do
+    test "marks a draft act as issued" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+      act = create_act!(user, company, buyer, ActStatus.draft())
+
+      assert {:ok, issued} = Acts.issue_act_for_user(user.id, act.id)
+      assert issued.status == ActStatus.issued()
+    end
+
+    test "returns business rule error for non-draft acts" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+      act = create_act!(user, company, buyer, ActStatus.issued())
+
+      assert {:error, :business_rule, %{rule: :act_not_editable}} =
+               Acts.issue_act_for_user(user.id, act.id)
+    end
+  end
+
   defp create_buyer!(company) do
     {:ok, buyer} =
       Buyers.create_buyer_for_company(company.id, %{
@@ -64,5 +119,22 @@ defmodule EdocApi.ActsTest do
       })
 
     buyer
+  end
+
+  defp create_act!(user, company, buyer, status) do
+    attrs = %{
+      "issue_date" => Date.utc_today(),
+      "buyer_id" => buyer.id,
+      "buyer_address" => "Buyer Address",
+      "items" => [
+        %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+      ]
+    }
+
+    {:ok, act} = Acts.create_act_for_user(user.id, company.id, attrs)
+
+    act
+    |> Ecto.Changeset.change(status: status)
+    |> Repo.update!()
   end
 end

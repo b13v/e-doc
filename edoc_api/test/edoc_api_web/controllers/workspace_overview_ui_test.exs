@@ -270,6 +270,88 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "signed-watermark"
   end
 
+  test "acts overview exposes a signed action for issued acts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _draft} = create_act_for_overview(user, company, buyer, "draft")
+    {:ok, issued} = create_act_for_overview(user, company, buyer, "issued")
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/acts")
+      |> html_response(200)
+
+    assert body =~ ~s(action="/acts/#{issued.id}/sign" method="post")
+  end
+
+  test "act show renders sign action for issued acts and watermark for signed acts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, issued} = create_act_for_overview(user, company, buyer, "issued")
+
+    issued_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{issued.id}")
+      |> html_response(200)
+
+    assert issued_body =~ ~s(action="/acts/#{issued.id}/sign" method="post")
+
+    {:ok, signed} = create_act_for_overview(user, company, buyer, "signed")
+
+    signed_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{signed.id}")
+      |> html_response(200)
+
+    assert signed_body =~ "Подписан - Қол қойылған"
+    assert signed_body =~ "signed-watermark"
+  end
+
+  test "act show exposes issue action for draft acts", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, draft} = create_act_for_overview(user, company, buyer, "draft")
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{draft.id}")
+      |> html_response(200)
+
+    assert body =~ ~s(action="/acts/#{draft.id}/issue" method="post")
+    refute body =~ ~s(action="/acts/#{draft.id}/sign" method="post")
+  end
+
   test "acts overview renders status counts in a right-side panel", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)

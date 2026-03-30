@@ -20,6 +20,47 @@ msgstr ""
 msgid "Acts"
 msgstr ""
 
+#: lib/edoc_api_web/controllers/acts_controller.ex:163
+#, elixir-autogen
+msgid "Act marked as signed."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:191
+#, elixir-autogen
+msgid "Act issued successfully."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:178
+#, elixir-autogen
+msgid "Act has already been marked as signed."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:173
+#, elixir-autogen
+msgid "Only issued acts can be marked as signed."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:201
+#, elixir-autogen
+msgid "This act cannot be issued."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:185
+#, elixir-autogen
+msgid "Failed to mark act as signed: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/acts_controller.ex:207
+#, elixir-autogen
+msgid "Failed to issue act: %{reason}"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/act_html.ex:32
+#: lib/edoc_api_web/controllers/act_html/show.html.heex:157
+#, elixir-autogen
+msgid "Mark this act as signed?"
+msgstr ""
+
 #: lib/edoc_api_web/controllers/signup_html/new.html.heex:74
 #, elixir-autogen
 msgid "Already have an account? Sign in"
