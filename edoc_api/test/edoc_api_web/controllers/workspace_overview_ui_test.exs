@@ -694,6 +694,159 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert html =~ ~s|return confirm(&quot;Mark invoice as paid? It&#39;s final.&quot;)|
   end
 
+  test "contracts, invoices, and acts use the approved semantic submenu text colors",
+       %{conn: conn} do
+    contract_actions =
+      EdocApiWeb.ContractHTML.contract_row_actions(%{
+        id: Ecto.UUID.generate(),
+        status: "issued"
+      })
+
+    contract_menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: contract_actions.primary,
+        secondary: contract_actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
+    invoice_actions =
+      EdocApiWeb.InvoicesHTML.row_actions(%{
+        id: Ecto.UUID.generate(),
+        status: "draft"
+      })
+
+    invoice_menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: invoice_actions.primary,
+        secondary: invoice_actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
+    act_actions =
+      EdocApiWeb.ActHTML.act_row_actions(%{
+        id: Ecto.UUID.generate(),
+        status: "draft"
+      })
+
+    act_menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: act_actions.primary,
+        secondary: act_actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-2026-2"})
+    contract = create_contract!(company, %{"status" => "issued", "number" => "C-9"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "issued")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    assert contract_menu =~ "text-sky-700"
+    assert contract_menu =~ "text-emerald-700"
+
+    assert invoice_menu =~ "text-sky-700"
+    assert invoice_menu =~ "text-rose-700"
+
+    assert act_menu =~ "text-sky-700"
+    assert act_menu =~ "text-rose-700"
+
+    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+
+    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+
+    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+  end
+
+  test "send submenu items keep action-menu hover treatment while using semantic text colors",
+       %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-2026-2"})
+    contract = create_contract!(company, %{"status" => "issued", "number" => "C-9"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "issued")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    assert invoice_body =~ "hover:bg-slate-100 hover:text-slate-900"
+    assert invoice_body =~ "hover:bg-slate-100 hover:text-emerald-900"
+    assert invoice_body =~ "hover:bg-slate-100 hover:text-sky-900"
+
+    assert contract_body =~ "hover:bg-slate-100 hover:text-slate-900"
+    assert contract_body =~ "hover:bg-slate-100 hover:text-emerald-900"
+    assert contract_body =~ "hover:bg-slate-100 hover:text-sky-900"
+
+    assert act_body =~ "hover:bg-slate-100 hover:text-slate-900"
+    assert act_body =~ "hover:bg-slate-100 hover:text-emerald-900"
+    assert act_body =~ "hover:bg-slate-100 hover:text-sky-900"
+
+    refute invoice_body =~ ".invoice-doc .send-menu-item:hover {"
+    refute contract_body =~ ".contract-doc .send-menu-item:hover"
+    refute act_body =~ ".act-doc .send-menu-item:hover"
+  end
+
   test "workspace_row_actions get forms preserve method semantics without CSRF fields",
        _context do
     html =

@@ -264,7 +264,7 @@ msgstr "О сервисе Edocly"
 #: lib/edoc_api_web/controllers/acts_controller.ex:142
 #, elixir-autogen, elixir-format
 msgid "Act %{number}"
-msgstr ""
+msgstr "Акт № %{number}"
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:89
 #, elixir-autogen, elixir-format
@@ -2194,3 +2194,63 @@ msgstr "Договор уже отмечен как подписанный."
 #, elixir-autogen, elixir-format
 msgid "Failed to mark contract as signed: %{reason}"
 msgstr "Не удалось отметить договор как подписанный: %{reason}"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:4
+#, elixir-autogen
+msgid "Send by Email"
+msgstr "Отправить по email"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:6
+#, elixir-autogen
+msgid "Official delivery channel"
+msgstr "Официальный канал доставки"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:8
+#, elixir-autogen
+msgid "The email includes the PDF attachment and a protected public link."
+msgstr "Письмо включает PDF-вложение и защищенную публичную ссылку."
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:12
+#, elixir-autogen
+msgid "Back"
+msgstr "Назад"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:30
+#, elixir-autogen
+msgid "Recipient name"
+msgstr "Имя получателя"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:42
+#, elixir-autogen
+msgid "Recipient email"
+msgstr "Email получателя"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:56
+#, elixir-autogen
+msgid "Send document"
+msgstr "Отправить документ"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:59
+#, elixir-autogen
+msgid "WhatsApp and Telegram are convenience sharing channels only."
+msgstr "WhatsApp и Telegram служат только дополнительными каналами отправки."
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:2
+#, elixir-autogen
+msgid "Document sent"
+msgstr "Документ отправлен"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:4
+#, elixir-autogen
+msgid "%{title} was sent to"
+msgstr "%{title} был отправлен на"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:11
+#, elixir-autogen
+msgid "Protected link:"
+msgstr "Защищенная ссылка:"
+
+#: lib/edoc_api_web/controllers/document_delivery_html.ex:9
+#, elixir-autogen
+msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
+msgstr "SMTP не настроен. Это письмо было перехвачено локальным почтовым адаптером и не было доставлено в почтовый ящик получателя."

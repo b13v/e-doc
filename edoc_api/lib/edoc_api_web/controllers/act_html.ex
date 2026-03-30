@@ -9,11 +9,10 @@ defmodule EdocApiWeb.ActHTML do
   def act_row_actions(act) do
     primary = %{
       label: gettext("View"),
+      tone: :info,
       transport: :link,
       method: :get,
-      href: "/acts/#{act.id}",
-      class:
-        "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-50 hover:text-blue-900"
+      href: "/acts/#{act.id}"
     }
 
     secondary = [
@@ -21,9 +20,7 @@ defmodule EdocApiWeb.ActHTML do
         label: gettext("PDF"),
         transport: :link,
         method: :get,
-        href: "/acts/#{act.id}/pdf",
-        class:
-          "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-green-600 transition hover:bg-green-50 hover:text-green-900"
+        href: "/acts/#{act.id}/pdf"
       }
     ] ++ delete_action(act)
 
@@ -34,12 +31,11 @@ defmodule EdocApiWeb.ActHTML do
     [
       %{
         label: gettext("Delete"),
+        tone: :danger,
         transport: :form,
         method: :post,
         action: "/acts/#{act.id}",
         _method: "delete",
-        class:
-          "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-700 transition hover:bg-red-50 hover:text-red-900",
         confirm_text: gettext("Delete this act?")
       }
     ]

@@ -1766,6 +1766,66 @@ msgstr ""
 msgid "Check the IBAN number. It must be exactly 20 alphanumeric characters."
 msgstr ""
 
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:4
+#, elixir-autogen
+msgid "Send by Email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:6
+#, elixir-autogen
+msgid "Official delivery channel"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:8
+#, elixir-autogen
+msgid "The email includes the PDF attachment and a protected public link."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:12
+#, elixir-autogen
+msgid "Back"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:30
+#, elixir-autogen
+msgid "Recipient name"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:42
+#, elixir-autogen
+msgid "Recipient email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:56
+#, elixir-autogen
+msgid "Send document"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:59
+#, elixir-autogen
+msgid "WhatsApp and Telegram are convenience sharing channels only."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:2
+#, elixir-autogen
+msgid "Document sent"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:4
+#, elixir-autogen
+msgid "%{title} was sent to"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:11
+#, elixir-autogen
+msgid "Protected link:"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/document_delivery_html.ex:9
+#, elixir-autogen
+msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
+msgstr ""
+
 #: lib/edoc_api_web/controllers/invoices_html/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Issue Invoice"

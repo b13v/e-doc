@@ -526,7 +526,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
                ~s(class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-700 transition hover:bg-red-50 hover:text-red-900")
     end
 
-    test "act show replaces raw x in totals row with neutral label", %{
+    test "act show keeps raw x in totals row", %{
       conn: conn,
       user: user,
       company: company
@@ -536,8 +536,22 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       conn = get(browser_conn(conn, user, "ru"), "/acts/#{act.id}")
       body = html_response(conn, 200)
 
-      assert body =~ "Не применяется"
-      refute body =~ ~s(>x<)
+      assert body =~ ~s(>x<)
+      refute body =~ "Не применяется"
+    end
+
+    test "act show localizes the header title in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company)
+
+      conn = get(browser_conn(conn, user, "ru"), "/acts/#{act.id}")
+      body = html_response(conn, 200)
+
+      assert body =~ "Акт № #{act.number}"
+      refute body =~ "Act #{act.number}"
     end
 
     test "invoice creation page localizes helper copy in Kazakh", %{
@@ -990,6 +1004,20 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ "No buyers"
     end
 
+    test "act show localizes the header title in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company)
+
+      conn = get(browser_conn(conn, user, "kk"), "/acts/#{act.id}")
+      body = html_response(conn, 200)
+
+      assert body =~ "Акт № #{act.number}"
+      refute body =~ "Act #{act.number}"
+    end
+
     test "buyer creation success flash is localized in Kazakh", %{
       conn: conn,
       user: user
@@ -1353,6 +1381,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
   describe "Gettext catalog coverage" do
     test "remaining browser-ui translations are filled in both locales" do
       assert_catalog_translations("ru", %{
+        "Act %{number}" => "Акт № %{number}",
         "Almaty" => "Алматы",
         "Back to Acts" => "Назад к актам",
         "Back to Company" => "Назад к компании",
@@ -1398,6 +1427,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       })
 
       assert_catalog_translations("kk", %{
+        "Act %{number}" => "Акт № %{number}",
         "Add Bank Account" => "Банк шотын қосу",
         "Add New Bank Account" => "Жаңа банк шотын қосу",
         "Almaty" => "Алматы",

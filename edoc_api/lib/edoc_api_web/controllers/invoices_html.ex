@@ -7,6 +7,7 @@ defmodule EdocApiWeb.InvoicesHTML do
   def row_actions(invoice) do
     primary = %{
       label: gettext("View"),
+      tone: :info,
       transport: :link,
       method: :get,
       href: "/invoices/#{invoice.id}"
@@ -18,6 +19,7 @@ defmodule EdocApiWeb.InvoicesHTML do
           [
             %{
               label: gettext("Paid"),
+              tone: :success,
               transport: :form,
               method: :post,
               action: "/invoices/#{invoice.id}/pay",
@@ -35,6 +37,7 @@ defmodule EdocApiWeb.InvoicesHTML do
             },
             %{
               label: gettext("Delete"),
+              tone: :danger,
               transport: :htmx_delete,
               method: :delete,
               hx_delete: "/invoices/#{invoice.id}",

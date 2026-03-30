@@ -286,7 +286,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, :link))
+      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :default, :link))
 
     ~H"""
     <a href={@action.href} class={@classes}><%= @action.label %></a>
@@ -297,7 +297,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, :form))
+      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :default, :form))
       |> assign(:form_method, form_method(action))
       |> assign(:csrf_token, csrf_token(action))
       |> assign(:method_override, method_override(action))
@@ -321,7 +321,7 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, :htmx_delete))
+      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :danger, :htmx_delete))
 
     ~H"""
     <button
@@ -338,25 +338,33 @@ defmodule EdocApiWeb.CoreComponents do
     """
   end
 
-  defp row_action_classes(:primary, :link),
+  defp row_action_classes(:primary, _semantic_tone, :link),
     do: "text-sm font-semibold text-slate-900 transition hover:text-slate-700"
 
-  defp row_action_classes(:primary, _transport),
+  defp row_action_classes(:primary, _semantic_tone, _transport),
     do: "text-sm font-semibold text-slate-900 transition hover:text-slate-700"
 
-  defp row_action_classes(:secondary, :htmx_delete),
+  defp row_action_classes(:secondary, _semantic_tone, :htmx_delete),
     do: "text-sm font-medium text-rose-700 transition hover:text-rose-900"
 
-  defp row_action_classes(:secondary, _transport),
+  defp row_action_classes(:secondary, _semantic_tone, _transport),
     do: "text-sm font-medium text-slate-600 transition hover:text-slate-900"
 
-  defp row_action_classes(:mobile, :htmx_delete),
+  defp row_action_classes(:mobile, :info, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
 
-  defp row_action_classes(:mobile, _transport),
+  defp row_action_classes(:mobile, :success, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+
+  defp row_action_classes(:mobile, :danger, _transport),
+    do:
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-slate-100 hover:text-rose-900"
+
+  defp row_action_classes(:mobile, _semantic_tone, _transport),
+    do:
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
 
   defp row_action_form_classes(:mobile), do: "block"
   defp row_action_form_classes(_tone), do: "inline"

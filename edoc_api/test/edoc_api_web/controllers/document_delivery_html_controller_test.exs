@@ -135,6 +135,68 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
 
       assert body =~ ~s(hx-target="closest .send-panel")
     end
+
+    test "renders Russian localized email panels for invoices, contracts, and acts", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_issued_invoice!(user, company)
+      contract = create_issued_contract!(company)
+      act = create_act!(user, company)
+
+      for {type, id} <- [{"invoice", invoice.id}, {"contract", contract.id}, {"act", act.id}] do
+        body =
+          conn
+          |> localized_hx_conn(user, "ru")
+          |> get("/documents/#{type}/#{id}/send/email")
+          |> html_response(200)
+
+        assert body =~ "Отправить по email"
+        assert body =~ "Официальный канал доставки"
+        assert body =~ "Имя получателя"
+        assert body =~ "Email получателя"
+        assert body =~ "Отправить документ"
+        assert body =~ "WhatsApp и Telegram служат только дополнительными каналами отправки."
+
+        refute body =~ "Send by Email"
+        refute body =~ "Official delivery channel"
+        refute body =~ "Recipient name"
+        refute body =~ "Recipient email"
+        refute body =~ "Send document"
+      end
+    end
+
+    test "renders Kazakh localized email panels for invoices, contracts, and acts", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_issued_invoice!(user, company)
+      contract = create_issued_contract!(company)
+      act = create_act!(user, company)
+
+      for {type, id} <- [{"invoice", invoice.id}, {"contract", contract.id}, {"act", act.id}] do
+        body =
+          conn
+          |> localized_hx_conn(user, "kk")
+          |> get("/documents/#{type}/#{id}/send/email")
+          |> html_response(200)
+
+        assert body =~ "Email арқылы жіберу"
+        assert body =~ "Ресми жеткізу арнасы"
+        assert body =~ "Алушының аты"
+        assert body =~ "Алушының email-ы"
+        assert body =~ "Құжатты жіберу"
+        assert body =~ "WhatsApp пен Telegram тек қосымша жіберу арналары болып табылады."
+
+        refute body =~ "Send by Email"
+        refute body =~ "Official delivery channel"
+        refute body =~ "Recipient name"
+        refute body =~ "Recipient email"
+        refute body =~ "Send document"
+      end
+    end
   end
 
   describe "POST /documents/:type/:id/send/email" do
@@ -204,6 +266,74 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       assert body =~ "SMTP is not configured"
       assert body =~ "not delivered to the recipient inbox"
     end
+
+    test "renders Russian localized success responses for invoices, contracts, and acts", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      Application.put_env(:edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local)
+
+      invoice = create_issued_invoice!(user, company)
+      contract = create_issued_contract!(company)
+      act = create_act!(user, company)
+
+      for {type, id} <- [{"invoice", invoice.id}, {"contract", contract.id}, {"act", act.id}] do
+        body =
+          conn
+          |> localized_hx_conn(user, "ru")
+          |> post("/documents/#{type}/#{id}/send/email", %{
+            "recipient_name" => "Buyer LLC",
+            "recipient_email" => "buyer@example.com"
+          })
+          |> html_response(200)
+
+        assert body =~ "Документ отправлен"
+        assert body =~ "был отправлен на"
+        assert body =~ "SMTP не настроен."
+        assert body =~ "не было доставлено в почтовый ящик получателя"
+        assert body =~ "Защищенная ссылка:"
+
+        refute body =~ "Document sent"
+        refute body =~ "was sent to"
+        refute body =~ "SMTP is not configured"
+        refute body =~ "Protected link:"
+      end
+    end
+
+    test "renders Kazakh localized success responses for invoices, contracts, and acts", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      Application.put_env(:edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local)
+
+      invoice = create_issued_invoice!(user, company)
+      contract = create_issued_contract!(company)
+      act = create_act!(user, company)
+
+      for {type, id} <- [{"invoice", invoice.id}, {"contract", contract.id}, {"act", act.id}] do
+        body =
+          conn
+          |> localized_hx_conn(user, "kk")
+          |> post("/documents/#{type}/#{id}/send/email", %{
+            "recipient_name" => "Buyer LLC",
+            "recipient_email" => "buyer@example.com"
+          })
+          |> html_response(200)
+
+        assert body =~ "Құжат жіберілді"
+        assert body =~ "мына мекенжайға жіберілді"
+        assert body =~ "SMTP бапталмаған."
+        assert body =~ "алушының кіріс жәшігіне жеткізілген жоқ"
+        assert body =~ "Қорғалған сілтеме:"
+
+        refute body =~ "Document sent"
+        refute body =~ "was sent to"
+        refute body =~ "SMTP is not configured"
+        refute body =~ "Protected link:"
+      end
+    end
   end
 
   describe "POST /documents/:type/:id/share/:channel" do
@@ -257,11 +387,13 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
   end
 
   defp create_issued_contract!(company) do
+    suffix = System.unique_integer([:positive])
+
     {:ok, buyer} =
       Buyers.create_buyer_for_company(company.id, %{
         "name" => "Buyer LLC",
-        "bin_iin" => "080215385677",
-        "email" => "buyer@example.com",
+        "bin_iin" => "060215385673",
+        "email" => "buyer-#{suffix}@example.com",
         "address" => "Buyer Address"
       })
 
@@ -308,6 +440,15 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
 
     {:ok, act} = Acts.create_act_for_user(user.id, company.id, attrs)
     act
+  end
+
+  defp localized_hx_conn(conn, user, locale) do
+    conn
+    |> recycle()
+    |> Plug.Test.init_test_session(%{user_id: user.id, locale: locale})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
+    |> put_req_header("hx-request", "true")
   end
 end
 

@@ -50,7 +50,7 @@
   .act-doc .act-items-table th { font-weight: 400; }
   .act-doc .act-title {
     width: 76%;
-    margin-top: -22px;
+    margin-top: 12px;
     margin-left: 0;
     margin-bottom: 16px;
     text-align: center;
@@ -78,32 +78,9 @@
   .act-doc .send-menu summary::-webkit-details-marker {
     display: none;
   }
-  .act-doc .send-menu-panel {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    min-width: 180px;
-    padding: 6px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-    z-index: 30;
-  }
   .act-doc .send-menu-item {
-    display: block;
-    width: 100%;
-    padding: 8px 10px;
     border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: #111827;
-    text-align: left;
-    font-size: 12px;
     cursor: pointer;
-  }
-  .act-doc .send-menu-item:hover {
-    background: #f3f4f6;
   }
   .act-doc .send-menu-form {
     margin: 0;
@@ -155,14 +132,21 @@
           >
             <%= gettext("Back to Acts") %>
           </a>
-          <details class="send-menu">
+          <details
+            class="send-menu"
+            data-send-menu-root
+            ontoggle="window.positionWorkspaceSendMenu && window.positionWorkspaceSendMenu(this)"
+          >
             <summary class="inline-flex cursor-pointer list-none items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
               <%= gettext("Send") %>
             </summary>
-            <div class="send-menu-panel">
+            <div
+              data-send-menu-panel
+              class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+            >
               <button
                 type="button"
-                class="send-menu-item"
+                class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
                 hx-get={"/documents/act/#{@act.id}/send/email"}
                 hx-target={"#act-send-panel-#{@act.id}"}
                 hx-swap="innerHTML">
@@ -170,11 +154,11 @@
               </button>
               <form action={"/documents/act/#{@act.id}/share/whatsapp"} method="post" class="send-menu-form">
                 <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item"><%= gettext("WhatsApp") %></button>
+                <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"><%= gettext("WhatsApp") %></button>
               </form>
               <form action={"/documents/act/#{@act.id}/share/telegram"} method="post" class="send-menu-form">
                 <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                <button type="submit" class="send-menu-item"><%= gettext("Telegram") %></button>
+                <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"><%= gettext("Telegram") %></button>
               </form>
             </div>
           </details>
@@ -283,10 +267,10 @@
 
   <table class="act-items-table" style="width: 100%; border-collapse: collapse; table-layout: fixed; font-family: Arial, sans-serif; font-size: 11px; margin-top: 0;">
     <colgroup>
-      <col style="width: 4%;" />
-      <col style="width: 32%;" />
-      <col style="width: 8%;" />
-      <col style="width: 18%;" />
+      <col style="width: 6%;" />
+      <col style="width: 30%;" />
+      <col style="width: 10%;" />
+      <col style="width: 16%;" />
       <col style="width: 8%;" />
       <col style="width: 8%;" />
       <col style="width: 8%;" />
@@ -360,7 +344,7 @@
         <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
         <td style="border: 1px solid #000; border-right: none; padding: 4px; text-align: center;">Итого</td>
         <td style="border: 1px solid #000; padding: 4px; text-align: center;"><%= Decimal.to_string(total_qty, :normal) %></td>
-        <td style="border: 1px solid #000; padding: 4px; text-align: center;">Не применяется</td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: center;">x</td>
         <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_amount) %></td>
         <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_vat) %></td>
       </tr>

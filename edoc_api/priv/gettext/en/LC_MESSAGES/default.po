@@ -2196,3 +2196,63 @@ msgstr "Contract has already been marked as signed."
 #, elixir-autogen, elixir-format
 msgid "Failed to mark contract as signed: %{reason}"
 msgstr "Failed to mark contract as signed: %{reason}"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:4
+#, elixir-autogen
+msgid "Send by Email"
+msgstr "Send by Email"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:6
+#, elixir-autogen
+msgid "Official delivery channel"
+msgstr "Official delivery channel"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:8
+#, elixir-autogen
+msgid "The email includes the PDF attachment and a protected public link."
+msgstr "The email includes the PDF attachment and a protected public link."
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:12
+#, elixir-autogen
+msgid "Back"
+msgstr "Back"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:30
+#, elixir-autogen
+msgid "Recipient name"
+msgstr "Recipient name"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:42
+#, elixir-autogen
+msgid "Recipient email"
+msgstr "Recipient email"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:56
+#, elixir-autogen
+msgid "Send document"
+msgstr "Send document"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:59
+#, elixir-autogen
+msgid "WhatsApp and Telegram are convenience sharing channels only."
+msgstr "WhatsApp and Telegram are convenience sharing channels only."
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:2
+#, elixir-autogen
+msgid "Document sent"
+msgstr "Document sent"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:4
+#, elixir-autogen
+msgid "%{title} was sent to"
+msgstr "%{title} was sent to"
+
+#: lib/edoc_api_web/controllers/document_delivery_html/send_success.html.heex:11
+#, elixir-autogen
+msgid "Protected link:"
+msgstr "Protected link:"
+
+#: lib/edoc_api_web/controllers/document_delivery_html.ex:9
+#, elixir-autogen
+msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
+msgstr "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
