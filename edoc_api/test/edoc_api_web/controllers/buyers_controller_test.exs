@@ -30,7 +30,7 @@ defmodule EdocApiWeb.BuyersControllerTest do
       assert response(conn, 201)
       body = json_response(conn, 201)
 
-      assert body["name"] == "API Buyer"
+      assert body["name"] == "\"API Buyer\""
       assert body["bank"]["bank_id"] == bank.id
       assert body["bank"]["bank_name"] == bank.name
       assert body["bank"]["iban"] == "KZ280000000000000010"

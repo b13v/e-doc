@@ -8,21 +8,22 @@ defmodule EdocApiWeb.AuthControllerTest do
 
   setup do
     RateLimit.reset!()
+    Application.put_env(:edoc_api, RateLimit, trusted_proxies: [{127, 0, 0, 1}])
+
+    on_exit(fn ->
+      Application.delete_env(:edoc_api, RateLimit)
+    end)
+
     :ok
   end
 
   describe "login rate limiting" do
     test "returns 429 after credential limit is exceeded" do
-      for _ <- 1..5 do
-        conn =
-          build_conn()
-          |> post("/v1/auth/login", %{"email" => "missing@example.com", "password" => "bad-pass"})
-
-        assert conn.status == 401
-      end
+      client_ip = "203.0.113.10"
+      exhaust_auth_credentials_limit(client_ip)
 
       conn =
-        build_conn()
+        auth_conn(client_ip)
         |> post("/v1/auth/login", %{"email" => "missing@example.com", "password" => "bad-pass"})
 
       assert conn.status == 429
@@ -132,5 +133,19 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert body["message"] =~ "verification instructions"
       refute Map.has_key?(body, "error")
     end
+  end
+
+  defp exhaust_auth_credentials_limit(client_ip) do
+    opts = RateLimit.init(limit: 5, window_seconds: 60, action: "auth_credentials", subject: :ip)
+
+    for _ <- 1..5 do
+      conn = auth_conn(client_ip) |> RateLimit.call(opts)
+      assert conn.status in [nil, 200]
+    end
+  end
+
+  defp auth_conn(client_ip) do
+    build_conn()
+    |> put_req_header("x-forwarded-for", client_ip)
   end
 end

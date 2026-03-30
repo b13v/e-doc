@@ -59,7 +59,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/invoices/#{invoice.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Отправить<"
+      assert body =~ "data-send-menu-root"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"
@@ -79,7 +79,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/contracts/#{contract.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Отправить<"
+      assert body =~ "data-send-menu-root"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"
@@ -91,7 +91,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/acts/#{act.id}")
 
       body = html_response(conn, 200)
-      assert body =~ ">Отправить<"
+      assert body =~ "data-send-menu-root"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
       assert body =~ "Telegram"
@@ -112,7 +112,8 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
         |> get("/documents/invoice/#{invoice.id}/send/email")
 
       body = html_response(conn, 200)
-      assert body =~ "Official delivery channel"
+      assert body =~ "Отправить по email"
+      assert body =~ "Официальный канал доставки"
       assert body =~ "recipient_email"
       assert body =~ "recipient_name"
       assert body =~ "buyer@example.com"
@@ -216,7 +217,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
         })
 
       body = html_response(conn, 200)
-      assert body =~ "Document sent"
+      assert body =~ "Документ отправлен"
       assert body =~ "buyer@example.com"
 
       assert_email_sent(fn email ->
@@ -263,8 +264,8 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
         })
 
       body = html_response(conn, 200)
-      assert body =~ "SMTP is not configured"
-      assert body =~ "not delivered to the recipient inbox"
+      assert body =~ "SMTP не настроен"
+      assert body =~ "не было доставлено в почтовый ящик получателя"
     end
 
     test "renders Russian localized success responses for invoices, contracts, and acts", %{
