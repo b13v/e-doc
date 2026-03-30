@@ -1,7 +1,9 @@
-defmodule EdocApi.Core.InvoiceCounterTest do
+defmodule EdocApi.Invoicing.InvoiceCounterTest do
   use EdocApi.DataCase, async: true
 
-  alias EdocApi.Core
+  alias EdocApi.Invoicing
+  alias EdocApi.Core.InvoiceCounter
+  alias EdocApi.Repo
 
   import EdocApi.TestFixtures
 
@@ -9,8 +11,9 @@ defmodule EdocApi.Core.InvoiceCounterTest do
     user = create_user!()
     company = create_company!(user)
 
-    assert Core.next_invoice_number!(company.id) == "0000000001"
-    assert Core.next_invoice_number!(company.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000002"
+    assert Invoicing.next_invoice_number!(company.id) == "00000000003"
   end
 
   test "sequences are independent per company" do
@@ -20,8 +23,70 @@ defmodule EdocApi.Core.InvoiceCounterTest do
     user_two = create_user!()
     company_two = create_company!(user_two)
 
-    assert Core.next_invoice_number!(company_one.id) == "0000000001"
-    assert Core.next_invoice_number!(company_two.id) == "0000000001"
-    assert Core.next_invoice_number!(company_one.id) == "0000000002"
+    assert Invoicing.next_invoice_number!(company_one.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company_two.id) == "00000000001"
+    assert Invoicing.next_invoice_number!(company_one.id) == "00000000002"
+  end
+
+  test "handles large invoice numbers correctly" do
+    user = create_user!()
+    company = create_company!(user)
+
+    # Seed the next allocatable sequence near the maximum.
+    Repo.insert!(%InvoiceCounter{
+      company_id: company.id,
+      next_seq: 9_999_999_998
+    })
+
+    # Should get 9,999,999,998
+    assert Invoicing.next_invoice_number!(company.id) == "09999999998"
+    # Should get 9,999,999,999
+    assert Invoicing.next_invoice_number!(company.id) == "09999999999"
+  end
+
+  test "advances past existing invoice numbers when the counter is stale" do
+    user = create_user!()
+    company = create_company!(user)
+
+    _existing_invoice = insert_invoice!(user, company, %{number: "00000000005"})
+
+    Repo.insert!(%InvoiceCounter{
+      company_id: company.id,
+      next_seq: 2
+    })
+
+    assert Invoicing.next_invoice_number!(company.id) == "00000000006"
+  end
+
+  test "raises error when counter overflows maximum" do
+    user = create_user!()
+    company = create_company!(user)
+
+    # Set counter to exceed maximum (next_seq = 10,000,000,001)
+    Repo.insert!(%InvoiceCounter{
+      company_id: company.id,
+      next_seq: 10_000_000_001
+    })
+
+    # Should raise error because seq = next_seq - 1 = 10,000,000,000 > 9,999,999,999
+    assert_raise RuntimeError, ~r/invoice number counter overflow/, fn ->
+      Invoicing.next_invoice_number!(company.id)
+    end
+  end
+
+  test "raises descriptive error with company information on overflow" do
+    user = create_user!()
+    company = create_company!(user)
+
+    Repo.insert!(%InvoiceCounter{
+      company_id: company.id,
+      next_seq: 10_000_000_001
+    })
+
+    assert_raise RuntimeError,
+                 ~r/maximum invoice number \(9,999,999,999\) exceeded for company/,
+                 fn ->
+                   Invoicing.next_invoice_number!(company.id)
+                 end
   end
 end

@@ -1,0 +1,111 @@
+<section class="space-y-8">
+  <.workspace_page_header
+    title={gettext("Invoices")}
+    support_text={gettext("Track draft, issued, and paid invoices from one calm ledger view.")}
+  >
+    <:primary_action>
+      <a
+        href="/invoices/new"
+        class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+      >
+        <%= gettext("New Invoice") %>
+      </a>
+    </:primary_action>
+  </.workspace_page_header>
+
+  <div class={["grid gap-6", if(@invoices != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
+    <div class="space-y-4">
+      <.flash_error flash={@flash} />
+
+      <%= if Enum.empty?(@invoices) do %>
+        <.workspace_empty_state
+          title={gettext("No invoices yet.")}
+          support_text={gettext("Create your first invoice when your buyer and company details are ready.")}
+          action_label={gettext("New Invoice")}
+          action_href="/invoices/new"
+        />
+      <% else %>
+        <div class="overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <div class="overflow-x-auto overflow-y-visible">
+            <table class="min-w-full divide-y divide-stone-200">
+              <thead class="bg-stone-50/80">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Number") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Buyer") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Issue date") %>
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Total") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Status") %>
+                  </th>
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Actions") %>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200 bg-white">
+                <%= for invoice <- @invoices do %>
+                  <% actions = row_actions(invoice) %>
+                  <tr id={"invoice-#{invoice.id}"} class="align-top transition hover:bg-stone-50/70">
+                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                      <a href={"/invoices/#{invoice.id}"} class="transition hover:text-sky-700">
+                        <%= invoice.number || gettext("Draft") %>
+                      </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= invoice.buyer_name %>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= issue_date_text(invoice.issue_date) %>
+                    </td>
+                    <td class="px-6 py-4 text-right text-sm font-medium text-slate-900">
+                      <%= EdocApiWeb.CoreComponents.format_money(invoice, :total) %>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                      <%= EdocApiWeb.CoreComponents.status_badge(invoice.status) %>
+                    </td>
+                    <td class="relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right">
+                      <.workspace_row_actions
+                        primary={actions.primary}
+                        secondary={actions.secondary}
+                        desktop_mode={:overflow}
+                        mobile_mode={:overflow}
+                      />
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <.workspace_support_panel
+      :if={@invoices != []}
+      heading={gettext("Overview")}
+    >
+      <dl class="space-y-3 text-sm text-slate-600">
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Draft invoices") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @invoice_summary.draft %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Issued invoices") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @invoice_summary.issued %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Paid invoices") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @invoice_summary.paid %></dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
+</section>

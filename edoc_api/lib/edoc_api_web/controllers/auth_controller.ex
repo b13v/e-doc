@@ -1,54 +1,205 @@
 defmodule EdocApiWeb.AuthController do
   use EdocApiWeb, :controller
 
+  require Logger
+
   alias EdocApi.Accounts
   alias EdocApi.Auth.Token
+  alias EdocApi.EmailVerification
+  alias EdocApi.EmailSender
+  alias EdocApiWeb.ErrorMapper
 
   def signup(conn, params) do
     with {:ok, user} <- Accounts.register_user(params),
-         {:ok, token, _claims} <- Token.generate_access_token(user.id) do
-      json(conn, %{
-        user: %{id: user.id, email: user.email},
-        access_token: token
+         {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
+         {:ok, _} <- EmailSender.send_verification_email(user.email, token) do
+      # Avoid leaking verification token in the API response
+      :ok
+
+      conn
+      |> put_status(:created)
+      |> json(%{
+        user: %{id: user.id, email: user.email, verified: false},
+        message: "Verification email sent. Please check your email."
       })
     else
       {:error, %Ecto.Changeset{} = changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: errors_to_map(changeset)})
+        if duplicate_email_error?(changeset) do
+          conn
+          |> put_status(:accepted)
+          |> json(%{
+            message: "If the email is eligible, verification instructions will be sent shortly."
+          })
+        else
+          ErrorMapper.validation(conn, changeset)
+        end
+
+      {:error, :validation, changeset: %Ecto.Changeset{} = changeset} ->
+        if duplicate_email_error?(changeset) do
+          conn
+          |> put_status(:accepted)
+          |> json(%{
+            message: "If the email is eligible, verification instructions will be sent shortly."
+          })
+        else
+          ErrorMapper.validation(conn, changeset)
+        end
 
       {:error, reason} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "signup_failed", reason: inspect(reason)})
+        Logger.warning("Signup failed: #{inspect(reason)}")
+
+        ErrorMapper.unprocessable(conn, "signup_failed", %{
+          message: "Unable to create account. Please try again."
+        })
     end
   end
 
   def login(conn, %{"email" => email, "password" => password}) do
-    with {:ok, user} <- Accounts.authenticate_user(email, password),
-         {:ok, token, _claims} <- Token.generate_access_token(user.id) do
-      json(conn, %{
-        user: %{id: user.id, email: user.email},
-        access_token: token
-      })
-    else
-      {:error, :invalid_credentials} ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "invalid_credentials"})
+    case Accounts.authenticate_user(email, password) do
+      {:ok, user} ->
+        if user.verified_at != nil do
+          with {:ok, access_token, _claims} <- Token.generate_access_token(user.id),
+               {:ok, refresh_token} <- Accounts.issue_refresh_token(user.id) do
+            conn
+            |> json(%{
+              user: %{id: user.id, email: user.email, verified: true},
+              access_token: access_token,
+              refresh_token: refresh_token
+            })
+          else
+            _ ->
+              ErrorMapper.unprocessable(conn, "login_failed", %{
+                message: "Unable to complete login. Please try again."
+              })
+          end
+        else
+          ErrorMapper.unauthorized(conn, "email_not_verified", %{
+            message: "Please verify your email before logging in.",
+            verified: false
+          })
+        end
 
-      _ ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "login_failed"})
+      {:error, :business_rule, %{rule: :invalid_credentials}} ->
+        ErrorMapper.unauthorized(conn, "invalid_credentials")
+
+      {:error, :business_rule, %{rule: :account_locked}} ->
+        ErrorMapper.unauthorized(conn, "invalid_credentials")
     end
   end
 
-  defp errors_to_map(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {k, v}, acc ->
-        String.replace(acc, "%{#{k}}", to_string(v))
-      end)
+  def refresh(conn, %{"refresh_token" => refresh_token}) do
+    case Accounts.rotate_refresh_token(refresh_token) do
+      {:ok, user, replacement_refresh_token} ->
+        if user.verified_at != nil do
+          with {:ok, access_token, _claims} <- Token.generate_access_token(user.id) do
+            json(conn, %{
+              user: %{id: user.id, email: user.email, verified: true},
+              access_token: access_token,
+              refresh_token: replacement_refresh_token
+            })
+          else
+            _ -> ErrorMapper.unprocessable(conn, "refresh_failed")
+          end
+        else
+          ErrorMapper.unauthorized(conn, "email_not_verified", %{
+            message: "Please verify your email before logging in.",
+            verified: false
+          })
+        end
+
+      {:error, :invalid_refresh_token} ->
+        ErrorMapper.unauthorized(conn, "invalid_refresh_token")
+
+      {:error, :refresh_token_issue_failed} ->
+        ErrorMapper.unprocessable(conn, "refresh_failed")
+    end
+  end
+
+  def refresh(conn, _params) do
+    ErrorMapper.bad_request(conn, "refresh_token_required")
+  end
+
+  def verify_email(conn, %{"token" => token}) do
+    case EmailVerification.verify_token(token) do
+      {:ok, _user_id} ->
+        json(conn, %{
+          success: true,
+          message: "Email verified successfully",
+          verified: true
+        })
+
+      {:error, :already_verified} ->
+        json(conn, %{
+          success: true,
+          message: "Email was already verified",
+          verified: true
+        })
+
+      {:error, :invalid_or_expired_token} ->
+        ErrorMapper.unauthorized(conn, "invalid_or_expired_token", %{
+          message: "Invalid or expired verification token"
+        })
+    end
+  end
+
+  def resend_verification(conn, %{"email" => email}) do
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        resend_verification_generic_response(conn)
+
+      user ->
+        if user.verified_at != nil do
+          resend_verification_generic_response(conn)
+        else
+          case EmailVerification.can_resend?(user.id) do
+            {:ok, :allowed} ->
+              with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
+                   {:ok, _} <- EmailSender.send_verification_email(user.email, token) do
+                resend_verification_generic_response(conn)
+              else
+                {:error, reason} ->
+                  Logger.warning("Verification resend failed: #{inspect(reason)}")
+                  resend_verification_generic_response(conn)
+              end
+
+            {:error, :rate_limited} ->
+              resend_verification_generic_response(conn)
+          end
+        end
+    end
+  end
+
+  def auth_status(conn, _params) do
+    if conn.assigns.current_user do
+      user = conn.assigns.current_user
+      verified = Accounts.user_verified?(user.id)
+
+      json(conn, %{
+        authenticated: true,
+        user_id: user.id,
+        email: user.email,
+        verified: verified,
+        company_setup: user.company != nil
+      })
+    else
+      json(conn, %{
+        authenticated: false
+      })
+    end
+  end
+
+  defp duplicate_email_error?(%Ecto.Changeset{} = changeset) do
+    Enum.any?(changeset.errors, fn
+      {:email, {_msg, opts}} -> opts[:constraint] == :unique
+      _ -> false
     end)
+  end
+
+  defp resend_verification_generic_response(conn) do
+    json(conn, %{
+      success: true,
+      message:
+        "If the account exists and is not verified, verification instructions will be sent."
+    })
   end
 end

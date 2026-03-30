@@ -1,0 +1,430 @@
+<style>
+  .invoice-doc { font-family: Arial, sans-serif; font-size: 12px; color: #000; line-height: 1.35; position: relative; }
+  .invoice-doc .note { font-size: 10px; margin-bottom: 10px; }
+  .invoice-doc h1 { font-size: 16px; margin: 10px 0; }
+  .invoice-doc table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .invoice-doc th,
+  .invoice-doc td { border: 1px solid #000; padding: 6px; }
+  .invoice-doc th { background: #f2f2f2; }
+  .invoice-doc .transparent-row td {
+    border: none !important;
+    background: transparent !important;
+  }
+  .invoice-doc .right { text-align: right; }
+  .invoice-doc .center { text-align: center; }
+  .invoice-doc .small { font-size: 11px; }
+  .invoice-doc .no-border td { border: none; }
+  .invoice-doc .sign-row { margin-top: 30px; display: flex; gap: 40px; align-items: flex-end; }
+  .invoice-doc .sign { width: 60%; }
+  .invoice-doc .line { border-bottom: 1px solid #000; height: 18px; }
+  .invoice-doc .caption { font-size: 11px; margin-top: 4px; }
+  .invoice-doc .stamp {
+    width: 140px;
+    height: 140px;
+    border: 2px dashed #444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    text-align: center;
+  }
+  .invoice-doc .hr-strong {
+    border: none;
+    border-top: 2px solid #000;
+    margin: 10px 0;
+  }
+  .invoice-doc .nav-bar {
+    background: #f5f5f5;
+    padding: 10px;
+    margin: -20px -20px 20px -20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .invoice-doc .nav-links { display: flex; gap: 15px; }
+  .invoice-doc .nav-links a { color: #0066cc; text-decoration: none; font-weight: 500; }
+  .invoice-doc .nav-links a:hover { text-decoration: underline; }
+  .invoice-doc .btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    border: none;
+    cursor: pointer;
+  }
+  .invoice-doc .send-menu {
+    position: relative;
+  }
+  .invoice-doc .send-menu summary {
+    list-style: none;
+  }
+  .invoice-doc .send-menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .invoice-doc .send-menu-item {
+    border: none;
+    cursor: pointer;
+  }
+  .invoice-doc .send-menu-form {
+    margin: 0;
+  }
+  .invoice-doc .send-panel {
+    margin-bottom: 16px;
+  }
+  .invoice-doc .paid-watermark {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-24deg);
+    font-size: 54px;
+    font-weight: 700;
+    color: rgba(185, 28, 28, 0.20);
+    letter-spacing: 2px;
+    pointer-events: none;
+    z-index: 20;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+</style>
+
+<% c = @invoice.company || %{} %>
+<% acc = @invoice.bank_account %>
+<% snap = @invoice.bank_snapshot %>
+<% contract = @invoice.contract %>
+<% items = @invoice.items || [] %>
+<% items_count = length(items) %>
+<% vat_rate = @invoice.vat_rate || 0 %>
+<% vat_multiplier = Decimal.add(Decimal.new(1), Decimal.div(Decimal.new(vat_rate), Decimal.new(100))) %>
+<% issued = EdocApi.InvoiceStatus.is_issued?(@invoice.status) %>
+<% bank = if acc, do: acc.bank, else: nil %>
+<% kbe = @invoice.kbe_code || if(acc, do: acc.kbe_code, else: nil) %>
+<% knp = @invoice.knp_code || if(acc, do: acc.knp_code, else: nil) %>
+<% bank_name = if issued, do: (snap && snap.bank_name) || "—", else: (bank && bank.name) || "—" %>
+<% bank_bic = if issued, do: (snap && snap.bic) || "—", else: (bank && bank.bic) || "—" %>
+<% kbe_code = if issued, do: (snap && snap.kbe) || "—", else: (kbe && kbe.code) || "—" %>
+<% knp_code = if issued, do: (snap && snap.knp) || "—", else: (knp && knp.code) || "—" %>
+<% iban = if issued, do: (snap && snap.iban) || "—", else: (acc && acc.iban) || @invoice.seller_iban || "—" %>
+<% seller_legal_form =
+  case Map.get(c, :legal_form) do
+    value when is_binary(value) and value != "" -> EdocApi.LegalForms.display(value)
+    _ -> nil
+  end %>
+<% buyer_legal_form =
+  cond do
+    contract && Map.get(contract, :buyer) && is_binary(Map.get(contract.buyer, :legal_form)) &&
+        Map.get(contract.buyer, :legal_form) != "" ->
+      EdocApi.LegalForms.display(contract.buyer.legal_form)
+
+    contract && is_binary(Map.get(contract, :buyer_legal_form)) &&
+        Map.get(contract, :buyer_legal_form) != "" ->
+      EdocApi.LegalForms.display(contract.buyer_legal_form)
+
+    true ->
+      nil
+  end %>
+<% buyer_city =
+  cond do
+    contract && Map.get(contract, :buyer) && is_binary(Map.get(contract.buyer, :city)) &&
+        String.trim(Map.get(contract.buyer, :city)) != "" ->
+      String.trim(contract.buyer.city)
+
+    true ->
+      nil
+  end %>
+
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("Invoice %{number}", number: @invoice.number)}
+        title_class="text-2xl"
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href="/invoices"
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Back to Invoices") %>
+          </a>
+          <%= if @invoice.status == "draft" do %>
+            <a
+              href={"/invoices/#{@invoice.id}/edit"}
+              class="inline-flex items-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+            >
+              <%= gettext("Edit") %>
+            </a>
+            <form
+              action={"/invoices/#{@invoice.id}/issue"}
+              method="post"
+              onsubmit={"return confirm(#{Jason.encode!(gettext("Issue this invoice?"))})"}
+            >
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              >
+                <%= gettext("Issue") %>
+              </button>
+            </form>
+          <% end %>
+          <%= if @invoice.status == "issued" do %>
+            <form
+              action={"/invoices/#{@invoice.id}/pay"}
+              method="post"
+              onsubmit={"return confirm(#{Jason.encode!(gettext("Mark this invoice as paid?"))})"}
+            >
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              >
+                <%= gettext("Mark as Paid") %>
+              </button>
+            </form>
+          <% end %>
+          <%= if not EdocApi.InvoiceStatus.is_draft?(@invoice) do %>
+            <details
+              class="send-menu"
+              data-send-menu-root
+              ontoggle="window.positionWorkspaceSendMenu && window.positionWorkspaceSendMenu(this)"
+            >
+              <summary class="inline-flex cursor-pointer list-none items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
+                <%= gettext("Send") %>
+              </summary>
+              <div
+                data-send-menu-panel
+                class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+              >
+                <button
+                  type="button"
+                  class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                  hx-get={"/documents/invoice/#{@invoice.id}/send/email"}
+                  hx-target={"#invoice-send-panel-#{@invoice.id}"}
+                  hx-swap="innerHTML"
+                >
+                  <%= gettext("Email") %>
+                </button>
+                <form action={"/documents/invoice/#{@invoice.id}/share/whatsapp"} method="post" class="send-menu-form">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"><%= gettext("WhatsApp") %></button>
+                </form>
+                <form action={"/documents/invoice/#{@invoice.id}/share/telegram"} method="post" class="send-menu-form">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"><%= gettext("Telegram") %></button>
+                </form>
+              </div>
+            </details>
+          <% end %>
+          <a
+            href={"/invoices/#{@invoice.id}/pdf"}
+            target="_blank"
+            class="inline-flex items-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          >
+            <%= gettext("Download PDF") %>
+          </a>
+        </:primary_action>
+      </.workspace_page_header>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
+          </div>
+
+          <div id={"invoice-send-panel-#{@invoice.id}"} class="send-panel"></div>
+
+          <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
+            <div class="invoice-doc min-w-[720px]">
+              <%= if EdocApi.InvoiceStatus.is_paid?(@invoice) do %>
+                <div class="paid-watermark">Төлеген - Оплачено</div>
+              <% end %>
+
+  <div class="note">
+    Внимание! Оплата данного счета означает согласие с условиями поставки товара.
+    <strong>Уведомление об оплате обязательно.</strong> Поставка товара осуществляется при наличии доверенности и документов, удостоверяющих личность.
+  </div>
+
+  <table style="width:100%; border-collapse: collapse; margin-bottom: 12px;" class="small">
+    <tr>
+      <td style="border:1px solid #000; padding:6px;" colspan="1">
+        <strong>Бенефициар:</strong><br />
+        <%= if seller_legal_form, do: seller_legal_form <> " " %><%= c.name || @invoice.seller_name %><br />
+        БИН: <%= c.bin_iin || @invoice.seller_bin_iin %>
+      </td>
+
+      <td style="border:1px solid #000; padding:6px;">
+        <strong>ИИК</strong><br />
+        <%= iban %>
+      </td>
+
+      <td style="border:1px solid #000; padding:6px; width:60px;">
+        <strong>КБе</strong><br />
+        <%= kbe_code %>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="border:1px solid #000; padding:6px;">
+        <strong>Банк бенефициара:</strong><br />
+        <%= bank_name %>
+      </td>
+
+      <td style="border:1px solid #000; padding:6px;">
+        <strong>БИК</strong><br />
+        <%= bank_bic %>
+      </td>
+
+      <td style="border:1px solid #000; padding:6px;">
+        <strong>КНП</strong><br />
+        <%= knp_code %>
+      </td>
+    </tr>
+  </table>
+
+  <h1>Счет на оплату № <%= @invoice.number %> от <%= EdocApiWeb.ContractHTML.fmt_date(@invoice.issue_date) %></h1>
+  <hr class="hr-strong" />
+
+  <table class="no-border">
+    <tr>
+      <td><strong>Поставщик:</strong></td>
+      <td>
+        БИН/ИИН <%= @invoice.seller_bin_iin %>,
+        <%= if seller_legal_form, do: seller_legal_form <> " " %><%= @invoice.seller_name %>,
+        Республика Казахстан,
+        <%= @invoice.seller_address %>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Покупатель:</strong></td>
+      <td>
+        БИН/ИИН <%= @invoice.buyer_bin_iin %>,
+        <%= if buyer_legal_form, do: buyer_legal_form <> " " %><%= @invoice.buyer_name %><%= if buyer_city, do: ", Республика Казахстан, г. " <> buyer_city %>,
+        <%= @invoice.buyer_address %>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Основание:</strong></td>
+      <td>
+        <%= if contract do %>
+          Договор № <%= contract.number %> от <%= EdocApiWeb.ContractHTML.fmt_date(contract.issue_date) %>
+        <% else %>
+          Без договора
+        <% end %>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Дата окончания:</strong></td>
+      <td><%= if @invoice.due_date, do: EdocApiWeb.ContractHTML.fmt_date(@invoice.due_date), else: "Без окончания" %></td>
+    </tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="center">№</th>
+        <th>Наименование</th>
+        <th class="center">Кол-во</th>
+        <th class="center">Ед.</th>
+        <th class="right">Цена</th>
+        <th class="right">Сумма</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= for {item, idx} <- Enum.with_index(items, 1) do %>
+        <% unit_price = if is_struct(item.unit_price, Decimal), do: item.unit_price, else: Decimal.new(item.unit_price || 0) %>
+        <% amount = if is_struct(item.amount, Decimal), do: item.amount, else: Decimal.new(item.amount || 0) %>
+        <% unit_price_with_vat = Decimal.mult(unit_price, vat_multiplier) |> Decimal.round(2) %>
+        <% amount_with_vat = Decimal.mult(amount, vat_multiplier) |> Decimal.round(2) %>
+        <tr>
+          <td class="center"><%= idx %></td>
+          <td><%= item.name %></td>
+          <td class="center"><%= item.qty %></td>
+          <td class="center"><%= item.code || "—" %></td>
+          <td class="right"><%= EdocApiWeb.ContractHTML.money(unit_price_with_vat) %></td>
+          <td class="right"><%= EdocApiWeb.ContractHTML.money(amount_with_vat) %></td>
+        </tr>
+      <% end %>
+
+      <%= if items_count == 0 do %>
+        <tr>
+          <td class="center">—</td>
+          <td>—</td>
+          <td class="center">—</td>
+          <td class="center">—</td>
+          <td class="right">—</td>
+          <td class="right">—</td>
+        </tr>
+      <% end %>
+
+      <tr class="transparent-row">
+        <td colspan="4"></td>
+        <td class="right"><strong>Итого:</strong></td>
+        <td class="right"><strong><%= EdocApiWeb.ContractHTML.money(@invoice.total) %></strong></td>
+      </tr>
+
+      <tr class="transparent-row">
+        <td colspan="4"></td>
+        <td class="right"><strong>В том числе НДС:</strong></td>
+        <td class="right"><%= EdocApiWeb.ContractHTML.money(@invoice.vat) %></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="small">
+    Всего наименований: <%= items_count %>, на сумму <%= EdocApiWeb.ContractHTML.money(@invoice.total) %> <%= @invoice.currency %>
+  </p>
+  <p class="small">
+    <strong>Всего к оплате: <%= EdocApiWeb.InvoiceHTML.amount_words_kzt(@invoice.total) %></strong>
+  </p>
+  <hr class="hr-strong" />
+
+  <div class="sign-row">
+    <div class="sign">
+      <div>Руководитель: <strong><%= c.representative_name || "____________" %></strong></div>
+      <div class="line"></div>
+      <div class="caption">подпись</div>
+    </div>
+    <div class="stamp">
+      М.П.<br />Печать
+    </div>
+  </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Status") %></dt>
+          <dd class="mt-2"><%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Buyer") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @invoice.buyer_name %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Issue date") %></dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= EdocApiWeb.ContractHTML.fmt_date(@invoice.issue_date) %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Total") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= EdocApiWeb.CoreComponents.format_money(@invoice, :total) %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Contract") %></dt>
+          <dd class="mt-1 text-sm text-slate-900">
+            <%= if contract, do: contract.number, else: "—" %>
+          </dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
+</div>

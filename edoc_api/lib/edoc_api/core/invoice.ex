@@ -1,6 +1,13 @@
 defmodule EdocApi.Core.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
+
+  alias EdocApi.Repo
+  alias EdocApi.Core.{Contract, CompanyBankAccount, KbeCode, KnpCode}
+  alias EdocApi.InvoiceStatus
+  alias EdocApi.Validators.{BinIin, Iban, String}
+  alias EdocApi.{Currencies, VatRates}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -31,6 +38,11 @@ defmodule EdocApi.Core.Invoice do
     has_many(:items, EdocApi.Core.InvoiceItem, on_replace: :delete)
     belongs_to(:company, EdocApi.Core.Company)
     belongs_to(:user, EdocApi.Accounts.User)
+    belongs_to(:bank_account, EdocApi.Core.CompanyBankAccount)
+    belongs_to(:kbe_code, KbeCode)
+    belongs_to(:knp_code, KnpCode)
+    belongs_to(:contract, EdocApi.Core.Contract)
+    has_one(:bank_snapshot, EdocApi.Core.InvoiceBankSnapshot)
 
     timestamps(type: :utc_datetime)
   end
@@ -42,17 +54,27 @@ defmodule EdocApi.Core.Invoice do
     seller_name
     seller_bin_iin
     seller_address
-    seller_iban
     buyer_name
     buyer_bin_iin
     buyer_address
     vat_rate
     )a
 
-  @optional_fields ~w(number due_date subtotal total vat status)a
+  @optional_fields ~w(
+    number
+    due_date
+    subtotal
+    total
+    vat
+    status
+    bank_account_id
+    kbe_code_id
+    knp_code_id
+    contract_id
+    seller_iban
+  )a
 
-  @allowed_statuses ~w(draft issued paid void)
-  @allowed_currencies ~w(KZT USD EUR RUB)
+  @allowed_statuses InvoiceStatus.all()
 
   @doc """
   user_id/company_id не принимаем из attrs.
@@ -65,73 +87,147 @@ defmodule EdocApi.Core.Invoice do
     |> put_change(:company_id, company_id)
     |> validate_required(@required_fields ++ [:user_id, :company_id])
     |> normalize_fields()
-    |> put_default(:status, "draft")
-    |> validate_inclusion(:vat_rate, [0, 16], message: "VAT rate must be 0 or 16")
+    |> put_default(:status, InvoiceStatus.default())
+    |> VatRates.validate_rate(:vat_rate, "KZ")
     |> compute_totals()
     |> validate_number(:total, greater_than: 0)
+    |> validate_number(:subtotal, greater_than_or_equal_to: 0)
+    |> validate_number(:vat, greater_than_or_equal_to: 0)
     |> validate_inclusion(:status, @allowed_statuses)
-    |> validate_inclusion(:currency, @allowed_currencies)
+    |> validate_inclusion(:currency, Currencies.supported_currencies())
     |> validate_number_optional()
     |> validate_length(:service_name, min: 3, max: 255)
-    |> validate_bin_iin(:seller_bin_iin)
-    |> validate_bin_iin(:buyer_bin_iin)
-    |> validate_iban(:seller_iban)
+    |> validate_date_not_in_future(:issue_date)
+    |> validate_due_date_after_issue_date()
+    |> BinIin.validate(:seller_bin_iin)
+    |> BinIin.validate(:buyer_bin_iin)
+    |> Iban.validate(:seller_iban)
     |> unique_constraint(:number, name: :invoices_user_id_number_index)
+    |> foreign_key_constraint(:contract_id)
+    |> foreign_key_constraint(:kbe_code_id)
+    |> foreign_key_constraint(:knp_code_id)
+    |> prepare_changes(&validate_contract_ownership/1)
+    |> prepare_changes(&validate_bank_account_ownership/1)
+    |> prepare_changes(&derive_seller_iban_from_bank_account/1)
+  end
+
+  defp validate_date_not_in_future(changeset, field) do
+    date = get_field(changeset, field)
+
+    if date && Date.compare(date, Date.utc_today()) == :gt do
+      add_error(changeset, field, "cannot be in the future")
+    else
+      changeset
+    end
+  end
+
+  defp validate_due_date_after_issue_date(changeset) do
+    due = get_field(changeset, :due_date)
+    issue = get_field(changeset, :issue_date)
+
+    if due && issue && Date.compare(due, issue) == :lt do
+      add_error(changeset, :due_date, "must be after issue date")
+    else
+      changeset
+    end
   end
 
   defp normalize_fields(changeset) do
     changeset
-    |> update_change(:number, &trim_nil/1)
-    |> update_change(:service_name, &trim_nil/1)
-    |> update_change(:currency, &normalize_currency/1)
-    |> update_change(:status, &normalize_status/1)
-    |> update_change(:seller_name, &trim_nil/1)
-    |> update_change(:seller_address, &trim_nil/1)
-    |> update_change(:seller_bin_iin, &digits_only/1)
-    |> update_change(:seller_iban, &normalize_iban/1)
-    |> update_change(:buyer_name, &trim_nil/1)
-    |> update_change(:buyer_address, &trim_nil/1)
-    |> update_change(:buyer_bin_iin, &digits_only/1)
+    |> update_change(:number, &String.normalize/1)
+    |> update_change(:service_name, &String.normalize/1)
+    |> update_change(:currency, &String.upcase/1)
+    |> update_change(:status, &String.downcase/1)
+    |> update_change(:seller_name, &String.normalize/1)
+    |> update_change(:seller_address, &String.normalize/1)
+    |> update_change(:seller_bin_iin, &BinIin.normalize/1)
+    |> update_change(:seller_iban, &Iban.normalize/1)
+    |> update_change(:buyer_name, &String.normalize/1)
+    |> update_change(:buyer_address, &String.normalize/1)
+    |> update_change(:buyer_bin_iin, &BinIin.normalize/1)
   end
 
-  defp trim_nil(nil), do: nil
-  # defp trim_nil(v) when is_binary(v), do: String.trim(v)
-  defp trim_nil(v) when is_binary(v) do
-    v = String.trim(v)
-    if v == "", do: nil, else: v
-  end
-
-  defp digits_only(nil), do: nil
-  defp digits_only(v) when is_binary(v), do: String.replace(v, ~r/\D+/, "")
-
-  defp normalize_iban(nil), do: nil
-
-  defp normalize_iban(v) when is_binary(v),
-    do: v |> String.replace(~r/\s+/, "") |> String.upcase()
-
-  defp normalize_currency(nil), do: nil
-  defp normalize_currency(v) when is_binary(v), do: v |> String.trim() |> String.upcase()
-
-  defp normalize_status(nil), do: nil
-  defp normalize_status(v) when is_binary(v), do: v |> String.trim() |> String.downcase()
-
-  defp validate_bin_iin(changeset, field) do
-    changeset
-    |> validate_length(field, is: 12)
-    |> validate_format(field, ~r/^\d{12}$/, message: "must contain exactly 12 digits")
-  end
-
-  defp validate_iban(changeset, field) do
-    changeset
-    |> validate_length(field, min: 15, max: 34)
-    |> validate_format(field, ~r/^[A-Z]{2}\d{2}[A-Z0-9]+$/, message: "invalid IBAN format")
-  end
+  # Invoice number format: exactly 11 digits (e.g., 00000000001)
+  @invoice_number_format ~r/^\d{11}$/
 
   defp validate_number_optional(changeset) do
     case get_field(changeset, :number) do
-      nil -> changeset
-      "" -> add_error(changeset, :number, "can't be blank")
-      _ -> validate_length(changeset, :number, min: 1, max: 32)
+      nil ->
+        changeset
+
+      "" ->
+        add_error(changeset, :number, "can't be blank")
+
+      _number ->
+        changeset
+        |> validate_length(:number, is: 11)
+        |> validate_format(:number, @invoice_number_format,
+          message: "must be exactly 11 digits (e.g., 00000000001)"
+        )
+    end
+  end
+
+  defp validate_contract_ownership(changeset) do
+    contract_id = get_change(changeset, :contract_id)
+    company_id = get_field(changeset, :company_id)
+
+    cond do
+      is_nil(contract_id) or is_nil(company_id) ->
+        changeset
+
+      true ->
+        query =
+          from(c in Contract,
+            where: c.id == ^contract_id and c.company_id == ^company_id,
+            select: count(c.id)
+          )
+
+        case Repo.one(query) do
+          0 -> add_error(changeset, :contract_id, "does not belong to company")
+          _count -> changeset
+        end
+    end
+  end
+
+  defp validate_bank_account_ownership(changeset) do
+    bank_account_id = get_change(changeset, :bank_account_id)
+    company_id = get_field(changeset, :company_id)
+
+    cond do
+      is_nil(bank_account_id) or is_nil(company_id) ->
+        changeset
+
+      true ->
+        query =
+          from(a in CompanyBankAccount,
+            where: a.id == ^bank_account_id and a.company_id == ^company_id,
+            select: count(a.id)
+          )
+
+        case Repo.one(query) do
+          0 -> add_error(changeset, :bank_account_id, "does not belong to company")
+          _count -> changeset
+        end
+    end
+  end
+
+  defp derive_seller_iban_from_bank_account(changeset) do
+    bank_account_id =
+      get_change(changeset, :bank_account_id) || get_field(changeset, :bank_account_id)
+
+    cond do
+      is_nil(bank_account_id) ->
+        changeset
+
+      true ->
+        case Repo.get(CompanyBankAccount, bank_account_id) do
+          %CompanyBankAccount{iban: iban} ->
+            put_change(changeset, :seller_iban, iban)
+
+          _ ->
+            # Bank account not found - let other validations handle the error
+            changeset
+        end
     end
   end
 
@@ -146,18 +242,11 @@ defmodule EdocApi.Core.Invoice do
   defp compute_totals(changeset) do
     subtotal = get_field(changeset, :subtotal)
     vat_rate = get_field(changeset, :vat_rate)
+    currency = get_field(changeset, :currency) || "KZT"
 
     if is_struct(subtotal, Decimal) and is_integer(vat_rate) do
-      vat =
-        subtotal
-        |> Decimal.mult(Decimal.new(vat_rate))
-        |> Decimal.div(Decimal.new(100))
-        |> Decimal.round(2)
-
-      total =
-        subtotal
-        |> Decimal.add(vat)
-        |> Decimal.round(2)
+      vat = VatRates.calculate_vat(subtotal, vat_rate, currency)
+      total = VatRates.calculate_total(subtotal, vat, currency)
 
       changeset
       |> put_change(:vat, vat)

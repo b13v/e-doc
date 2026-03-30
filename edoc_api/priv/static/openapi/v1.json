@@ -1,0 +1,586 @@
+{
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Generated from Phoenix router. See plans/api_versioning_and_deprecation_policy.md for lifecycle policy.",
+    "title": "Edoc API",
+    "version": "v1"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "post_v1_auth_login",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "POST /v1/auth/login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "post_v1_auth_refresh",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "POST /v1/auth/refresh",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/resend-verification": {
+      "post": {
+        "operationId": "post_v1_auth_resend-verification",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "POST /v1/auth/resend-verification",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/signup": {
+      "post": {
+        "operationId": "post_v1_auth_signup",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "POST /v1/auth/signup",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/status": {
+      "get": {
+        "operationId": "get_v1_auth_status",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/auth/status",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/verify": {
+      "get": {
+        "operationId": "get_v1_auth_verify",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "GET /v1/auth/verify",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/buyers": {
+      "get": {
+        "operationId": "get_v1_buyers",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/buyers",
+        "tags": [
+          "buyers"
+        ]
+      },
+      "post": {
+        "operationId": "post_v1_buyers",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/buyers",
+        "tags": [
+          "buyers"
+        ]
+      }
+    },
+    "/v1/buyers/{id}": {
+      "delete": {
+        "operationId": "delete_v1_buyers_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "DELETE /v1/buyers/:id",
+        "tags": [
+          "buyers"
+        ]
+      },
+      "get": {
+        "operationId": "get_v1_buyers_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/buyers/:id",
+        "tags": [
+          "buyers"
+        ]
+      },
+      "put": {
+        "operationId": "put_v1_buyers_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "PUT /v1/buyers/:id",
+        "tags": [
+          "buyers"
+        ]
+      }
+    },
+    "/v1/company": {
+      "get": {
+        "operationId": "get_v1_company",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/company",
+        "tags": [
+          "company"
+        ]
+      },
+      "put": {
+        "operationId": "put_v1_company",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "PUT /v1/company",
+        "tags": [
+          "company"
+        ]
+      }
+    },
+    "/v1/company/bank-accounts": {
+      "get": {
+        "operationId": "get_v1_company_bank-accounts",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/company/bank-accounts",
+        "tags": [
+          "company"
+        ]
+      },
+      "post": {
+        "operationId": "post_v1_company_bank-accounts",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/company/bank-accounts",
+        "tags": [
+          "company"
+        ]
+      }
+    },
+    "/v1/company/bank-accounts/{id}/set-default": {
+      "put": {
+        "operationId": "put_v1_company_bank-accounts_by_id_set-default",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "PUT /v1/company/bank-accounts/:id/set-default",
+        "tags": [
+          "company"
+        ]
+      }
+    },
+    "/v1/contracts": {
+      "get": {
+        "operationId": "get_v1_contracts",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/contracts",
+        "tags": [
+          "contracts"
+        ]
+      },
+      "post": {
+        "operationId": "post_v1_contracts",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/contracts",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/v1/contracts/{id}": {
+      "get": {
+        "operationId": "get_v1_contracts_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/contracts/:id",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/v1/contracts/{id}/issue": {
+      "post": {
+        "operationId": "post_v1_contracts_by_id_issue",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/contracts/:id/issue",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/v1/contracts/{id}/pdf": {
+      "get": {
+        "operationId": "get_v1_contracts_by_id_pdf",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/contracts/:id/pdf",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/v1/dicts/banks": {
+      "get": {
+        "operationId": "get_v1_dicts_banks",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/dicts/banks",
+        "tags": [
+          "dicts"
+        ]
+      }
+    },
+    "/v1/dicts/kbe": {
+      "get": {
+        "operationId": "get_v1_dicts_kbe",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/dicts/kbe",
+        "tags": [
+          "dicts"
+        ]
+      }
+    },
+    "/v1/dicts/knp": {
+      "get": {
+        "operationId": "get_v1_dicts_knp",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/dicts/knp",
+        "tags": [
+          "dicts"
+        ]
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "operationId": "get_v1_health",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "summary": "GET /v1/health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/invoices": {
+      "get": {
+        "operationId": "get_v1_invoices",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/invoices",
+        "tags": [
+          "invoices"
+        ]
+      },
+      "post": {
+        "operationId": "post_v1_invoices",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/invoices",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/v1/invoices/{id}": {
+      "get": {
+        "operationId": "get_v1_invoices_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/invoices/:id",
+        "tags": [
+          "invoices"
+        ]
+      },
+      "put": {
+        "operationId": "put_v1_invoices_by_id",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "PUT /v1/invoices/:id",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/v1/invoices/{id}/issue": {
+      "post": {
+        "operationId": "post_v1_invoices_by_id_issue",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/invoices/:id/issue",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/v1/invoices/{id}/pay": {
+      "post": {
+        "operationId": "post_v1_invoices_by_id_pay",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "POST /v1/invoices/:id/pay",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/v1/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "get_v1_invoices_by_id_pdf",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "GET /v1/invoices/:id/pdf",
+        "tags": [
+          "invoices"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

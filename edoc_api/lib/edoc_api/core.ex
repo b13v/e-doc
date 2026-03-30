@@ -1,275 +1,357 @@
 defmodule EdocApi.Core do
   import Ecto.Query, warn: false
 
+  alias EdocApi.Companies
+  alias EdocApi.Errors
+  alias EdocApi.Invoicing
+  alias EdocApi.Payments
   alias EdocApi.Repo
+  alias EdocApi.RepoHelpers
   alias EdocApi.Core.Company
-  alias EdocApi.Core.Invoice
-  alias EdocApi.Core.InvoiceItem
-  alias EdocApi.Core.InvoiceCounter
+  alias EdocApi.Core.Contract
+  alias EdocApi.Core.ContractItem
+  alias EdocApi.Core.UnitOfMeasurement
+  alias EdocApi.ContractStatus
 
-  # ----- Companies--------
-  def get_company_by_user_id(user_id) when is_binary(user_id) do
-    Repo.get_by(Company, user_id: user_id)
-  end
+  defdelegate get_company_by_user_id(user_id), to: Companies
+  defdelegate upsert_company_for_user(user_id, attrs), to: Companies
 
-  def upsert_company_for_user(user_id, attrs) do
-    company = get_company_by_user_id(user_id) || %Company{}
+  defdelegate list_company_bank_accounts_for_user(user_id), to: Payments
+  defdelegate create_company_bank_account_for_user(user_id, attrs), to: Payments
+  defdelegate list_banks(), to: Payments
+  defdelegate list_kbe_codes(), to: Payments
+  defdelegate list_knp_codes(), to: Payments
 
-    changeset = Company.changeset(company, attrs, user_id)
-    warnings = Company.warnings_from_changeset(changeset)
-
-    case Repo.insert_or_update(changeset) do
-      {:ok, company} ->
-        {:ok, company, warnings}
-
-      {:error, changeset} ->
-        # тут будут настоящие ошибки (не warnings)
-        {:error, changeset, Company.warnings_from_changeset(changeset)}
-    end
-  end
-
-  # ----- Invoices--------
-  def get_invoice_for_user(user_id, invoice_id) do
-    Invoice
-    |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
-    |> Repo.one()
-    |> case do
-      nil -> nil
-      invoice -> Repo.preload(invoice, [:items, :company])
-    end
-  end
-
-  def list_invoices_for_user(user_id) do
-    Invoice
-    |> where([i], i.user_id == ^user_id)
-    |> order_by([i], desc: i.inserted_at)
+  def list_units_of_measurements do
+    UnitOfMeasurement
+    |> order_by([u], asc: u.symbol, asc: u.name)
     |> Repo.all()
-    |> Repo.preload([:items, :company])
   end
 
-  def issue_invoice_for_user(user_id, invoice_id) do
-    invoice =
-      Invoice
-      |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
-      |> Repo.one()
-      |> case do
-        nil -> nil
-        inv -> Repo.preload(inv, [:items, :company])
-      end
+  defdelegate get_invoice_for_user(user_id, invoice_id), to: Invoicing
+  defdelegate list_invoices_for_user(user_id, opts \\ []), to: Invoicing
+  defdelegate issue_invoice_for_user(user_id, invoice_id), to: Invoicing
+  defdelegate create_invoice_for_user(user_id, company_id, attrs), to: Invoicing
+  defdelegate next_invoice_number!(company_id), to: Invoicing
+  defdelegate mark_invoice_issued(invoice), to: Invoicing
 
-    mark_invoice_issued(invoice)
+  def list_contracts_for_user(user_id_or_struct, opts \\ [])
+
+  def list_contracts_for_user(%{id: user_id}, opts),
+    do: list_contracts_for_user(user_id, opts)
+
+  def list_contracts_for_user(user_id, opts) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        []
+
+      %Company{id: company_id} ->
+        Contract
+        |> where([c], c.company_id == ^company_id)
+        |> order_by([c],
+          desc: fragment("COALESCE(?, ?)", c.issue_date, fragment("?::date", c.inserted_at)),
+          desc: c.inserted_at
+        )
+        |> preload(:buyer)
+        |> apply_pagination(opts)
+        |> Repo.all()
+    end
   end
 
-  def create_invoice_for_user(user_id, company_id, attrs) do
-    items_attrs = Map.get(attrs, "items") || Map.get(attrs, :items) || []
+  def count_contracts_for_user(%{id: user_id}), do: count_contracts_for_user(user_id)
 
-    Repo.transaction(fn ->
-      if items_attrs == [] do
-        Repo.rollback({:error, :items_required})
-      end
+  def count_contracts_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        0
 
-      {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
+      %Company{id: company_id} ->
+        Contract
+        |> where([c], c.company_id == ^company_id)
+        |> Repo.aggregate(:count, :id)
+    end
+  end
 
-      # ✅ AUTONUMBER: если number не передан — генерим только цифры
+  def create_contract_for_user(%{id: user_id}, attrs),
+    do: create_contract_for_user(user_id, attrs)
 
-      raw_number = Map.get(attrs, "number") || Map.get(attrs, :number)
+  def create_contract_for_user(user_id, attrs, items_attrs \\ [])
+      when is_binary(user_id) and is_list(items_attrs) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        Errors.business_rule(:company_required, %{user_id: user_id})
 
-      number =
+      %Company{id: company_id} ->
+        attrs = attrs || %{}
+
+        RepoHelpers.transaction(fn ->
+          with {:ok, contract} <-
+                 %Contract{}
+                 |> Contract.changeset(attrs, company_id)
+                 |> RepoHelpers.insert_or_abort(),
+               {:ok, _} <-
+                 if(Enum.empty?(items_attrs),
+                   do: {:ok, nil},
+                   else: create_contract_items(contract, items_attrs)
+                 ) do
+            reloaded_contract = Repo.get(Contract, contract.id) |> Repo.preload(:contract_items)
+            {:ok, reloaded_contract}
+          end
+        end)
+        |> Errors.normalize()
+    end
+  end
+
+  def update_contract_for_user(user_id, contract_id, attrs, items_attrs \\ [])
+      when is_binary(user_id) and is_list(items_attrs) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        Errors.not_found(:company)
+
+      %Company{id: company_id} ->
+        contract =
+          Contract
+          |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
+          |> Repo.one()
+          |> Repo.preload(:contract_items)
+
         cond do
-          is_nil(raw_number) ->
-            next_invoice_number!(company_id)
+          is_nil(contract) ->
+            Errors.not_found(:contract)
 
-          is_binary(raw_number) and String.trim(raw_number) == "" ->
-            next_invoice_number!(company_id)
+          not ContractStatus.can_edit?(contract) ->
+            Errors.business_rule(:contract_not_editable, %{
+              contract_id: contract_id,
+              status: contract.status
+            })
 
           true ->
-            raw_number
+            contract
+            |> update_contract_with_items(attrs, items_attrs)
+            |> Errors.normalize()
         end
-
-      # ---- SELLER from Company-----
-      company = Repo.get!(Company, company_id)
-
-      seller_attrs = %{
-        "seller_name" => company.name,
-        "seller_bin_iin" => company.bin_iin,
-        "seller_address" => format_company_address(company),
-        "seller_iban" => company.iban
-      }
-
-      invoice_attrs =
-        attrs
-        |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
-        |> Map.merge(seller_attrs)
-        |> Map.put("subtotal", subtotal)
-        |> Map.put("number", number)
-
-      invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
-
-      invoice =
-        case Repo.insert(invoice_changeset) do
-          {:ok, inv} -> inv
-          {:error, cs} -> Repo.rollback({:error, cs})
-        end
-
-      prepared_items
-      |> Enum.each(fn item_attrs ->
-        cs =
-          %InvoiceItem{}
-          |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
-
-        case Repo.insert(cs) do
-          {:ok, _} -> :ok
-          {:error, cs} -> Repo.rollback({:error, cs})
-        end
-      end)
-
-      Repo.preload(invoice, [:items, :company])
-    end)
-    |> case do
-      {:ok, invoice} -> {:ok, invoice}
-      {:error, {:error, :items_required}} -> {:error, :items_required}
-      {:error, {:error, %Ecto.Changeset{} = cs}} -> {:error, cs}
-      {:error, other} -> {:error, other}
     end
   end
 
-  defp prepare_items_and_subtotal!(items_attrs) when is_list(items_attrs) do
-    {items, subtotal} =
-      Enum.reduce(items_attrs, {[], Decimal.new("0.00")}, fn raw, {acc, sum} ->
-        m = normalize_map_keys(raw)
+  defp apply_pagination(query, opts) do
+    limit = Keyword.get(opts, :limit)
+    offset = Keyword.get(opts, :offset)
 
-        qty = parse_int(Map.get(m, "qty", 1))
-        unit_price = parse_decimal(Map.get(m, "unit_price"))
-
-        amount =
-          unit_price
-          |> Decimal.mult(Decimal.new(qty))
-          |> Decimal.round(2)
-
-        item = %{
-          "code" => Map.get(m, "code"),
-          "name" => Map.get(m, "name"),
-          "qty" => qty,
-          "unit_price" => unit_price,
-          "amount" => amount
-        }
-
-        {[item | acc], Decimal.add(sum, amount)}
-      end)
-
-    {Enum.reverse(items), Decimal.round(subtotal, 2)}
-  end
-
-  defp normalize_map_keys(map) when is_map(map) do
-    # поддержка atom keys и string keys
-    Map.new(map, fn
-      {k, v} when is_atom(k) -> {Atom.to_string(k), v}
-      {k, v} -> {k, v}
-    end)
-  end
-
-  defp parse_int(v) when is_integer(v), do: v
-
-  defp parse_int(v) when is_binary(v) do
-    case Integer.parse(String.trim(v)) do
-      {n, ""} -> n
-      _ -> 1
-    end
-  end
-
-  defp parse_int(_), do: 1
-
-  defp parse_decimal(%Decimal{} = d), do: d
-  defp parse_decimal(v) when is_integer(v), do: Decimal.new(v)
-
-  defp parse_decimal(v) when is_float(v),
-    do: v |> :erlang.float_to_binary(decimals: 2) |> Decimal.new()
-
-  defp parse_decimal(v) when is_binary(v) do
-    v =
-      v
-      |> String.trim()
-      |> String.replace(" ", "")
-      # на случай "100 000,00"
-      |> String.replace(",", ".")
-
-    case Decimal.parse(v) do
-      {d, ""} -> d
-      _ -> Decimal.new("0.00")
-    end
-  end
-
-  defp parse_decimal(_), do: Decimal.new("0.00")
-
-  defp format_company_address(%Company{} = c) do
-    city = (c.city || "") |> String.trim()
-    addr = (c.address || "") |> String.trim()
-
-    cond do
-      city != "" and addr != "" -> "г. #{city}, #{addr}"
-      addr != "" -> addr
-      city != "" -> "г. #{city}"
-      true -> ""
-    end
-  end
-
-  # -----InvoiceCounter-------------
-  def next_invoice_number!(company_id) do
-    Repo.transaction(fn ->
-      # Atomic upsert: insert starts at 2, conflicts increment by 1.
-      # Returned next_seq is the "next" value, so seq = next_seq - 1.
-      %{next_seq: next_seq} =
-        Repo.insert!(
-          %InvoiceCounter{company_id: company_id, next_seq: 2},
-          on_conflict: [inc: [next_seq: 1]],
-          conflict_target: :company_id,
-          returning: [:next_seq]
-        )
-
-      seq = next_seq - 1
-
-      # формат: только цифры с ведущими нулями
-      String.pad_leading(Integer.to_string(seq), 10, "0")
-    end)
-    |> case do
-      {:ok, number} -> number
-      {:error, reason} -> raise "invoice number generation failed: #{inspect(reason)}"
-    end
-  end
-
-  # ------------ Marking-Invoice-issued-------------------
-
-  def mark_invoice_issued(invoice) do
-    invoice =
-      case invoice do
-        nil -> nil
-        inv -> Repo.preload(inv, [:items, :company])
+    query =
+      if is_integer(limit) do
+        from(q in query, limit: ^limit)
+      else
+        query
       end
 
-    cond do
-      is_nil(invoice) ->
-        {:error, :invoice_not_found}
+    if is_integer(offset) and offset > 0 do
+      from(q in query, offset: ^offset)
+    else
+      query
+    end
+  end
 
-      invoice.status == "issued" ->
-        {:error, :already_issued}
+  def get_contract_for_user(%{id: user_id}, contract_id),
+    do: get_contract_for_user(user_id, contract_id)
 
-      invoice.status != "draft" ->
-        {:error, :cannot_issue, %{status: "must be draft to issue"}}
+  def get_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        Errors.not_found(:company)
 
-      (invoice.items || []) == [] ->
-        {:error, :cannot_issue, %{items: "must have at least 1 item"}}
-
-      is_nil(invoice.total) or Decimal.compare(invoice.total, Decimal.new("0.00")) != :gt ->
-        {:error, :cannot_issue, %{total: "must be > 0"}}
-
-      true ->
-        invoice
-        |> Ecto.Changeset.change(status: "issued")
-        |> Repo.update()
+      %Company{id: company_id} ->
+        Contract
+        |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
+        |> Repo.one()
         |> case do
-          {:ok, inv} -> {:ok, Repo.preload(inv, [:items, :company])}
-          {:error, cs} -> {:error, cs}
+          nil ->
+            Errors.not_found(:contract)
+
+          contract ->
+            {:ok,
+             Repo.preload(contract, [
+               :company,
+               :bank_account,
+               :contract_items,
+               buyer: [bank_accounts: :bank],
+               bank_account: [:bank, :kbe_code, :knp_code]
+             ])}
         end
     end
+  end
+
+  def issue_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    RepoHelpers.transaction(fn ->
+      case Companies.get_company_by_user_id(user_id) do
+        nil ->
+          RepoHelpers.abort({:not_found, %{resource: :company}})
+
+        %Company{id: company_id} ->
+          contract =
+            RepoHelpers.fetch_or_abort(
+              from(c in Contract, where: c.company_id == ^company_id and c.id == ^contract_id),
+              :contract
+            )
+
+          if ContractStatus.already_issued?(contract) do
+            RepoHelpers.abort(
+              {:business_rule, %{rule: :contract_already_issued, contract_id: contract.id}}
+            )
+          end
+
+          # Validate contract has required buyer details
+          if is_nil(contract.buyer_id) and is_nil(contract.buyer_name) do
+            RepoHelpers.abort(
+              {:business_rule, %{rule: :buyer_required, contract_id: contract.id}}
+            )
+          end
+
+          contract
+          |> Ecto.Changeset.change(
+            status: ContractStatus.issued(),
+            issued_at: DateTime.utc_now() |> DateTime.truncate(:second)
+          )
+          |> RepoHelpers.update_or_abort()
+      end
+    end)
+    |> Errors.normalize()
+  end
+
+  def sign_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    RepoHelpers.transaction(fn ->
+      case Companies.get_company_by_user_id(user_id) do
+        nil ->
+          RepoHelpers.abort({:not_found, %{resource: :company}})
+
+        %Company{id: company_id} ->
+          contract =
+            RepoHelpers.fetch_or_abort(
+              from(c in Contract, where: c.company_id == ^company_id and c.id == ^contract_id),
+              :contract
+            )
+
+          cond do
+            ContractStatus.already_signed?(contract) ->
+              RepoHelpers.abort(
+                {:business_rule, %{rule: :contract_already_signed, contract_id: contract.id}}
+              )
+
+            not ContractStatus.can_sign?(contract) ->
+              RepoHelpers.abort(
+                {:business_rule, %{rule: :contract_not_issued, contract_id: contract.id}}
+              )
+
+            true ->
+              contract
+              |> Ecto.Changeset.change(
+                status: ContractStatus.signed(),
+                signed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+              )
+              |> RepoHelpers.update_or_abort()
+          end
+      end
+    end)
+    |> Errors.normalize()
+  end
+
+  def delete_contract_for_user(user_id, contract_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        Errors.not_found(:company)
+
+      %Company{id: company_id} ->
+        contract =
+          Contract
+          |> where([c], c.company_id == ^company_id and c.id == ^contract_id)
+          |> Repo.one()
+
+        cond do
+          is_nil(contract) ->
+            Errors.not_found(:contract)
+
+          not ContractStatus.can_edit?(contract) ->
+            Errors.business_rule(:contract_not_editable, %{
+              contract_id: contract_id,
+              status: contract.status
+            })
+
+          true ->
+            case Repo.delete(contract) do
+              {:ok, deleted_contract} -> {:ok, deleted_contract}
+              {:error, reason} -> {:error, reason}
+            end
+        end
+    end
+  end
+
+  # Helper function to create contract items
+  defp create_contract_items(contract, items_attrs) when is_list(items_attrs) do
+    require Logger
+    Logger.info("Creating #{length(items_attrs)} contract items for contract #{contract.id}")
+
+    Enum.reduce_while(items_attrs, {:ok, contract}, fn item_attrs, {:ok, contract} ->
+      alias EdocApi.Core.ContractItem
+
+      %ContractItem{}
+      |> ContractItem.changeset(item_attrs, contract.id)
+      |> Repo.insert()
+      |> case do
+        {:ok, item} ->
+          Logger.info("Created contract item: #{item.name}")
+          {:cont, {:ok, contract}}
+
+        {:error, changeset} ->
+          Logger.error("Failed to create contract item: #{inspect(changeset.errors)}")
+          {:halt, RepoHelpers.abort({:validation, %{changeset: changeset}})}
+      end
+    end)
+  end
+
+  defp create_contract_items(contract, _), do: {:ok, contract}
+
+  defp update_contract_with_items(contract, attrs, items_attrs) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(:contract, Contract.update_changeset(contract, attrs || %{}))
+    |> Ecto.Multi.delete_all(:delete_contract_items, contract_items_query(contract.id))
+    |> Ecto.Multi.run(:insert_contract_items, fn repo, _changes ->
+      insert_contract_items(repo, contract.id, items_attrs)
+    end)
+    |> Ecto.Multi.run(:reloaded_contract, fn repo, %{contract: updated_contract} ->
+      {:ok, repo.get(Contract, updated_contract.id) |> repo.preload(:contract_items)}
+    end)
+    |> Repo.transaction()
+    |> normalize_contract_update_result()
+  end
+
+  defp insert_contract_items(_repo, _contract_id, items_attrs) when items_attrs == [],
+    do: {:ok, :ok}
+
+  defp insert_contract_items(repo, contract_id, items_attrs) when is_list(items_attrs) do
+    Enum.reduce_while(items_attrs, {:ok, :ok}, fn item_attrs, {:ok, :ok} ->
+      %ContractItem{}
+      |> ContractItem.changeset(item_attrs, contract_id)
+      |> repo.insert()
+      |> case do
+        {:ok, _item} -> {:cont, {:ok, :ok}}
+        {:error, changeset} -> {:halt, {:error, changeset}}
+      end
+    end)
+  end
+
+  defp contract_items_query(contract_id) do
+    from(ci in ContractItem, where: ci.contract_id == ^contract_id)
+  end
+
+  defp normalize_contract_update_result({:ok, %{reloaded_contract: contract}}),
+    do: {:ok, contract}
+
+  defp normalize_contract_update_result(
+         {:error, _step, %Ecto.Changeset{} = changeset, _changes_so_far}
+       ) do
+    {:error, :validation, %{changeset: changeset}}
+  end
+
+  defp normalize_contract_update_result({:error, _step, reason, _changes_so_far}) do
+    {:error, reason}
   end
 end

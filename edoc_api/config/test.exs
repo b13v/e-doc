@@ -1,5 +1,9 @@
 import Config
 
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    Base.url_encode64(:crypto.strong_rand_bytes(64), padding: false)
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -17,7 +21,7 @@ config :edoc_api, EdocApi.Repo,
 # you can enable the server option below.
 config :edoc_api, EdocApiWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "zOLb+Q7Bj/xLH8g59iozHbiBpo9pwB88GC69Zbb/DbrTQ+fk6Hzyy14zENsnf6Fu",
+  secret_key_base: secret_key_base,
   server: false
 
 # In test we don't send emails.
@@ -25,6 +29,12 @@ config :edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure Oban for testing (fake mode)
+config :edoc_api, Oban,
+  repo: EdocApi.Repo,
+  queues: [default: 10, pdf_generation: 5],
+  testing: :inline
 
 # Print only warnings and errors during test
 config :logger, level: :warning

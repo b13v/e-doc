@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= @public_document.title %></title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        color: #1f2937;
+        margin: 0;
+        padding: 24px;
+      }
+
+      .card {
+        max-width: 720px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .meta {
+        margin: 16px 0;
+        line-height: 1.6;
+      }
+
+      .button {
+        display: inline-block;
+        background: #111827;
+        color: #fff;
+        text-decoration: none;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+
+      .hint {
+        margin-top: 16px;
+        color: #6b7280;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1><%= @public_document.title %></h1>
+      <div class="meta">
+        <div>Номер: <%= @public_document.document_number %></div>
+        <%= if @public_document.issue_date do %>
+          <div>Дата: <%= @public_document.issue_date %></div>
+        <% end %>
+        <%= if @public_document.seller_name do %>
+          <div>Отправитель: <%= @public_document.seller_name %></div>
+        <% end %>
+        <%= if @public_document.buyer_name do %>
+          <div>Получатель: <%= @public_document.buyer_name %></div>
+        <% end %>
+      </div>
+
+      <a class="button" href={@public_document.pdf_path}>Открыть PDF</a>
+
+      <div class="hint">
+        Ссылка защищена токеном и действует до <%= @public_document.expires_at %>.
+      </div>
+    </main>
+  </body>
+</html>

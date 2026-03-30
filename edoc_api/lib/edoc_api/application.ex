@@ -22,6 +22,7 @@ defmodule EdocApi.Application do
       {DNSCluster, query: Application.get_env(:edoc_api, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: EdocApi.PubSub},
       {Finch, name: EdocApi.Finch},
+      {Oban, Application.get_env(:edoc_api, Oban)},
       EdocApiWeb.Endpoint
     ]
 

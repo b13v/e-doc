@@ -1,163 +1,139 @@
 defmodule EdocApiWeb.InvoiceController do
   use EdocApiWeb, :controller
 
-  alias EdocApi.Core
-  alias EdocApiWeb.PdfTemplates
-  require Logger
+  alias EdocApi.Companies
+  alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
+  alias EdocApi.Invoicing
+  alias EdocApi.Documents.InvoicePdf
+  alias EdocApiWeb.Serializers.InvoiceSerializer
 
   def create(conn, params) do
     user = conn.assigns.current_user
 
-    case Core.get_company_by_user_id(user.id) do
+    case Companies.get_company_by_user_id(user.id) do
       nil ->
-        conn |> put_status(:unprocessable_entity) |> json(%{error: "company_required"})
+        ErrorMapper.unprocessable(conn, "company_required")
 
       company ->
-        case Core.create_invoice_for_user(user.id, company.id, params) do
-          {:ok, invoice} ->
-            conn
-            |> put_status(:created)
-            |> json(%{invoice: invoice_json(invoice)})
+        result = Invoicing.create_invoice_for_user(user.id, company.id, params)
 
-          {:error, :items_required} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{error: "items_required"})
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{error: "validation_error", details: errors_to_map(changeset)})
-
-          {:error, other} ->
-            Logger.error("invoice_create_failed: #{inspect(other)}")
-
-            conn
-            |> put_status(:internal_server_error)
-            |> json(%{error: "internal_error"})
-        end
+        ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+          conn
+          |> put_status(:created)
+          |> json(%{invoice: InvoiceSerializer.to_map(invoice)})
+        end)
     end
   end
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    invoices = Core.list_invoices_for_user(user.id)
 
-    json(conn, %{invoices: Enum.map(invoices, &invoice_json/1)})
+    %{page: page, page_size: page_size, offset: offset} =
+      ControllerHelpers.pagination_params(params)
+
+    invoices =
+      Invoicing.list_invoices_for_user(user.id, limit: page_size, offset: offset)
+
+    total_count = Invoicing.count_invoices_for_user(user.id)
+
+    json(conn, %{
+      invoices: Enum.map(invoices, &InvoiceSerializer.to_map/1),
+      meta: ControllerHelpers.pagination_meta(page, page_size, total_count)
+    })
   end
 
   def show(conn, %{"id" => id}) do
     user = conn.assigns.current_user
 
-    case Core.get_invoice_for_user(user.id, id) do
+    case Invoicing.get_invoice_for_user(user.id, id) do
       nil ->
-        conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
+        ErrorMapper.not_found(conn, "invoice_not_found")
 
       invoice ->
-        json(conn, %{invoice: invoice_json(invoice)})
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
     end
+  end
+
+  def update(conn, %{"id" => id} = params) do
+    user = conn.assigns.current_user
+    result = Invoicing.update_invoice_for_user(user.id, id, params)
+
+    ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+      json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+    end)
   end
 
   def issue(conn, %{"id" => id}) do
     user = conn.assigns.current_user
+    result = Invoicing.issue_invoice_for_user(user.id, id)
 
-    case Core.issue_invoice_for_user(user.id, id) do
-      {:ok, invoice} ->
-        json(conn, %{invoice: invoice_json(invoice)})
+    ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
+      json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+    end)
+  end
 
-      {:error, :invoice_not_found} ->
-        conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
+  def pay(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+    result = Invoicing.pay_invoice_for_user(user.id, id)
 
-      {:error, :already_issued} ->
-        conn |> put_status(:unprocessable_entity) |> json(%{error: "already_issued"})
-
-      {:error, :cannot_issue, details} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "cannot_issue", details: details})
-
-      {:error, %Ecto.Changeset{} = cs} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "validation_error", details: errors_to_map(cs)})
-    end
+    ControllerHelpers.handle_common_result(
+      conn,
+      result,
+      fn conn, invoice ->
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+      end,
+      %{
+        cannot_mark_paid: fn conn, details ->
+          ErrorMapper.unprocessable(conn, "cannot_mark_paid", details)
+        end,
+        already_paid: fn conn, details ->
+          ErrorMapper.unprocessable(conn, "already_paid", details)
+        end
+      }
+    )
   end
 
   def pdf(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     conn = put_layout(conn, false)
 
-    case Core.get_invoice_for_user(user.id, id) do
+    case Invoicing.get_invoice_for_user(user.id, id) do
       nil ->
-        conn |> put_status(:not_found) |> json(%{error: "invoice_not_found"})
+        ErrorMapper.not_found(conn, "invoice_not_found")
 
       invoice ->
-        html = PdfTemplates.invoice_html(invoice)
+        # Pre-render HTML in web layer, then pass to PDF module
+        html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
+        result = InvoicePdf.render(html)
 
-        case EdocApi.Pdf.html_to_pdf(html) do
-          {:ok, pdf_binary} ->
+        error_map = %{
+          pdf_generation_failed: fn conn ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
+          end
+        }
+
+        ControllerHelpers.handle_result(
+          conn,
+          result,
+          fn conn, pdf_binary ->
             conn
+            |> put_pdf_security_headers()
             |> put_resp_content_type("application/pdf")
             |> put_resp_header(
               "content-disposition",
               ~s(inline; filename="invoice-#{invoice.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
-
-          {:error, reason} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{error: "pdf_generation_failed", reason: inspect(reason)})
-        end
+          end,
+          error_map
+        )
     end
   end
 
-  # -------- helpers --------
-
-  defp invoice_json(inv) do
-    %{
-      id: inv.id,
-      number: inv.number,
-      service_name: inv.service_name,
-      issue_date: inv.issue_date,
-      due_date: inv.due_date,
-      currency: inv.currency,
-      vat_rate: inv.vat_rate,
-      subtotal: inv.subtotal,
-      vat: inv.vat,
-      total: inv.total,
-      seller_name: inv.seller_name,
-      seller_bin_iin: inv.seller_bin_iin,
-      seller_address: inv.seller_address,
-      seller_iban: inv.seller_iban,
-      buyer_name: inv.buyer_name,
-      buyer_bin_iin: inv.buyer_bin_iin,
-      buyer_address: inv.buyer_address,
-      status: inv.status,
-      company_id: inv.company_id,
-      user_id: inv.user_id,
-      items: Enum.map(inv.items || [], &item_json/1),
-      inserted_at: inv.inserted_at,
-      updated_at: inv.updated_at
-    }
-  end
-
-  defp item_json(item) do
-    %{
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      qty: item.qty,
-      unit_price: item.unit_price,
-      amount: item.amount
-    }
-  end
-
-  defp errors_to_map(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {k, v}, acc ->
-        String.replace(acc, "%{#{k}}", to_string(v))
-      end)
-    end)
+  defp put_pdf_security_headers(conn) do
+    conn
+    |> put_resp_header("cache-control", "private, no-store, max-age=0")
+    |> put_resp_header("pragma", "no-cache")
+    |> put_resp_header("x-content-type-options", "nosniff")
   end
 end

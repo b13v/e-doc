@@ -1,0 +1,102 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: kk\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "can't be blank"
+msgstr "бос болмауы керек"
+
+msgid "has already been taken"
+msgstr "бұрыннан қолданылып қойған"
+
+msgid "is invalid"
+msgstr "жарамсыз"
+
+msgid "must be accepted"
+msgstr "қабылдануы керек"
+
+msgid "has invalid format"
+msgstr "пішімі жарамсыз"
+
+msgid "has an invalid entry"
+msgstr "жарамсыз мәнді қамтиды"
+
+msgid "is reserved"
+msgstr "резервтелген"
+
+msgid "does not match confirmation"
+msgstr "растаумен сәйкес келмейді"
+
+msgid "is still associated with this entry"
+msgstr "осы жазбамен әлі де байланысты"
+
+msgid "are still associated with this entry"
+msgstr "осы жазбамен әлі де байланысты"
+
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] "%{count} элементтен тұруы керек"
+msgstr[1] "%{count} элементтен тұруы керек"
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] "%{count} таңбадан тұруы керек"
+msgstr[1] "%{count} таңбадан тұруы керек"
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] "%{count} байттан тұруы керек"
+msgstr[1] "%{count} байттан тұруы керек"
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] "кемінде %{count} элемент болуы керек"
+msgstr[1] "кемінде %{count} элемент болуы керек"
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] "кемінде %{count} таңбадан тұруы керек"
+msgstr[1] "кемінде %{count} таңбадан тұруы керек"
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] "кемінде %{count} байттан тұруы керек"
+msgstr[1] "кемінде %{count} байттан тұруы керек"
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] "%{count} элементтен аспауы керек"
+msgstr[1] "%{count} элементтен аспауы керек"
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] "%{count} таңбадан аспауы керек"
+msgstr[1] "%{count} таңбадан аспауы керек"
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] "%{count} байттан аспауы керек"
+msgstr[1] "%{count} байттан аспауы керек"
+
+msgid "must be less than %{number}"
+msgstr "%{number} мәнінен кіші болуы керек"
+
+msgid "must be greater than %{number}"
+msgstr "%{number} мәнінен үлкен болуы керек"
+
+msgid "must be less than or equal to %{number}"
+msgstr "%{number} мәнінен кіші немесе тең болуы керек"
+
+msgid "must be greater than or equal to %{number}"
+msgstr "%{number} мәнінен үлкен немесе тең болуы керек"
+
+msgid "must be equal to %{number}"
+msgstr "%{number} мәніне тең болуы керек"

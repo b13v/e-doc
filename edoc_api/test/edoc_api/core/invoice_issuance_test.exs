@@ -1,17 +1,18 @@
-defmodule EdocApi.Core.InvoiceIssuanceTest do
+defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
   use EdocApi.DataCase, async: true
 
-  alias EdocApi.Core
+  alias EdocApi.Invoicing
   import EdocApi.TestFixtures
 
   describe "issue_invoice_for_user/2" do
     test "issues a draft invoice with items and positive total" do
       user = create_user!()
       company = create_company!(user)
+      create_company_bank_account!(company)
       invoice = create_invoice_with_items!(user, company)
 
       assert invoice.status == "draft"
-      assert {:ok, issued} = Core.issue_invoice_for_user(user.id, invoice.id)
+      assert {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
       assert issued.status == "issued"
     end
 
@@ -20,7 +21,15 @@ defmodule EdocApi.Core.InvoiceIssuanceTest do
       company = create_company!(user)
       invoice = insert_invoice!(user, company, %{status: "issued"})
 
-      assert {:error, :already_issued} = Core.issue_invoice_for_user(user.id, invoice.id)
+      assert {:error, :business_rule,
+              %{
+                rule: :business_rule,
+                details: %{
+                  rule: :already_issued,
+                  details: %{status: _, invoice_id: _}
+                }
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice.id)
     end
 
     test "rejects non-draft status" do
@@ -28,8 +37,15 @@ defmodule EdocApi.Core.InvoiceIssuanceTest do
       company = create_company!(user)
       invoice = insert_invoice!(user, company, %{status: "paid"})
 
-      assert {:error, :cannot_issue, %{status: "must be draft to issue"}} =
-               Core.issue_invoice_for_user(user.id, invoice.id)
+      assert {:error, :business_rule,
+              %{
+                rule: :business_rule,
+                details: %{
+                  rule: :cannot_issue,
+                  details: %{status: "must be draft to issue", invoice_id: _}
+                }
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice.id)
     end
 
     test "rejects invoices without items" do
@@ -37,8 +53,15 @@ defmodule EdocApi.Core.InvoiceIssuanceTest do
       company = create_company!(user)
       invoice = insert_invoice!(user, company, %{total: Decimal.new("100.00")})
 
-      assert {:error, :cannot_issue, %{items: "must have at least 1 item"}} =
-               Core.issue_invoice_for_user(user.id, invoice.id)
+      assert {:error, :business_rule,
+              %{
+                rule: :business_rule,
+                details: %{
+                  rule: :cannot_issue,
+                  details: %{items: "must have at least 1 item", invoice_id: _}
+                }
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice.id)
     end
 
     test "rejects non-positive totals" do
@@ -53,15 +76,53 @@ defmodule EdocApi.Core.InvoiceIssuanceTest do
 
       insert_item!(invoice)
 
-      assert {:error, :cannot_issue, %{total: "must be > 0"}} =
-               Core.issue_invoice_for_user(user.id, invoice.id)
+      assert {:error, :business_rule,
+              %{
+                rule: :business_rule,
+                details: %{
+                  rule: :cannot_issue,
+                  details: %{total: "must be > 0", invoice_id: _}
+                }
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice.id)
     end
 
     test "rejects unknown invoice id" do
       user = create_user!()
 
-      assert {:error, :invoice_not_found} =
-               Core.issue_invoice_for_user(user.id, Ecto.UUID.generate())
+      assert {:error, :not_found, %{resource: :invoice}} =
+               Invoicing.issue_invoice_for_user(user.id, Ecto.UUID.generate())
+    end
+  end
+
+  describe "pay_invoice_for_user/2" do
+    test "marks issued invoice as paid" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+      invoice = create_invoice_with_items!(user, company)
+      {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      assert {:ok, paid} = Invoicing.pay_invoice_for_user(user.id, issued.id)
+      assert paid.status == "paid"
+    end
+
+    test "rejects draft invoice" do
+      user = create_user!()
+      company = create_company!(user)
+      invoice = insert_invoice!(user, company, %{status: "draft"})
+
+      assert {:error, :business_rule, %{rule: :cannot_mark_paid}} =
+               Invoicing.pay_invoice_for_user(user.id, invoice.id)
+    end
+
+    test "rejects already paid invoice" do
+      user = create_user!()
+      company = create_company!(user)
+      invoice = insert_invoice!(user, company, %{status: "paid"})
+
+      assert {:error, :business_rule, %{rule: :already_paid}} =
+               Invoicing.pay_invoice_for_user(user.id, invoice.id)
     end
   end
 end

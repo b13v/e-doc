@@ -3,11 +3,108 @@ defmodule EdocApiWeb.Router do
 
   pipeline :api do
     plug(:accepts, ["json"])
+    plug(EdocApiWeb.Plugs.ApiVersion, version: "v1")
   end
 
   pipeline :auth_api do
-    plug(:accepts, ["json"])
+    plug(:accepts, ["json", "pdf"])
     plug(EdocApiWeb.Plugs.Authenticate)
+    plug(EdocApiWeb.Plugs.ValidateUuid)
+  end
+
+  pipeline :auth_credentials_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 5,
+      window_seconds: 60,
+      action: "auth_credentials",
+      subject: :ip
+    )
+  end
+
+  pipeline :auth_verify_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 20,
+      window_seconds: 60,
+      action: "auth_verify",
+      subject: :ip
+    )
+  end
+
+  pipeline :auth_resend_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 5,
+      window_seconds: 60,
+      action: "auth_resend_verification",
+      subject: :ip
+    )
+  end
+
+  pipeline :auth_refresh_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 10,
+      window_seconds: 60,
+      action: "auth_refresh",
+      subject: :ip
+    )
+  end
+
+  pipeline :api_mutation_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 30,
+      window_seconds: 60,
+      action: "api_mutation",
+      subject: :user_or_ip
+    )
+  end
+
+  pipeline :api_pdf_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 10,
+      window_seconds: 60,
+      action: "api_pdf",
+      subject: :user_or_ip
+    )
+  end
+
+  pipeline :public_document do
+    plug(:accepts, ["html", "pdf"])
+
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 30,
+      window_seconds: 60,
+      action: "public_document",
+      subject: :ip
+    )
+  end
+
+  # HTML/htmx pipelines
+  pipeline :browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(EdocApiWeb.Plugs.SetLocale)
+    plug(:fetch_flash)
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(EdocApiWeb.Plugs.HtmxDetect)
+    plug(EdocApiWeb.Plugs.HtmxLayout)
+  end
+
+  pipeline :auth_browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(EdocApiWeb.Plugs.SetLocale)
+    plug(:fetch_flash)
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(EdocApiWeb.Plugs.HtmxDetect)
+    plug(EdocApiWeb.Plugs.AuthenticateSession)
+    plug(EdocApiWeb.Plugs.HtmxLayout)
+  end
+
+  pipeline :auth_browser_json do
+    plug(:accepts, ["json"])
+    plug(:fetch_session)
+    plug(EdocApiWeb.Plugs.AuthenticateSession)
   end
 
   # Public API
@@ -15,24 +112,166 @@ defmodule EdocApiWeb.Router do
     pipe_through(:api)
 
     get("/health", HealthController, :index)
+  end
+
+  scope "/v1", EdocApiWeb do
+    pipe_through([:api, :auth_verify_rate_limit])
+
+    get("/auth/verify", AuthController, :verify_email)
+  end
+
+  scope "/v1", EdocApiWeb do
+    pipe_through([:api, :auth_resend_rate_limit])
+
+    post("/auth/resend-verification", AuthController, :resend_verification)
+  end
+
+  scope "/v1", EdocApiWeb do
+    pipe_through([:api, :auth_credentials_rate_limit])
 
     post("/auth/signup", AuthController, :signup)
     post("/auth/login", AuthController, :login)
   end
 
-  # Protected API (JWT required)
+  scope "/v1", EdocApiWeb do
+    pipe_through([:api, :auth_refresh_rate_limit])
+
+    post("/auth/refresh", AuthController, :refresh)
+  end
+
+  # Protected API (JWT required) - read operations
   scope "/v1", EdocApiWeb do
     pipe_through(:auth_api)
 
+    get("/auth/status", AuthController, :auth_status)
     get("/company", CompanyController, :show)
-    put("/company", CompanyController, :upsert)
+    get("/buyers", BuyersController, :index)
+    get("/buyers/:id", BuyersController, :show)
     get("/invoices", InvoiceController, :index)
-    post("/invoices", InvoiceController, :create)
     get("/invoices/:id", InvoiceController, :show)
+    get("/contracts", ContractController, :index)
+    get("/contracts/:id", ContractController, :show)
+    get("/dicts/banks", DictController, :banks)
+    get("/dicts/kbe", DictController, :kbe)
+    get("/dicts/knp", DictController, :knp)
+    get("/company/bank-accounts", CompanyBankAccountController, :index)
+  end
 
-    get("/invoices/:id/pdf", InvoiceController, :pdf)
+  # Protected API (JWT required) - mutating operations
+  scope "/v1", EdocApiWeb do
+    pipe_through([:auth_api, :api_mutation_rate_limit])
+
+    put("/company", CompanyController, :upsert)
+    post("/buyers", BuyersController, :create)
+    put("/buyers/:id", BuyersController, :update)
+    delete("/buyers/:id", BuyersController, :delete)
+    post("/invoices", InvoiceController, :create)
+    put("/invoices/:id", InvoiceController, :update)
+    post("/contracts", ContractController, :create)
+    post("/contracts/:id/issue", ContractController, :issue)
+    post("/contracts/:id/sign", ContractController, :sign)
     post("/invoices/:id/issue", InvoiceController, :issue)
-    # get "/invoices/:id/pdf/download", InvoiceController, :download_pdf
+    post("/invoices/:id/pay", InvoiceController, :pay)
+    post("/documents/:type/:id/send-email", DocumentDeliveryController, :send_email)
+    post("/documents/:type/:id/share/:channel", DocumentDeliveryController, :share)
+    post("/company/bank-accounts", CompanyBankAccountController, :create)
+    put("/company/bank-accounts/:id/set-default", CompanyBankAccountController, :set_default)
+  end
+
+  # Protected API (JWT required) - expensive PDF operations
+  scope "/v1", EdocApiWeb do
+    pipe_through([:auth_api, :api_pdf_rate_limit])
+
+    get("/contracts/:id/pdf", ContractController, :pdf)
+    get("/invoices/:id/pdf", InvoiceController, :pdf)
+  end
+
+  # HTML/htmx UI routes
+  scope "/", EdocApiWeb do
+    pipe_through(:browser)
+
+    get("/", PageController, :home)
+    get("/locale/:locale", LocaleController, :update)
+    get("/about", AboutController, :index)
+    get("/login", SessionController, :new)
+    post("/login", SessionController, :create)
+    delete("/logout", SessionController, :delete)
+    get("/signup", SignupController, :new)
+    post("/signup", SignupController, :create)
+    get("/verify-email-pending", VerificationPendingController, :new)
+    get("/verify-email", VerificationPendingController, :verify)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through(:auth_browser)
+
+    get("/documents/:type/:id/send/email", DocumentDeliveryHTMLController, :email_form)
+    post("/documents/:type/:id/send/email", DocumentDeliveryHTMLController, :send_email)
+    post("/documents/:type/:id/share/:channel", DocumentDeliveryHTMLController, :share)
+    get("/invoices", InvoicesController, :index)
+    get("/invoices/new", InvoicesController, :new)
+    post("/invoices", InvoicesController, :create)
+    get("/invoices/:id", InvoicesController, :show)
+    get("/invoices/:id/edit", InvoicesController, :edit)
+    put("/invoices/:id", InvoicesController, :update)
+    get("/invoices/:id/pdf", InvoicesController, :pdf)
+    post("/invoices/:id/issue", InvoicesController, :issue)
+    post("/invoices/:id/pay", InvoicesController, :pay)
+    delete("/invoices/:id", InvoicesController, :delete)
+    get("/acts", ActsController, :index)
+    get("/acts/new", ActsController, :new)
+    post("/acts", ActsController, :create)
+    get("/acts/:id", ActsController, :show)
+    get("/acts/:id/pdf", ActsController, :pdf)
+    post("/acts/:id/issue", ActsController, :issue)
+    post("/acts/:id/sign", ActsController, :sign)
+    delete("/acts/:id", ActsController, :delete)
+    get("/invoices/from-contract/:contract_id", InvoicesController, :create_from_contract)
+    post("/invoices/from-contract/:contract_id", InvoicesController, :create_from_contract)
+    get("/contracts", ContractHTMLController, :index)
+    get("/contracts/new", ContractHTMLController, :new)
+    post("/contracts", ContractHTMLController, :create)
+    get("/contracts/:id", ContractHTMLController, :show)
+    get("/contracts/:id/edit", ContractHTMLController, :edit)
+    put("/contracts/:id", ContractHTMLController, :update)
+    delete("/contracts/:id", ContractHTMLController, :delete)
+    get("/contracts/:id/pdf", ContractHTMLController, :pdf)
+    post("/contracts/:id/issue", ContractHTMLController, :issue)
+    post("/contracts/:id/sign", ContractHTMLController, :sign)
+
+    # Buyer management routes
+    get("/buyers", BuyerHTMLController, :index)
+    get("/buyers/new", BuyerHTMLController, :new)
+    get("/buyers/:id", BuyerHTMLController, :show)
+    post("/buyers", BuyerHTMLController, :create)
+    get("/buyers/:id/edit", BuyerHTMLController, :edit)
+    put("/buyers/:id", BuyerHTMLController, :update)
+    delete("/buyers/:id", BuyerHTMLController, :delete)
+
+    # Company management routes
+    get("/company/setup", CompaniesController, :setup)
+    post("/company/setup", CompaniesController, :create_setup)
+    get("/company", CompaniesController, :edit)
+    put("/company", CompaniesController, :update)
+    post("/company/bank-accounts", CompaniesController, :add_bank_account)
+    get("/company/bank-accounts/:id", CompanyBankAccountHTMLController, :show)
+    get("/company/bank-accounts/:id/edit", CompanyBankAccountHTMLController, :edit)
+    put("/company/bank-accounts/:id", CompanyBankAccountHTMLController, :update)
+    put("/company/bank-accounts/:id/set-default", CompaniesController, :set_default_bank_account)
+    delete("/company/bank-accounts/:id", CompaniesController, :delete_bank_account)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through(:auth_browser_json)
+
+    get("/contracts/:id/prefill", ContractHTMLController, :prefill)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through(:public_document)
+
+    get("/public/docs/:token", PublicDocumentController, :show)
+    get("/public/docs/:token/pdf", PublicDocumentController, :pdf)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

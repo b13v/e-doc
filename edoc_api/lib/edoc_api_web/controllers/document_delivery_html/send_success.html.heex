@@ -1,0 +1,14 @@
+<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+  <div class="text-sm font-semibold text-emerald-900"><%= gettext("Document sent") %></div>
+  <p class="mt-1 text-sm text-emerald-800">
+    <%= gettext("%{title} was sent to", title: @document_title) %> <strong><%= @delivery.recipient_email %></strong>.
+  </p>
+  <%= if @transport[:warning] do %>
+    <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      <%= localized_transport_warning(@transport.warning) %>
+    </p>
+  <% end %>
+  <p class="mt-2 text-xs text-emerald-700">
+    <%= gettext("Protected link:") %> <a class="underline" href={@public_link}><%= @public_link %></a>
+  </p>
+</div>

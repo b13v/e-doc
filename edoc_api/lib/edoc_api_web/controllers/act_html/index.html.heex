@@ -1,0 +1,102 @@
+<section class="space-y-8">
+  <.workspace_page_header title={gettext("Acts")}>
+    <:primary_action>
+      <a
+        href="/acts/new"
+        class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+      >
+        <%= gettext("New Act") %>
+      </a>
+    </:primary_action>
+  </.workspace_page_header>
+
+  <div class={["grid gap-6", if(@acts != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
+    <div class="space-y-4">
+      <.flash_error flash={@flash} />
+
+      <%= if Enum.empty?(@acts) do %>
+        <.workspace_empty_state
+          title={gettext("No acts yet.")}
+          support_text={gettext("Create your first act when your company and buyer details are ready.")}
+          action_label={gettext("New Act")}
+          action_href="/acts/new"
+        />
+      <% else %>
+        <div class="overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <div class="overflow-x-auto overflow-y-visible">
+            <table class="min-w-full divide-y divide-stone-200">
+              <thead class="bg-stone-50/80">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Number") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Buyer") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Issue date") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Status") %>
+                  </th>
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Actions") %>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200 bg-white">
+                <%= for act <- @acts do %>
+                  <% actions = act_row_actions(act) %>
+                  <tr class="align-top transition hover:bg-stone-50/70">
+                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                      <a href={"/acts/#{act.id}"} class="transition hover:text-sky-700">
+                        <%= act.number %>
+                      </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= act.buyer_name %>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= fmt_date(act.issue_date) %>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                      <%= status_badge(act.status || "draft") %>
+                    </td>
+                    <td class="relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right">
+                      <.workspace_row_actions
+                        primary={actions.primary}
+                        secondary={actions.secondary}
+                        desktop_mode={:overflow}
+                        mobile_mode={:overflow}
+                      />
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <.workspace_support_panel
+      :if={@acts != []}
+      heading={gettext("Overview")}
+    >
+      <dl class="space-y-3 text-sm text-slate-600">
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Draft acts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @act_summary.draft %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Issued acts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @act_summary.issued %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Signed acts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @act_summary.signed %></dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
+</section>

@@ -1,5 +1,9 @@
 import Config
 
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    Base.url_encode64(:crypto.strong_rand_bytes(64), padding: false)
+
 # Configure your database
 config :edoc_api, EdocApi.Repo,
   username: "postgres",
@@ -24,7 +28,7 @@ config :edoc_api, EdocApiWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "uQY/NtqZZR1pps7A4pBUyNzYlU4l0KcpHhc45SNFfsHDSyOQiKI2RSPhCe/IlGdM",
+  secret_key_base: secret_key_base,
   watchers: []
 
 # ## SSL Support
@@ -65,3 +69,12 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure Oban for background jobs
+config :edoc_api, Oban,
+  repo: EdocApi.Repo,
+  queues: [default: 10, pdf_generation: 5],
+  plugins: [
+    Oban.Plugins.Pruner,
+    Oban.Plugins.Lifeline
+  ]

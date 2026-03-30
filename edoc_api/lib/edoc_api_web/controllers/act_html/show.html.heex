@@ -1,0 +1,526 @@
+<style>
+  .act-doc { font-family: Arial, sans-serif; font-size: 12px; color: #000; line-height: 1.35; }
+  .act-doc table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .act-doc th, .act-doc td { border: 1px solid #000; padding: 6px; vertical-align: top; }
+  .act-doc .center { text-align: center; }
+  .act-doc .right { text-align: right; }
+  .act-doc .no-border td { border: none; }
+  .act-doc .small { font-size: 11px; }
+  .act-doc .hr { border-top: 1px solid #000; margin: 10px 0; }
+  .act-doc .party-header-table,
+  .act-doc .party-table { width: 100%; table-layout: fixed; border-collapse: separate; }
+  .act-doc .party-header-table { margin-top: 6px; }
+  .act-doc .party-table { border-spacing: 0 8px; margin-top: 2px; }
+  .act-doc .party-col-label { width: 15%; }
+  .act-doc .party-col-details { width: 65%; }
+  .act-doc .party-col-bin { width: 20%; }
+  .act-doc .party-header-table td:last-child { text-align: center; font-weight: 700; }
+  .act-doc .party-table tr td { vertical-align: bottom; }
+  .act-doc .party-table td:last-child { text-align: right; padding: 0 0 0 6px; }
+  .act-doc .party-table td.party-details { padding-top: 4px; padding-bottom: 0; }
+  .act-doc .party-table .party-details-line {
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-right: 100px;
+    font-weight: 700;
+  }
+  .act-doc .contract-wrap-table { width: 80%; table-layout: fixed; margin-top: 6px; }
+  .act-doc .contract-wrap-table td { border: none !important; vertical-align: top; padding: 0; }
+  .act-doc .contract-wrap-left { width: 76%; padding-right: 12px !important; }
+  .act-doc .contract-wrap-right { width: 24%; }
+  .act-doc .contract-meta-table { width: 100%; table-layout: fixed; margin-top: 0; }
+  .act-doc .contract-meta-table td { border: none !important; padding: 4px 6px; }
+  .act-doc .contract-meta-label { width: 25%; }
+  .act-doc .contract-meta-value { width: 75%; }
+  .act-doc .contract-meta-line {
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-right: 24px;
+  }
+  .act-doc .doc-meta-box { width: 100%; border-collapse: collapse; }
+  .act-doc .doc-meta-box th,
+  .act-doc .doc-meta-box td {
+    border: 1px solid #000 !important;
+    text-align: center;
+    padding: 6px;
+  }
+  .act-doc .doc-meta-box th { font-weight: 400; }
+  .act-doc .doc-meta-box td { font-weight: 700; }
+  .act-doc .doc-meta-box th { line-height: 1.1; }
+  .act-doc .act-items-table th { font-weight: 400; }
+  .act-doc .act-title {
+    width: 76%;
+    margin-top: 12px;
+    margin-left: 0;
+    margin-bottom: 16px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .act-doc .party-table .bin-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    box-sizing: border-box;
+    border: 2px solid #000;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 0 6px;
+  }
+  .act-doc .send-menu {
+    position: relative;
+  }
+  .act-doc .send-menu summary {
+    list-style: none;
+  }
+  .act-doc .send-menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .act-doc .send-menu-item {
+    border: none;
+    cursor: pointer;
+  }
+  .act-doc .send-menu-form {
+    margin: 0;
+  }
+  .act-doc .send-panel {
+    margin-bottom: 16px;
+  }
+  .act-doc .signed-watermark {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-24deg);
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: rgba(5, 150, 105, 0.2);
+    border: 6px solid rgba(5, 150, 105, 0.18);
+    padding: 18px 28px;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+
+<% items = @act.items || [] %>
+<% vat_rate = Decimal.new(@act.vat_rate || 0) %>
+<% total_qty = Enum.reduce(items, Decimal.new(0), fn i, acc -> Decimal.add(acc, i.qty || Decimal.new(0)) end) %>
+<% total_net = Enum.reduce(items, Decimal.new(0), fn i, acc -> Decimal.add(acc, i.amount || Decimal.new(0)) end) %>
+<% total_vat = Enum.reduce(items, Decimal.new(0), fn i, acc -> Decimal.add(acc, Decimal.mult(i.amount || Decimal.new(0), vat_rate) |> Decimal.div(Decimal.new(100)) |> Decimal.round(2)) end) %>
+<% total_amount = Decimal.add(total_net, total_vat) %>
+<% seller_legal_form =
+  case Map.get(@act.company || %{}, :legal_form) do
+    value when is_binary(value) and value != "" -> EdocApi.LegalForms.display(value)
+    _ -> nil
+  end %>
+<% buyer_legal_form =
+  case Map.get(@act.buyer || %{}, :legal_form) do
+    value when is_binary(value) and value != "" -> EdocApi.LegalForms.display(value)
+    _ -> nil
+  end %>
+<%
+  {status_class, status_label} =
+    case @act.status do
+      "draft" -> {"bg-slate-100 text-slate-700", gettext("Draft")}
+      "issued" -> {"bg-sky-100 text-sky-700", gettext("Issued")}
+      "signed" -> {"bg-emerald-100 text-emerald-700", gettext("Signed")}
+      _ -> {"bg-slate-100 text-slate-700", gettext("Unknown")}
+    end
+%>
+
+<div class="space-y-6">
+  <.flash_error flash={@flash} />
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <.workspace_page_header
+        title={gettext("Act %{number}", number: @act.number)}
+        class="border-b border-stone-200 pb-6"
+      >
+        <:primary_action>
+          <a
+            href="/acts"
+            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            <%= gettext("Back to Acts") %>
+          </a>
+          <%= if EdocApi.ActStatus.is_draft?(@act) do %>
+            <form action={"/acts/#{@act.id}/issue"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              >
+                <%= gettext("Issue") %>
+              </button>
+            </form>
+          <% end %>
+          <%= if EdocApi.ActStatus.is_issued?(@act) do %>
+            <form
+              action={"/acts/#{@act.id}/sign"}
+              method="post"
+              onsubmit={"return confirm(#{Jason.encode!(gettext("Mark this act as signed?"))})"}
+            >
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              >
+                <%= gettext("Mark as Signed") %>
+              </button>
+            </form>
+          <% end %>
+          <details
+            class="send-menu"
+            data-send-menu-root
+            ontoggle="window.positionWorkspaceSendMenu && window.positionWorkspaceSendMenu(this)"
+          >
+            <summary class="inline-flex cursor-pointer list-none items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
+              <%= gettext("Send") %>
+            </summary>
+            <div
+              data-send-menu-panel
+              class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+            >
+              <button
+                type="button"
+                class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                hx-get={"/documents/act/#{@act.id}/send/email"}
+                hx-target={"#act-send-panel-#{@act.id}"}
+                hx-swap="innerHTML">
+                <%= gettext("Email") %>
+              </button>
+              <form action={"/documents/act/#{@act.id}/share/whatsapp"} method="post" class="send-menu-form">
+                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"><%= gettext("WhatsApp") %></button>
+              </form>
+              <form action={"/documents/act/#{@act.id}/share/telegram"} method="post" class="send-menu-form">
+                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"><%= gettext("Telegram") %></button>
+              </form>
+            </div>
+          </details>
+          <a
+            href={"/acts/#{@act.id}/pdf"}
+            target="_blank"
+            class="inline-flex items-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          >
+            <%= gettext("Download PDF") %>
+          </a>
+        </:primary_action>
+      </.workspace_page_header>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
+          </div>
+
+          <div id={"act-send-panel-#{@act.id}"} class="send-panel"></div>
+
+          <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
+            <div class="act-doc relative min-w-[720px]">
+  <%= if EdocApi.ActStatus.is_signed?(@act) do %>
+    <div class="signed-watermark">Подписан - Қол қойылған</div>
+  <% end %>
+
+  <div class="small right">Приложение 50</div>
+  <div class="small right">к приказу Министра финансов Республики Казахстан</div>
+  <div class="small right">от 20 декабря 2012 года № 562</div>
+  <div class="small right" style="margin-top: 8px;">Форма Р-1</div>
+  <table class="no-border party-header-table">
+    <colgroup>
+      <col class="party-col-label" />
+      <col class="party-col-details" />
+      <col class="party-col-bin" />
+    </colgroup>
+    <tr>
+      <td></td>
+      <td></td>
+      <td>ИИН/БИН</td>
+    </tr>
+  </table>
+
+  <table class="no-border party-table">
+    <colgroup>
+      <col class="party-col-label" />
+      <col class="party-col-details" />
+      <col class="party-col-bin" />
+    </colgroup>
+    <tr>
+      <td>Заказчик</td>
+      <td class="party-details">
+        <div class="party-details-line">
+          <%= if seller_legal_form, do: seller_legal_form <> " " %><%= @act.seller_name %>, <%= @act.seller_address %>
+        </div>
+      </td>
+      <td><span class="bin-cell"><%= @act.seller_bin_iin %></span></td>
+    </tr>
+    <tr>
+      <td>Исполнитель</td>
+      <td class="party-details">
+        <div class="party-details-line">
+          <%= if buyer_legal_form, do: buyer_legal_form <> " " %><%= @act.buyer_name %>, <%= @act.buyer_address %>
+        </div>
+      </td>
+      <td><span class="bin-cell"><%= @act.buyer_bin_iin %></span></td>
+    </tr>
+  </table>
+
+  <table class="no-border contract-wrap-table">
+    <tr>
+      <td class="contract-wrap-left">
+        <table class="no-border contract-meta-table">
+          <colgroup>
+            <col class="contract-meta-label" />
+            <col class="contract-meta-value" />
+          </colgroup>
+          <tr>
+            <td>Договор (контракт)</td>
+            <td>
+              <div class="contract-meta-line">
+                <%= if @act.contract do %>
+                  Договор № <%= @act.contract.number %> от <%= EdocApiWeb.ActHTML.fmt_date(@act.contract.issue_date) %>
+                <% else %>
+                  —
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td class="contract-wrap-right">
+        <table class="doc-meta-box">
+          <tr>
+            <th>Номер<br/>документа</th>
+            <th>Дата<br/>составления</th>
+          </tr>
+          <tr>
+            <td><%= @act.number %></td>
+            <td><%= EdocApiWeb.ActHTML.fmt_date(@act.issue_date) %></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <h2 class="act-title">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</h2>
+
+  <table class="act-items-table" style="width: 100%; border-collapse: collapse; table-layout: fixed; font-family: Arial, sans-serif; font-size: 11px; margin-top: 0;">
+    <colgroup>
+      <col style="width: 6%;" />
+      <col style="width: 30%;" />
+      <col style="width: 10%;" />
+      <col style="width: 16%;" />
+      <col style="width: 8%;" />
+      <col style="width: 8%;" />
+      <col style="width: 8%;" />
+      <col style="width: 7%;" />
+      <col style="width: 7%;" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; line-height: 1.2;">Номер<br/>по<br/>порядку</th>
+        <th rowspan="2" style="border: 1px solid #000; padding: 5px 4px; text-align: center; vertical-align: middle; line-height: 1.35; font-size: 12px;">
+          Наименование работ(услуг)(в разрезе их<br/>
+          подвидов в соответствии с технической<br/>
+          спецификацией,заданием,графиком<br/>
+          выполнения работ(услуг) при их наличии)
+        </th>
+        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; line-height: 1.2;">
+          Дата<br/>выполнения<br/>работ<br/>(оказания<br/>услуг)
+        </th>
+        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; line-height: 1.2;">
+          Сведения об отчете о научных исследованиях, маркетинговых, консультационных и прочих услугах (дата, номер, количество страниц) (при их наличии)
+        </th>
+        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; line-height: 1.2;">
+          Единица измерения
+        </th>
+        <th colspan="4" style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; line-height: 1.2;">
+          Выполнено работ (оказано услуг)
+        </th>
+      </tr>
+      <tr>
+        <th style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;">количество</th>
+        <th style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;">цена за<br/>единицу</th>
+        <th style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;">стоимость</th>
+        <th style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;">в том числе НДС, в KZT</th>
+      </tr>
+      <tr>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">1</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">2</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">3</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">4</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">5</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">6</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">7</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">8</th>
+        <th style="border: 1px solid #000; padding: 2px; text-align: center;">9</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= for {item, idx} <- Enum.with_index(items, 1) do %>
+        <% item_unit_price = item.unit_price || Decimal.new(0) %>
+        <% item_amount_net = item.amount || Decimal.new(0) %>
+        <% item_unit_vat = Decimal.mult(item_unit_price, vat_rate) |> Decimal.div(Decimal.new(100)) |> Decimal.round(2) %>
+        <% item_vat = Decimal.mult(item_amount_net, vat_rate) |> Decimal.div(Decimal.new(100)) |> Decimal.round(2) %>
+        <% item_unit_price_with_vat = Decimal.add(item_unit_price, item_unit_vat) %>
+        <% item_amount_with_vat = Decimal.add(item_amount_net, item_vat) %>
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= idx %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: left; vertical-align: top;"><%= item.name || "" %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= EdocApiWeb.ActHTML.fmt_date(item.actual_date || @act.actual_date) %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: left; vertical-align: top;"><%= item.report_info || "" %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= item.code || "" %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= Decimal.to_string(item.qty || Decimal.new(0), :normal) %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: right; vertical-align: middle;"><%= EdocApiWeb.ContractHTML.money(item_unit_price_with_vat) %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: right; vertical-align: middle;"><%= EdocApiWeb.ContractHTML.money(item_amount_with_vat) %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: right; vertical-align: middle;"><%= EdocApiWeb.ContractHTML.money(item_vat) %></td>
+        </tr>
+      <% end %>
+      <tr>
+        <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
+        <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
+        <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
+        <td style="border: 1px solid #000; border-left: none; border-right: none; border-bottom: none; padding: 4px;"></td>
+        <td style="border: 1px solid #000; border-right: none; padding: 4px; text-align: center;">Итого</td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: center;"><%= Decimal.to_string(total_qty, :normal) %></td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: center;">x</td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_amount) %></td>
+        <td style="border: 1px solid #000; padding: 4px; text-align: right;"><%= EdocApiWeb.ContractHTML.money(total_vat) %></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <% executor_title = assigns[:executor_title] || "Директор" %>
+  <% appendix_pages = assigns[:appendix_pages] || "_____________" %>
+  <% acceptance_date = assigns[:acceptance_date] || "" %>
+  <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; font-family: Arial, sans-serif; font-size: 11px; line-height: 1.15;">
+    <colgroup>
+      <%= for _ <- 1..28 do %>
+        <col style="width: 3.5714%;" />
+      <% end %>
+    </colgroup>
+    <tr>
+      <td colspan="8" style="border: none; padding: 2px 3px; text-align: left; white-space: nowrap;">Сведения об использовании запасов, полученных от заказчика</td>
+      <td colspan="6" style="border: none; border-bottom: 1px solid #000;"></td>
+      <td colspan="14" style="border: none; border-bottom: 1px solid #000;"></td>
+    </tr>
+    <tr>
+      <td colspan="11" style="border: none; height: 16px;"></td>
+      <td colspan="8" style="border: none; padding: 2px 3px; text-align: center; font-style: italic;">
+        наименование, количество, стоимость
+      </td>
+      <td colspan="9" style="border: none;"></td>
+    </tr>
+    <tr>
+      <td colspan="28" style="border: none; height: 10px;"></td>
+    </tr>
+    <tr>
+      <td colspan="20" style="border: none; padding: 2px 3px 0 3px; text-align: left;">
+        Приложение: Перечень документации, в том числе отчет(ы) о маркетинговых, научных исследованиях, консультационных и прочих услугах (обязательны при его
+      </td>
+      <td colspan="8" style="border: none;"></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="border: none;"></td>
+      <td colspan="8" style="border: none; padding: 0 3px; text-align: left; vertical-align: bottom;">
+        <div style="display: flex; align-items: flex-end; width: 100%; height: 100%;">
+          <span>(их) наличии) на <%= appendix_pages %> </span>
+          <span style="line-height: 1; margin: 0 14px -1px 7px;">страниц</span>
+          <span style="flex: 1; border-bottom: 1px solid #000; height: 0; margin-bottom: -1px;"></span>
+        </div>
+      </td>
+      <td colspan="11" style="border: none; border-bottom: 1px solid #000;"></td>
+      <td colspan="10" style="border: none; border-bottom: 1px solid #000;"></td>
+    </tr>
+    <tr>
+      <td colspan="28" style="border: none; height: 14px;"></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="border: none; padding: 2px 3px; text-align: left;">Сдал (Исполнитель)</td>
+      <td colspan="2" style="border: none; border-bottom: 1px solid #000; padding: 2px 3px; text-align: center;"><%= executor_title %></td>
+      <td colspan="3" style="border: none; border-bottom: 1px solid #000; padding: 2px 3px; text-align: left;">/</td>
+      <td colspan="4" style="border: none; border-bottom: 1px solid #000; padding: 2px 3px; text-align: left;">/</td>
+      <td colspan="2" style="border: none;"></td>
+      <td colspan="3" style="border: none; padding: 2px 3px; text-align: left;">Принял (Заказчик)</td>
+      <td colspan="3" style="border: none; border-bottom: 1px solid #000;"></td>
+      <td colspan="3" style="border: none; border-bottom: 1px solid #000; padding: 2px 3px; text-align: left;">/</td>
+      <td colspan="4" style="border: none; border-bottom: 1px solid #000; padding: 2px 3px; text-align: left;">/</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="border: none;"></td>
+      <td colspan="2" style="border: none; padding: 1px 3px; text-align: center; font-style: italic;">должность</td>
+      <td colspan="3" style="border: none; padding: 1px 3px; text-align: center; font-style: italic;">подпись</td>
+      <td colspan="4" style="border: none; padding: 1px 3px; text-align: center; font-style: italic;">расшифровка подписи</td>
+      <td colspan="2" style="border: none;"></td>
+      <td colspan="5" style="border: none; padding: 1px 3px 1px 2px; text-align: right; font-style: italic;">должность</td>
+      <td colspan="4" style="border: none; padding: 1px 3px; text-align: center; font-style: italic;">подпись</td>
+      <td colspan="4" style="border: none; padding: 1px 3px; text-align: center; font-style: italic;">расшифровка подписи</td>
+    </tr>
+    <tr>
+      <td colspan="28" style="border: none; height: 8px;"></td>
+    </tr>
+    <tr>
+      <td colspan="4" style="border: none; padding: 2px 3px 2px 15px; text-align: left; font-weight: 700;">М.П.</td>
+      <td colspan="10" style="border: none;"></td>
+      <td colspan="8" style="border: none; padding: 2px 3px; text-align: left;">
+        <div style="display: flex; align-items: flex-end; gap: 6px;">
+          <span>Дата подписания (принятия) работ (услуг)</span>
+          <span style="flex: 1; border-bottom: 1px solid #000; height: 0;"></span>
+        </div>
+      </td>
+      <td colspan="6" style="border: none;"><%= acceptance_date %></td>
+    </tr>
+    <tr>
+      <td colspan="28" style="border: none; height: 8px;"></td>
+    </tr>
+    <tr>
+      <td colspan="14" style="border: none;"></td>
+      <td colspan="8" style="border: none; padding: 2px 3px 2px 15px; text-align: left; font-weight: 700;">М.П.</td>
+      <td colspan="6" style="border: none;"></td>
+    </tr>
+  </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <.workspace_support_panel heading={gettext("Overview")}>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Status") %></dt>
+          <dd class="mt-2">
+            <span class={["inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", status_class]}>
+              <%= status_label %>
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Buyer") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @act.buyer_name || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Contract") %></dt>
+          <dd class="mt-1 text-sm text-slate-900">
+            <%= if @act.contract, do: @act.contract.number, else: "—" %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Issue date") %></dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= EdocApiWeb.ActHTML.fmt_date(@act.issue_date) %></dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Total") %></dt>
+          <dd class="mt-1 text-sm font-medium text-slate-900">
+            <%= EdocApiWeb.ContractHTML.money(total_amount) %> <%= @act.currency || "KZT" %>
+          </dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
+</div>

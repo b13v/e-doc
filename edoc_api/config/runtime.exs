@@ -48,6 +48,20 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  session_signing_salt =
+    System.get_env("SESSION_SIGNING_SALT") ||
+      raise """
+      environment variable SESSION_SIGNING_SALT is missing.
+      Set a stable, random value for production session signing.
+      """
+
+  live_view_signing_salt =
+    System.get_env("LIVE_VIEW_SIGNING_SALT") ||
+      raise """
+      environment variable LIVE_VIEW_SIGNING_SALT is missing.
+      Set a stable, random value for production LiveView signing.
+      """
+
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
@@ -63,10 +77,74 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    live_view: [signing_salt: live_view_signing_salt],
+    force_ssl: [hsts: true],
+    secure_browser_headers: %{
+      "x-content-type-options" => "nosniff",
+      "x-frame-options" => "DENY",
+      "referrer-policy" => "strict-origin-when-cross-origin",
+      "permissions-policy" => "camera=(), microphone=(), geolocation=()",
+      "content-security-policy" =>
+        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; connect-src 'self'; font-src 'self' data:; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+    }
+
+  config :edoc_api, :session_signing_salt, session_signing_salt
+
+  trusted_proxies =
+    System.get_env("TRUSTED_PROXY_IPS", "")
+    |> String.split(",", trim: true)
+    |> Enum.reduce([], fn value, acc ->
+      value = String.trim(value)
+
+      case :inet.parse_address(String.to_charlist(value)) do
+        {:ok, ip} -> [ip | acc]
+        _ -> acc
+      end
+    end)
+    |> Enum.reverse()
+
+  config :edoc_api, EdocApiWeb.Plugs.RateLimit, trusted_proxies: trusted_proxies
+
+  jwt_secret =
+    System.get_env("JWT_SECRET") ||
+      raise """
+      environment variable JWT_SECRET is missing.
+      Generate a strong secret and set it for production.
+      """
+
+  access_ttl_seconds =
+    case Integer.parse(System.get_env("JWT_ACCESS_TTL_SECONDS") || "900") do
+      {ttl, ""} when ttl > 0 -> ttl
+      _ -> 900
+    end
+
+  refresh_ttl_seconds =
+    case Integer.parse(System.get_env("JWT_REFRESH_TTL_SECONDS") || "2592000") do
+      {ttl, ""} when ttl > 0 -> ttl
+      _ -> 2_592_000
+    end
 
   config :edoc_api, EdocApi.Auth,
-    jwt_secret: System.get_env("JWT_SECRET") || "dev-secret-change-me"
+    jwt_secret: jwt_secret,
+    access_ttl_seconds: access_ttl_seconds,
+    refresh_ttl_seconds: refresh_ttl_seconds
+
+  # Email configuration
+  if System.get_env("SMTP_HOST") do
+    config :edoc_api, EdocApi.Mailer,
+      adapter: Swoosh.Adapters.SMTP,
+      relay: System.get_env("SMTP_HOST"),
+      username: System.get_env("SMTP_USERNAME"),
+      password: System.get_env("SMTP_PASSWORD"),
+      port: String.to_integer(System.get_env("SMTP_PORT") || "587"),
+      ssl: System.get_env("SMTP_SSL") in ~w(true 1),
+      tls: System.get_env("SMTP_TLS") in ~w(true 1) || :never,
+      retries: String.to_integer(System.get_env("SMTP_RETRIES") || "2")
+  else
+    # Default to local for development
+    config :edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local
+  end
 
   # ## SSL Support
   #

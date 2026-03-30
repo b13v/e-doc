@@ -1,0 +1,108 @@
+<section class="space-y-8">
+  <.workspace_page_header title={gettext("Contracts")}>
+    <:primary_action>
+      <a
+        href="/contracts/new"
+        class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+      >
+        <%= gettext("New Contract") %>
+      </a>
+    </:primary_action>
+  </.workspace_page_header>
+
+  <div class={["grid gap-6", if(@contracts != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
+    <div class="space-y-4">
+      <%= if @flash["info"] do %>
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <%= @flash["info"] %>
+        </div>
+      <% end %>
+
+      <.flash_error flash={@flash} include_info={false} />
+
+      <%= if Enum.empty?(@contracts) do %>
+        <.workspace_empty_state
+          title={gettext("No contracts yet.")}
+          support_text={gettext("Create your first contract when your company and buyer details are ready.")}
+          action_label={gettext("New Contract")}
+          action_href="/contracts/new"
+        />
+      <% else %>
+        <div class="overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <div class="overflow-x-auto overflow-y-visible">
+            <table class="min-w-full divide-y divide-stone-200">
+              <thead class="bg-stone-50/80">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Number") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Buyer") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Date") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Status") %>
+                  </th>
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Actions") %>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200 bg-white">
+                <%= for contract <- @contracts do %>
+                  <% actions = contract_row_actions(contract) %>
+                  <tr class="align-top transition hover:bg-stone-50/70">
+                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                      <a href={"/contracts/#{contract.id}"} class="transition hover:text-sky-700">
+                        <%= contract.number %>
+                      </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= EdocApi.Core.Contract.buyer_name(contract) || "—" %>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= fmt_date(contract.issue_date) %>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                      <%= EdocApiWeb.CoreComponents.status_badge(contract.status) %>
+                    </td>
+                    <td class="relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right">
+                      <.workspace_row_actions
+                        primary={actions.primary}
+                        secondary={actions.secondary}
+                        desktop_mode={:overflow}
+                        mobile_mode={:overflow}
+                      />
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <.workspace_support_panel
+      :if={@contracts != []}
+      heading={gettext("Overview")}
+    >
+      <dl class="space-y-3 text-sm text-slate-600">
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Draft contracts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @contract_summary.draft %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Issued contracts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @contract_summary.issued %></dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Signed contracts") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @contract_summary.signed %></dd>
+        </div>
+      </dl>
+    </.workspace_support_panel>
+  </div>
+</section>

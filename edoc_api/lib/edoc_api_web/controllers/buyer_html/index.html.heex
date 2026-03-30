@@ -1,0 +1,113 @@
+<section class="space-y-8">
+  <.workspace_page_header
+    title={gettext("Buyers")}
+    support_text={gettext("Manage your counterparties (buyers) for contracts and invoices")}
+  >
+    <:primary_action>
+      <a
+        href="/buyers/new"
+        class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+      >
+        <%= gettext("Add Buyer") %>
+      </a>
+    </:primary_action>
+  </.workspace_page_header>
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+    <div class="space-y-4">
+      <.flash_error flash={@flash} />
+
+      <%= if Enum.empty?(@buyers) do %>
+        <.workspace_empty_state
+          title={gettext("No buyers")}
+          support_text={gettext("Get started by creating your first buyer.")}
+          action_label={gettext("New Buyer")}
+          action_href="/buyers/new"
+        />
+      <% else %>
+        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-stone-200">
+              <thead class="bg-stone-50/80">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Name") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("BIN/IIN") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("City") %>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Email") %>
+                  </th>
+                  <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <%= gettext("Actions") %>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200 bg-white">
+                <%= for buyer <- @buyers do %>
+                  <% actions = row_actions(buyer) %>
+                  <tr class="align-top transition hover:bg-stone-50/70">
+                    <td class="px-6 py-4 text-sm text-slate-900">
+                      <div class="space-y-1">
+                        <p class="font-semibold"><%= buyer.name %></p>
+                        <p :if={legal_form_text(buyer.legal_form)} class="text-xs text-slate-500">
+                          <%= legal_form_text(buyer.legal_form) %>
+                        </p>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= buyer.bin_iin %>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= buyer.city || "-" %>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                      <%= buyer.email || "-" %>
+                    </td>
+                    <td class="w-px whitespace-nowrap px-6 py-4 text-right">
+                      <.workspace_row_actions
+                        primary={actions.primary}
+                        secondary={actions.secondary}
+                        desktop_mode={:overflow}
+                        mobile_mode={:overflow}
+                      />
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <.workspace_support_panel
+      heading={gettext("Overview")}
+      subtitle={gettext("Buyers are used for contracts and invoices.")}
+    >
+      <dl class="space-y-3 text-sm text-slate-600">
+        <div class="flex items-center justify-between gap-4">
+          <dt><%= gettext("Buyers") %></dt>
+          <dd class="font-semibold text-slate-900"><%= @buyer_support.count %></dd>
+        </div>
+      </dl>
+
+      <p class="mt-4 text-sm leading-6 text-slate-600">
+        <%= gettext("Keep buyer details current before creating contracts and invoices.") %>
+      </p>
+
+      <div :if={@buyer_support.show_contracts_link?} class="mt-4">
+        <a
+          href="/contracts"
+          class="text-sm font-medium text-sky-700 transition hover:text-sky-900"
+        >
+          <%= gettext("View Contracts") %>
+        </a>
+      </div>
+    </.workspace_support_panel>
+  </div>
+</section>

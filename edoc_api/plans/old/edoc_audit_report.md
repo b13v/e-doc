@@ -1,0 +1,804 @@
+# EdocApi Risk Audit Report
+
+## 1. Duplicated Business Rules
+
+### 1.1 Item Amount Calculation Logic ✅ DONE
+
+**Location:** `lib/edoc_api/core/invoice_item.ex:33-46` and `lib/edoc_api/core/contract_item.ex:58-73`
+
+**Issue:** Both modules implement nearly identical `compute_amount/1` functions but with subtle differences:
+
+- `InvoiceItem` checks `is_integer(qty)`
+- `ContractItem` uses `parse_decimal/1` helper for qty
+- Different rounding behavior
+
+**Risk:** Maintenance burden, inconsistent behavior between invoices and contracts.
+
+**Resolution:** Created `lib/edoc_api/calculations/item_calculation.ex` with shared logic:
+
+- `compute_amount/2` - handles integer, decimal, and string qty types
+- `compute_amount_changeset/1` - changeset helper for automatic calculation
+- Both `InvoiceItem` and `ContractItem` now use the shared module
+
+---
+
+### 1.2 VAT Rate Validation ✅ DONE
+
+**Location:** `lib/edoc_api/core/contract.ex:100` and `lib/edoc_api/vat_rates.ex:32-38`
+
+**Issue:** Contract schema hardcoded `[0, 12, 16]` for VAT rates but Kazakhstan only uses 16% (and 0%) since 2026. The 12% rate was outdated.
+
+**Risk:** Inconsistent VAT validation - contracts could use 12% which is no longer valid in Kazakhstan.
+
+**Resolution:**
+
+- Removed 12% from contract validation
+- Changed to use `VatRates.validate_rate(:vat_rate, "KZ")` which correctly validates `[0, 16]`
+- Also updated currency validation to use `Currencies.supported_currencies()` for consistency
+
+---
+
+### 1.3 Currency Validation ✅ DONE
+
+**Location:** `lib/edoc_api/core/contract.ex:99` and `lib/edoc_api/core/invoice.ex:83`, `lib/edoc_api/currencies.ex:13`
+
+**Issue:** Both schemas supported multiple currencies (`~w(KZT USD EUR RUB)`), but the application only operates in Kazakhstan and should only use KZT (Kazakhstani Tenge). Having multiple currencies adds unnecessary complexity.
+
+**Risk:**
+
+- Unnecessary complexity for a Kazakhstan-only system
+- Potential currency conversion issues
+- Inconsistent currency validation between Contract and Invoice schemas
+
+**Resolution:**
+
+- Changed `Currencies.supported_currencies()` to return only `["KZT"]`
+- Updated both Contract and Invoice schemas to use `Currencies.supported_currencies()` consistently
+- Removed precision definitions for USD, EUR, RUB from the Currencies module
+
+```elixir
+# Before: @supported_currencies ~w(KZT USD EUR RUB)
+# After:
+@supported_currencies ~w(KZT)
+
+# Both schemas now use:
+|> validate_inclusion(:currency, Currencies.supported_currencies())
+```
+
+---
+
+### 1.4 Overlapping Status Checks ✅ DONE
+
+**Location:** `lib/edoc_api/invoicing.ex:501-507`
+
+**Issue:** Two different checks for "already issued":
+
+```elixir
+not is_nil(invoice.bank_snapshot) -> {:error, :already_issued}
+InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+```
+
+**Why They Were Different:**
+
+| Check                               | Validates                 | Source of Truth                |
+| ----------------------------------- | ------------------------- | ------------------------------ |
+| `not is_nil(invoice.bank_snapshot)` | Database record existence | `invoice_bank_snapshots` table |
+| `InvoiceStatus.is_issued?(invoice)` | Status field value        | `invoices.status` column       |
+
+**Risk:**
+
+- Both returned the SAME error (`:already_issued`), making debugging difficult
+- Data inconsistency possible: invoice could have `status: "issued"` but no snapshot, or vice versa
+
+**Resolution:**
+
+Removed the `bank_snapshot` check entirely. The database unique constraint on `invoice_bank_snapshots.invoice_id` already prevents duplicate snapshots.
+
+**Code change:**
+
+```elixir
+# Before:
+cond do
+  not is_nil(invoice.bank_snapshot) -> {:error, :already_issued}
+  InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+  ...
+end
+
+# After:
+cond do
+  InvoiceStatus.is_issued?(invoice) -> {:error, :already_issued}
+  ...
+end
+```
+
+The `create_bank_snapshot/2` function already handles the unique constraint violation from the database and returns `{:error, :already_issued}` if a snapshot exists.
+
+---
+
+## 2. Missing Validations
+
+### 2.1 Date Validation ✅ DONE
+
+**Location:** `lib/edoc_api/core/invoice.ex`, `lib/edoc_api/core/contract.ex`
+
+**Issue:** No validation that:
+
+- `due_date` is after `issue_date` (Invoice)
+- `issue_date` is not in the future (both)
+- Contract dates are reasonable
+
+**Risk:** Users can create invoices with past due dates or future issue dates.
+
+**Resolution:**
+
+Added date validation functions to both schemas:
+
+**Invoice (`lib/edoc_api/core/invoice.ex`):**
+
+```elixir
+|> validate_date_not_in_future(:issue_date)
+|> validate_due_date_after_issue_date()
+
+# Private validation functions:
+defp validate_date_not_in_future(changeset, field) do
+  date = get_field(changeset, field)
+
+  if date && Date.compare(date, Date.utc_today()) == :gt do
+    add_error(changeset, field, "cannot be in the future")
+  else
+    changeset
+  end
+end
+
+defp validate_due_date_after_issue_date(changeset) do
+  due = get_field(changeset, :due_date)
+  issue = get_field(changeset, :issue_date)
+
+  if due && issue && Date.compare(due, issue) == :lt do
+    add_error(changeset, :due_date, "must be after issue date")
+  else
+    changeset
+  end
+end
+```
+
+**Contract (`lib/edoc_api/core/contract.ex`):**
+
+```elixir
+|> validate_date_not_in_future(:issue_date)
+```
+
+Both `changeset/3` and `update_changeset/2` functions include the validation.
+
+---
+
+### 2.2 Weak BIN/IIN Validation ✅ DONE
+
+**Location:** `lib/edoc_api/validators/bin_iin.ex:40-43`
+
+**Issue:** Only validated length (12 digits) and format, not the actual checksum. Kazakhstan BIN/IIN has a validation algorithm.
+
+**Risk:** Invalid BINs could pass validation (e.g., `000000000000` or `111111111111`).
+
+**Resolution:**
+
+Implemented Kazakhstan BIN/IIN checksum validation algorithm:
+
+```elixir
+def validate(changeset, field) do
+  changeset
+  |> validate_length(field, is: @bin_iin_length)
+  |> validate_format(field, @bin_iin_pattern, message: "must contain exactly 12 digits")
+  |> validate_checksum(field)
+end
+
+# Kazakhstan BIN/IIN checksum algorithm:
+# 1. Multiply each of first 11 digits by weights [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+# 2. Sum all products
+# 3. Take modulo 11
+# 4. If remainder is 10, use alternative weights [3, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2]
+# 5. Result (0-9) must match the 12th digit
+
+@spec valid_checksum?(String.t()) :: boolean()
+def valid_checksum?(value) when is_binary(value) do
+  case String.length(value) do
+    12 -> validate_kazakhstan_checksum(value)
+    _ -> false
+  end
+end
+
+defp validate_kazakhstan_checksum(<<digits::binary-size(11), check_digit::binary-size(1)>>) do
+  weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  alternative_weights = [3, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2]
+
+  digit_list =
+    digits
+    |> String.graphemes()
+    |> Enum.map(&String.to_integer/1)
+
+  expected =
+    case calculate_checksum(digit_list, weights) do
+      10 -> calculate_checksum(digit_list, alternative_weights)
+      remainder -> remainder
+    end
+
+  String.to_integer(check_digit) == expected
+end
+```
+
+**Validation Results:**
+
+| Value          | Length | Format | Checksum | Result  |
+| -------------- | ------ | ------ | -------- | ------- |
+| `000000000000` | ✓      | ✓      | ✗        | Invalid |
+| `111111111111` | ✓      | ✓      | ✗        | Invalid |
+| `940440001481` | ✓      | ✓      | ✓        | Valid   |
+
+---
+
+### 2.3 No Invoice Number Format Validation ✅ DONE
+
+**Location:** `lib/edoc_api/core/invoice.ex:134-150`
+
+**Issue:** Number is only validated for length (1-32 chars). No format enforcement.
+
+**Risk:** Inconsistent invoice numbers across the system.
+
+**Resolution:**
+
+Added format validation for invoice numbers in `validate_number_optional/1`:
+
+```elixir
+# Invoice number format: exactly 11 digits (e.g., 00000000001)
+@invoice_number_format ~r/^\d{11}$/
+
+ defp validate_number_optional(changeset) do
+    case get_field(changeset, :number) do
+      nil ->
+        changeset
+
+      "" ->
+        add_error(changeset, :number, "can't be blank")
+
+      _number ->
+        changeset
+        |> validate_length(:number, is: 11)
+        |> validate_format(:number, @invoice_number_format,
+          message: "must be exactly 11 digits (e.g., 00000000001)"
+        )
+    end
+  end
+```
+
+**Additional Changes:**
+
+1. **Removed currency-specific sequences** from `InvoiceCounter` - only "default" sequence is now supported
+2. **Updated `format_invoice_number`** to always generate 11-digit numbers without prefixes
+3. **Simplified `normalize_sequence_name`** to always return "default"
+
+**Validation Results:**
+
+| Value | Format | Result |
+|-------|--------|--------|
+| `00000000001` | ✓ (11 digits) | Valid |
+| `12345678901` | ✓ (11 digits) | Valid |
+| `0000000001` | ✗ (10 digits) | Invalid |
+| `000000000000` | ✗ (12 digits) | Invalid |
+| `KZT-00000000001` | ✗ (has prefix) | Invalid |
+
+---
+
+### 2.4 Missing Contract Buyer Validation Gap
+
+**Location:** `lib/edoc_api/core/contract.ex:137-162`
+
+**Issue:** `validate_buyer_details/1` allows empty buyer info on new contracts but validates on update. This creates a gap where contracts can be created without any buyer.
+
+**Risk:** Contracts without buyers can be issued, causing data integrity issues.
+
+**Suggested Refactor:**
+
+```elixir
+# Require buyer info at creation time OR make it truly optional with defaults
+|> validate_buyer_details(:create)  # strict mode for creation
+```
+
+---
+
+### 2.5 No Currency Consistency Between Contract and Invoice ✅ DONE
+
+**Location:** `lib/edoc_api/core/invoice.ex`
+
+**Issue:** When creating an invoice from a contract, there's no validation that currencies match.
+
+**Risk:** Invoice in USD linked to Contract in KZT.
+
+**Resolution:**
+
+This issue is now **resolved by design**. Following the fix in section 1.3, the application now only supports KZT currency:
+
+- `Currencies.supported_currencies()` returns only `["KZT"]`
+- Both Contract and Invoice schemas validate currency using `Currencies.supported_currencies()`
+- It's impossible to create an invoice or contract with any currency other than KZT
+
+Therefore, currency consistency is guaranteed - all invoices and contracts must use KZT.
+```
+
+---
+
+## 3. Inconsistent Error Handling
+
+### 3.1 Multiple Error Return Formats ✅ DONE
+
+**Locations:** Various context modules
+
+**Issue:** Different modules return errors in different shapes:
+
+- `Accounts.authenticate_user/2` → `{:error, :invalid_credentials}`
+- `Invoicing.create_invoice_for_user/3` → `{:error, reason}` or `{:error, reason, details}`
+- `Core.create_contract_for_user/2` → `{:error, changeset}` or `{:error, :company_required}`
+
+**Risk:** Controllers must handle multiple error formats. Hard to write generic error handling.
+
+**Resolution:**
+
+Implemented standardized error handling using the `EdocApi.Errors` module. All errors now use a consistent 3-tuple format:
+
+```elixir
+# Standardized error formats:
+{:error, :not_found, %{resource: atom}}           # For not found errors
+{:error, :validation, %{changeset: Ecto.Changeset}} # For validation errors
+{:error, :business_rule, %{rule: atom, details: map}} # For business rule violations
+
+# Examples:
+Errors.not_found(:invoice)
+# => {:error, :not_found, %{resource: :invoice}}
+
+Errors.business_rule(:already_issued, %{invoice_id: id})
+# => {:error, :business_rule, %{rule: :already_issued, details: %{invoice_id: id}}}
+
+Errors.from_changeset({:error, changeset})
+# => {:error, :validation, %{changeset: changeset}}
+```
+
+**Changes Made:**
+
+1. **lib/edoc_api/errors.ex** - Added `normalize/1` function to convert tuple errors to standard format
+2. **lib/edoc_api/accounts.ex** - Updated `authenticate_user/2` to use `Errors.business_rule/2`
+3. **lib/edoc_api/core.ex** - Updated all error returns to use standardized format
+4. **lib/edoc_api/invoicing.ex** - Updated `do_issue_invoice/1`, `select_bank_account/1`, `create_bank_snapshot/2`, and `delete_invoice_for_user/2`
+5. **lib/edoc_api/repo_helpers.ex** - Updated to automatically normalize errors from transactions
+6. **lib/edoc_api_web/controller_helpers.ex** - Added handlers for standardized error formats
+7. **lib/edoc_api_web/error_mapper.ex** - Updated `already_issued/1` to accept resource parameter
+8. **Test files** - Updated all test expectations to match new error format
+
+**Benefits:**
+- Controllers can now handle errors generically
+- Consistent API across all modules
+- Clear distinction between error types (not_found, validation, business_rule)
+- Easy to extend with new error types
+
+---
+
+### 3.2 Inconsistent Transaction Abort Patterns ✅ DONE
+
+**Location:** `lib/edoc_api/invoicing.ex:46-48` vs `lib/edoc_api/core.ex:153-155`
+
+**Issue:** Some places use `RepoHelpers.abort/1`, others use pattern matching with `unless`.
+
+**Risk:** Inconsistent error handling makes code harder to follow.
+
+**Resolution:**
+
+Created `RepoHelpers.fetch_or_abort/2` and `RepoHelpers.fetch_or_abort/3` helper functions to standardize the pattern of fetching records and aborting transactions when records are not found.
+
+**Before:**
+```elixir
+# Manual pattern with unless check
+invoice =
+  Invoice
+  |> where([i], i.user_id == ^user_id and i.id == ^invoice_id)
+  |> Repo.one()
+
+unless invoice do
+  RepoHelpers.abort({:not_found, %{resource: :invoice}})
+end
+```
+
+**After:**
+```elixir
+# Standardized pattern with fetch_or_abort
+invoice =
+  RepoHelpers.fetch_or_abort(
+    from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+    :invoice
+  )
+```
+
+**Changes Made:**
+
+1. **lib/edoc_api/repo_helpers.ex** - Added two new functions:
+   - `fetch_or_abort(queryable, id, resource_name)` - for fetching by ID
+   - `fetch_or_abort(query, resource_name)` - for fetching by query
+
+2. **lib/edoc_api/invoicing.ex** - Updated 3 locations to use `fetch_or_abort`:
+   - `issue_invoice_for_user/2`
+   - `update_invoice_for_user/3`
+   - `mark_invoice_issued/1`
+
+3. **lib/edoc_api/core.ex** - Updated 1 location:
+   - `issue_contract_for_user/2`
+
+4. **test/edoc_api/invoicing/invoice_update_test.exs** - Updated 2 test expectations to match new error formats
+
+**Benefits:**
+- Consistent pattern across all modules for fetching records
+- Eliminates repetitive `unless` checks
+- Automatic standardized error formatting
+- Cleaner, more readable code
+
+---
+
+### 3.3 HTML vs JSON Controller Error Handling Divergence ✅ DONE
+
+**Location:** `lib/edoc_api_web/controllers/invoices_controller.ex:108-129` vs `lib/edoc_api_web/controllers/invoice_controller.ex`
+
+**Issue:** HTML controllers handle errors inline with flash messages; JSON controllers use `ControllerHelpers`.
+
+**Risk:** Error handling logic duplicated and diverging.
+
+**Resolution:**
+
+Created `EdocApiWeb.UnifiedErrorHandler` module to provide consistent error handling across all controller types (HTML, HTMX, and JSON).
+
+**Implementation:**
+
+```elixir
+# lib/edoc_api_web/unified_error_handler.ex
+defmodule EdocApiWeb.UnifiedErrorHandler do
+  def handle_result(conn, result, opts \\ []) do
+    case result do
+      {:ok, data} ->
+        success_handler = Keyword.get(opts, :success)
+        success_handler.(conn, data)
+
+      {:error, type, details} ->
+        handle_error(conn, type, details, opts)
+    end
+  end
+
+  def handle_error(conn, type, details, opts) do
+    cond do
+      htmx_request?(conn) -> handle_htmx_error(conn, type, details, opts)
+      json_request?(conn) -> handle_json_error(conn, type, details, opts)
+      true -> handle_html_error(conn, type, details, opts)
+    end
+  end
+end
+```
+
+**Changes Made:**
+
+1. **lib/edoc_api_web/unified_error_handler.ex** (new file) - Created unified error handler with:
+   - `handle_result/3` - Main entry point for handling success/error results
+   - `handle_error/4` - Dispatches to appropriate handler based on request type
+   - `htmx_request?/1` - Detects HTMX requests
+   - `json_request?/1` - Detects JSON requests
+   - Separate handlers for HTMX, HTML, and JSON error responses
+
+2. **lib/edoc_api_web/controllers/invoices_controller.ex** - Updated `delete/2` action to demonstrate the new pattern:
+   - Uses `UnifiedErrorHandler.handle_result/3`
+   - Provides custom success and error handlers
+   - Maintains HTMX-specific behavior
+
+**Usage Example:**
+
+```elixir
+# Before: Inline error handling with pattern matching
+def delete(conn, %{"id" => id}) do
+  case Invoicing.delete_invoice_for_user(user.id, id) do
+    {:ok, _} ->
+      if conn.assigns.htmx.request do
+        send_resp(conn, :no_content, "")
+      else
+        redirect(conn, to: "/invoices")
+      end
+    {:error, :cannot_delete_issued_invoice} ->
+      if conn.assigns.htmx.request do
+        send_resp(403, "<span class='text-red-600'>Cannot delete...</span>")
+      else
+        put_flash(:error, "Cannot delete...") |> redirect(to: "/invoices")
+      end
+  end
+end
+
+# After: Unified error handling
+def delete(conn, %{"id" => id}) do
+  result = Invoicing.delete_invoice_for_user(user.id, id)
+
+  UnifiedErrorHandler.handle_result(conn, result,
+    success: fn conn, _ ->
+      if UnifiedErrorHandler.htmx_request?(conn) do
+        send_resp(conn, :no_content, "")
+      else
+        redirect(conn, to: "/invoices")
+      end
+    end
+  )
+end
+```
+
+**Benefits:**
+- Consistent error handling across all controller types
+- Eliminates code duplication between HTML/HTMX/JSON responses
+- Centralized error formatting and dispatching
+- Easy to extend with new error types
+- Maintains backward compatibility with existing ControllerHelpers for JSON
+
+**Note:** Other controllers can be migrated to use `UnifiedErrorHandler` incrementally as they are modified.
+
+---
+
+### 3.4 Missing Error Logging
+
+**Location:** `lib/edoc_api_web/controllers/` (HTML controllers)
+
+**Issue:** HTML controllers often swallow errors without logging:
+
+```elixir
+{:error, _changeset} ->
+  conn
+  |> put_flash(:error, "Failed to create invoice")
+```
+
+**Risk:** Production issues hard to debug without error context.
+
+**Suggested Refactor:**
+
+```elixir
+{:error, changeset} ->
+  Logger.warning("Invoice creation failed: #{inspect(changeset.errors)}")
+  conn
+  |> put_flash(:error, "Failed to create invoice")
+```
+
+---
+
+## 4. Places Likely to Break with New Requirements
+
+### 4.1 Invoice Number Generation Complexity
+
+**Location:** `lib/edoc_api/invoicing.ex:342-474`
+
+**Issue:** The `next_invoice_number!/2` function has complex logic for handling:
+
+- New counters vs existing counters
+- Different sequence names
+- Manual counter setting
+
+**Risk:** High cyclomatic complexity. Adding new sequence types or number formats will be error-prone.
+
+**Refactor Suggestion:**
+
+```elixir
+# Extract into a separate module with clear state machine
+defmodule EdocApi.InvoiceNumbering do
+  def next_number(company_id, opts \\ []) do
+    sequence = Keyword.get(opts, :sequence, "default")
+    format = Keyword.get(opts, :format, :standard)
+
+    company_id
+    |> get_or_create_counter(sequence)
+    |> increment_counter()
+    |> format_number(format)
+  end
+end
+```
+
+---
+
+### 4.2 PDF Generation External Dependency
+
+**Location:** `lib/edoc_api/pdf.ex:16`
+
+**Issue:** Hard dependency on `wkhtmltopdf` system binary. No fallback mechanism.
+
+**Risk:**
+
+- Deployment fails if binary not installed
+- No graceful degradation
+- Potential security issues with external binary
+
+**Suggested Refactor:**
+
+```elixir
+def html_to_pdf(html) when is_binary(html) do
+  case System.find_executable("wkhtmltopdf") do
+    nil ->
+      Logger.error("wkhtmltopdf not found")
+      {:error, :pdf_generator_not_available}
+    path ->
+      generate_pdf_with_wkhtmltopdf(html, path)
+  end
+end
+```
+
+---
+
+### 4.3 Bank Account Default Switching Race Condition
+
+**Location:** `lib/edoc_api/payments.ex:38-66`
+
+**Issue:** The `set_default_bank_account/2` function:
+
+1. Resets all defaults
+2. Sets new default
+
+Between steps 1 and 2, the company temporarily has NO default account.
+
+**Risk:** Concurrent requests could leave company without a default account.
+
+**Suggested Refactor:**
+
+```elixir
+def set_default_bank_account(user_id, bank_account_id) do
+  Repo.transaction(fn ->
+    # Lock the company row first
+    company = get_company_for_update!(user_id)
+
+    # Set all to false including target
+    CompanyBankAccount
+    |> where(company_id: ^company.id)
+    |> Repo.update_all(set: [is_default: false])
+
+    # Set target to true
+    CompanyBankAccount
+    |> where(id: ^bank_account_id, company_id: ^company.id)
+    |> Repo.update_all(set: [is_default: true])
+  end)
+end
+```
+
+---
+
+### 4.4 Contract Item Creation Partial Failure
+
+**Location:** `lib/edoc_api/core.ex:191-203`
+
+**Issue:** Contract items are created one by one in a reduce. If item 5 fails, items 1-4 are already created but will be rolled back by transaction.
+
+**Risk:** Works correctly now, but if transaction is removed or modified, partial data possible.
+
+**Suggested Refactor:**
+
+```elixir
+# Validate all items before inserting any
+|> then(fn contract ->
+  items_attrs
+  |> Enum.map(&ContractItem.changeset(%ContractItem{}, &1, contract.id))
+  |> Enum.reduce(Ecto.Multi.new(), fn changeset, multi ->
+    Ecto.Multi.insert(multi, {:item, System.unique_integer()}, changeset)
+  end)
+  |> Repo.transaction()
+end)
+```
+
+---
+
+### 4.5 Hardcoded Kazakhstan-Specific Logic
+
+**Location:** Multiple files
+
+**Issue:** Kazakhstan-specific validations and business rules are scattered:
+
+- BIN/IIN length (12 digits)
+- VAT rates for KZ
+- KBE/KNP codes
+- Phone number formats (+7 xxx)
+
+**Risk:** Supporting other countries requires changes across many files.
+
+**Suggested Refactor:**
+
+```elixir
+# Create country-specific modules
+defmodule EdocApi.Countries.Kazakhstan do
+  def bin_length, do: 12
+  def vat_rates, do: [0, 16]
+  def phone_pattern, do: ~r/^\+7 \(\d{3}\) \d{3} \d{2} \d{2}$/
+end
+
+# Use in validators
+|> CountryValidator.validate(:bin_iin, country: "KZ")
+```
+
+---
+
+### 4.6 Status Transition Enforcement Split
+
+**Location:** `lib/edoc_api/invoice_state_machine.ex` and `lib/edoc_api/invoicing.ex:498-516`
+
+**Issue:** State machine exists but issuance logic also has manual status checks:
+
+```elixir
+# State machine defines transitions
+@transitions %{"draft" => ["issued", "void"], ...}
+
+# But invoicing.ex also checks:
+not InvoiceStatus.can_issue?(invoice) ->
+  {:error, :cannot_issue, %{status: "must be draft to issue"}}
+(invoice.items || []) == [] ->
+  {:error, :cannot_issue, %{items: "must have at least 1 item"}}
+```
+
+**Risk:** Business rules split between state machine and service logic. Easy to update one and forget the other.
+
+**Suggested Refactor:**
+
+```elixir
+# Move all business rules to state machine guards
+def can_issue?(invoice) do
+  InvoiceStatus.is_draft?(invoice) and
+    length(invoice.items) > 0 and
+    Decimal.gt?(invoice.total, 0)
+end
+```
+
+---
+
+### 4.7 Contract Update Allows Partial Data Loss
+
+**Location:** `lib/edoc_api/core.ex:96-117`
+
+**Issue:** Contract update:
+
+1. Clears all existing items (`put_assoc(:contract_items, [])`)
+2. Updates contract
+3. Creates new items
+
+If step 2 succeeds but step 3 fails, contract is updated but has NO items.
+
+**Risk:** Data loss on partial update failure.
+
+**Suggested Refactor:**
+
+```elixir
+# Use Ecto.Multi for atomic operations
+Ecto.Multi.new()
+|> Ecto.Multi.update(:contract, changeset)
+|> Ecto.Multi.delete_all(:delete_items, query)
+|> Ecto.Multi.insert_all(:insert_items, items)
+|> Repo.transaction()
+```
+
+---
+
+## Summary of Critical Issues
+
+| Priority | Issue                                 | Location                              |
+| -------- | ------------------------------------- | ------------------------------------- |
+| High     | PDF generation has no fallback        | `lib/edoc_api/pdf.ex`                 |
+| High     | Bank account switching race condition | `lib/edoc_api/payments.ex`            |
+| Medium   | Duplicate item calculation logic      | `invoice_item.ex`, `contract_item.ex` |
+| Medium   | Inconsistent error return formats     | Multiple context modules              |
+| Medium   | Missing date validations              | `invoice.ex`, `contract.ex`           |
+| Low      | Hardcoded country-specific logic      | Multiple validators                   |
+| Low      | Complex invoice numbering             | `invoicing.ex`                        |
+
+---
+
+## Recommended Action Plan
+
+1. **Immediate (High Risk):**
+   - Add `wkhtmltopdf` availability check at application startup
+   - Fix bank account default switching to use atomic update
+
+2. **Short Term (Medium Risk):**
+   - Extract shared item calculation logic
+   - Standardize error return formats using `EdocApi.Errors` module
+   - Add date validation to schemas
+
+3. **Long Term (Technical Debt):**
+   - Create country-specific validation modules
+   - Simplify invoice numbering with state machine pattern
+   - Unify HTML/JSON error handling

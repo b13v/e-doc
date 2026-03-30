@@ -17,7 +17,7 @@ defmodule EdocApiWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images openapi vendor favicon.ico robots.txt)
 
   def router do
     quote do
@@ -49,12 +49,44 @@ defmodule EdocApiWeb do
     end
   end
 
+  def html do
+    quote do
+      use Phoenix.Component
+
+      # Import convenience functions from controllers
+      import Phoenix.Controller,
+        only: [get_csrf_token: 0, view_module: 1, view_template: 1]
+
+      # Include general helpers for rendering HTML
+      use Gettext, backend: EdocApiWeb.Gettext
+
+      unquote(html_helpers())
+    end
+  end
+
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
         endpoint: EdocApiWeb.Endpoint,
         router: EdocApiWeb.Router,
         statics: EdocApiWeb.static_paths()
+    end
+  end
+
+  def html_helpers do
+    quote do
+      # HTML escaping
+      import Phoenix.HTML
+      use Gettext, backend: EdocApiWeb.Gettext
+
+      # Core HTML components
+      import EdocApiWeb.CoreComponents
+
+      # Shortcut for generating JS commands
+      alias Phoenix.LiveView.JS
+
+      # Routes generation with the ~p sigil
+      unquote(verified_routes())
     end
   end
 

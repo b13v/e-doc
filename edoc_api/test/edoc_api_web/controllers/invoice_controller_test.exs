@@ -1,0 +1,144 @@
+defmodule EdocApiWeb.InvoiceControllerTest do
+  use EdocApiWeb.ConnCase
+
+  alias EdocApi.Invoicing
+  import EdocApi.TestFixtures
+
+  setup %{conn: conn} do
+    user = create_user!()
+    # Set verified_at to allow API access
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    {:ok, conn: authenticate(conn, user), user: user, company: company}
+  end
+
+  defp authenticate(conn, user) do
+    {:ok, token, _claims} = EdocApi.Auth.Token.generate_access_token(user.id)
+    put_req_header(conn, "authorization", "Bearer #{token}")
+  end
+
+  describe "update/2" do
+    test "updates invoice successfully", %{conn: conn, user: user, company: company} do
+      invoice = create_invoice_with_items!(user, company)
+
+      updated_attrs = %{
+        "service_name" => "Updated Service",
+        "buyer_name" => "Updated Buyer",
+        "items" => [
+          %{"name" => "Updated Item", "qty" => 1, "unit_price" => "150.00"}
+        ]
+      }
+
+      conn = put(conn, "/v1/invoices/#{invoice.id}", updated_attrs)
+      assert response(conn, 200)
+
+      assert json_response(conn, 200)["invoice"]["service_name"] == "Updated Service"
+      assert json_response(conn, 200)["invoice"]["buyer_name"] == "Updated Buyer"
+    end
+
+    test "returns 404 for non-existent invoice", %{conn: conn} do
+      fake_id = Ecto.UUID.generate()
+
+      conn = put(conn, "/v1/invoices/#{fake_id}", %{"service_name" => "Updated"})
+      assert response(conn, 404)
+    end
+
+    test "returns 422 for already issued invoice", %{conn: conn, user: user, company: company} do
+      invoice = create_invoice_with_items!(user, company)
+
+      {:ok, issued_invoice} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      conn = put(conn, "/v1/invoices/#{issued_invoice.id}", %{"service_name" => "Updated"})
+      assert response(conn, 422)
+
+      assert json_response(conn, 422)["error"] == "invoice_already_issued"
+    end
+
+    test "rejects contract from another company", %{conn: conn, user: user, company: company} do
+      other_user = create_user!()
+      other_company = create_company!(other_user)
+      other_contract = create_contract!(other_company)
+      invoice = create_invoice_with_items!(user, company)
+
+      updated_attrs = %{"contract_id" => other_contract.id}
+
+      conn = put(conn, "/v1/invoices/#{invoice.id}", updated_attrs)
+      assert response(conn, 422)
+
+      assert "validation_error" in [json_response(conn, 422)["error"]]
+    end
+  end
+
+  describe "index/2" do
+    test "returns normalized pagination metadata", %{conn: conn, user: user, company: company} do
+      _invoice_1 = insert_invoice!(user, company, %{number: "00000000001"})
+      _invoice_2 = insert_invoice!(user, company, %{number: "00000000002"})
+      _invoice_3 = insert_invoice!(user, company, %{number: "00000000003"})
+
+      conn = get(conn, "/v1/invoices?page=2&page_size=2")
+      assert response(conn, 200)
+
+      body = json_response(conn, 200)
+      assert length(body["invoices"]) == 1
+
+      assert body["meta"] == %{
+               "page" => 2,
+               "page_size" => 2,
+               "total_count" => 3,
+               "total_pages" => 2,
+               "has_next" => false,
+               "has_prev" => true
+             }
+    end
+  end
+
+  describe "pay/2" do
+    test "marks issued invoice as paid", %{conn: conn, user: user, company: company} do
+      invoice = create_invoice_with_items!(user, company)
+      {:ok, issued_invoice} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      conn = post(conn, "/v1/invoices/#{issued_invoice.id}/pay")
+      assert response(conn, 200)
+      assert json_response(conn, 200)["invoice"]["status"] == "paid"
+    end
+
+    test "returns 422 for draft invoice", %{conn: conn, user: user, company: company} do
+      invoice = create_invoice_with_items!(user, company)
+
+      conn = post(conn, "/v1/invoices/#{invoice.id}/pay")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "cannot_mark_paid"
+    end
+  end
+
+  describe "pdf/2" do
+    if System.find_executable("wkhtmltopdf") do
+      test "returns invoice pdf with security headers", %{
+        conn: conn,
+        user: user,
+        company: company
+      } do
+        invoice = create_invoice_with_items!(user, company)
+
+        conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
+
+        assert response(conn, 200)
+        assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+        assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+        assert get_resp_header(conn, "pragma") == ["no-cache"]
+        assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
+      end
+    else
+      @tag skip: "wkhtmltopdf is not available in PATH"
+      test "returns invoice pdf with security headers", %{
+        conn: conn,
+        user: user,
+        company: company
+      } do
+        invoice = create_invoice_with_items!(user, company)
+        conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
+        assert response(conn, 200)
+      end
+    end
+  end
+end
