@@ -439,7 +439,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="nav-bar">)
   end
 
-  test "invoice show renders send menu as a fixed overlay above the trigger", %{conn: conn} do
+  test "invoice show renders send menu as a fixed overlay below the trigger", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
@@ -455,6 +455,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "data-send-menu-panel"
     assert body =~ "fixed left-0 top-0 z-[80] hidden"
     assert body =~ ~s(ontoggle="window.positionWorkspaceSendMenu)
+    assert body =~ "triggerRect.bottom + gap"
+    assert body =~ "positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]', 'below');"
   end
 
   test "contract new uses workspace form chrome and keeps contracts nav active", %{conn: conn} do
@@ -526,7 +528,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="nav-bar">)
   end
 
-  test "contract show renders send menu as a fixed overlay above the trigger", %{conn: conn} do
+  test "contract show renders send menu as a fixed overlay below the trigger", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
@@ -542,6 +544,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "data-send-menu-panel"
     assert body =~ "fixed left-0 top-0 z-[80] hidden"
     assert body =~ ~s(ontoggle="window.positionWorkspaceSendMenu)
+    assert body =~ "triggerRect.bottom + gap"
+    assert body =~ "positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]', 'below');"
   end
 
   test "contract edit uses workspace form chrome and keeps contracts nav active", %{
@@ -597,7 +601,42 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Обзор"
     assert body =~ "Статус"
     assert body =~ "Просмотр документа"
+    assert body =~ ".act-title {"
+    assert body =~ "margin-top: 12px;"
+    refute body =~ "margin-top: -22px;"
+    assert body =~ ~s(width: 6%;)
+    assert body =~ ~s(width: 10%;)
+    assert body =~ ~s(width: 16%;)
+    refute body =~ ~s(width: 4%;)
     refute body =~ ~s(<div class="mb-4 flex items-center justify-between">)
+  end
+
+  test "act show renders send menu as a fixed overlay below the trigger", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "issued")
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    assert body =~ "data-send-menu-root"
+    assert body =~ "data-send-menu-panel"
+    assert body =~ "fixed left-0 top-0 z-[80] hidden"
+    assert body =~ ~s(ontoggle="window.positionWorkspaceSendMenu)
+    assert body =~ "triggerRect.bottom + gap"
+    assert body =~ "positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]', 'below');"
   end
 
   test "workspace_row_actions renders inline and overflow affordances", _context do

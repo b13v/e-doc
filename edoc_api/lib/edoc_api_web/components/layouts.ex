@@ -33,7 +33,7 @@ defmodule EdocApiWeb.Layouts do
             }
           });
 
-          function positionWorkspaceOverlay(detailsEl, menuSelector) {
+          function positionWorkspaceOverlay(detailsEl, menuSelector, placement) {
             var menu = detailsEl.querySelector(menuSelector);
             var summary = detailsEl.querySelector('summary');
 
@@ -55,7 +55,14 @@ defmodule EdocApiWeb.Layouts do
                 Math.max(gutter, triggerRect.right - menuRect.width),
                 window.innerWidth - menuRect.width - gutter
               );
-              var top = Math.max(gutter, triggerRect.top - menuRect.height - gap);
+              var maxTop = Math.max(gutter, window.innerHeight - menuRect.height - gutter);
+              var top;
+
+              if (placement === 'below') {
+                top = Math.min(maxTop, Math.max(gutter, triggerRect.bottom + gap));
+              } else {
+                top = Math.max(gutter, triggerRect.top - menuRect.height - gap);
+              }
 
               menu.style.left = left + 'px';
               menu.style.top = top + 'px';
@@ -70,11 +77,11 @@ defmodule EdocApiWeb.Layouts do
           }
 
           window.positionWorkspaceRowActions = function(detailsEl) {
-            positionWorkspaceOverlay(detailsEl, '[data-row-actions-menu]');
+            positionWorkspaceOverlay(detailsEl, '[data-row-actions-menu]', 'above');
           };
 
           window.positionWorkspaceSendMenu = function(detailsEl) {
-            positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]');
+            positionWorkspaceOverlay(detailsEl, '[data-send-menu-panel]', 'below');
           };
 
           document.addEventListener('click', function(event) {
