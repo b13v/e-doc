@@ -475,6 +475,20 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
     assert body =~ "Обзор"
     assert body =~ "Режим счета"
+    assert body =~ ~s(id="invoice-mode-overview")
+    assert body =~ ~s(id="invoice-buyer-overview")
+    assert body =~ ~s(id="invoice-bank-account-overview")
+    assert body =~ "Прямой (без договора)"
+    assert body =~ "const invoiceModeLabels = {"
+    assert body =~ ~s(contract: "Из договора")
+    assert body =~ "direct: \"Прямой (без договора)\""
+    assert body =~ "updateInvoiceModeOverview();"
+    assert body =~ "function updateBuyerOverview() {"
+    assert body =~ "function updateBankAccountOverview() {"
+    assert body =~ ~s(data-overview-name=)
+    assert body =~ ~s(data-overview-value=)
+    assert body =~ "updateBuyerOverview();"
+    assert body =~ "updateBankAccountOverview();"
     assert body =~ "Реквизиты покупателя и оплаты"
     refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end

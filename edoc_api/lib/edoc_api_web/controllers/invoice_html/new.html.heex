@@ -110,11 +110,12 @@
                     name="invoice[buyer_id]"
                     class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
-                    <option value=""><%= gettext("Select a buyer...") %></option>
+                    <option value="" data-overview-name="-"><%= gettext("Select a buyer...") %></option>
                     <%= for buyer <- @buyers do %>
                       <option
                         value={buyer.id}
                         data-address={buyer.address || ""}
+                        data-overview-name={buyer.name}
                         selected={@selected_buyer_id == buyer.id}
                       >
                         <%= buyer.name %> (<%= buyer.bin_iin %>)
@@ -195,12 +196,13 @@
                       id="invoice_bank_account_id"
                       class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                     >
-                      <option value=""><%= gettext("Select bank account...") %></option>
+                      <option value="" data-overview-value="-"><%= gettext("Select bank account...") %></option>
                       <%= for bank_account <- @bank_accounts do %>
                         <option
                           value={bank_account.id}
                           data-kbe-code-id={bank_account.kbe_code_id}
                           data-knp-code-id={bank_account.knp_code_id}
+                          data-overview-value={"#{bank_account.bank.name} - #{bank_account.iban}"}
                           selected={@selected_bank_account_id == bank_account.id}
                         >
                           <%= bank_account.bank.name %> - <%= bank_account.iban %>
@@ -332,13 +334,13 @@
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Invoice mode") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900"><%= invoice_mode %></dd>
+          <dd id="invoice-mode-overview" class="mt-1 text-sm font-medium text-slate-900"><%= invoice_mode %></dd>
         </div>
         <div>
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Buyer") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900">
+          <dd id="invoice-buyer-overview" class="mt-1 text-sm font-medium text-slate-900">
             <%= if selected_buyer, do: selected_buyer.name, else: "-" %>
           </dd>
         </div>
@@ -346,7 +348,7 @@
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Bank account") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900">
+          <dd id="invoice-bank-account-overview" class="mt-1 text-sm font-medium text-slate-900">
             <%= if selected_bank_account do %>
               <%= selected_bank_account.bank.name %> - <%= selected_bank_account.iban %>
             <% else %>
@@ -369,6 +371,10 @@
   const prefillItems = <%= Phoenix.HTML.raw(Jason.encode!(@prefill_items)) %>;
   const selectedBuyerId = "<%= @selected_buyer_id || "" %>";
   const selectedContractId = "<%= @selected_contract_id || "" %>";
+  const invoiceModeLabels = {
+    contract: <%= Phoenix.HTML.raw(Jason.encode!(gettext("From Contract"))) %>,
+    direct: <%= Phoenix.HTML.raw(Jason.encode!(gettext("Direct (No Contract)"))) %>
+  };
   let lockContractItems = selectedContractId !== "";
   let itemIndex = 0;
 
@@ -450,6 +456,8 @@
       buyerSelect.disabled = false;
       if (hidden) hidden.remove();
     }
+
+    updateBuyerOverview();
   }
 
   function setBankAccountSelection(bankAccountId) {
@@ -457,6 +465,7 @@
     if (!bankAccountSelect || !bankAccountId) return;
     bankAccountSelect.value = bankAccountId;
     updateSettlementCodesFromBankAccount();
+    updateBankAccountOverview();
   }
 
   function setBuyerAddress(value) {
@@ -491,6 +500,32 @@
     }
   }
 
+  function updateInvoiceModeOverview() {
+    const overview = document.getElementById('invoice-mode-overview');
+    if (!overview) return;
+
+    const invoiceType = document.getElementById('invoice_type_contract').checked ? 'contract' : 'direct';
+    overview.textContent = invoiceModeLabels[invoiceType] || invoiceModeLabels.contract;
+  }
+
+  function updateBuyerOverview() {
+    const overview = document.getElementById('invoice-buyer-overview');
+    const buyerSelect = document.getElementById('buyer_select');
+    if (!overview || !buyerSelect) return;
+
+    const option = buyerSelect.options[buyerSelect.selectedIndex];
+    overview.textContent = option?.getAttribute('data-overview-name') || '-';
+  }
+
+  function updateBankAccountOverview() {
+    const overview = document.getElementById('invoice-bank-account-overview');
+    const bankAccountSelect = document.getElementById('invoice_bank_account_id');
+    if (!overview || !bankAccountSelect) return;
+
+    const option = bankAccountSelect.options[bankAccountSelect.selectedIndex];
+    overview.textContent = option?.getAttribute('data-overview-value') || '-';
+  }
+
   function onContractSelectChange(contractId) {
     const invoiceType = document.getElementById('invoice_type_contract').checked ? 'contract' : 'direct';
     const hidden = document.getElementById('invoice_contract_id_hidden');
@@ -518,6 +553,8 @@
     const addBuyerLink = document.getElementById('add-buyer-link');
     const contractHidden = document.getElementById('invoice_contract_id_hidden');
 
+    updateInvoiceModeOverview();
+
     if (invoiceType === 'contract') {
       contractSection.classList.remove('hidden');
       if (addBuyerLink) addBuyerLink.classList.add('hidden');
@@ -539,16 +576,24 @@
   document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('invoice_type_contract')?.addEventListener('change', onInvoiceTypeChange);
     document.getElementById('invoice_type_direct')?.addEventListener('change', onInvoiceTypeChange);
-    document.getElementById('invoice_bank_account_id')?.addEventListener('change', updateSettlementCodesFromBankAccount);
+    document.getElementById('invoice_bank_account_id')?.addEventListener('change', function() {
+      updateSettlementCodesFromBankAccount();
+      updateBankAccountOverview();
+    });
 
     document.getElementById('buyer_select')?.addEventListener('change', function(event) {
       const option = event.target.options[event.target.selectedIndex];
       if (option) {
         setBuyerAddress(option.getAttribute('data-address') || '');
       }
+
+      updateBuyerOverview();
     });
 
     updateSettlementCodesFromBankAccount();
+    updateInvoiceModeOverview();
+    updateBuyerOverview();
+    updateBankAccountOverview();
 
     if (prefillItems.length > 0) {
       clearItems();
