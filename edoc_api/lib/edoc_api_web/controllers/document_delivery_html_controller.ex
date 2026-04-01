@@ -21,6 +21,7 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLController do
 
   def send_email(conn, %{"type" => type, "id" => id} = params) do
     user = conn.assigns.current_user
+    params = Map.put_new(params, "locale", conn.assigns[:locale] || "ru")
 
     with {:ok, {document_type, document}} <- DocumentResolver.get_for_user(user.id, type, id) do
       case DocumentDelivery.send_email(user.id, document_type, document.id, params) do

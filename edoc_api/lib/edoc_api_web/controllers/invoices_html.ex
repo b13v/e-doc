@@ -14,8 +14,8 @@ defmodule EdocApiWeb.InvoicesHTML do
     }
 
     secondary =
-      case invoice.status do
-        "issued" ->
+      cond do
+        invoice.status == "issued" and EdocApi.Invoicing.contract_ready_for_progression?(invoice) ->
           [
             %{
               label: gettext("Paid"),
@@ -27,7 +27,7 @@ defmodule EdocApiWeb.InvoicesHTML do
             }
           ]
 
-        "draft" ->
+        invoice.status == "draft" ->
           [
             %{
               label: gettext("Edit"),
@@ -46,7 +46,7 @@ defmodule EdocApiWeb.InvoicesHTML do
             }
           ]
 
-        _ ->
+        true ->
           []
       end
 

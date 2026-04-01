@@ -335,6 +335,36 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
         refute body =~ "Protected link:"
       end
     end
+
+    test "Kazakh send flow delivers Kazakh email copy for invoices, contracts, and acts", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_issued_invoice!(user, company)
+      contract = create_issued_contract!(company)
+      act = create_act!(user, company)
+
+      for {type, id} <- [{"invoice", invoice.id}, {"contract", contract.id}, {"act", act.id}] do
+        conn
+        |> localized_hx_conn(user, "kk")
+        |> post("/documents/#{type}/#{id}/send/email", %{
+          "recipient_name" => "Buyer LLC",
+          "recipient_email" => "buyer@example.com"
+        })
+        |> html_response(200)
+
+        assert_email_sent(fn email ->
+          email.to == [{"Buyer LLC", "buyer@example.com"}] and
+            email.text_body =~ "Қосымшада және қорғалған сілтеме арқылы құжатты жолдаймыз:" and
+            email.text_body =~
+              "Email ресми жіберу арнасы болып табылады. Мессенджерлер тек қосымша ыңғайлы хабарлау арнасы ретінде пайдаланылады." and
+            email.html_body =~ "Қосымшада және қорғалған сілтеме арқылы құжатты жолдаймыз:" and
+            email.html_body =~
+              "Email ресми жіберу арнасы болып табылады. Мессенджерлер тек қосымша ыңғайлы хабарлау арнасы ретінде пайдаланылады."
+        end)
+      end
+    end
   end
 
   describe "POST /documents/:type/:id/share/:channel" do

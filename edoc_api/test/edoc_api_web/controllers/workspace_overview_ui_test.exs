@@ -535,6 +535,44 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="nav-bar">)
   end
 
+  test "invoice show hides issue and paid actions when the linked contract is not signed", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    unsigned_contract = create_contract!(company, %{"status" => "issued"})
+
+    draft_invoice =
+      create_invoice_with_items!(user, company, %{
+        "contract_id" => unsigned_contract.id
+      })
+
+    issued_invoice =
+      insert_invoice!(user, company, %{
+        status: "issued",
+        contract_id: unsigned_contract.id,
+        number: "00000000999"
+      })
+
+    draft_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{draft_invoice.id}")
+      |> html_response(200)
+
+    issued_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{issued_invoice.id}")
+      |> html_response(200)
+
+    refute draft_body =~ ">Issue<"
+    refute issued_body =~ "Mark as Paid"
+  end
+
   test "invoice show renders send menu as a fixed overlay below the trigger", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
@@ -833,6 +871,14 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
         mobile_mode: :overflow
       )
 
+    blocked_invoice_actions =
+      EdocApiWeb.InvoicesHTML.row_actions(%{
+        id: Ecto.UUID.generate(),
+        status: "issued",
+        contract_id: Ecto.UUID.generate(),
+        contract: %{status: "issued"}
+      })
+
     act_actions =
       EdocApiWeb.ActHTML.act_row_actions(%{
         id: Ecto.UUID.generate(),
@@ -890,6 +936,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert invoice_menu =~ "text-sky-700"
     assert invoice_menu =~ "text-rose-700"
+    refute Enum.any?(blocked_invoice_actions.secondary, &(&1.label == "Paid"))
 
     assert act_menu =~ "text-sky-700"
     assert act_menu =~ "text-rose-700"

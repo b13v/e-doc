@@ -17,6 +17,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Core.InvoiceRecycledNumber
   alias EdocApi.Core.CompanyBankAccount
   alias EdocApi.InvoiceStatus
+  alias EdocApi.ContractStatus
 
   def get_invoice_for_user(user_id, invoice_id) do
     Invoice
@@ -164,6 +165,15 @@ defmodule EdocApi.Invoicing do
              }}
           )
 
+        not contract_ready_for_progression?(invoice) ->
+          RepoHelpers.abort(
+            {:business_rule,
+             %{
+               rule: :contract_must_be_signed_to_pay_invoice,
+               details: contract_progression_details(invoice)
+             }}
+          )
+
         true ->
           case update_invoice_status(invoice, InvoiceStatus.paid()) do
             {:ok, inv} ->
@@ -254,6 +264,11 @@ defmodule EdocApi.Invoicing do
       {:ok, preload_invoice(invoice)}
     end)
   end
+
+  def contract_ready_for_progression?(%{contract_id: nil}), do: true
+  def contract_ready_for_progression?(%{contract: %Contract{} = contract}), do: ContractStatus.is_signed?(contract)
+  def contract_ready_for_progression?(%{contract_id: _contract_id}), do: false
+  def contract_ready_for_progression?(_invoice), do: true
 
   def update_invoice_for_user(user_id, invoice_id, attrs) do
     RepoHelpers.transaction(fn ->
@@ -756,6 +771,12 @@ defmodule EdocApi.Invoicing do
           status: "must be draft to issue"
         })
 
+      not contract_ready_for_progression?(invoice) ->
+        Errors.business_rule(
+          :contract_must_be_signed_to_issue_invoice,
+          contract_progression_details(invoice)
+        )
+
       (invoice.items || []) == [] ->
         Errors.business_rule(:cannot_issue, %{
           invoice_id: invoice.id,
@@ -771,8 +792,19 @@ defmodule EdocApi.Invoicing do
              {:ok, inv} <- update_invoice_status(invoice, InvoiceStatus.issued()) do
           {:ok, preload_invoice(inv)}
         end
-    end
+      end
   end
+
+  defp contract_progression_details(invoice) do
+    %{
+      invoice_id: invoice.id,
+      contract_id: invoice.contract_id,
+      contract_status: invoice_contract_status(invoice)
+    }
+  end
+
+  defp invoice_contract_status(%{contract: %{status: status}}), do: status
+  defp invoice_contract_status(_invoice), do: nil
 
   defp update_invoice_status(invoice, status) do
     invoice

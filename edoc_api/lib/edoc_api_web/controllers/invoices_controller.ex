@@ -593,6 +593,34 @@ defmodule EdocApiWeb.InvoicesController do
         |> put_flash(:error, gettext("Invoice has already been issued."))
         |> redirect(to: "/invoices/#{id}")
 
+      {:error,
+       {:business_rule,
+        %{rule: :business_rule, details: %{rule: :contract_must_be_signed_to_issue_invoice}}}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error,
+       :business_rule,
+       %{rule: :business_rule, details: %{rule: :contract_must_be_signed_to_issue_invoice}}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error, {:business_rule, %{rule: :contract_must_be_signed_to_issue_invoice}}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
       {:error, reason} ->
         conn
         |> put_flash(
@@ -622,6 +650,14 @@ defmodule EdocApiWeb.InvoicesController do
         |> put_flash(:error, gettext("Invoice has already been paid."))
         |> redirect(to: "/invoices/#{id}")
 
+      {:error, :business_rule, %{rule: :contract_must_be_signed_to_pay_invoice}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Invoices linked to a contract can only be marked as paid after the contract is signed.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
       {:error, {:business_rule, %{rule: :cannot_mark_paid}}} ->
         conn
         |> put_flash(:error, gettext("Only issued invoices can be marked as paid."))
@@ -630,6 +666,14 @@ defmodule EdocApiWeb.InvoicesController do
       {:error, {:business_rule, %{rule: :already_paid}}} ->
         conn
         |> put_flash(:error, gettext("Invoice has already been paid."))
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error, {:business_rule, %{rule: :contract_must_be_signed_to_pay_invoice}}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Invoices linked to a contract can only be marked as paid after the contract is signed.")
+        )
         |> redirect(to: "/invoices/#{id}")
 
       {:error, reason} ->

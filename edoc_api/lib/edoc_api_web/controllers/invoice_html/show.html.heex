@@ -132,6 +132,7 @@
     true ->
       nil
   end %>
+<% contract_ready_for_progression = EdocApi.Invoicing.contract_ready_for_progression?(@invoice) %>
 
 <div class="space-y-6">
   <.flash_error flash={@flash} />
@@ -157,21 +158,23 @@
             >
               <%= gettext("Edit") %>
             </a>
-            <form
-              action={"/invoices/#{@invoice.id}/issue"}
-              method="post"
-              onsubmit={"return confirm(#{Jason.encode!(gettext("Issue this invoice?"))})"}
-            >
-              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-              <button
-                type="submit"
-                class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+            <%= if contract_ready_for_progression do %>
+              <form
+                action={"/invoices/#{@invoice.id}/issue"}
+                method="post"
+                onsubmit={"return confirm(#{Jason.encode!(gettext("Issue this invoice?"))})"}
               >
-                <%= gettext("Issue") %>
-              </button>
-            </form>
+                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                <button
+                  type="submit"
+                  class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+                >
+                  <%= gettext("Issue") %>
+                </button>
+              </form>
+            <% end %>
           <% end %>
-          <%= if @invoice.status == "issued" do %>
+          <%= if @invoice.status == "issued" and contract_ready_for_progression do %>
             <form
               action={"/invoices/#{@invoice.id}/pay"}
               method="post"

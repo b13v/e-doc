@@ -251,6 +251,61 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ "Invoice issued successfully."
     end
 
+    test "invoice contract gate flashes are localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      contract = create_contract!(company, %{"status" => "issued", "number" => "CON-INV-GATE-RU-1"})
+
+      draft_invoice =
+        create_invoice_with_items!(user, company, %{
+          "number" => "00000000013",
+          "contract_id" => contract.id
+        })
+
+      issued_invoice =
+        insert_invoice!(user, company, %{
+          status: "issued",
+          number: "00000000014",
+          contract_id: contract.id
+        })
+
+      issue_conn =
+        post(browser_conn(conn, user, "ru"), "/invoices/#{draft_invoice.id}/issue", %{})
+
+      assert redirected_to(issue_conn) == "/invoices/#{draft_invoice.id}"
+
+      issue_body =
+        issue_conn
+        |> recycle()
+        |> get("/invoices/#{draft_invoice.id}")
+        |> html_response(200)
+
+      assert issue_body =~
+               "Счета, привязанные к договору, можно выставлять только после подписания договора."
+
+      refute issue_body =~
+               "Invoices linked to a contract can only be issued after the contract is signed."
+
+      pay_conn =
+        post(browser_conn(conn, user, "ru"), "/invoices/#{issued_invoice.id}/pay", %{})
+
+      assert redirected_to(pay_conn) == "/invoices/#{issued_invoice.id}"
+
+      pay_body =
+        pay_conn
+        |> recycle()
+        |> get("/invoices/#{issued_invoice.id}")
+        |> html_response(200)
+
+      assert pay_body =~
+               "Счета, привязанные к договору, можно отмечать как оплаченные только после подписания договора."
+
+      refute pay_body =~
+               "Invoices linked to a contract can only be marked as paid after the contract is signed."
+    end
+
     test "contract creation page renders localized copy", %{
       conn: conn,
       user: user,
@@ -1113,6 +1168,61 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
 
       assert body =~ "Шот сәтті шығарылды."
       refute body =~ "Invoice issued successfully."
+    end
+
+    test "invoice contract gate flashes are localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      contract = create_contract!(company, %{"status" => "issued", "number" => "CON-INV-GATE-KK-1"})
+
+      draft_invoice =
+        create_invoice_with_items!(user, company, %{
+          "number" => "00000000015",
+          "contract_id" => contract.id
+        })
+
+      issued_invoice =
+        insert_invoice!(user, company, %{
+          status: "issued",
+          number: "00000000016",
+          contract_id: contract.id
+        })
+
+      issue_conn =
+        post(browser_conn(conn, user, "kk"), "/invoices/#{draft_invoice.id}/issue", %{})
+
+      assert redirected_to(issue_conn) == "/invoices/#{draft_invoice.id}"
+
+      issue_body =
+        issue_conn
+        |> recycle()
+        |> get("/invoices/#{draft_invoice.id}")
+        |> html_response(200)
+
+      assert issue_body =~
+               "Келісімшартқа тіркелген шоттарды келісімшартқа қол қойылғаннан кейін ғана шығаруға болады."
+
+      refute issue_body =~
+               "Invoices linked to a contract can only be issued after the contract is signed."
+
+      pay_conn =
+        post(browser_conn(conn, user, "kk"), "/invoices/#{issued_invoice.id}/pay", %{})
+
+      assert redirected_to(pay_conn) == "/invoices/#{issued_invoice.id}"
+
+      pay_body =
+        pay_conn
+        |> recycle()
+        |> get("/invoices/#{issued_invoice.id}")
+        |> html_response(200)
+
+      assert pay_body =~
+               "Келісімшартқа тіркелген шоттарды келісімшартқа қол қойылғаннан кейін ғана төленген деп белгілеуге болады."
+
+      refute pay_body =~
+               "Invoices linked to a contract can only be marked as paid after the contract is signed."
     end
 
     test "company setup page renders Kazakh labels", %{conn: conn} do

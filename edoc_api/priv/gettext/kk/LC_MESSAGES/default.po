@@ -1032,6 +1032,17 @@ msgstr "Шот сәтті шығарылды."
 msgid "Invoice marked as paid."
 msgstr "Шот төленген деп белгіленді."
 
+#: lib/edoc_api_web/controllers/invoices_controller.ex:600
+#, elixir-autogen, elixir-format
+msgid "Invoices linked to a contract can only be issued after the contract is signed."
+msgstr "Келісімшартқа тіркелген шоттарды келісімшартқа қол қойылғаннан кейін ғана шығаруға болады."
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:637
+#: lib/edoc_api_web/controllers/invoices_controller.ex:655
+#, elixir-autogen, elixir-format
+msgid "Invoices linked to a contract can only be marked as paid after the contract is signed."
+msgstr "Келісімшартқа тіркелген шоттарды келісімшартқа қол қойылғаннан кейін ғана төленген деп белгілеуге болады."
+
 #: lib/edoc_api_web/controllers/invoices_controller.ex:34
 #: lib/edoc_api_web/controllers/invoices_controller.ex:403
 #: lib/edoc_api_web/controllers/invoices_controller.ex:484

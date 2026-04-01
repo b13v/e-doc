@@ -1032,6 +1032,17 @@ msgstr "Счет успешно выставлен."
 msgid "Invoice marked as paid."
 msgstr "Счет отмечен как оплаченный."
 
+#: lib/edoc_api_web/controllers/invoices_controller.ex:600
+#, elixir-autogen, elixir-format
+msgid "Invoices linked to a contract can only be issued after the contract is signed."
+msgstr "Счета, привязанные к договору, можно выставлять только после подписания договора."
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:637
+#: lib/edoc_api_web/controllers/invoices_controller.ex:655
+#, elixir-autogen, elixir-format
+msgid "Invoices linked to a contract can only be marked as paid after the contract is signed."
+msgstr "Счета, привязанные к договору, можно отмечать как оплаченные только после подписания договора."
+
 #: lib/edoc_api_web/controllers/invoices_controller.ex:34
 #: lib/edoc_api_web/controllers/invoices_controller.ex:403
 #: lib/edoc_api_web/controllers/invoices_controller.ex:484

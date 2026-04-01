@@ -109,6 +109,39 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       assert response(conn, 422)
       assert json_response(conn, 422)["error"] == "cannot_mark_paid"
     end
+
+    test "returns 422 when contract-linked invoice is paid before the contract is signed", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      contract = create_contract!(company, %{"status" => "issued"})
+
+      invoice =
+        insert_invoice!(user, company, %{
+          status: "issued",
+          contract_id: contract.id
+        })
+
+      conn = post(conn, "/v1/invoices/#{invoice.id}/pay")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "contract_must_be_signed_to_pay_invoice"
+    end
+  end
+
+  describe "issue/2" do
+    test "returns 422 when contract-linked invoice is issued before the contract is signed", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      contract = create_contract!(company, %{"status" => "issued"})
+      invoice = create_invoice_with_items!(user, company, %{"contract_id" => contract.id})
+
+      conn = post(conn, "/v1/invoices/#{invoice.id}/issue")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "contract_must_be_signed_to_issue_invoice"
+    end
   end
 
   describe "pdf/2" do

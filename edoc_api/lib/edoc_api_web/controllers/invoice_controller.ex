@@ -67,9 +67,16 @@ defmodule EdocApiWeb.InvoiceController do
     user = conn.assigns.current_user
     result = Invoicing.issue_invoice_for_user(user.id, id)
 
-    ControllerHelpers.handle_common_result(conn, result, fn conn, invoice ->
-      json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
-    end)
+    ControllerHelpers.handle_common_result(
+      conn,
+      result,
+      fn conn, invoice ->
+        json(conn, %{invoice: InvoiceSerializer.to_map(invoice)})
+      end,
+      %{
+        business_rule: &handle_issue_business_rule/2
+      }
+    )
   end
 
   def pay(conn, %{"id" => id}) do
@@ -88,6 +95,9 @@ defmodule EdocApiWeb.InvoiceController do
         end,
         already_paid: fn conn, details ->
           ErrorMapper.unprocessable(conn, "already_paid", details)
+        end,
+        contract_must_be_signed_to_pay_invoice: fn conn, details ->
+          ErrorMapper.unprocessable(conn, "contract_must_be_signed_to_pay_invoice", details)
         end
       }
     )
@@ -135,5 +145,16 @@ defmodule EdocApiWeb.InvoiceController do
     |> put_resp_header("cache-control", "private, no-store, max-age=0")
     |> put_resp_header("pragma", "no-cache")
     |> put_resp_header("x-content-type-options", "nosniff")
+  end
+
+  defp handle_issue_business_rule(
+         conn,
+         %{details: %{rule: :contract_must_be_signed_to_issue_invoice} = details}
+       ) do
+    ErrorMapper.unprocessable(conn, "contract_must_be_signed_to_issue_invoice", details)
+  end
+
+  defp handle_issue_business_rule(conn, details) do
+    ErrorMapper.unprocessable(conn, "business_rule", details)
   end
 end

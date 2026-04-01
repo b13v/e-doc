@@ -54,7 +54,8 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
         })
 
       assert redirected_to(conn) =~ "/invoices/"
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Invoice created successfully."
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(EdocApiWeb.Gettext, "Invoice created successfully.")
 
       invoices = Invoicing.list_invoices_for_user(user.id)
 

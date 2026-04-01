@@ -93,6 +93,46 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
       assert {:error, :not_found, %{resource: :invoice}} =
                Invoicing.issue_invoice_for_user(user.id, Ecto.UUID.generate())
     end
+
+    test "rejects issuing a contract-linked invoice while the contract is only issued" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+      contract = create_contract!(company, %{"status" => "issued"})
+
+      invoice =
+        create_invoice_with_items!(user, company, %{
+          "contract_id" => contract.id
+        })
+
+      assert {:error, :business_rule,
+              %{
+                rule: :business_rule,
+                details: %{
+                  rule: :contract_must_be_signed_to_issue_invoice,
+                  details: %{invoice_id: invoice_id, contract_id: contract_id, contract_status: "issued"}
+                }
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      assert invoice_id == invoice.id
+      assert contract_id == contract.id
+    end
+
+    test "allows issuing a contract-linked invoice when the contract is signed" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+      contract = create_contract!(company, %{"status" => "signed"})
+
+      invoice =
+        create_invoice_with_items!(user, company, %{
+          "contract_id" => contract.id
+        })
+
+      assert {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+      assert issued.status == "issued"
+    end
   end
 
   describe "pay_invoice_for_user/2" do
@@ -123,6 +163,43 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
 
       assert {:error, :business_rule, %{rule: :already_paid}} =
                Invoicing.pay_invoice_for_user(user.id, invoice.id)
+    end
+
+    test "rejects paying a contract-linked issued invoice while the contract is only issued" do
+      user = create_user!()
+      company = create_company!(user)
+      contract = create_contract!(company, %{"status" => "issued"})
+
+      invoice =
+        insert_invoice!(user, company, %{
+          status: "issued",
+          contract_id: contract.id
+        })
+
+      assert {:error, :business_rule,
+              %{
+                rule: :contract_must_be_signed_to_pay_invoice,
+                details: %{invoice_id: invoice_id, contract_id: contract_id, contract_status: "issued"}
+              }} =
+               Invoicing.pay_invoice_for_user(user.id, invoice.id)
+
+      assert invoice_id == invoice.id
+      assert contract_id == contract.id
+    end
+
+    test "allows paying a contract-linked issued invoice when the contract is signed" do
+      user = create_user!()
+      company = create_company!(user)
+      contract = create_contract!(company, %{"status" => "signed"})
+
+      invoice =
+        insert_invoice!(user, company, %{
+          status: "issued",
+          contract_id: contract.id
+        })
+
+      assert {:ok, paid} = Invoicing.pay_invoice_for_user(user.id, invoice.id)
+      assert paid.status == "paid"
     end
   end
 end
