@@ -8,6 +8,7 @@ defmodule EdocApiWeb.BuyerHTML do
     %{
       primary: %{
         label: gettext("View"),
+        tone: :info,
         transport: :link,
         method: :get,
         href: "/buyers/#{buyer.id}"
@@ -15,12 +16,14 @@ defmodule EdocApiWeb.BuyerHTML do
       secondary: [
         %{
           label: gettext("Edit"),
+          tone: :success,
           transport: :link,
           method: :get,
           href: "/buyers/#{buyer.id}/edit"
         },
         %{
           label: gettext("Delete"),
+          tone: :danger,
           transport: :form,
           method: :post,
           action: "/buyers/#{buyer.id}",

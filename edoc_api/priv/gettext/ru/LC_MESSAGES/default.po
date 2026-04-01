@@ -1004,7 +1004,7 @@ msgstr "Тип счета"
 #: lib/edoc_api_web/controllers/invoices_controller.ex:129
 #, elixir-autogen, elixir-format
 msgid "Invoice created successfully."
-msgstr ""
+msgstr "Счет создан успешно."
 
 #: lib/edoc_api_web/controllers/invoices_controller.ex:437
 #, elixir-autogen, elixir-format
@@ -1025,12 +1025,12 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_controller.ex:554
 #, elixir-autogen, elixir-format
 msgid "Invoice issued successfully."
-msgstr ""
+msgstr "Счет успешно выставлен."
 
 #: lib/edoc_api_web/controllers/invoices_controller.ex:580
 #, elixir-autogen, elixir-format
 msgid "Invoice marked as paid."
-msgstr ""
+msgstr "Счет отмечен как оплаченный."
 
 #: lib/edoc_api_web/controllers/invoices_controller.ex:34
 #: lib/edoc_api_web/controllers/invoices_controller.ex:403
@@ -1042,7 +1042,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_controller.ex:512
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Invoice updated successfully."
-msgstr "Выход из системы выполнен успешно."
+msgstr "Счет успешно обновлен."
 
 #: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:271
 #, elixir-autogen, elixir-format

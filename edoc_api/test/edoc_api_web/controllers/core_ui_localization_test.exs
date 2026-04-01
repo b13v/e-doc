@@ -134,6 +134,123 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ "Выпустить"
     end
 
+    test "invoice creation success flash is localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      create_company_bank_account!(company)
+
+      create_conn =
+        post(browser_conn(conn, user, "ru"), "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "Прямой счет",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_name" => "Покупатель",
+            "buyer_bin_iin" => "060215385673",
+            "buyer_address" => "Адрес покупателя",
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Услуга",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(create_conn) =~ "/invoices/"
+
+      body =
+        create_conn
+        |> recycle()
+        |> get(redirected_to(create_conn))
+        |> html_response(200)
+
+      assert body =~ "Счет создан успешно."
+      refute body =~ "Invoice created successfully."
+    end
+
+    test "invoice paid flash is localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-PAID-RU-1"})
+
+      pay_conn =
+        post(browser_conn(conn, user, "ru"), "/invoices/#{invoice.id}/pay", %{})
+
+      assert redirected_to(pay_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        pay_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Счет отмечен как оплаченный."
+      refute body =~ "Invoice marked as paid."
+    end
+
+    test "invoice update success flash is localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      update_conn =
+        put(browser_conn(conn, user, "ru"), "/invoices/#{invoice.id}", %{
+          "invoice" => %{
+            "service_name" => invoice.service_name,
+            "issue_date" => Date.to_iso8601(invoice.issue_date),
+            "buyer_name" => invoice.buyer_name,
+            "buyer_bin_iin" => invoice.buyer_bin_iin,
+            "buyer_address" => invoice.buyer_address,
+            "currency" => invoice.currency,
+            "vat_rate" => to_string(invoice.vat_rate)
+          }
+        })
+
+      assert redirected_to(update_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        update_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Счет успешно обновлен."
+      refute body =~ "Invoice updated successfully."
+      refute body =~ "Выход из системы выполнен успешно."
+    end
+
+    test "invoice issue success flash is localized in Russian", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company, %{"number" => "00000000011"})
+
+      issue_conn =
+        post(browser_conn(conn, user, "ru"), "/invoices/#{invoice.id}/issue", %{})
+
+      assert redirected_to(issue_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        issue_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Счет успешно выставлен."
+      refute body =~ "Invoice issued successfully."
+    end
+
     test "contract creation page renders localized copy", %{
       conn: conn,
       user: user,
@@ -879,6 +996,123 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "<title>Төлем шоты № #{invoice.number}</title>"
       assert body =~ ~r/<h1[^>]*>\s*Төлем шоты № #{Regex.escape(invoice.number)}\s*<\/h1>/
       refute body =~ "<title>Invoice #{invoice.number}</title>"
+    end
+
+    test "invoice creation success flash is localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      create_company_bank_account!(company)
+
+      create_conn =
+        post(browser_conn(conn, user, "kk"), "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "Тікелей шот",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_name" => "Сатып алушы",
+            "buyer_bin_iin" => "060215385673",
+            "buyer_address" => "Сатып алушы мекенжайы",
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Қызмет",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(create_conn) =~ "/invoices/"
+
+      body =
+        create_conn
+        |> recycle()
+        |> get(redirected_to(create_conn))
+        |> html_response(200)
+
+      assert body =~ "Шот сәтті құрылды."
+      refute body =~ "Invoice created successfully."
+    end
+
+    test "invoice paid flash is localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-PAID-KK-1"})
+
+      pay_conn =
+        post(browser_conn(conn, user, "kk"), "/invoices/#{invoice.id}/pay", %{})
+
+      assert redirected_to(pay_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        pay_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Шот төленген деп белгіленді."
+      refute body =~ "Invoice marked as paid."
+    end
+
+    test "invoice update success flash is localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      update_conn =
+        put(browser_conn(conn, user, "kk"), "/invoices/#{invoice.id}", %{
+          "invoice" => %{
+            "service_name" => invoice.service_name,
+            "issue_date" => Date.to_iso8601(invoice.issue_date),
+            "buyer_name" => invoice.buyer_name,
+            "buyer_bin_iin" => invoice.buyer_bin_iin,
+            "buyer_address" => invoice.buyer_address,
+            "currency" => invoice.currency,
+            "vat_rate" => to_string(invoice.vat_rate)
+          }
+        })
+
+      assert redirected_to(update_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        update_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Шот сәтті жаңартылды."
+      refute body =~ "Invoice updated successfully."
+      refute body =~ "Жүйеден сәтті шықтыңыз."
+    end
+
+    test "invoice issue success flash is localized in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company, %{"number" => "00000000012"})
+
+      issue_conn =
+        post(browser_conn(conn, user, "kk"), "/invoices/#{invoice.id}/issue", %{})
+
+      assert redirected_to(issue_conn) == "/invoices/#{invoice.id}"
+
+      body =
+        issue_conn
+        |> recycle()
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~ "Шот сәтті шығарылды."
+      refute body =~ "Invoice issued successfully."
     end
 
     test "company setup page renders Kazakh labels", %{conn: conn} do

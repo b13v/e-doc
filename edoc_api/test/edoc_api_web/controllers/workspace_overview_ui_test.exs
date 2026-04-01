@@ -790,8 +790,21 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert html =~ ~s|return confirm(&quot;Mark invoice as paid? It&#39;s final.&quot;)|
   end
 
-  test "contracts, invoices, and acts use the approved semantic submenu text colors",
+  test "buyers, contracts, invoices, and acts use the approved semantic submenu text colors",
        %{conn: conn} do
+    buyer_actions =
+      EdocApiWeb.BuyerHTML.row_actions(%{
+        id: Ecto.UUID.generate()
+      })
+
+    buyer_menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: buyer_actions.primary,
+        secondary: buyer_actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
     contract_actions =
       EdocApiWeb.ContractHTML.contract_row_actions(%{
         id: Ecto.UUID.generate(),
@@ -867,6 +880,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> browser_conn(user, "ru")
       |> get("/acts/#{act.id}")
       |> html_response(200)
+
+    assert buyer_menu =~ "text-sky-700"
+    assert buyer_menu =~ "text-emerald-700"
+    assert buyer_menu =~ "text-rose-700"
 
     assert contract_menu =~ "text-sky-700"
     assert contract_menu =~ "text-emerald-700"
