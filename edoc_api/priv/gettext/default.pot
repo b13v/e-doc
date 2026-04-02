@@ -2299,3 +2299,10 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Failed to mark contract as signed: %{reason}"
 msgstr ""
+
+#: lib/edoc_api_web/controllers/invoices_controller.ex:624
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:461
+#: lib/edoc_api_web/controllers/acts_controller.ex:218
+#, elixir-autogen, elixir-format
+msgid "Document limit reached for this billing period. Upgrade your plan to continue."
+msgstr ""

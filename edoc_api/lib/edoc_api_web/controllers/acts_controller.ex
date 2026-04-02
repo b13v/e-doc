@@ -212,6 +212,14 @@ defmodule EdocApiWeb.ActsController do
         |> put_flash(:error, gettext("This act cannot be issued."))
         |> redirect(to: "/acts/#{id}")
 
+      {:error, :business_rule, %{rule: :quota_exceeded}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+        )
+        |> redirect(to: "/acts/#{id}")
+
       {:error, reason} ->
         conn
         |> put_flash(

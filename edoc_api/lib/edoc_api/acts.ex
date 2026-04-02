@@ -9,6 +9,7 @@ defmodule EdocApi.Acts do
   alias EdocApi.Companies
   alias EdocApi.Buyers
   alias EdocApi.Invoicing
+  alias EdocApi.Monetization
 
   def list_acts_for_user(user_id) when is_binary(user_id) do
     Act
@@ -74,9 +75,33 @@ defmodule EdocApi.Acts do
             {:error, :business_rule, %{rule: :act_not_editable}}
 
           true ->
-            act
-            |> Ecto.Changeset.change(status: ActStatus.issued())
-            |> Repo.update()
+            Repo.transaction(fn ->
+              with {:ok, issued} <-
+                     act
+                     |> Ecto.Changeset.change(status: ActStatus.issued())
+                     |> Repo.update(),
+                   {:ok, _quota} <-
+                     Monetization.consume_document_quota(
+                       act.company_id,
+                       "act",
+                       act.id,
+                       "act_issued"
+                     ) do
+                issued
+              else
+                {:error, :quota_exceeded, details} ->
+                  Repo.rollback({:business_rule, %{rule: :quota_exceeded, details: details}})
+
+                {:error, changeset} ->
+                  Repo.rollback({:validation, %{changeset: changeset}})
+              end
+            end)
+            |> case do
+              {:ok, issued} -> {:ok, issued}
+              {:error, {:business_rule, details}} -> {:error, :business_rule, details}
+              {:error, {:validation, details}} -> {:error, :validation, details}
+              {:error, reason} -> {:error, reason}
+            end
         end
     end
   end

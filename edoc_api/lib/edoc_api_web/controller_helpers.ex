@@ -105,6 +105,9 @@ defmodule EdocApiWeb.ControllerHelpers do
       :buyer_required ->
         ErrorMapper.unprocessable(conn, "buyer_required", details)
 
+      :quota_exceeded ->
+        ErrorMapper.unprocessable(conn, "quota_exceeded", details)
+
       _ ->
         # Check if there's a custom handler in error_map
         case Map.fetch(error_map, rule) do

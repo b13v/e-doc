@@ -154,6 +154,14 @@ defmodule EdocApiWeb.InvoiceController do
     ErrorMapper.unprocessable(conn, "contract_must_be_signed_to_issue_invoice", details)
   end
 
+  defp handle_issue_business_rule(conn, %{rule: :quota_exceeded} = details) do
+    ErrorMapper.unprocessable(conn, "quota_exceeded", details)
+  end
+
+  defp handle_issue_business_rule(conn, %{details: %{rule: :quota_exceeded} = details}) do
+    ErrorMapper.unprocessable(conn, "quota_exceeded", details)
+  end
+
   defp handle_issue_business_rule(conn, details) do
     ErrorMapper.unprocessable(conn, "business_rule", details)
   end

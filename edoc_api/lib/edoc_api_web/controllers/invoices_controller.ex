@@ -621,6 +621,22 @@ defmodule EdocApiWeb.InvoicesController do
         )
         |> redirect(to: "/invoices/#{id}")
 
+      {:error, :business_rule, %{rule: :quota_exceeded}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
+      {:error, {:business_rule, %{rule: :quota_exceeded}}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+        )
+        |> redirect(to: "/invoices/#{id}")
+
       {:error, reason} ->
         conn
         |> put_flash(

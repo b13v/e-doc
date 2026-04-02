@@ -108,6 +108,28 @@ defmodule EdocApi.ActsTest do
       assert {:error, :business_rule, %{rule: :act_not_editable}} =
                Acts.issue_act_for_user(user.id, act.id)
     end
+
+    test "returns business rule error when monthly document quota is exceeded" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+
+      {:ok, _sub} =
+        EdocApi.Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 1,
+          "included_seat_limit" => 2
+        })
+
+      act_1 = create_act!(user, company, buyer, ActStatus.draft())
+      act_2 = create_act!(user, company, buyer, ActStatus.draft())
+
+      assert {:ok, issued} = Acts.issue_act_for_user(user.id, act_1.id)
+      assert issued.status == ActStatus.issued()
+
+      assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 1, limit: 1}}} =
+               Acts.issue_act_for_user(user.id, act_2.id)
+    end
   end
 
   defp create_buyer!(company) do

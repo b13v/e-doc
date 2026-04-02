@@ -27,6 +27,27 @@ defmodule EdocApi.Core.ContractIssueTest do
              Core.issue_contract_for_user(user.id, issued.id)
   end
 
+  test "rejects issuing when monthly document quota is exceeded" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      EdocApi.Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "included_document_limit" => 1,
+        "included_seat_limit" => 2
+      })
+
+    contract_1 = create_contract!(company)
+    contract_2 = create_contract!(company)
+
+    assert {:ok, issued} = Core.issue_contract_for_user(user.id, contract_1.id)
+    assert issued.status == ContractStatus.issued()
+
+    assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 1, limit: 1}}} =
+             Core.issue_contract_for_user(user.id, contract_2.id)
+  end
+
   test "marks an issued contract as signed and sets signed_at" do
     user = create_user!()
     company = create_company!(user)

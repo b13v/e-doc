@@ -12,6 +12,7 @@ defmodule EdocApi.Core do
   alias EdocApi.Core.ContractItem
   alias EdocApi.Core.UnitOfMeasurement
   alias EdocApi.ContractStatus
+  alias EdocApi.Monetization
 
   defdelegate get_company_by_user_id(user_id), to: Companies
   defdelegate upsert_company_for_user(user_id, attrs), to: Companies
@@ -206,12 +207,26 @@ defmodule EdocApi.Core do
             )
           end
 
-          contract
-          |> Ecto.Changeset.change(
-            status: ContractStatus.issued(),
-            issued_at: DateTime.utc_now() |> DateTime.truncate(:second)
-          )
-          |> RepoHelpers.update_or_abort()
+          {:ok, issued} =
+            contract
+            |> Ecto.Changeset.change(
+              status: ContractStatus.issued(),
+              issued_at: DateTime.utc_now() |> DateTime.truncate(:second)
+            )
+            |> RepoHelpers.update_or_abort()
+
+          case Monetization.consume_document_quota(
+                 company_id,
+                 "contract",
+                 issued.id,
+                 "contract_issued"
+               ) do
+            {:ok, _quota} ->
+              issued
+
+            {:error, :quota_exceeded, details} ->
+              RepoHelpers.abort({:business_rule, %{rule: :quota_exceeded, details: details}})
+          end
       end
     end)
     |> Errors.normalize()

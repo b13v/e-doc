@@ -455,6 +455,14 @@ defmodule EdocApiWeb.ContractHTMLController do
         |> put_flash(:error, gettext("This contract cannot be issued."))
         |> redirect(to: "/contracts/#{id}")
 
+      {:error, :business_rule, %{rule: :quota_exceeded}} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+        )
+        |> redirect(to: "/contracts/#{id}")
+
       {:error, reason} ->
         conn
         |> put_flash(

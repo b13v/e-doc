@@ -133,6 +133,34 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
       assert {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
       assert issued.status == "issued"
     end
+
+    test "rejects issuing when monthly document quota is exceeded" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+
+      {:ok, _sub} =
+        EdocApi.Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 1,
+          "included_seat_limit" => 2
+        })
+
+      invoice_1 = create_invoice_with_items!(user, company)
+      invoice_2 = create_invoice_with_items!(user, company)
+
+      assert {:ok, issued} = Invoicing.issue_invoice_for_user(user.id, invoice_1.id)
+      assert issued.status == "issued"
+
+      assert {:error, :business_rule,
+              %{
+                rule: :quota_exceeded,
+                details: %{company_id: cid, used: 1, limit: 1}
+              }} =
+               Invoicing.issue_invoice_for_user(user.id, invoice_2.id)
+
+      assert cid == company.id
+    end
   end
 
   describe "pay_invoice_for_user/2" do

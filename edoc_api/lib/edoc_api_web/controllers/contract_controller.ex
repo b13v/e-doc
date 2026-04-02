@@ -68,7 +68,8 @@ defmodule EdocApiWeb.ContractController do
     error_map = %{
       not_found: &ErrorMapper.not_found(&1, "contract_not_found"),
       contract_already_issued: &ErrorMapper.unprocessable(&1, "contract_already_issued"),
-      buyer_required: &ErrorMapper.unprocessable(&1, "buyer_required")
+      buyer_required: &ErrorMapper.unprocessable(&1, "buyer_required"),
+      quota_exceeded: &ErrorMapper.unprocessable(&1, "quota_exceeded")
     }
 
     ControllerHelpers.handle_result(

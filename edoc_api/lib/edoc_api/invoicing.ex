@@ -7,6 +7,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Errors
   alias EdocApi.Currencies
   alias EdocApi.Companies
+  alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Core.Company
   alias EdocApi.Core.Contract
@@ -130,7 +131,18 @@ defmodule EdocApi.Invoicing do
 
       case do_issue_invoice(invoice) do
         {:ok, inv} ->
-          {:ok, inv}
+          case Monetization.consume_document_quota(
+                 inv.company_id,
+                 "invoice",
+                 inv.id,
+                 "invoice_issued"
+               ) do
+            {:ok, _quota} ->
+              {:ok, inv}
+
+            {:error, :quota_exceeded, details} ->
+              RepoHelpers.abort({:business_rule, %{rule: :quota_exceeded, details: details}})
+          end
 
         {:error, reason} ->
           RepoHelpers.abort({:business_rule, %{rule: reason}})

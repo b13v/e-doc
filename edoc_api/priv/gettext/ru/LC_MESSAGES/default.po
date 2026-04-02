@@ -2247,6 +2247,13 @@ msgstr "Договор уже отмечен как подписанный."
 msgid "Failed to mark contract as signed: %{reason}"
 msgstr "Не удалось отметить договор как подписанный: %{reason}"
 
+#: lib/edoc_api_web/controllers/invoices_controller.ex:624
+#: lib/edoc_api_web/controllers/contract_html_controller.ex:461
+#: lib/edoc_api_web/controllers/acts_controller.ex:218
+#, elixir-autogen, elixir-format
+msgid "Document limit reached for this billing period. Upgrade your plan to continue."
+msgstr "Лимит документов на текущий расчетный период исчерпан. Обновите тариф, чтобы продолжить."
+
 #: lib/edoc_api_web/controllers/document_delivery_html/email_form.html.heex:4
 #, elixir-autogen
 msgid "Send by Email"

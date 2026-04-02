@@ -2,6 +2,7 @@ defmodule EdocApiWeb.InvoiceControllerTest do
   use EdocApiWeb.ConnCase
 
   alias EdocApi.Invoicing
+  alias EdocApi.Monetization
   import EdocApi.TestFixtures
 
   setup %{conn: conn} do
@@ -141,6 +142,24 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       conn = post(conn, "/v1/invoices/#{invoice.id}/issue")
       assert response(conn, 422)
       assert json_response(conn, 422)["error"] == "contract_must_be_signed_to_issue_invoice"
+    end
+
+    test "returns 422 when document quota is exceeded", %{conn: conn, user: user, company: company} do
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 1,
+          "included_seat_limit" => 2
+        })
+
+      invoice_1 = create_invoice_with_items!(user, company)
+      invoice_2 = create_invoice_with_items!(user, company)
+
+      assert response(post(conn, "/v1/invoices/#{invoice_1.id}/issue"), 200)
+
+      conn = post(conn, "/v1/invoices/#{invoice_2.id}/issue")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "quota_exceeded"
     end
   end
 
