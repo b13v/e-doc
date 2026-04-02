@@ -2313,3 +2313,71 @@ msgstr "Қорғалған сілтеме:"
 #, elixir-autogen
 msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
 msgstr "SMTP бапталмаған. Бұл хат жергілікті пошта адаптерімен ұсталып қалды және алушының кіріс жәшігіне жеткізілген жоқ."
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:129
+#, elixir-autogen
+msgid "Subscription updated successfully."
+msgstr "Жазылым сәтті жаңартылды."
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:134
+#: lib/edoc_api_web/controllers/companies_controller.ex:139
+#, elixir-autogen
+msgid "Failed to update the subscription."
+msgstr "Жазылымды жаңарту мүмкін болмады."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:8
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:42
+#, elixir-autogen
+msgid "Starter"
+msgstr "Starter"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:9
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:43
+#, elixir-autogen
+msgid "Basic"
+msgstr "Basic"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:10
+#, elixir-autogen
+msgid "Trial"
+msgstr "Сынақ"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:18
+#, elixir-autogen
+msgid "Subscription"
+msgstr "Жазылым"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:20
+#, elixir-autogen
+msgid "Control document limits and user seats for your company."
+msgstr "Компанияңыз үшін құжат лимиттері мен пайдаланушы орындарын басқарыңыз."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:30
+#, elixir-autogen
+msgid "Documents Used"
+msgstr "Пайдаланылған құжаттар"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:37
+#, elixir-autogen
+msgid "Users"
+msgstr "Пайдаланушылар"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:44
+#, elixir-autogen
+msgid "Billing Period"
+msgstr "Есептік кезең"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:58
+#, elixir-autogen
+msgid "Plan"
+msgstr "Тариф"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:66
+#, elixir-autogen
+msgid "Extra Seats"
+msgstr "Қосымша орындар"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:76
+#, elixir-autogen
+msgid "Update Subscription"
+msgstr "Жазылымды жаңарту"

@@ -87,6 +87,27 @@ defmodule EdocApi.Monetization do
     max(subscription.included_seat_limit + subscription.add_on_seat_quantity, 1)
   end
 
+  def subscription_snapshot(company_id) when is_binary(company_id) do
+    subscription = get_or_create_active_subscription!(company_id) |> roll_paid_period_if_needed()
+    seats_used = active_member_count(company_id)
+    seat_limit = effective_seat_limit(company_id)
+    documents_used = usage_count(subscription)
+    document_limit = document_limit(subscription)
+
+    %{
+      plan: subscription.plan,
+      status: subscription.status,
+      period_start: subscription.period_start,
+      period_end: subscription.period_end,
+      documents_used: documents_used,
+      document_limit: document_limit,
+      documents_remaining: max(document_limit - documents_used, 0),
+      seats_used: seats_used,
+      seat_limit: seat_limit,
+      add_on_seat_quantity: subscription.add_on_seat_quantity
+    }
+  end
+
   def active_member_count(company_id) when is_binary(company_id) do
     TenantMembership
     |> where([m], m.company_id == ^company_id and m.status == "active")

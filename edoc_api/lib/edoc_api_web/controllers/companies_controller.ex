@@ -4,6 +4,7 @@ defmodule EdocApiWeb.CompaniesController do
   import Ecto.Query, warn: false
 
   alias EdocApi.Companies
+  alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Repo
   alias EdocApi.Core.CompanyBankAccount
@@ -101,11 +102,13 @@ defmodule EdocApiWeb.CompaniesController do
       company ->
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
+        subscription = Monetization.subscription_snapshot(company.id)
 
         render(conn, :edit,
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
+          subscription: subscription,
           page_title: gettext("Company Settings")
         )
     end
@@ -124,6 +127,7 @@ defmodule EdocApiWeb.CompaniesController do
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
+        subscription = Monetization.subscription_snapshot(company.id)
 
         conn
         |> put_flash(:error, company_validation_flash_message(changeset))
@@ -131,9 +135,43 @@ defmodule EdocApiWeb.CompaniesController do
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
+          subscription: subscription,
           changeset: changeset,
           page_title: gettext("Company Settings")
         )
+    end
+  end
+
+  def update_subscription(conn, %{"subscription" => subscription_params}) do
+    user = conn.assigns.current_user
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        redirect(conn, to: "/company/setup")
+
+      company ->
+        attrs = %{
+          "plan" => Map.get(subscription_params, "plan", "starter"),
+          "add_on_seat_quantity" => Map.get(subscription_params, "add_on_seat_quantity", 0),
+          "skip_trial" => true
+        }
+
+        case Monetization.activate_subscription_for_company(company.id, attrs) do
+          {:ok, _subscription} ->
+            conn
+            |> put_flash(:info, gettext("Subscription updated successfully."))
+            |> redirect(to: "/company")
+
+          {:error, :validation, _details} ->
+            conn
+            |> put_flash(:error, gettext("Failed to update the subscription."))
+            |> redirect(to: "/company")
+
+          {:error, _reason} ->
+            conn
+            |> put_flash(:error, gettext("Failed to update the subscription."))
+            |> redirect(to: "/company")
+        end
     end
   end
 
@@ -151,6 +189,7 @@ defmodule EdocApiWeb.CompaniesController do
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
+        subscription = Monetization.subscription_snapshot(company.id)
 
         conn
         |> put_flash(:error, bank_account_validation_flash_message(changeset))
@@ -158,6 +197,7 @@ defmodule EdocApiWeb.CompaniesController do
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
+          subscription: subscription,
           bank_account_changeset: changeset,
           bank_account_params: bank_account_params,
           show_add_bank_form: true,

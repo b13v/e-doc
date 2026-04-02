@@ -2313,3 +2313,71 @@ msgstr "Защищенная ссылка:"
 #, elixir-autogen
 msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
 msgstr "SMTP не настроен. Это письмо было перехвачено локальным почтовым адаптером и не было доставлено в почтовый ящик получателя."
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:129
+#, elixir-autogen
+msgid "Subscription updated successfully."
+msgstr "Подписка обновлена успешно."
+
+#: lib/edoc_api_web/controllers/companies_controller.ex:134
+#: lib/edoc_api_web/controllers/companies_controller.ex:139
+#, elixir-autogen
+msgid "Failed to update the subscription."
+msgstr "Не удалось обновить подписку."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:8
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:42
+#, elixir-autogen
+msgid "Starter"
+msgstr "Starter"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:9
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:43
+#, elixir-autogen
+msgid "Basic"
+msgstr "Basic"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:10
+#, elixir-autogen
+msgid "Trial"
+msgstr "Пробный"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:18
+#, elixir-autogen
+msgid "Subscription"
+msgstr "Подписка"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:20
+#, elixir-autogen
+msgid "Control document limits and user seats for your company."
+msgstr "Управляйте лимитами документов и количеством пользователей для вашей компании."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:30
+#, elixir-autogen
+msgid "Documents Used"
+msgstr "Использовано документов"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:37
+#, elixir-autogen
+msgid "Users"
+msgstr "Пользователи"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:44
+#, elixir-autogen
+msgid "Billing Period"
+msgstr "Расчетный период"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:58
+#, elixir-autogen
+msgid "Plan"
+msgstr "Тариф"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:66
+#, elixir-autogen
+msgid "Extra Seats"
+msgstr "Дополнительные места"
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:76
+#, elixir-autogen
+msgid "Update Subscription"
+msgstr "Обновить подписку"

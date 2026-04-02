@@ -59,4 +59,33 @@ defmodule EdocApi.MonetizationTest do
 
     assert Monetization.effective_seat_limit(company.id) == 5
   end
+
+  test "subscription_snapshot reports plan, usage, and seat counts" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic",
+        "included_document_limit" => 500,
+        "included_seat_limit" => 5,
+        "add_on_seat_quantity" => 2
+      })
+
+    assert {:ok, %{used: 1, limit: 500, remaining: 499}} =
+             Monetization.consume_document_quota(
+               company.id,
+               "invoice",
+               Ecto.UUID.generate(),
+               "invoice_issued"
+             )
+
+    assert %{
+             plan: "basic",
+             documents_used: 1,
+             document_limit: 500,
+             seats_used: 1,
+             seat_limit: 7
+           } = Monetization.subscription_snapshot(company.id)
+  end
 end

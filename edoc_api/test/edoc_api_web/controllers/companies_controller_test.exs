@@ -6,6 +6,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
+  alias EdocApi.Monetization
   alias EdocApi.Repo
 
   @bin_iin_error "Неверный БИН/ИИН. Пожалуйста, введите действительный 12-значный БИН/ИИН."
@@ -252,6 +253,59 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Visible valid account"
       refute body =~ "Legacy invalid account"
       refute body =~ "KZ0012345678901234"
+    end
+
+    test "renders live subscription usage on company settings", %{conn: conn, company: company} do
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 50,
+          "included_seat_limit" => 2,
+          "add_on_seat_quantity" => 1
+        })
+
+      assert {:ok, _quota} =
+               Monetization.consume_document_quota(
+                 company.id,
+                 "invoice",
+                 Ecto.UUID.generate(),
+                 "invoice_issued"
+               )
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ ~s(action="/company/subscription")
+      assert body =~ "Starter"
+      assert body =~ "1 / 50"
+      assert body =~ "1 / 3"
+    end
+
+    test "updates subscription plan and add-on seats from company settings", %{
+      conn: conn,
+      company: company
+    } do
+      conn =
+        post(conn, "/company/subscription", %{
+          "subscription" => %{
+            "plan" => "basic",
+            "add_on_seat_quantity" => "3"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+      assert Monetization.effective_seat_limit(company.id) == 8
+
+      body =
+        conn
+        |> recycle()
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ "Basic"
+      assert body =~ "1 / 8"
     end
   end
 
