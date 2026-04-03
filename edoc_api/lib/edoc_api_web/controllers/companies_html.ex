@@ -37,5 +37,19 @@ defmodule EdocApiWeb.CompaniesHTML do
     ]
   end
 
+  def membership_email(%{invite_email: invite_email, user: user}) do
+    invite_email || (user && user.email) || "-"
+  end
+
+  def membership_role_label("owner"), do: gettext("Owner")
+  def membership_role_label("admin"), do: gettext("Admin")
+  def membership_role_label("member"), do: gettext("Member")
+  def membership_role_label(other), do: other
+
+  def membership_status_label("active"), do: gettext("Active")
+  def membership_status_label("invited"), do: gettext("Invited")
+  def membership_status_label("removed"), do: gettext("Removed")
+  def membership_status_label(other), do: other
+
   embed_templates("companies_html/*")
 end

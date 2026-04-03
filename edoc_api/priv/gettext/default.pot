@@ -1911,6 +1911,72 @@ msgstr ""
 msgid "Subscription"
 msgstr ""
 
+msgid "Active"
+msgstr ""
+
+msgid "Admin"
+msgstr ""
+
+msgid "Enter a valid email address to invite a team member."
+msgstr ""
+
+msgid "Invite Member"
+msgstr ""
+
+msgid "Invite teammates and manage who can work inside your company."
+msgstr ""
+
+msgid "Invited"
+msgstr ""
+
+msgid "Member"
+msgstr ""
+
+msgid "No seats available. Upgrade your subscription to invite more users."
+msgstr ""
+
+msgid "No team members yet."
+msgstr ""
+
+msgid "Owner"
+msgstr ""
+
+msgid "Removed"
+msgstr ""
+
+msgid "Role"
+msgstr ""
+
+msgid "Select a valid team role."
+msgstr ""
+
+msgid "Team"
+msgstr ""
+
+msgid "Team Email"
+msgstr ""
+
+msgid "Team member invited successfully."
+msgstr ""
+
+msgid "Team member not found."
+msgstr ""
+
+msgid "Team member removed successfully."
+msgstr ""
+
+msgid "This email is already invited to your company."
+msgstr ""
+
+msgid "This user is already a team member."
+msgstr ""
+
+msgid "You cannot remove the last owner from the company."
+msgstr ""
+
+msgid "teammate@example.com"
+msgstr ""
+
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:20
 #, elixir-autogen
 msgid "Control document limits and user seats for your company."

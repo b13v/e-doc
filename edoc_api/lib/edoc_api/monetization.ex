@@ -2,9 +2,11 @@ defmodule EdocApi.Monetization do
   import Ecto.Query, warn: false
 
   alias EdocApi.Repo
+  alias EdocApi.Accounts.User
   alias EdocApi.Core.TenantMembership
   alias EdocApi.Core.TenantSubscription
   alias EdocApi.Core.TenantUsageEvent
+  alias EdocApi.Validators.Email
 
   @trial_document_limit 10
   @trial_included_seat_limit 2
@@ -87,9 +89,87 @@ defmodule EdocApi.Monetization do
     max(subscription.included_seat_limit + subscription.add_on_seat_quantity, 1)
   end
 
+  def list_memberships(company_id) when is_binary(company_id) do
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> preload([:user])
+    |> order_by([m], asc: m.inserted_at)
+    |> Repo.all()
+  end
+
+  def invite_member(company_id, attrs) when is_binary(company_id) and is_map(attrs) do
+    email = attrs |> Map.get("email") |> Email.normalize()
+    role = Map.get(attrs, "role", "member")
+
+    cond do
+      role not in ["admin", "member"] ->
+        {:error, :invalid_role}
+
+      invited_email_exists?(company_id, email) ->
+        {:error, :duplicate_invite, %{email: email}}
+
+      active_member_email_exists?(company_id, email) ->
+        {:error, :duplicate_member, %{email: email}}
+
+      occupied_member_count(company_id) >= effective_seat_limit(company_id) ->
+        {:error, :seat_limit_reached, %{limit: effective_seat_limit(company_id)}}
+
+      true ->
+        %TenantMembership{}
+        |> TenantMembership.changeset(%{
+          company_id: company_id,
+          invite_email: email,
+          role: role,
+          status: "invited"
+        })
+        |> Repo.insert()
+    end
+  end
+
+  def remove_membership(company_id, membership_id)
+      when is_binary(company_id) and is_binary(membership_id) do
+    case Repo.get_by(TenantMembership, id: membership_id, company_id: company_id) do
+      nil ->
+        {:error, :not_found}
+
+      %TenantMembership{} = membership ->
+        if last_owner?(membership) do
+          {:error, :last_owner}
+        else
+          membership
+          |> Ecto.Changeset.change(status: "removed", invite_email: nil, user_id: nil)
+          |> Repo.update()
+        end
+    end
+  end
+
+  def accept_pending_memberships_for_user(%User{} = user) do
+    normalized_email = Email.normalize(user.email)
+
+    TenantMembership
+    |> where(
+      [m],
+      m.status == "invited" and m.invite_email == ^normalized_email
+    )
+    |> order_by([m], asc: m.inserted_at)
+    |> Repo.all()
+    |> Enum.reduce([], fn membership, accepted ->
+      if can_activate_pending_membership?(membership, user.id) do
+        membership
+        |> Ecto.Changeset.change(status: "active", user_id: user.id, invite_email: nil)
+        |> Repo.update!()
+
+        [membership.id | accepted]
+      else
+        accepted
+      end
+    end)
+    |> Enum.reverse()
+  end
+
   def subscription_snapshot(company_id) when is_binary(company_id) do
     subscription = get_or_create_active_subscription!(company_id) |> roll_paid_period_if_needed()
-    seats_used = active_member_count(company_id)
+    seats_used = occupied_member_count(company_id)
     seat_limit = effective_seat_limit(company_id)
     documents_used = usage_count(subscription)
     document_limit = document_limit(subscription)
@@ -118,6 +198,54 @@ defmodule EdocApi.Monetization do
     active = active_member_count(company_id)
     limit = effective_seat_limit(company_id)
     active < limit
+  end
+
+  defp occupied_member_count(company_id) when is_binary(company_id) do
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp invited_email_exists?(company_id, email) do
+    TenantMembership
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.status == "invited" and m.invite_email == ^email
+    )
+    |> Repo.exists?()
+  end
+
+  defp active_member_email_exists?(company_id, email) do
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.status == "active")
+    |> join(:inner, [m], u in assoc(m, :user))
+    |> where([_m, u], u.email == ^email)
+    |> Repo.exists?()
+  end
+
+  defp last_owner?(%TenantMembership{status: "active", role: "owner"} = membership) do
+    TenantMembership
+    |> where(
+      [m],
+      m.company_id == ^membership.company_id and m.status == "active" and m.role == "owner"
+    )
+    |> Repo.aggregate(:count, :id) == 1
+  end
+
+  defp last_owner?(_membership), do: false
+
+  defp can_activate_pending_membership?(%TenantMembership{} = membership, user_id) do
+    not active_membership_exists?(membership.company_id, user_id) and
+      active_member_count(membership.company_id) < effective_seat_limit(membership.company_id)
+  end
+
+  defp active_membership_exists?(company_id, user_id) do
+    TenantMembership
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.user_id == ^user_id and m.status == "active"
+    )
+    |> Repo.exists?()
   end
 
   def consume_document_quota(company_id, document_type, document_id, event_type)

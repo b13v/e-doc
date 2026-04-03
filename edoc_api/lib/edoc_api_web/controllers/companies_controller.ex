@@ -103,12 +103,14 @@ defmodule EdocApiWeb.CompaniesController do
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
         subscription = Monetization.subscription_snapshot(company.id)
+        memberships = Monetization.list_memberships(company.id)
 
         render(conn, :edit,
           company: company,
           bank_accounts: bank_accounts,
           banks: banks,
           subscription: subscription,
+          memberships: memberships,
           page_title: gettext("Company Settings")
         )
     end
@@ -128,6 +130,7 @@ defmodule EdocApiWeb.CompaniesController do
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
         subscription = Monetization.subscription_snapshot(company.id)
+        memberships = Monetization.list_memberships(company.id)
 
         conn
         |> put_flash(:error, company_validation_flash_message(changeset))
@@ -136,6 +139,7 @@ defmodule EdocApiWeb.CompaniesController do
           bank_accounts: bank_accounts,
           banks: banks,
           subscription: subscription,
+          memberships: memberships,
           changeset: changeset,
           page_title: gettext("Company Settings")
         )
@@ -190,6 +194,7 @@ defmodule EdocApiWeb.CompaniesController do
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
         subscription = Monetization.subscription_snapshot(company.id)
+        memberships = Monetization.list_memberships(company.id)
 
         conn
         |> put_flash(:error, bank_account_validation_flash_message(changeset))
@@ -198,11 +203,81 @@ defmodule EdocApiWeb.CompaniesController do
           bank_accounts: bank_accounts,
           banks: banks,
           subscription: subscription,
+          memberships: memberships,
           bank_account_changeset: changeset,
           bank_account_params: bank_account_params,
           show_add_bank_form: true,
           page_title: gettext("Company Settings")
         )
+    end
+  end
+
+  def invite_member(conn, %{"membership" => membership_params}) do
+    user = conn.assigns.current_user
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        redirect(conn, to: "/company/setup")
+
+      company ->
+        case Monetization.invite_member(company.id, membership_params) do
+          {:ok, _membership} ->
+            conn
+            |> put_flash(:info, gettext("Team member invited successfully."))
+            |> redirect(to: "/company")
+
+          {:error, :seat_limit_reached, _details} ->
+            conn
+            |> put_flash(:error, gettext("No seats available. Upgrade your subscription to invite more users."))
+            |> redirect(to: "/company")
+
+          {:error, :duplicate_invite, _details} ->
+            conn
+            |> put_flash(:error, gettext("This email is already invited to your company."))
+            |> redirect(to: "/company")
+
+          {:error, :duplicate_member, _details} ->
+            conn
+            |> put_flash(:error, gettext("This user is already a team member."))
+            |> redirect(to: "/company")
+
+          {:error, :invalid_role} ->
+            conn
+            |> put_flash(:error, gettext("Select a valid team role."))
+            |> redirect(to: "/company")
+
+          {:error, %Ecto.Changeset{}} ->
+            conn
+            |> put_flash(:error, gettext("Enter a valid email address to invite a team member."))
+            |> redirect(to: "/company")
+        end
+    end
+  end
+
+  def remove_member(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        redirect(conn, to: "/company/setup")
+
+      company ->
+        case Monetization.remove_membership(company.id, id) do
+          {:ok, _membership} ->
+            conn
+            |> put_flash(:info, gettext("Team member removed successfully."))
+            |> redirect(to: "/company")
+
+          {:error, :last_owner} ->
+            conn
+            |> put_flash(:error, gettext("You cannot remove the last owner from the company."))
+            |> redirect(to: "/company")
+
+          {:error, :not_found} ->
+            conn
+            |> put_flash(:error, gettext("Team member not found."))
+            |> redirect(to: "/company")
+        end
     end
   end
 

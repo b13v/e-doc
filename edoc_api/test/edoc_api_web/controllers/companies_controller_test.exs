@@ -307,6 +307,56 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Basic"
       assert body =~ "1 / 8"
     end
+
+    test "renders team membership panel with invited members", %{conn: conn, company: company} do
+      assert {:ok, _membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => "teammate@example.com",
+                 "role" => "member"
+               })
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ ~s(action="/company/memberships")
+      assert body =~ "Команда"
+      assert body =~ "teammate@example.com"
+      assert body =~ "Приглашен"
+    end
+
+    test "invites a member from company settings", %{conn: conn, company: company} do
+      conn =
+        post(conn, "/company/memberships", %{
+          "membership" => %{
+            "email" => "member@example.com",
+            "role" => "admin"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      assert [%{invite_email: "member@example.com", role: "admin", status: "invited"}] =
+               Monetization.list_memberships(company.id)
+               |> Enum.filter(&(&1.role != "owner"))
+    end
+
+    test "removes an invited member from company settings", %{conn: conn, company: company} do
+      assert {:ok, membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => "remove-me@example.com",
+                 "role" => "member"
+               })
+
+      conn = delete(conn, "/company/memberships/#{membership.id}")
+
+      assert redirected_to(conn) == "/company"
+
+      assert Enum.all?(Monetization.list_memberships(company.id), fn listed ->
+               listed.id != membership.id
+             end)
+    end
   end
 
   defp create_payment_refs! do

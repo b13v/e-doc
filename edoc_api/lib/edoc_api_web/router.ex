@@ -254,6 +254,8 @@ defmodule EdocApiWeb.Router do
     get("/company", CompaniesController, :edit)
     put("/company", CompaniesController, :update)
     post("/company/subscription", CompaniesController, :update_subscription)
+    post("/company/memberships", CompaniesController, :invite_member)
+    delete("/company/memberships/:id", CompaniesController, :remove_member)
     post("/company/bank-accounts", CompaniesController, :add_bank_account)
     get("/company/bank-accounts/:id", CompanyBankAccountHTMLController, :show)
     get("/company/bank-accounts/:id/edit", CompanyBankAccountHTMLController, :edit)

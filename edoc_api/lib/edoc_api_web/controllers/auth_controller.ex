@@ -7,6 +7,7 @@ defmodule EdocApiWeb.AuthController do
   alias EdocApi.Auth.Token
   alias EdocApi.EmailVerification
   alias EdocApi.EmailSender
+  alias EdocApi.Monetization
   alias EdocApiWeb.ErrorMapper
 
   def signup(conn, params) do
@@ -58,6 +59,8 @@ defmodule EdocApiWeb.AuthController do
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
         if user.verified_at != nil do
+          _ = Monetization.accept_pending_memberships_for_user(user)
+
           with {:ok, access_token, _claims} <- Token.generate_access_token(user.id),
                {:ok, refresh_token} <- Accounts.issue_refresh_token(user.id) do
             conn

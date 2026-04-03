@@ -2347,6 +2347,72 @@ msgstr "Сынақ"
 msgid "Subscription"
 msgstr "Жазылым"
 
+msgid "Active"
+msgstr "Белсенді"
+
+msgid "Admin"
+msgstr "Әкімші"
+
+msgid "Enter a valid email address to invite a team member."
+msgstr "Команда мүшесін шақыру үшін жарамды email енгізіңіз."
+
+msgid "Invite Member"
+msgstr "Қатысушыны шақыру"
+
+msgid "Invite teammates and manage who can work inside your company."
+msgstr "Әріптестерді шақырып, компанияңыз ішінде кім жұмыс істей алатынын басқарыңыз."
+
+msgid "Invited"
+msgstr "Шақырылған"
+
+msgid "Member"
+msgstr "Қатысушы"
+
+msgid "No seats available. Upgrade your subscription to invite more users."
+msgstr "Бос орын жоқ. Көбірек пайдаланушы шақыру үшін жазылымды жаңартыңыз."
+
+msgid "No team members yet."
+msgstr "Командада әзірге ешкім жоқ."
+
+msgid "Owner"
+msgstr "Иесі"
+
+msgid "Removed"
+msgstr "Жойылған"
+
+msgid "Role"
+msgstr "Рөлі"
+
+msgid "Select a valid team role."
+msgstr "Команда мүшесінің дұрыс рөлін таңдаңыз."
+
+msgid "Team"
+msgstr "Команда"
+
+msgid "Team Email"
+msgstr "Қатысушының email-ы"
+
+msgid "Team member invited successfully."
+msgstr "Команда мүшесі сәтті шақырылды."
+
+msgid "Team member not found."
+msgstr "Команда мүшесі табылмады."
+
+msgid "Team member removed successfully."
+msgstr "Команда мүшесі сәтті жойылды."
+
+msgid "This email is already invited to your company."
+msgstr "Бұл email компанияңызға әлдеқашан шақырылған."
+
+msgid "This user is already a team member."
+msgstr "Бұл пайдаланушы командада бұрыннан бар."
+
+msgid "You cannot remove the last owner from the company."
+msgstr "Компанияның соңғы иесін жоюға болмайды."
+
+msgid "teammate@example.com"
+msgstr "teammate@example.com"
+
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:20
 #, elixir-autogen
 msgid "Control document limits and user seats for your company."

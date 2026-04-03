@@ -2347,6 +2347,72 @@ msgstr "Пробный"
 msgid "Subscription"
 msgstr "Подписка"
 
+msgid "Active"
+msgstr "Активен"
+
+msgid "Admin"
+msgstr "Администратор"
+
+msgid "Enter a valid email address to invite a team member."
+msgstr "Введите корректный email для приглашения участника команды."
+
+msgid "Invite Member"
+msgstr "Пригласить участника"
+
+msgid "Invite teammates and manage who can work inside your company."
+msgstr "Приглашайте коллег и управляйте доступом к работе внутри вашей компании."
+
+msgid "Invited"
+msgstr "Приглашен"
+
+msgid "Member"
+msgstr "Участник"
+
+msgid "No seats available. Upgrade your subscription to invite more users."
+msgstr "Свободных мест нет. Обновите подписку, чтобы пригласить больше пользователей."
+
+msgid "No team members yet."
+msgstr "В команде пока никого нет."
+
+msgid "Owner"
+msgstr "Владелец"
+
+msgid "Removed"
+msgstr "Удален"
+
+msgid "Role"
+msgstr "Роль"
+
+msgid "Select a valid team role."
+msgstr "Выберите корректную роль участника команды."
+
+msgid "Team"
+msgstr "Команда"
+
+msgid "Team Email"
+msgstr "Email участника"
+
+msgid "Team member invited successfully."
+msgstr "Участник команды успешно приглашен."
+
+msgid "Team member not found."
+msgstr "Участник команды не найден."
+
+msgid "Team member removed successfully."
+msgstr "Участник команды успешно удален."
+
+msgid "This email is already invited to your company."
+msgstr "Этот email уже приглашен в вашу компанию."
+
+msgid "This user is already a team member."
+msgstr "Этот пользователь уже состоит в команде."
+
+msgid "You cannot remove the last owner from the company."
+msgstr "Нельзя удалить последнего владельца компании."
+
+msgid "teammate@example.com"
+msgstr "teammate@example.com"
+
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:20
 #, elixir-autogen
 msgid "Control document limits and user seats for your company."

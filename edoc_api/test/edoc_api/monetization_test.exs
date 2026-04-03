@@ -88,4 +88,124 @@ defmodule EdocApi.MonetizationTest do
              seat_limit: 7
            } = Monetization.subscription_snapshot(company.id)
   end
+
+  test "invite_member/2 creates an invited membership with normalized email" do
+    user = create_user!()
+    company = create_company!(user)
+
+    assert {:ok, membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => " Teammate@Example.com ",
+               "role" => "member"
+             })
+
+    assert membership.status == "invited"
+    assert membership.user_id == nil
+    assert membership.invite_email == "teammate@example.com"
+  end
+
+  test "invite_member/2 rejects invite when all seats are occupied" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "included_seat_limit" => 2
+      })
+
+    assert {:ok, _membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "one@example.com",
+               "role" => "member"
+             })
+
+    assert {:error, :seat_limit_reached, %{limit: 2}} =
+             Monetization.invite_member(company.id, %{
+               "email" => "two@example.com",
+               "role" => "member"
+             })
+  end
+
+  test "invite_member/2 rejects duplicate invited email within the same company" do
+    user = create_user!()
+    company = create_company!(user)
+
+    assert {:ok, _membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "dup@example.com",
+               "role" => "member"
+             })
+
+    assert {:error, :duplicate_invite, %{email: "dup@example.com"}} =
+             Monetization.invite_member(company.id, %{
+               "email" => " DUP@example.com ",
+               "role" => "member"
+             })
+  end
+
+  test "invite_member/2 rejects email that already belongs to an active member" do
+    user = create_user!()
+    company = create_company!(user)
+
+    assert {:error, :duplicate_member, %{email: email}} =
+             Monetization.invite_member(company.id, %{
+               "email" => user.email,
+               "role" => "member"
+             })
+
+    assert email == user.email
+  end
+
+  test "subscription_snapshot counts invited memberships as occupied seats" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "included_seat_limit" => 2
+      })
+
+    assert {:ok, _membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "seat@example.com",
+               "role" => "member"
+             })
+
+    assert %{seats_used: 2, seat_limit: 2} = Monetization.subscription_snapshot(company.id)
+  end
+
+  test "remove_membership/2 marks invited membership as removed and frees the seat" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "included_seat_limit" => 2
+      })
+
+    assert {:ok, membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "remove@example.com",
+               "role" => "member"
+             })
+
+    assert %{seats_used: 2} = Monetization.subscription_snapshot(company.id)
+
+    assert {:ok, removed_membership} = Monetization.remove_membership(company.id, membership.id)
+    assert removed_membership.status == "removed"
+    assert %{seats_used: 1} = Monetization.subscription_snapshot(company.id)
+  end
+
+  test "remove_membership/2 rejects removing the only owner" do
+    user = create_user!()
+    company = create_company!(user)
+
+    owner_membership = Monetization.list_memberships(company.id) |> Enum.find(&(&1.role == "owner"))
+
+    assert {:error, :last_owner} =
+             Monetization.remove_membership(company.id, owner_membership.id)
+  end
 end

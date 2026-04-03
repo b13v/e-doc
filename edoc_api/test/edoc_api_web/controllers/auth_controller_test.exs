@@ -4,6 +4,8 @@ defmodule EdocApiWeb.AuthControllerTest do
   import EdocApi.TestFixtures
 
   alias EdocApi.Accounts
+  alias EdocApi.Companies
+  alias EdocApi.Monetization
   alias EdocApiWeb.Plugs.RateLimit
 
   setup do
@@ -45,6 +47,28 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert is_binary(body["access_token"])
       assert is_binary(body["refresh_token"])
       assert body["user"]["id"] == user.id
+    end
+
+    test "successful login activates invited memberships" do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      invited = create_user!(%{"email" => "invitee@example.com"})
+      Accounts.mark_email_verified!(invited.id)
+
+      assert {:ok, _membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => invited.email,
+                 "role" => "member"
+               })
+
+      conn =
+        build_conn()
+        |> post("/v1/auth/login", %{"email" => invited.email, "password" => "password123"})
+
+      assert conn.status == 200
+      assert Companies.get_company_by_user_id(invited.id).id == company.id
     end
 
     test "returns generic invalid credentials when account is locked" do
