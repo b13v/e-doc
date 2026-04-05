@@ -309,7 +309,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       refute body =~ ~s(name="subscription[add_on_seat_quantity]")
     end
 
-    test "blocks downgrade when occupied seats exceed the starter limit and highlights memberships", %{
+    test "blocks downgrade with localized russian warning and highlighted memberships", %{
       conn: conn,
       company: company
     } do
@@ -339,9 +339,70 @@ defmodule EdocApiWeb.CompaniesControllerTest do
 
       body = html_response(conn, 200)
 
-      assert body =~ "Remove 1 users before switching to Starter."
+      assert body =~ "Удалите 1 пользователей перед переходом на Starter."
+      assert body =~
+               "Перед применением этого изменения тарифа удалите выделенных участников команды."
+      assert count_occurrences(body, "Удалите 1 пользователей перед переходом на Starter.") == 1
+
+      assert count_occurrences(
+               body,
+               "Перед применением этого изменения тарифа удалите выделенных участников команды."
+             ) == 1
+
       assert body =~ "second@example.com"
       assert body =~ "bg-amber-50"
+      assert body =~ second.id
+      assert Monetization.subscription_snapshot(company.id).plan == "basic"
+    end
+
+    test "blocks downgrade with localized kazakh warning and highlighted memberships", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "basic"
+        })
+
+      {:ok, _first} =
+        Monetization.invite_member(company.id, %{
+          "email" => "first-kk@example.com",
+          "role" => "member"
+        })
+
+      {:ok, second} =
+        Monetization.invite_member(company.id, %{
+          "email" => "second-kk@example.com",
+          "role" => "member"
+        })
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: company.user_id,
+          locale: "kk"
+        })
+        |> post("/company/subscription", %{
+          "subscription" => %{
+            "plan" => "starter"
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert body =~ "Starter тарифіне ауысу үшін 1 пайдаланушыны алып тастаңыз."
+      assert body =~
+               "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
+
+      assert count_occurrences(body, "Starter тарифіне ауысу үшін 1 пайдаланушыны алып тастаңыз.") ==
+               1
+
+      assert count_occurrences(
+               body,
+               "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
+             ) == 1
+
+      assert body =~ "second-kk@example.com"
       assert body =~ second.id
       assert Monetization.subscription_snapshot(company.id).plan == "basic"
     end
@@ -414,5 +475,12 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       Repo.one(KnpCode) || Repo.insert!(%KnpCode{code: "999", description: "KNP 999"})
 
     %{bank: bank, kbe_code: kbe_code, knp_code: knp_code}
+  end
+
+  defp count_occurrences(haystack, needle) do
+    haystack
+    |> String.split(needle)
+    |> length()
+    |> Kernel.-(1)
   end
 end

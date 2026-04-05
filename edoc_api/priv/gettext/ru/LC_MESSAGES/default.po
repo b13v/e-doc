@@ -2325,6 +2325,17 @@ msgstr "Подписка обновлена успешно."
 msgid "Failed to update the subscription."
 msgstr "Не удалось обновить подписку."
 
+#: lib/edoc_api_web/controllers/companies_controller.ex:174
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:65
+#, elixir-autogen
+msgid "Remove %{count} users before switching to %{plan}."
+msgstr "Удалите %{count} пользователей перед переходом на %{plan}."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:71
+#, elixir-autogen
+msgid "Highlighted team members must be removed before this tariff change can be applied."
+msgstr "Перед применением этого изменения тарифа удалите выделенных участников команды."
+
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:8
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:42
 #, elixir-autogen

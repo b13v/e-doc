@@ -2325,6 +2325,17 @@ msgstr "Жазылым сәтті жаңартылды."
 msgid "Failed to update the subscription."
 msgstr "Жазылымды жаңарту мүмкін болмады."
 
+#: lib/edoc_api_web/controllers/companies_controller.ex:174
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:65
+#, elixir-autogen
+msgid "Remove %{count} users before switching to %{plan}."
+msgstr "%{plan} тарифіне ауысу үшін %{count} пайдаланушыны алып тастаңыз."
+
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:71
+#, elixir-autogen
+msgid "Highlighted team members must be removed before this tariff change can be applied."
+msgstr "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
+
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:8
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:42
 #, elixir-autogen

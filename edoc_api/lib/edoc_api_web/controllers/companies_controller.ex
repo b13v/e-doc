@@ -168,14 +168,6 @@ defmodule EdocApiWeb.CompaniesController do
 
           {:error, :seat_limit_exceeded_on_downgrade, details} ->
             conn
-            |> put_flash(
-              :error,
-              gettext(
-                "Remove %{count} users before switching to %{plan}.",
-                count: details.seats_to_remove,
-                plan: Gettext.gettext(EdocApiWeb.Gettext, plan_label(details.plan))
-              )
-            )
             |> render_company_settings(user, company, downgrade_warning: details)
         end
     end
@@ -365,11 +357,6 @@ defmodule EdocApiWeb.CompaniesController do
 
     render(conn, :edit, assigns)
   end
-
-  defp plan_label("starter"), do: "Starter"
-  defp plan_label("basic"), do: "Basic"
-  defp plan_label("trial"), do: "Trial"
-  defp plan_label(_plan), do: "Starter"
 
   defp company_validation_flash_message(changeset) do
     if Keyword.has_key?(changeset.errors, :bin_iin) do
