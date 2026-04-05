@@ -162,6 +162,7 @@ defmodule EdocApiWeb.Router do
     pipe_through([:auth_api, :api_mutation_rate_limit])
 
     put("/company", CompanyController, :upsert)
+    put("/company/subscription", CompanyController, :update_subscription)
     post("/buyers", BuyersController, :create)
     put("/buyers/:id", BuyersController, :update)
     delete("/buyers/:id", BuyersController, :delete)
