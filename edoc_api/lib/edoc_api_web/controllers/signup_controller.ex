@@ -7,8 +7,9 @@ defmodule EdocApiWeb.SignupController do
   alias EdocApi.EmailVerification
   alias EdocApi.EmailSender
 
-  def new(conn, _params) do
-    render(conn, :new, page_title: gettext("Sign Up"))
+  def new(conn, params) do
+    invited_email = normalize_invited_email(Map.get(params, "email"))
+    render(conn, :new, page_title: gettext("Sign Up"), invited_email: invited_email)
   end
 
   def create(conn, %{
@@ -19,7 +20,7 @@ defmodule EdocApiWeb.SignupController do
     if password != password_confirmation do
       conn
       |> put_flash(:error, gettext("Passwords do not match."))
-      |> render(:new, page_title: gettext("Sign Up"))
+      |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
     else
       case Accounts.register_user(%{"email" => email, "password" => password}) do
         {:ok, user} ->
@@ -52,7 +53,7 @@ defmodule EdocApiWeb.SignupController do
 
             conn
             |> put_flash(:error, error_message)
-            |> render(:new, page_title: gettext("Sign Up"))
+            |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
           end
 
         {:error, changeset} ->
@@ -60,7 +61,7 @@ defmodule EdocApiWeb.SignupController do
 
           conn
           |> put_flash(:error, error_message)
-          |> render(:new, page_title: gettext("Sign Up"))
+          |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
       end
     end
   end
@@ -93,5 +94,11 @@ defmodule EdocApiWeb.SignupController do
       _ ->
         "***"
     end
+  end
+
+  defp normalize_invited_email(nil), do: ""
+
+  defp normalize_invited_email(email) when is_binary(email) do
+    email |> String.trim()
   end
 end

@@ -2,6 +2,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
   use EdocApiWeb.ConnCase
 
   import EdocApi.TestFixtures
+  import Swoosh.TestAssertions
 
   alias EdocApi.Accounts
   alias EdocApi.Companies
@@ -484,6 +485,75 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert [%{invite_email: "member@example.com", role: "admin", status: "invited"}] =
                Monetization.list_memberships(company.id)
                |> Enum.filter(&(&1.role != "owner"))
+    end
+
+    test "invites a member and sends russian invitation email with Edocly branding", %{
+      conn: conn
+    } do
+      invitee_email = "member-invite@example.com"
+
+      conn =
+        post(conn, "/company/memberships", %{
+          "membership" => %{
+            "email" => invitee_email,
+            "role" => "member"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      signup_link = "http://localhost:4000/signup?email=#{URI.encode_www_form(invitee_email)}"
+
+      assert_email_sent(fn email ->
+        Enum.any?(email.to, fn {_name, address} -> address == invitee_email end) and
+          email.subject =~ "Приглашение" and
+          email.subject =~ "Edocly" and
+          email.text_body =~ "Вас пригласили в компанию" and
+          email.text_body =~ "перейдите по ссылке для регистрации" and
+          email.text_body =~ "Если у вас уже есть аккаунт" and
+          email.text_body =~ "Пригласил:" and
+          email.text_body =~ signup_link and
+          email.text_body =~ "Edocly" and
+          not String.contains?(email.text_body, "EdocAPI") and
+          not String.contains?(email.text_body, "You have been invited")
+      end)
+    end
+
+    test "invites a member and sends kazakh invitation email when locale is kk", %{
+      conn: conn
+    } do
+      invitee_email = "member-invite-kk@example.com"
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: get_session(conn, :user_id),
+          locale: "kk"
+        })
+        |> post("/company/memberships", %{
+          "membership" => %{
+            "email" => invitee_email,
+            "role" => "member"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      signup_link = "http://localhost:4000/signup?email=#{URI.encode_www_form(invitee_email)}"
+
+      assert_email_sent(fn email ->
+        Enum.any?(email.to, fn {_name, address} -> address == invitee_email end) and
+          email.subject =~ "Шақыру" and
+          email.subject =~ "Edocly" and
+          email.text_body =~ "Сізді Edocly жүйесіндегі компанияға шақырды" and
+          email.text_body =~ "Тіркелу үшін келесі сілтемеге өтіңіз" and
+          email.text_body =~ "Егер осы email-пен аккаунтыңыз бар болса" and
+          email.text_body =~ "Шақырған:" and
+          email.text_body =~ signup_link and
+          email.text_body =~ "Edocly" and
+          not String.contains?(email.text_body, "EdocAPI") and
+          not String.contains?(email.text_body, "You have been invited")
+      end)
     end
 
     test "shows seat limit error when inviting more members than allowed", %{

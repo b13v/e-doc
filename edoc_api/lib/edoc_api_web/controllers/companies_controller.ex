@@ -2,8 +2,10 @@ defmodule EdocApiWeb.CompaniesController do
   use EdocApiWeb, :controller
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias EdocApi.Companies
+  alias EdocApi.EmailSender
   alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Repo
@@ -215,7 +217,24 @@ defmodule EdocApiWeb.CompaniesController do
 
       company ->
         case Monetization.invite_member(company.id, membership_params) do
-          {:ok, _membership} ->
+          {:ok, membership} ->
+            _ =
+              case EmailSender.send_membership_invite_email(membership.invite_email, %{
+                     company_name: company.name,
+                     inviter_email: user.email,
+                     locale: conn.assigns[:locale] || "ru"
+                   }) do
+                {:ok, _receipt} ->
+                  :ok
+
+                {:error, reason} ->
+                  Logger.warning(
+                    "Failed to send team invitation email to #{membership.invite_email}: #{inspect(reason)}"
+                  )
+
+                  :error
+              end
+
             conn
             |> put_flash(:info, gettext("Team member invited successfully."))
             |> redirect(to: "/company")
