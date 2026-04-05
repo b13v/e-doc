@@ -42,7 +42,6 @@ defmodule EdocApi.Monetization do
         defaults.documents
 
     included_seat_limit = defaults.seats
-    add_on_seat_quantity = 0
 
     Repo.transaction(fn ->
       from(s in TenantSubscription,
@@ -58,7 +57,6 @@ defmodule EdocApi.Monetization do
         period_end: period_end,
         included_document_limit: included_document_limit,
         included_seat_limit: included_seat_limit,
-        add_on_seat_quantity: add_on_seat_quantity,
         trial_document_limit: @trial_document_limit,
         trial_started_at: trial_started_at,
         trial_ended_at: nil,
@@ -232,8 +230,7 @@ defmodule EdocApi.Monetization do
       documents_remaining:
         if(trial_window_exceeded, do: 0, else: max(document_limit - documents_used, 0)),
       seats_used: seats_used,
-      seat_limit: seat_limit,
-      add_on_seat_quantity: subscription.add_on_seat_quantity
+      seat_limit: seat_limit
     }
   end
 
@@ -408,7 +405,6 @@ defmodule EdocApi.Monetization do
           period_end: add_days(trial_start, @trial_time_window_days),
           included_document_limit: @trial_document_limit,
           included_seat_limit: @trial_included_seat_limit,
-          add_on_seat_quantity: 0,
           trial_document_limit: @trial_document_limit,
           trial_started_at: trial_start,
           trial_ended_at: nil,

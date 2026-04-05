@@ -109,13 +109,17 @@ defmodule EdocApi.MonetizationTest do
                "invoice_issued"
              )
 
+    snapshot = Monetization.subscription_snapshot(company.id)
+
     assert %{
              plan: "basic",
              documents_used: 1,
              document_limit: 500,
              seats_used: 1,
              seat_limit: 5
-           } = Monetization.subscription_snapshot(company.id)
+           } = snapshot
+
+    refute Map.has_key?(snapshot, :add_on_seat_quantity)
   end
 
   test "validate_plan_change/2 blocks downgrade when occupied seats exceed starter limit" do
