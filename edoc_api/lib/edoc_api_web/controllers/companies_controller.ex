@@ -100,19 +100,7 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
-        banks = Payments.list_banks()
-        subscription = Monetization.subscription_snapshot(company.id)
-        memberships = Monetization.list_memberships(company.id)
-
-        render(conn, :edit,
-          company: company,
-          bank_accounts: bank_accounts,
-          banks: banks,
-          subscription: subscription,
-          memberships: memberships,
-          page_title: gettext("Company Settings")
-        )
+        render_company_settings(conn, user, company)
     end
   end
 
@@ -156,25 +144,39 @@ defmodule EdocApiWeb.CompaniesController do
       company ->
         attrs = %{
           "plan" => Map.get(subscription_params, "plan", "starter"),
-          "add_on_seat_quantity" => Map.get(subscription_params, "add_on_seat_quantity", 0),
           "skip_trial" => true
         }
 
-        case Monetization.activate_subscription_for_company(company.id, attrs) do
-          {:ok, _subscription} ->
-            conn
-            |> put_flash(:info, gettext("Subscription updated successfully."))
-            |> redirect(to: "/company")
+        case Monetization.validate_plan_change(company.id, attrs["plan"]) do
+          {:ok, _details} ->
+            case Monetization.activate_subscription_for_company(company.id, attrs) do
+              {:ok, _subscription} ->
+                conn
+                |> put_flash(:info, gettext("Subscription updated successfully."))
+                |> redirect(to: "/company")
 
-          {:error, :validation, _details} ->
-            conn
-            |> put_flash(:error, gettext("Failed to update the subscription."))
-            |> redirect(to: "/company")
+              {:error, :validation, _details} ->
+                conn
+                |> put_flash(:error, gettext("Failed to update the subscription."))
+                |> redirect(to: "/company")
 
-          {:error, _reason} ->
+              {:error, _reason} ->
+                conn
+                |> put_flash(:error, gettext("Failed to update the subscription."))
+                |> redirect(to: "/company")
+            end
+
+          {:error, :seat_limit_exceeded_on_downgrade, details} ->
             conn
-            |> put_flash(:error, gettext("Failed to update the subscription."))
-            |> redirect(to: "/company")
+            |> put_flash(
+              :error,
+              gettext(
+                "Remove %{count} users before switching to %{plan}.",
+                count: details.seats_to_remove,
+                plan: Gettext.gettext(EdocApiWeb.Gettext, plan_label(details.plan))
+              )
+            )
+            |> render_company_settings(user, company, downgrade_warning: details)
         end
     end
   end
@@ -343,6 +345,31 @@ defmodule EdocApiWeb.CompaniesController do
         end
     end
   end
+
+  defp render_company_settings(conn, user, company, extra_assigns \\ []) do
+    bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
+    banks = Payments.list_banks()
+    subscription = Monetization.subscription_snapshot(company.id)
+    memberships = Monetization.list_memberships(company.id)
+
+    assigns =
+      [
+        company: company,
+        bank_accounts: bank_accounts,
+        banks: banks,
+        subscription: subscription,
+        memberships: memberships,
+        page_title: gettext("Company Settings")
+      ]
+      |> Keyword.merge(extra_assigns)
+
+    render(conn, :edit, assigns)
+  end
+
+  defp plan_label("starter"), do: "Starter"
+  defp plan_label("basic"), do: "Basic"
+  defp plan_label("trial"), do: "Trial"
+  defp plan_label(_plan), do: "Starter"
 
   defp company_validation_flash_message(changeset) do
     if Keyword.has_key?(changeset.errors, :bin_iin) do

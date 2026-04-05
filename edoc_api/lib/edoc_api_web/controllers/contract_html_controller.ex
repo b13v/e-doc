@@ -164,6 +164,25 @@ defmodule EdocApiWeb.ContractHTMLController do
               page_title: gettext("New Contract")
             )
 
+          {:error, :business_rule, %{rule: :quota_exceeded}} ->
+            conn
+            |> put_flash(
+              :error,
+              gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+            )
+            |> render(:new,
+              contract: nil,
+              buyers: buyers,
+              bank_accounts: bank_accounts,
+              banks: banks,
+              kbe_codes: kbe_codes,
+              knp_codes: knp_codes,
+              units: units,
+              changeset: nil,
+              current_section: :contracts,
+              page_title: gettext("New Contract")
+            )
+
           {:error, reason} when is_atom(reason) or is_binary(reason) ->
             conn
             |> put_flash(

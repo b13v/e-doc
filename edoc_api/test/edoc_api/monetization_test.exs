@@ -45,7 +45,7 @@ defmodule EdocApi.MonetizationTest do
              )
   end
 
-  test "effective seat limit includes add-on seats" do
+  test "effective seat limit ignores legacy add-on seats and uses fixed plan limits" do
     user = create_user!()
     company = create_company!(user)
 
@@ -57,10 +57,10 @@ defmodule EdocApi.MonetizationTest do
         "add_on_seat_quantity" => 3
       })
 
-    assert Monetization.effective_seat_limit(company.id) == 5
+    assert Monetization.effective_seat_limit(company.id) == 2
   end
 
-  test "subscription_snapshot reports plan, usage, and seat counts" do
+  test "subscription_snapshot reports plan, usage, and fixed seat counts" do
     user = create_user!()
     company = create_company!(user)
 
@@ -85,8 +85,91 @@ defmodule EdocApi.MonetizationTest do
              documents_used: 1,
              document_limit: 500,
              seats_used: 1,
-             seat_limit: 7
+             seat_limit: 5
            } = Monetization.subscription_snapshot(company.id)
+  end
+
+  test "validate_plan_change/2 blocks downgrade when occupied seats exceed starter limit" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic"
+      })
+
+    assert {:ok, _membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "first@example.com",
+               "role" => "member"
+             })
+
+    assert {:ok, _membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "second@example.com",
+               "role" => "member"
+             })
+
+    assert {:error, :seat_limit_exceeded_on_downgrade,
+            %{
+              plan: "starter",
+              seat_limit: 2,
+              seats_used: 3,
+              seats_to_remove: 1,
+              blocking_memberships: [_]
+            }} = Monetization.validate_plan_change(company.id, "starter")
+  end
+
+  test "validate_plan_change/2 suggests invited memberships before active ones" do
+    user = create_user!()
+    company = create_company!(user)
+    active_user = create_user!()
+    another_active_user = create_user!()
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic"
+      })
+
+    Monetization.ensure_owner_membership(company.id, active_user.id)
+    Monetization.ensure_owner_membership(company.id, another_active_user.id)
+
+    assert {:ok, invited_membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => "invite-first@example.com",
+               "role" => "member"
+             })
+
+    active_memberships =
+      Monetization.list_memberships(company.id)
+      |> Enum.filter(&(&1.status == "active"))
+
+    admin_membership = Enum.find(active_memberships, &(&1.user_id == active_user.id))
+    extra_owner_membership = Enum.find(active_memberships, &(&1.user_id == another_active_user.id))
+
+    {:ok, _updated_admin} =
+      admin_membership
+      |> Ecto.Changeset.change(role: "admin")
+      |> EdocApi.Repo.update()
+
+    assert {:error, :seat_limit_exceeded_on_downgrade, %{blocking_memberships: blocking}} =
+             Monetization.validate_plan_change(company.id, "starter")
+
+    assert extra_owner_membership.role == "owner"
+    assert Enum.map(blocking, & &1.id) == [invited_membership.id, admin_membership.id]
+  end
+
+  test "validate_plan_change/2 allows downgrade when occupied seats fit the target plan" do
+    user = create_user!()
+    company = create_company!(user)
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic"
+      })
+
+    assert {:ok, %{plan: "starter", seat_limit: 2}} =
+             Monetization.validate_plan_change(company.id, "starter")
   end
 
   test "invite_member/2 creates an invited membership with normalized email" do

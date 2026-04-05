@@ -280,7 +280,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ ~s(action="/company/subscription")
       assert body =~ "Starter"
       assert body =~ "1 / 50"
-      assert body =~ "1 / 3"
+      assert body =~ "1 / 2"
     end
 
     test "updates subscription plan and add-on seats from company settings", %{
@@ -296,7 +296,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         })
 
       assert redirected_to(conn) == "/company"
-      assert Monetization.effective_seat_limit(company.id) == 8
+      assert Monetization.effective_seat_limit(company.id) == 5
 
       body =
         conn
@@ -305,7 +305,45 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> html_response(200)
 
       assert body =~ "Basic"
-      assert body =~ "1 / 8"
+      assert body =~ "1 / 5"
+      refute body =~ ~s(name="subscription[add_on_seat_quantity]")
+    end
+
+    test "blocks downgrade when occupied seats exceed the starter limit and highlights memberships", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "basic"
+        })
+
+      {:ok, _first} =
+        Monetization.invite_member(company.id, %{
+          "email" => "first@example.com",
+          "role" => "member"
+        })
+
+      {:ok, second} =
+        Monetization.invite_member(company.id, %{
+          "email" => "second@example.com",
+          "role" => "member"
+        })
+
+      conn =
+        post(conn, "/company/subscription", %{
+          "subscription" => %{
+            "plan" => "starter"
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert body =~ "Remove 1 users before switching to Starter."
+      assert body =~ "second@example.com"
+      assert body =~ "bg-amber-50"
+      assert body =~ second.id
+      assert Monetization.subscription_snapshot(company.id).plan == "basic"
     end
 
     test "renders team membership panel with invited members", %{conn: conn, company: company} do

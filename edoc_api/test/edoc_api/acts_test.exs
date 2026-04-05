@@ -6,6 +6,7 @@ defmodule EdocApi.ActsTest do
   alias EdocApi.Acts
   alias EdocApi.ActStatus
   alias EdocApi.Buyers
+  alias EdocApi.Monetization
   alias EdocApi.Repo
 
   describe "create_act_for_user/3" do
@@ -27,6 +28,34 @@ defmodule EdocApi.ActsTest do
       assert act.status == "draft"
       assert length(act.items) == 1
       assert Enum.at(act.items, 0).name == "Services"
+    end
+
+    test "blocks creating act when the trial document limit is exhausted" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      attrs = %{
+        "issue_date" => Date.utc_today(),
+        "buyer_id" => buyer.id,
+        "buyer_address" => "Buyer Address",
+        "items" => [
+          %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+        ]
+      }
+
+      assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 10, limit: 10}}} =
+               Acts.create_act_for_user(user.id, company.id, attrs)
     end
   end
 

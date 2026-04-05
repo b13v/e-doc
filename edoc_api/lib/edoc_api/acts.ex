@@ -141,6 +141,7 @@ defmodule EdocApi.Acts do
       when is_binary(user_id) and is_binary(company_id) and is_map(attrs) do
     with %Company{} = company <- Companies.get_company_by_user_id(user_id),
          true <- company.id == company_id,
+         {:ok, _quota} <- Monetization.ensure_document_creation_allowed(company_id),
          {:ok, buyer} <- fetch_buyer(attrs, company_id),
          {:ok, contract, vat_rate} <- fetch_optional_contract(attrs, user_id),
          {:ok, prepared_items} <- prepare_items(attrs, vat_rate) do
@@ -202,6 +203,9 @@ defmodule EdocApi.Acts do
 
       false ->
         {:error, :business_rule, %{rule: :company_required}}
+
+      {:error, :quota_exceeded, details} ->
+        {:error, :business_rule, %{rule: :quota_exceeded, details: details}}
 
       {:error, type, details} ->
         {:error, type, details}

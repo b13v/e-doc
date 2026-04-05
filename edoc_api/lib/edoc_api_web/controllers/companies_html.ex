@@ -51,5 +51,10 @@ defmodule EdocApiWeb.CompaniesHTML do
   def membership_status_label("removed"), do: gettext("Removed")
   def membership_status_label(other), do: other
 
+  def subscription_plan_label("starter"), do: gettext("Starter")
+  def subscription_plan_label("basic"), do: gettext("Basic")
+  def subscription_plan_label("trial"), do: gettext("Trial")
+  def subscription_plan_label(_plan), do: gettext("Starter")
+
   embed_templates("companies_html/*")
 end

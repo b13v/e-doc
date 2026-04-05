@@ -5,6 +5,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
 
   alias EdocApi.Accounts
   alias EdocApi.Invoicing
+  alias EdocApi.Monetization
 
   @bin_iin_error "Failed to create invoice: Buyer bin iin: has invalid checksum"
 
@@ -92,6 +93,50 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
 
       assert body =~ @bin_iin_error
       refute body =~ "FunctionClauseError"
+    end
+
+    test "shows upgrade prompt when trial document limit is exhausted", %{
+      conn: conn,
+      company: company
+    } do
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "Direct invoice",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_name" => "Quota Buyer",
+            "buyer_bin_iin" => "060215385673",
+            "buyer_address" => "Buyer Address",
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert body =~
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "Document limit reached for this billing period. Upgrade your plan to continue."
+               )
     end
   end
 end

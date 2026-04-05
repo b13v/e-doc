@@ -216,65 +216,71 @@ defmodule EdocApi.Invoicing do
       |> fetch_optional_value("knp_code_id", :knp_code_id)
       |> normalize_blank_to_nil()
 
-    RepoHelpers.transaction(fn ->
-      RepoHelpers.check_or_abort(items_attrs != [], :items_required)
+    case Monetization.ensure_document_creation_allowed(company_id) do
+      {:ok, _quota} ->
+        RepoHelpers.transaction(fn ->
+          RepoHelpers.check_or_abort(items_attrs != [], :items_required)
 
-      {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
+          {prepared_items, subtotal} = prepare_items_and_subtotal!(items_attrs)
 
-      # ✅ AUTONUMBER: если number не передан — генерим только цифры
-      raw_number = Map.get(attrs, "number") || Map.get(attrs, :number)
+          # ✅ AUTONUMBER: если number не передан — генерим только цифры
+          raw_number = Map.get(attrs, "number") || Map.get(attrs, :number)
 
-      number =
-        cond do
-          is_nil(raw_number) ->
-            next_invoice_number!(company_id)
+          number =
+            cond do
+              is_nil(raw_number) ->
+                next_invoice_number!(company_id)
 
-          is_binary(raw_number) and String.trim(raw_number) == "" ->
-            next_invoice_number!(company_id)
+              is_binary(raw_number) and String.trim(raw_number) == "" ->
+                next_invoice_number!(company_id)
 
-          true ->
-            raw_number
-        end
+              true ->
+                raw_number
+            end
 
-      # ---- SELLER from Company / Bank Account -----
-      company = Repo.get!(Company, company_id)
+          # ---- SELLER from Company / Bank Account -----
+          company = Repo.get!(Company, company_id)
 
-      # Get bank account (explicit or default)
-      bank_account = get_bank_account_for_invoice(company_id, bank_account_id)
+          # Get bank account (explicit or default)
+          bank_account = get_bank_account_for_invoice(company_id, bank_account_id)
 
-      bank_account = Repo.preload(bank_account, [:bank, :kbe_code, :knp_code])
+          bank_account = Repo.preload(bank_account, [:bank, :kbe_code, :knp_code])
 
-      seller_attrs = %{
-        "seller_name" => company.name,
-        "seller_bin_iin" => company.bin_iin,
-        "seller_address" => format_company_address(company),
-        "seller_iban" => bank_account.iban
-      }
+          seller_attrs = %{
+            "seller_name" => company.name,
+            "seller_bin_iin" => company.bin_iin,
+            "seller_address" => format_company_address(company),
+            "seller_iban" => bank_account.iban
+          }
 
-      invoice_attrs =
-        attrs
-        |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
-        |> Map.merge(seller_attrs)
-        |> Map.put("subtotal", subtotal)
-        |> Map.put("number", number)
-        |> maybe_put_bank_account_id(bank_account)
-        |> maybe_put_kbe_code_id(kbe_code_id || bank_account.kbe_code_id)
-        |> maybe_put_knp_code_id(knp_code_id || bank_account.knp_code_id)
+          invoice_attrs =
+            attrs
+            |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+            |> Map.merge(seller_attrs)
+            |> Map.put("subtotal", subtotal)
+            |> Map.put("number", number)
+            |> maybe_put_bank_account_id(bank_account)
+            |> maybe_put_kbe_code_id(kbe_code_id || bank_account.kbe_code_id)
+            |> maybe_put_knp_code_id(knp_code_id || bank_account.knp_code_id)
 
-      invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
+          invoice_changeset = Invoice.changeset(%Invoice{}, invoice_attrs, user_id, company_id)
 
-      {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
+          {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
 
-      Enum.each(prepared_items, fn item_attrs ->
-        cs =
-          %InvoiceItem{}
-          |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
+          Enum.each(prepared_items, fn item_attrs ->
+            cs =
+              %InvoiceItem{}
+              |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
 
-        RepoHelpers.insert_or_abort(cs)
-      end)
+            RepoHelpers.insert_or_abort(cs)
+          end)
 
-      {:ok, preload_invoice(invoice)}
-    end)
+          {:ok, preload_invoice(invoice)}
+        end)
+
+      {:error, :quota_exceeded, details} ->
+        {:error, :business_rule, %{rule: :quota_exceeded, details: details}}
+    end
   end
 
   def contract_ready_for_progression?(%{contract_id: nil}), do: true

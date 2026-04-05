@@ -85,21 +85,27 @@ defmodule EdocApi.Core do
       %Company{id: company_id} ->
         attrs = attrs || %{}
 
-        RepoHelpers.transaction(fn ->
-          with {:ok, contract} <-
-                 %Contract{}
-                 |> Contract.changeset(attrs, company_id)
-                 |> RepoHelpers.insert_or_abort(),
-               {:ok, _} <-
-                 if(Enum.empty?(items_attrs),
-                   do: {:ok, nil},
-                   else: create_contract_items(contract, items_attrs)
-                 ) do
-            reloaded_contract = Repo.get(Contract, contract.id) |> Repo.preload(:contract_items)
-            {:ok, reloaded_contract}
-          end
-        end)
-        |> Errors.normalize()
+        case Monetization.ensure_document_creation_allowed(company_id) do
+          {:ok, _quota} ->
+            RepoHelpers.transaction(fn ->
+              with {:ok, contract} <-
+                     %Contract{}
+                     |> Contract.changeset(attrs, company_id)
+                     |> RepoHelpers.insert_or_abort(),
+                   {:ok, _} <-
+                     if(Enum.empty?(items_attrs),
+                       do: {:ok, nil},
+                       else: create_contract_items(contract, items_attrs)
+                     ) do
+                reloaded_contract = Repo.get(Contract, contract.id) |> Repo.preload(:contract_items)
+                {:ok, reloaded_contract}
+              end
+            end)
+            |> Errors.normalize()
+
+          {:error, :quota_exceeded, details} ->
+            Errors.business_rule(:quota_exceeded, details)
+        end
     end
   end
 

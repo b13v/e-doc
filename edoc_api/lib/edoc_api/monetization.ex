@@ -31,13 +31,8 @@ defmodule EdocApi.Monetization do
         Map.get(attrs, :included_document_limit) ||
         defaults.documents
 
-    included_seat_limit =
-      Map.get(attrs, "included_seat_limit") ||
-        Map.get(attrs, :included_seat_limit) ||
-        defaults.seats
-
-    add_on_seat_quantity =
-      Map.get(attrs, "add_on_seat_quantity") || Map.get(attrs, :add_on_seat_quantity) || 0
+    included_seat_limit = defaults.seats
+    add_on_seat_quantity = 0
 
     Repo.transaction(fn ->
       from(s in TenantSubscription,
@@ -86,7 +81,35 @@ defmodule EdocApi.Monetization do
 
   def effective_seat_limit(company_id) when is_binary(company_id) do
     subscription = get_or_create_active_subscription!(company_id)
-    max(subscription.included_seat_limit + subscription.add_on_seat_quantity, 1)
+    plan_seat_limit(subscription.plan)
+  end
+
+  def validate_plan_change(company_id, target_plan)
+      when is_binary(company_id) and is_binary(target_plan) do
+    current_plan = get_or_create_active_subscription!(company_id).plan
+    target_plan = normalize_plan(target_plan)
+    seat_limit = plan_seat_limit(target_plan)
+    seats_used = occupied_member_count(company_id)
+
+    if downgrade?(current_plan, target_plan) and seats_used > seat_limit do
+      blocking_memberships = blocking_memberships_for_downgrade(company_id, seat_limit)
+
+      {:error, :seat_limit_exceeded_on_downgrade,
+       %{
+         plan: target_plan,
+         seat_limit: seat_limit,
+         seats_used: seats_used,
+         seats_to_remove: seats_used - seat_limit,
+         blocking_memberships: blocking_memberships
+       }}
+    else
+      {:ok,
+       %{
+         plan: target_plan,
+         seat_limit: seat_limit,
+         seats_used: seats_used
+       }}
+    end
   end
 
   def list_memberships(company_id) when is_binary(company_id) do
@@ -206,6 +229,18 @@ defmodule EdocApi.Monetization do
     |> Repo.aggregate(:count, :id)
   end
 
+  defp blocking_memberships_for_downgrade(company_id, seat_limit) do
+    overflow = max(occupied_member_count(company_id) - seat_limit, 0)
+
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> preload([:user])
+    |> Repo.all()
+    |> Enum.reject(&last_owner?/1)
+    |> Enum.sort_by(&downgrade_priority/1)
+    |> Enum.take(overflow)
+  end
+
   defp invited_email_exists?(company_id, email) do
     TenantMembership
     |> where(
@@ -293,6 +328,25 @@ defmodule EdocApi.Monetization do
     end
   end
 
+  def ensure_document_creation_allowed(company_id) when is_binary(company_id) do
+    subscription = get_or_create_active_subscription!(company_id) |> roll_paid_period_if_needed()
+    used = usage_count(subscription)
+    limit = document_limit(subscription)
+
+    if used >= limit do
+      {:error, :quota_exceeded,
+       %{
+         company_id: company_id,
+         plan: subscription.plan,
+         used: used,
+         limit: limit,
+         period_end: subscription.period_end
+       }}
+    else
+      {:ok, %{used: used, limit: limit, remaining: max(limit - used, 0)}}
+    end
+  end
+
   defp get_or_create_active_subscription!(company_id) do
     case active_subscription(company_id) do
       nil ->
@@ -369,6 +423,23 @@ defmodule EdocApi.Monetization do
 
   defp normalize_plan(plan) when plan in ["trial", "starter", "basic"], do: plan
   defp normalize_plan(_), do: "starter"
+
+  defp plan_seat_limit(plan) do
+    @plan_defaults
+    |> Map.fetch!(normalize_plan(plan))
+    |> Map.fetch!(:seats)
+  end
+
+  defp downgrade?("basic", "starter"), do: true
+  defp downgrade?("basic", "trial"), do: true
+  defp downgrade?("starter", "trial"), do: true
+  defp downgrade?(_current_plan, _target_plan), do: false
+
+  defp downgrade_priority(%TenantMembership{status: "invited"}), do: {0, 0}
+  defp downgrade_priority(%TenantMembership{status: "active", role: "member"}), do: {1, 0}
+  defp downgrade_priority(%TenantMembership{status: "active", role: "admin"}), do: {2, 0}
+  defp downgrade_priority(%TenantMembership{status: "active", role: "owner"}), do: {3, 0}
+  defp downgrade_priority(_membership), do: {4, 0}
 
   defp add_days(%DateTime{} = datetime, days), do: DateTime.add(datetime, days * 86_400, :second)
   defp now, do: DateTime.utc_now() |> DateTime.truncate(:second)

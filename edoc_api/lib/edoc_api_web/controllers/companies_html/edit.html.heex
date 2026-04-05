@@ -3,6 +3,13 @@
   <% show_add_bank_form = assigns[:show_add_bank_form] || false %>
   <% subscription = assigns[:subscription] %>
   <% memberships = assigns[:memberships] || [] %>
+  <% downgrade_warning = assigns[:downgrade_warning] %>
+  <% blocking_ids =
+    downgrade_warning
+    |> case do
+      nil -> MapSet.new()
+      %{blocking_memberships: blocking_memberships} -> MapSet.new(Enum.map(blocking_memberships, & &1.id))
+    end %>
   <% plan_label =
     case subscription.plan do
       "basic" -> gettext("Basic")
@@ -51,6 +58,21 @@
         </div>
       </div>
 
+      <%= if downgrade_warning do %>
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+          <p class="font-semibold">
+            <%= gettext(
+              "Remove %{count} users before switching to %{plan}.",
+              count: downgrade_warning.seats_to_remove,
+              plan: subscription_plan_label(downgrade_warning.plan)
+            ) %>
+          </p>
+          <p class="mt-1">
+            <%= gettext("Highlighted team members must be removed before this tariff change can be applied.") %>
+          </p>
+        </div>
+      <% end %>
+
       <form action="/company/subscription" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
@@ -60,17 +82,6 @@
             <option value="starter" selected={subscription.plan == "starter"}><%= gettext("Starter") %></option>
             <option value="basic" selected={subscription.plan == "basic"}><%= gettext("Basic") %></option>
           </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700"><%= gettext("Extra Seats") %></label>
-          <input
-            type="number"
-            name="subscription[add_on_seat_quantity]"
-            min="0"
-            value={subscription.add_on_seat_quantity}
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border"
-          />
         </div>
 
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -136,7 +147,14 @@
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
               <%= for membership <- memberships do %>
-                <tr class="hover:bg-gray-50">
+                <tr
+                  data-membership-id={membership.id}
+                  class={
+                    if MapSet.member?(blocking_ids, membership.id),
+                      do: "bg-amber-50 hover:bg-amber-100",
+                      else: "hover:bg-gray-50"
+                  }
+                >
                   <td class="px-6 py-4 text-sm text-gray-900"><%= membership_email(membership) %></td>
                   <td class="px-6 py-4 text-sm text-gray-700"><%= membership_role_label(membership.role) %></td>
                   <td class="px-6 py-4 text-sm text-gray-700"><%= membership_status_label(membership.status) %></td>

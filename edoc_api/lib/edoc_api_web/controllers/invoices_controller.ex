@@ -159,6 +159,15 @@ defmodule EdocApiWeb.InvoicesController do
                   )
                 )
 
+              {:error, :business_rule, %{rule: :quota_exceeded}} ->
+                render_with_data(
+                  conn,
+                  user,
+                  company,
+                  invoice_params,
+                  gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+                )
+
               {:error, reason} ->
                 render_with_data(
                   conn,

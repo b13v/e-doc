@@ -6,6 +6,7 @@ defmodule EdocApiWeb.ActsControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Acts
   alias EdocApi.Buyers
+  alias EdocApi.Monetization
 
   setup %{conn: conn} do
     user = create_user!()
@@ -82,6 +83,55 @@ defmodule EdocApiWeb.ActsControllerTest do
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                Gettext.gettext(EdocApiWeb.Gettext, "This act cannot be issued.")
+    end
+  end
+
+  describe "create/2" do
+    test "shows upgrade prompt when trial document limit is exhausted", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      conn =
+        post(conn, "/acts", %{
+          "act" => %{
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/new"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "Document limit reached for this billing period. Upgrade your plan to continue."
+               )
     end
   end
 

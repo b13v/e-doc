@@ -2,6 +2,7 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
   use EdocApi.DataCase, async: true
 
   alias EdocApi.Invoicing
+  alias EdocApi.Monetization
   import EdocApi.TestFixtures
 
   describe "create_invoice_for_user/3" do
@@ -49,6 +50,25 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
 
       assert {:ok, invoice} = Invoicing.create_invoice_for_user(user.id, company.id, attrs)
       assert invoice.bank_account_id == default_account.id
+    end
+
+    test "blocks creating invoice when the trial document limit is exhausted" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 10, limit: 10}}} =
+               Invoicing.create_invoice_for_user(user.id, company.id, invoice_attrs())
     end
   end
 end
