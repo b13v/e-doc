@@ -9,6 +9,7 @@ defmodule EdocApi.Monetization do
   alias EdocApi.Validators.Email
 
   @trial_document_limit 10
+  @trial_time_window_days 14
   @trial_included_seat_limit 2
 
   @plan_defaults %{
@@ -21,7 +22,16 @@ defmodule EdocApi.Monetization do
     plan = normalize_plan(Map.get(attrs, "plan") || Map.get(attrs, :plan) || "starter")
     now = now()
     period_start = Map.get(attrs, "period_start") || Map.get(attrs, :period_start) || now
-    period_end = Map.get(attrs, "period_end") || Map.get(attrs, :period_end) || add_days(period_start, 30)
+    trial_started_at =
+      Map.get(attrs, "trial_started_at") ||
+        Map.get(attrs, :trial_started_at) ||
+        if(plan == "trial", do: period_start)
+
+    period_end =
+      Map.get(attrs, "period_end") ||
+        Map.get(attrs, :period_end) ||
+        default_period_end(plan, period_start, trial_started_at)
+
     skip_trial = truthy?(Map.get(attrs, "skip_trial") || Map.get(attrs, :skip_trial))
 
     defaults = Map.fetch!(@plan_defaults, plan)
@@ -50,7 +60,7 @@ defmodule EdocApi.Monetization do
         included_seat_limit: included_seat_limit,
         add_on_seat_quantity: add_on_seat_quantity,
         trial_document_limit: @trial_document_limit,
-        trial_started_at: if(plan == "trial", do: now),
+        trial_started_at: trial_started_at,
         trial_ended_at: nil,
         skip_trial: skip_trial
       }
@@ -209,15 +219,18 @@ defmodule EdocApi.Monetization do
     seat_limit = effective_seat_limit(company_id)
     documents_used = usage_count(subscription)
     document_limit = document_limit(subscription)
+    period_end = effective_period_end(subscription)
+    trial_window_exceeded = trial_time_window_exceeded?(subscription)
 
     %{
       plan: subscription.plan,
       status: subscription.status,
       period_start: subscription.period_start,
-      period_end: subscription.period_end,
+      period_end: period_end,
       documents_used: documents_used,
       document_limit: document_limit,
-      documents_remaining: max(document_limit - documents_used, 0),
+      documents_remaining:
+        if(trial_window_exceeded, do: 0, else: max(document_limit - documents_used, 0)),
       seats_used: seats_used,
       seat_limit: seat_limit,
       add_on_seat_quantity: subscription.add_on_seat_quantity
@@ -312,41 +325,47 @@ defmodule EdocApi.Monetization do
     now = now()
     limit = document_limit(subscription)
 
-    insert_result =
-      %TenantUsageEvent{}
-      |> TenantUsageEvent.changeset(%{
-        company_id: company_id,
-        event_type: event_type,
-        document_type: document_type,
-        document_id: document_id,
-        occurred_at: now,
-        period_start: subscription.period_start,
-        period_end: subscription.period_end
-      })
-      |> Repo.insert(
-        on_conflict: :nothing,
-        conflict_target: [:company_id, :document_type, :document_id]
-      )
+    case ensure_trial_time_window(subscription) do
+      :ok ->
+        insert_result =
+          %TenantUsageEvent{}
+          |> TenantUsageEvent.changeset(%{
+            company_id: company_id,
+            event_type: event_type,
+            document_type: document_type,
+            document_id: document_id,
+            occurred_at: now,
+            period_start: subscription.period_start,
+            period_end: effective_period_end(subscription)
+          })
+          |> Repo.insert(
+            on_conflict: :nothing,
+            conflict_target: [:company_id, :document_type, :document_id]
+          )
 
-    case insert_result do
-      {:ok, _event} ->
-        used = usage_count(subscription)
+        case insert_result do
+          {:ok, _event} ->
+            used = usage_count(subscription)
 
-        if used > limit do
-          {:error, :quota_exceeded,
-           %{
-             company_id: company_id,
-             plan: subscription.plan,
-             used: used - 1,
-             limit: limit,
-             period_end: subscription.period_end
-           }}
-        else
-          {:ok, %{used: used, limit: limit, remaining: max(limit - used, 0)}}
+            if used > limit do
+              {:error, :quota_exceeded,
+               %{
+                 company_id: company_id,
+                 plan: subscription.plan,
+                 used: used - 1,
+                 limit: limit,
+                 period_end: effective_period_end(subscription)
+               }}
+            else
+              {:ok, %{used: used, limit: limit, remaining: max(limit - used, 0)}}
+            end
+
+          {:error, _changeset} ->
+            {:ok, %{duplicate: true}}
         end
 
-      {:error, _changeset} ->
-        {:ok, %{duplicate: true}}
+      {:error, details} ->
+        {:error, :quota_exceeded, details}
     end
   end
 
@@ -355,17 +374,23 @@ defmodule EdocApi.Monetization do
     used = usage_count(subscription)
     limit = document_limit(subscription)
 
-    if used >= limit do
-      {:error, :quota_exceeded,
-       %{
-         company_id: company_id,
-         plan: subscription.plan,
-         used: used,
-         limit: limit,
-         period_end: subscription.period_end
-       }}
-    else
-      {:ok, %{used: used, limit: limit, remaining: max(limit - used, 0)}}
+    case ensure_trial_time_window(subscription) do
+      :ok ->
+        if used >= limit do
+          {:error, :quota_exceeded,
+           %{
+             company_id: company_id,
+             plan: subscription.plan,
+             used: used,
+             limit: limit,
+             period_end: effective_period_end(subscription)
+           }}
+        else
+          {:ok, %{used: used, limit: limit, remaining: max(limit - used, 0)}}
+        end
+
+      {:error, details} ->
+        {:error, :quota_exceeded, details}
     end
   end
 
@@ -380,7 +405,7 @@ defmodule EdocApi.Monetization do
           plan: "trial",
           status: "active",
           period_start: trial_start,
-          period_end: add_days(trial_start, 3650),
+          period_end: add_days(trial_start, @trial_time_window_days),
           included_document_limit: @trial_document_limit,
           included_seat_limit: @trial_included_seat_limit,
           add_on_seat_quantity: 0,
@@ -442,6 +467,49 @@ defmodule EdocApi.Monetization do
     do: trial_limit
 
   defp document_limit(%TenantSubscription{included_document_limit: limit}), do: limit
+
+  defp effective_period_end(%TenantSubscription{plan: "trial"} = subscription) do
+    trial_window_end(subscription)
+  end
+
+  defp effective_period_end(%TenantSubscription{} = subscription), do: subscription.period_end
+
+  defp ensure_trial_time_window(%TenantSubscription{plan: "trial"} = subscription) do
+    if trial_time_window_exceeded?(subscription) do
+      {:error,
+       %{
+         company_id: subscription.company_id,
+         plan: subscription.plan,
+         used: usage_count(subscription),
+         limit: document_limit(subscription),
+         period_end: effective_period_end(subscription),
+         reason: :trial_time_window_exceeded
+       }}
+    else
+      :ok
+    end
+  end
+
+  defp ensure_trial_time_window(%TenantSubscription{}), do: :ok
+
+  defp trial_time_window_exceeded?(%TenantSubscription{plan: "trial"} = subscription) do
+    DateTime.compare(now(), trial_window_end(subscription)) != :lt
+  end
+
+  defp trial_time_window_exceeded?(%TenantSubscription{}), do: false
+
+  defp trial_window_end(%TenantSubscription{} = subscription) do
+    trial_start =
+      subscription.trial_started_at || subscription.period_start || subscription.inserted_at || now()
+
+    add_days(trial_start, @trial_time_window_days)
+  end
+
+  defp default_period_end("trial", period_start, trial_started_at) do
+    add_days(trial_started_at || period_start, @trial_time_window_days)
+  end
+
+  defp default_period_end(_plan, period_start, _trial_started_at), do: add_days(period_start, 30)
 
   defp normalize_plan(plan) when plan in ["trial", "starter", "basic"], do: plan
   defp normalize_plan(_), do: "starter"

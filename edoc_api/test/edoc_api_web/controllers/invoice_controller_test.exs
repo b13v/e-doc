@@ -1,8 +1,11 @@
 defmodule EdocApiWeb.InvoiceControllerTest do
   use EdocApiWeb.ConnCase
 
+  import Ecto.Query, only: [from: 2]
+  alias EdocApi.Core.TenantSubscription
   alias EdocApi.Invoicing
   alias EdocApi.Monetization
+  alias EdocApi.Repo
   import EdocApi.TestFixtures
 
   setup %{conn: conn} do
@@ -90,6 +93,29 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       conn =
         post(conn, "/v1/invoices", %{
           "service_name" => "Quota blocked invoice",
+          "issue_date" => Date.to_iso8601(Date.utc_today()),
+          "currency" => "KZT",
+          "buyer_name" => "Buyer LLC",
+          "buyer_bin_iin" => "060215385673",
+          "buyer_address" => "Buyer Address",
+          "vat_rate" => "0",
+          "items" => [
+            %{"name" => "Service", "qty" => "1", "unit_price" => "100.00"}
+          ]
+        })
+
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "quota_exceeded"
+    end
+
+    test "returns 422 when trial 14-day window is expired", %{conn: conn, company: company} do
+      create_company_bank_account!(company)
+      _snapshot = Monetization.subscription_snapshot(company.id)
+      expire_trial!(company.id, 15)
+
+      conn =
+        post(conn, "/v1/invoices", %{
+          "service_name" => "Expired trial invoice",
           "issue_date" => Date.to_iso8601(Date.utc_today()),
           "currency" => "KZT",
           "buyer_name" => "Buyer LLC",
@@ -197,6 +223,16 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       assert response(conn, 422)
       assert json_response(conn, 422)["error"] == "quota_exceeded"
     end
+
+    test "returns 422 when trial 14-day window is expired", %{conn: conn, user: user, company: company} do
+      invoice = create_invoice_with_items!(user, company)
+      _snapshot = Monetization.subscription_snapshot(company.id)
+      expire_trial!(company.id, 15)
+
+      conn = post(conn, "/v1/invoices/#{invoice.id}/issue")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "quota_exceeded"
+    end
   end
 
   describe "pdf/2" do
@@ -228,5 +264,27 @@ defmodule EdocApiWeb.InvoiceControllerTest do
         assert response(conn, 200)
       end
     end
+  end
+
+  defp expire_trial!(company_id, days_ago) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    trial_started_at = DateTime.add(now, -days_ago * 86_400, :second)
+    trial_period_end = DateTime.add(trial_started_at, 14 * 86_400, :second)
+
+    from(s in TenantSubscription,
+      where: s.company_id == ^company_id and s.status == "active"
+    )
+    |> Repo.update_all(
+      set: [
+        plan: "trial",
+        period_start: trial_started_at,
+        period_end: trial_period_end,
+        trial_started_at: trial_started_at,
+        trial_ended_at: nil,
+        included_document_limit: 10,
+        trial_document_limit: 10,
+        updated_at: now
+      ]
+    )
   end
 end

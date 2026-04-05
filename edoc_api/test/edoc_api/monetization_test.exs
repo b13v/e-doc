@@ -1,7 +1,9 @@
 defmodule EdocApi.MonetizationTest do
   use EdocApi.DataCase, async: true
 
+  alias EdocApi.Core.TenantSubscription
   alias EdocApi.Monetization
+  alias EdocApi.Repo
   import EdocApi.TestFixtures
 
   test "creates a trial subscription lazily on first quota consumption" do
@@ -37,6 +39,33 @@ defmodule EdocApi.MonetizationTest do
              )
 
     assert {:error, :quota_exceeded, %{used: 1, limit: 1}} =
+             Monetization.consume_document_quota(
+               company.id,
+               "invoice",
+               Ecto.UUID.generate(),
+               "invoice_issued"
+             )
+  end
+
+  test "ensure_document_creation_allowed/1 rejects trial after 14-day time window even below doc limit" do
+    user = create_user!()
+    company = create_company!(user)
+
+    _snapshot = Monetization.subscription_snapshot(company.id)
+    expire_trial!(company.id, 15)
+
+    assert {:error, :quota_exceeded, %{plan: "trial", reason: :trial_time_window_exceeded}} =
+             Monetization.ensure_document_creation_allowed(company.id)
+  end
+
+  test "consume_document_quota/4 rejects trial after 14-day time window" do
+    user = create_user!()
+    company = create_company!(user)
+
+    _snapshot = Monetization.subscription_snapshot(company.id)
+    expire_trial!(company.id, 15)
+
+    assert {:error, :quota_exceeded, %{plan: "trial", reason: :trial_time_window_exceeded}} =
              Monetization.consume_document_quota(
                company.id,
                "invoice",
@@ -343,5 +372,27 @@ defmodule EdocApi.MonetizationTest do
     assert activated.status == "active"
     assert activated.user_id == second_user.id
     assert activated.invite_email == nil
+  end
+
+  defp expire_trial!(company_id, days_ago) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    trial_started_at = DateTime.add(now, -days_ago * 86_400, :second)
+    trial_period_end = DateTime.add(trial_started_at, 14 * 86_400, :second)
+
+    from(s in TenantSubscription,
+      where: s.company_id == ^company_id and s.status == "active"
+    )
+    |> Repo.update_all(
+      set: [
+        plan: "trial",
+        period_start: trial_started_at,
+        period_end: trial_period_end,
+        trial_started_at: trial_started_at,
+        trial_ended_at: nil,
+        included_document_limit: 10,
+        trial_document_limit: 10,
+        updated_at: now
+      ]
+    )
   end
 end
