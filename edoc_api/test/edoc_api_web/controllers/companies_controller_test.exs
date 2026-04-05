@@ -486,6 +486,45 @@ defmodule EdocApiWeb.CompaniesControllerTest do
                |> Enum.filter(&(&1.role != "owner"))
     end
 
+    test "shows seat limit error when inviting more members than allowed", %{
+      conn: conn,
+      company: company
+    } do
+      conn =
+        post(conn, "/company/memberships", %{
+          "membership" => %{
+            "email" => "first-seat@example.com",
+            "role" => "member"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      conn =
+        conn
+        |> recycle()
+        |> post("/company/memberships", %{
+          "membership" => %{
+            "email" => "second-seat@example.com",
+            "role" => "member"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "No seats available. Upgrade your subscription to invite more users."
+               )
+
+      assert [
+               %{invite_email: "first-seat@example.com", status: "invited"}
+             ] =
+               Monetization.list_memberships(company.id)
+               |> Enum.filter(&(&1.role != "owner"))
+    end
+
     test "removes an invited member from company settings", %{conn: conn, company: company} do
       assert {:ok, membership} =
                Monetization.invite_member(company.id, %{

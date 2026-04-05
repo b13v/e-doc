@@ -70,6 +70,42 @@ defmodule EdocApiWeb.InvoiceControllerTest do
     end
   end
 
+  describe "create/2" do
+    test "returns 422 when draft creation is blocked by document quota", %{
+      conn: conn,
+      company: company
+    } do
+      create_company_bank_account!(company)
+
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      conn =
+        post(conn, "/v1/invoices", %{
+          "service_name" => "Quota blocked invoice",
+          "issue_date" => Date.to_iso8601(Date.utc_today()),
+          "currency" => "KZT",
+          "buyer_name" => "Buyer LLC",
+          "buyer_bin_iin" => "060215385673",
+          "buyer_address" => "Buyer Address",
+          "vat_rate" => "0",
+          "items" => [
+            %{"name" => "Service", "qty" => "1", "unit_price" => "100.00"}
+          ]
+        })
+
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "quota_exceeded"
+    end
+  end
+
   describe "index/2" do
     test "returns normalized pagination metadata", %{conn: conn, user: user, company: company} do
       _invoice_1 = insert_invoice!(user, company, %{number: "00000000001"})

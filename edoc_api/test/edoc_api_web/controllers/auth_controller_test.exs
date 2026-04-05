@@ -71,6 +71,59 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert Companies.get_company_by_user_id(invited.id).id == company.id
     end
 
+    test "login keeps invite in pending_seat when active seats are full" do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      {:ok, _basic} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "basic"
+        })
+
+      first_user = create_user!(%{"email" => "first-login-seat@example.com"})
+      second_user = create_user!(%{"email" => "second-login-seat@example.com"})
+      Accounts.mark_email_verified!(first_user.id)
+      Accounts.mark_email_verified!(second_user.id)
+
+      assert {:ok, _first_invite} =
+               Monetization.invite_member(company.id, %{
+                 "email" => first_user.email,
+                 "role" => "member"
+               })
+
+      assert {:ok, _second_invite} =
+               Monetization.invite_member(company.id, %{
+                 "email" => second_user.email,
+                 "role" => "member"
+               })
+
+      conn =
+        build_conn()
+        |> post("/v1/auth/login", %{"email" => first_user.email, "password" => "password123"})
+
+      assert conn.status == 200
+      assert Companies.get_company_by_user_id(first_user.id).id == company.id
+
+      {:ok, _starter} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter"
+        })
+
+      conn =
+        build_conn()
+        |> post("/v1/auth/login", %{"email" => second_user.email, "password" => "password123"})
+
+      assert conn.status == 200
+      assert Companies.get_company_by_user_id(second_user.id) == nil
+
+      pending =
+        Monetization.list_memberships(company.id)
+        |> Enum.find(&(&1.invite_email == second_user.email))
+
+      assert pending.status == "pending_seat"
+    end
+
     test "returns generic invalid credentials when account is locked" do
       user = create_user!()
       Accounts.mark_email_verified!(user.id)

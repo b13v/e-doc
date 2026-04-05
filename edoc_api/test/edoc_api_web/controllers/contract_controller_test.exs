@@ -1,6 +1,7 @@
 defmodule EdocApiWeb.ContractControllerTest do
   use EdocApiWeb.ConnCase
 
+  alias EdocApi.Buyers
   alias EdocApi.Monetization
   import EdocApi.TestFixtures
 
@@ -59,6 +60,41 @@ defmodule EdocApiWeb.ContractControllerTest do
       assert response(post(conn, "/v1/contracts/#{contract_1.id}/issue"), 200)
 
       conn = post(conn, "/v1/contracts/#{contract_2.id}/issue")
+      assert response(conn, 422)
+      assert json_response(conn, 422)["error"] == "quota_exceeded"
+    end
+  end
+
+  describe "create/2" do
+    test "returns 422 when draft creation is blocked by document quota", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract API Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      for _ <- 1..10 do
+        assert {:ok, _quota} =
+                 Monetization.consume_document_quota(
+                   company.id,
+                   "invoice",
+                   Ecto.UUID.generate(),
+                   "invoice_issued"
+                 )
+      end
+
+      conn =
+        post(conn, "/v1/contracts", %{
+          "number" => "C-API-QUOTA-1",
+          "issue_date" => Date.to_iso8601(Date.utc_today()),
+          "buyer_id" => buyer.id,
+          "status" => "draft"
+        })
+
       assert response(conn, 422)
       assert json_response(conn, 422)["error"] == "quota_exceeded"
     end
