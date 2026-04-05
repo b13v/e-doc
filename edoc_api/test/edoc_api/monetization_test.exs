@@ -291,4 +291,57 @@ defmodule EdocApi.MonetizationTest do
     assert {:error, :last_owner} =
              Monetization.remove_membership(company.id, owner_membership.id)
   end
+
+  test "accept_pending_memberships_for_user/1 marks invite as pending_seat when no seats are available and activates later" do
+    owner = create_user!()
+    company = create_company!(owner)
+    first_user = create_user!(%{"email" => "first-seat@example.com"})
+    second_user = create_user!(%{"email" => "second-seat@example.com"})
+
+    {:ok, _sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic"
+      })
+
+    assert {:ok, first_membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => first_user.email,
+               "role" => "member"
+             })
+
+    assert {:ok, second_membership} =
+             Monetization.invite_member(company.id, %{
+               "email" => second_user.email,
+               "role" => "member"
+             })
+
+    first_membership_id = first_membership.id
+    second_membership_id = second_membership.id
+
+    assert [^first_membership_id] = Monetization.accept_pending_memberships_for_user(first_user)
+
+    {:ok, _starter_sub} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter"
+      })
+
+    assert [] = Monetization.accept_pending_memberships_for_user(second_user)
+
+    pending =
+      Monetization.list_memberships(company.id)
+      |> Enum.find(&(&1.id == second_membership_id))
+
+    assert pending.status == "pending_seat"
+
+    assert {:ok, _removed} = Monetization.remove_membership(company.id, first_membership.id)
+    assert [^second_membership_id] = Monetization.accept_pending_memberships_for_user(second_user)
+
+    activated =
+      Monetization.list_memberships(company.id)
+      |> Enum.find(&(&1.id == second_membership_id))
+
+    assert activated.status == "active"
+    assert activated.user_id == second_user.id
+    assert activated.invite_email == nil
+  end
 end

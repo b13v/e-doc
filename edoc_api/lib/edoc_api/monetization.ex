@@ -114,7 +114,7 @@ defmodule EdocApi.Monetization do
 
   def list_memberships(company_id) when is_binary(company_id) do
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
     |> preload([:user])
     |> order_by([m], asc: m.inserted_at)
     |> Repo.all()
@@ -172,19 +172,32 @@ defmodule EdocApi.Monetization do
     TenantMembership
     |> where(
       [m],
-      m.status == "invited" and m.invite_email == ^normalized_email
+      m.status in ["invited", "pending_seat"] and m.invite_email == ^normalized_email
     )
     |> order_by([m], asc: m.inserted_at)
     |> Repo.all()
     |> Enum.reduce([], fn membership, accepted ->
-      if can_activate_pending_membership?(membership, user.id) do
-        membership
-        |> Ecto.Changeset.change(status: "active", user_id: user.id, invite_email: nil)
-        |> Repo.update!()
+      case pending_membership_block_reason(membership, user.id) do
+        :none ->
+          membership
+          |> Ecto.Changeset.change(status: "active", user_id: user.id, invite_email: nil)
+          |> Repo.update!()
 
-        [membership.id | accepted]
-      else
-        accepted
+          [membership.id | accepted]
+
+        :seat_limit_reached ->
+          if membership.status == "pending_seat" do
+            accepted
+          else
+            membership
+            |> Ecto.Changeset.change(status: "pending_seat")
+            |> Repo.update!()
+
+            accepted
+          end
+
+        :already_active ->
+          accepted
       end
     end)
     |> Enum.reverse()
@@ -225,7 +238,7 @@ defmodule EdocApi.Monetization do
 
   defp occupied_member_count(company_id) when is_binary(company_id) do
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
     |> Repo.aggregate(:count, :id)
   end
 
@@ -233,7 +246,7 @@ defmodule EdocApi.Monetization do
     overflow = max(occupied_member_count(company_id) - seat_limit, 0)
 
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited"])
+    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
     |> preload([:user])
     |> Repo.all()
     |> Enum.reject(&last_owner?/1)
@@ -245,7 +258,8 @@ defmodule EdocApi.Monetization do
     TenantMembership
     |> where(
       [m],
-      m.company_id == ^company_id and m.status == "invited" and m.invite_email == ^email
+      m.company_id == ^company_id and m.status in ["invited", "pending_seat"] and
+        m.invite_email == ^email
     )
     |> Repo.exists?()
   end
@@ -269,9 +283,17 @@ defmodule EdocApi.Monetization do
 
   defp last_owner?(_membership), do: false
 
-  defp can_activate_pending_membership?(%TenantMembership{} = membership, user_id) do
-    not active_membership_exists?(membership.company_id, user_id) and
-      active_member_count(membership.company_id) < effective_seat_limit(membership.company_id)
+  defp pending_membership_block_reason(%TenantMembership{} = membership, user_id) do
+    cond do
+      active_membership_exists?(membership.company_id, user_id) ->
+        :already_active
+
+      active_member_count(membership.company_id) >= effective_seat_limit(membership.company_id) ->
+        :seat_limit_reached
+
+      true ->
+        :none
+    end
   end
 
   defp active_membership_exists?(company_id, user_id) do
@@ -436,6 +458,7 @@ defmodule EdocApi.Monetization do
   defp downgrade?(_current_plan, _target_plan), do: false
 
   defp downgrade_priority(%TenantMembership{status: "invited"}), do: {0, 0}
+  defp downgrade_priority(%TenantMembership{status: "pending_seat"}), do: {0, 0}
   defp downgrade_priority(%TenantMembership{status: "active", role: "member"}), do: {1, 0}
   defp downgrade_priority(%TenantMembership{status: "active", role: "admin"}), do: {2, 0}
   defp downgrade_priority(%TenantMembership{status: "active", role: "owner"}), do: {3, 0}

@@ -48,8 +48,14 @@ defmodule EdocApiWeb.CompaniesHTML do
 
   def membership_status_label("active"), do: gettext("Active")
   def membership_status_label("invited"), do: gettext("Invited")
+  def membership_status_label("pending_seat"), do: gettext("Pending seat")
   def membership_status_label("removed"), do: gettext("Removed")
   def membership_status_label(other), do: other
+
+  def membership_status_reason("pending_seat"),
+    do: gettext("Invite accepted, but no seats are available right now.")
+
+  def membership_status_reason(_), do: nil
 
   def subscription_plan_label("starter"), do: gettext("Starter")
   def subscription_plan_label("basic"), do: gettext("Basic")

@@ -2458,3 +2458,9 @@ msgstr "Дополнительные места"
 #, elixir-autogen
 msgid "Update Subscription"
 msgstr "Обновить подписку"
+
+msgid "Pending seat"
+msgstr "Ожидает место"
+
+msgid "Invite accepted, but no seats are available right now."
+msgstr "Приглашение принято, но свободных мест сейчас нет."

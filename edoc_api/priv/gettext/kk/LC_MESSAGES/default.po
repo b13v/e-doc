@@ -2458,3 +2458,9 @@ msgstr "Қосымша орындар"
 #, elixir-autogen
 msgid "Update Subscription"
 msgstr "Жазылымды жаңарту"
+
+msgid "Pending seat"
+msgstr "Орын күтілуде"
+
+msgid "Invite accepted, but no seats are available right now."
+msgstr "Шақыру қабылданды, бірақ қазір бос орын жоқ."

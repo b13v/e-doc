@@ -2297,3 +2297,9 @@ msgstr "Protected link:"
 #, elixir-autogen
 msgid "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
 msgstr "SMTP is not configured. This email was captured by the local mailer adapter and was not delivered to the recipient inbox."
+
+msgid "Pending seat"
+msgstr "Pending seat"
+
+msgid "Invite accepted, but no seats are available right now."
+msgstr "Invite accepted, but no seats are available right now."

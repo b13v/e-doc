@@ -150,14 +150,26 @@
                 <tr
                   data-membership-id={membership.id}
                   class={
-                    if MapSet.member?(blocking_ids, membership.id),
-                      do: "bg-amber-50 hover:bg-amber-100",
-                      else: "hover:bg-gray-50"
+                    cond do
+                      MapSet.member?(blocking_ids, membership.id) ->
+                        "bg-amber-50 hover:bg-amber-100"
+
+                      membership.status == "pending_seat" ->
+                        "bg-amber-50 hover:bg-amber-100"
+
+                      true ->
+                        "hover:bg-gray-50"
+                    end
                   }
                 >
                   <td class="px-6 py-4 text-sm text-gray-900"><%= membership_email(membership) %></td>
                   <td class="px-6 py-4 text-sm text-gray-700"><%= membership_role_label(membership.role) %></td>
-                  <td class="px-6 py-4 text-sm text-gray-700"><%= membership_status_label(membership.status) %></td>
+                  <td class="px-6 py-4 text-sm text-gray-700">
+                    <div><%= membership_status_label(membership.status) %></div>
+                    <%= if reason = membership_status_reason(membership.status) do %>
+                      <div class="mt-1 text-xs text-amber-700"><%= reason %></div>
+                    <% end %>
+                  </td>
                   <td class="w-px whitespace-nowrap px-6 py-4 text-right">
                     <%= if membership.role != "owner" do %>
                       <form action={"/company/memberships/#{membership.id}"} method="post" class="inline">

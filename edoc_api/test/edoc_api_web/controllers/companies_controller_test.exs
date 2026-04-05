@@ -425,6 +425,51 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Приглашен"
     end
 
+    test "shows pending seat reason after invited user accepts invite while seats are full", %{
+      conn: conn,
+      company: company
+    } do
+      first_user = create_user!(%{"email" => "seat-first-ui@example.com"})
+      second_user = create_user!(%{"email" => "seat-second-ui@example.com"})
+
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "basic"
+        })
+
+      assert {:ok, first_membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => first_user.email,
+                 "role" => "member"
+               })
+
+      assert {:ok, _second_membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => second_user.email,
+                 "role" => "member"
+               })
+
+      first_membership_id = first_membership.id
+
+      assert [^first_membership_id] = Monetization.accept_pending_memberships_for_user(first_user)
+
+      {:ok, _starter_sub} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter"
+        })
+
+      assert [] = Monetization.accept_pending_memberships_for_user(second_user)
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ second_user.email
+      assert body =~ "Ожидает место"
+      assert body =~ "Приглашение принято, но свободных мест сейчас нет."
+    end
+
     test "invites a member from company settings", %{conn: conn, company: company} do
       conn =
         post(conn, "/company/memberships", %{

@@ -6,7 +6,7 @@ defmodule EdocApi.Core.TenantMembership do
   @foreign_key_type :binary_id
 
   @roles ~w(owner admin member)
-  @statuses ~w(invited active removed)
+  @statuses ~w(invited pending_seat active removed)
 
   schema "tenant_memberships" do
     field :role, :string, default: "member"
@@ -38,7 +38,7 @@ defmodule EdocApi.Core.TenantMembership do
 
   defp validate_status_fields(changeset) do
     case get_field(changeset, :status) do
-      "invited" ->
+      status when status in ["invited", "pending_seat"] ->
         changeset
         |> validate_required([:invite_email])
 
