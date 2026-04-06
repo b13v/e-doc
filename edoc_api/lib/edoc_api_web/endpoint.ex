@@ -1,5 +1,8 @@
 defmodule EdocApiWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :edoc_api
+  use Gettext, backend: EdocApiWeb.Gettext
+
+  import Phoenix.Controller, only: [fetch_flash: 2, put_flash: 3, redirect: 2]
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
@@ -49,4 +52,31 @@ defmodule EdocApiWeb.Endpoint do
   plug(Plug.Head)
   plug(EdocApiWeb.SessionOptions)
   plug(EdocApiWeb.Router)
+
+  def call(conn, opts) do
+    super(conn, opts)
+  rescue
+    error in Plug.Conn.WrapperError ->
+      case error.reason do
+        %Plug.CSRFProtection.InvalidCSRFTokenError{} = csrf_error ->
+          handle_invalid_csrf(conn, csrf_error, error.stack)
+
+        _other ->
+          reraise error, __STACKTRACE__
+      end
+
+    error in Plug.CSRFProtection.InvalidCSRFTokenError ->
+      handle_invalid_csrf(conn, error, __STACKTRACE__)
+  end
+
+  defp handle_invalid_csrf(%Plug.Conn{method: "POST", request_path: "/login"} = conn, _error, _stack) do
+    conn
+    |> fetch_flash([])
+    |> put_flash(:error, gettext("Your session expired. Please sign in again."))
+    |> redirect(to: "/login")
+  end
+
+  defp handle_invalid_csrf(_conn, error, stack) do
+    reraise error, stack
+  end
 end

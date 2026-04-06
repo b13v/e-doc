@@ -165,6 +165,11 @@ msgstr "Минимум 8 символов"
 msgid "Missing verification token."
 msgstr "Отсутствует токен подтверждения."
 
+#: lib/edoc_api_web/endpoint.ex:75
+#, elixir-autogen
+msgid "Your session expired. Please sign in again."
+msgstr "Сессия истекла. Пожалуйста, войдите снова."
+
 #: lib/edoc_api_web/controllers/signup_html/new.html.heex:68
 #, elixir-autogen
 msgid "Or"
