@@ -673,7 +673,9 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           "subscription" => %{"plan" => "basic"}
         })
 
-      assert html_response(conn, 403)
+      assert redirected_to(conn) == "/company"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Только владелец или администратор может управлять тарифом и участниками команды."
 
       assert Monetization.subscription_snapshot(company.id).plan == before_plan
     end
@@ -689,7 +691,9 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           }
         })
 
-      assert html_response(conn, 403)
+      assert redirected_to(conn) == "/company"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Только владелец или администратор может управлять тарифом и участниками команды."
       assert Enum.count(Monetization.list_memberships(company.id)) == before_count
     end
 
@@ -702,7 +706,9 @@ defmodule EdocApiWeb.CompaniesControllerTest do
 
       conn = delete(conn, "/company/memberships/#{membership_id}")
 
-      assert html_response(conn, 403)
+      assert redirected_to(conn) == "/company"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Только владелец или администратор может управлять тарифом и участниками команды."
       assert Enum.count(Monetization.list_memberships(company.id)) == before_count
     end
 
@@ -763,6 +769,41 @@ defmodule EdocApiWeb.CompaniesControllerTest do
                Monetization.list_memberships(company.id),
                &(&1.id == invited_membership.id)
              )
+    end
+
+    test "company owner regains management access when owner membership row is missing", %{
+      conn: conn
+    } do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      owner_conn = html_conn(conn, owner)
+
+      owner_membership =
+        Monetization.list_memberships(company.id)
+        |> Enum.find(&(&1.user_id == owner.id and &1.role == "owner"))
+
+      assert owner_membership
+      assert {:ok, _removed} =
+               owner_membership
+               |> Ecto.Changeset.change(status: "removed", role: "member")
+               |> Repo.update()
+
+      assert Monetization.active_membership_for_user(company.id, owner.id) == nil
+
+      body =
+        owner_conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ ~s(name="subscription[plan]")
+      assert body =~ ~s(name="membership[email]")
+
+      restored_membership = Monetization.active_membership_for_user(company.id, owner.id)
+      assert restored_membership
+      assert restored_membership.role == "owner"
+      assert restored_membership.status == "active"
     end
   end
 

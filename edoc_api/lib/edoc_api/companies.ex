@@ -7,7 +7,12 @@ defmodule EdocApi.Companies do
   alias EdocApi.Monetization
 
   def get_company_by_user_id(user_id) when is_binary(user_id) do
-    Repo.get_by(Company, user_id: user_id) ||
+    case Repo.get_by(Company, user_id: user_id) do
+      %Company{} = company ->
+        _ = Monetization.ensure_owner_membership(company.id, user_id)
+        company
+
+      nil ->
       (TenantMembership
        |> where([m], m.user_id == ^user_id and m.status == "active")
        |> order_by([m], asc: m.inserted_at)
@@ -15,6 +20,7 @@ defmodule EdocApi.Companies do
        |> select([_m, c], c)
        |> limit(1)
        |> Repo.one())
+    end
   end
 
   def upsert_company_for_user(user_id, attrs) do
