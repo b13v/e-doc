@@ -2,7 +2,6 @@ defmodule EdocApiWeb.AuthControllerTest do
   use EdocApiWeb.ConnCase, async: false
 
   import EdocApi.TestFixtures
-
   alias EdocApi.Accounts
   alias EdocApi.Companies
   alias EdocApi.Monetization
@@ -12,8 +11,20 @@ defmodule EdocApiWeb.AuthControllerTest do
     RateLimit.reset!()
     Application.put_env(:edoc_api, RateLimit, trusted_proxies: [{127, 0, 0, 1}])
 
+    original_mailer_config = Application.get_env(:edoc_api, EdocApi.Mailer, [])
+    Application.put_env(:edoc_api, EdocApi.Mailer, adapter: Swoosh.Adapters.Local)
+
+    case Swoosh.Adapters.Local.Storage.Memory.start() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    Swoosh.Adapters.Local.Storage.Memory.delete_all()
+
     on_exit(fn ->
       Application.delete_env(:edoc_api, RateLimit)
+      Swoosh.Adapters.Local.Storage.Memory.delete_all()
+      Application.put_env(:edoc_api, EdocApi.Mailer, original_mailer_config)
     end)
 
     :ok
@@ -168,6 +179,47 @@ defmodule EdocApiWeb.AuthControllerTest do
   end
 
   describe "resend verification behavior" do
+    test "sends one verification email for an existing unverified account" do
+      user = create_user!()
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["message"] ==
+               "Verification email sent. Please check your inbox."
+
+      assert verification_email_count(user.email) == 1
+    end
+
+    test "throttles an immediate second resend for an existing unverified account" do
+      user = create_user!()
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["message"] ==
+               "Verification email sent. Please check your inbox."
+
+      assert verification_email_count(user.email) == 1
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["message"] ==
+               "Please wait before requesting another verification email."
+
+      assert verification_email_count(user.email) == 1
+    end
+
     test "returns generic response for unknown email and rate limits repeated requests" do
       conn =
         build_conn()
@@ -210,6 +262,31 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert body["message"] =~ "verification instructions"
       refute Map.has_key?(body, "error")
     end
+
+    test "resends verification email for invited existing unverified account" do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+      invited_email = "invited-api-#{System.unique_integer([:positive])}@example.com"
+      _existing_unverified_user = create_user!(%{"email" => invited_email})
+
+      assert {:ok, _membership} =
+               Monetization.invite_member(company.id, %{
+                 "email" => invited_email,
+                 "role" => "member"
+               })
+
+      conn =
+        build_conn()
+        |> post("/v1/auth/signup", %{
+          "email" => invited_email,
+          "password" => "another-password-123"
+        })
+
+      assert conn.status == 202
+      assert json_response(conn, 202)["message"] =~ "verification instructions"
+      assert verification_email_count(invited_email) == 1
+    end
   end
 
   defp exhaust_auth_credentials_limit(client_ip) do
@@ -224,5 +301,16 @@ defmodule EdocApiWeb.AuthControllerTest do
   defp auth_conn(client_ip) do
     build_conn()
     |> put_req_header("x-forwarded-for", client_ip)
+  end
+
+  defp verification_email_count(email) do
+    Swoosh.Adapters.Local.Storage.Memory.all()
+    |> Enum.count(&verification_email_for?(&1, email))
+  end
+
+  defp verification_email_for?(sent, email) do
+    Enum.any?(sent.to, fn {_name, addr} -> addr == email end) and
+      String.contains?(sent.subject, "Edocly") and
+      String.contains?(sent.text_body, "/verify-email?token=")
   end
 end

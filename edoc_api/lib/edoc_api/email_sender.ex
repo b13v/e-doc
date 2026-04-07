@@ -5,38 +5,20 @@ defmodule EdocApi.EmailSender do
 
   alias EdocApi.Mailer
 
-  @from {"EdocAPI", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
+  @verification_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
   @invite_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
 
-  def send_verification_email(recipient_email, token) do
+  def send_verification_email(recipient_email, token, locale \\ "ru") do
     verification_url = verification_link(token)
+    locale = normalize_locale(locale)
 
     email =
       new()
       |> to({nil, recipient_email})
-      |> from(@from)
-      |> subject("Verify your email - EdocAPI")
-      |> html_body("""
-      <html>
-        <body>
-          <h1>Welcome to EdocAPI!</h1>
-          <p>Please click the link below to verify your email address:</p>
-          <p><a href="#{verification_url}">#{verification_url}</a></p>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you didn't create an account on EdocAPI, please ignore this email.</p>
-        </body>
-      </html>
-      """)
-      |> text_body("""
-      Welcome to EdocAPI!
-
-      Please click the link below to verify your email address:
-      #{verification_url}
-
-      This link will expire in 24 hours.
-
-      If you didn't create an account on EdocAPI, please ignore this email.
-      """)
+      |> from(@verification_from)
+      |> subject(verification_subject(locale))
+      |> html_body(verification_html_body(locale, verification_url))
+      |> text_body(verification_text_body(locale, verification_url))
 
     Logger.info("[EMAIL] Sending verification email to: #{recipient_email}")
 
@@ -87,6 +69,69 @@ defmodule EdocApi.EmailSender do
     "#{base_url}/verify-email?token=#{token}"
   end
 
+  defp verification_subject("kk"), do: "Edocly email-ды растаңыз"
+  defp verification_subject(_), do: "Подтвердите email в Edocly"
+
+  defp verification_text_body("kk", verification_url) do
+    """
+    Edocly жүйесіне қош келдіңіз!
+
+    Email мекенжайыңызды растау үшін төмендегі сілтемеге өтіңіз:
+    #{verification_url}
+
+    Сілтеме 24 сағат бойы жарамды.
+
+    Егер сіз Edocly жүйесінде аккаунт ашпаған болсаңыз, бұл хатты елемеңіз.
+    """
+  end
+
+  defp verification_text_body(_, verification_url) do
+    """
+    Добро пожаловать в Edocly!
+
+    Перейдите по ссылке ниже, чтобы подтвердить ваш email:
+    #{verification_url}
+
+    Ссылка действует 24 часа.
+
+    Если вы не создавали аккаунт в Edocly, просто проигнорируйте это письмо.
+    """
+  end
+
+  defp verification_html_body(locale, verification_url) do
+    {headline, lead, outro} =
+      case locale do
+        "kk" ->
+          {
+            "Edocly жүйесіне қош келдіңіз!",
+            "Email мекенжайыңызды растау үшін төмендегі сілтемеге өтіңіз:",
+            "Егер сіз Edocly жүйесінде аккаунт ашпаған болсаңыз, бұл хатты елемеңіз."
+          }
+
+        _ ->
+          {
+            "Добро пожаловать в Edocly!",
+            "Перейдите по ссылке ниже, чтобы подтвердить ваш email:",
+            "Если вы не создавали аккаунт в Edocly, просто проигнорируйте это письмо."
+          }
+      end
+
+    """
+    <html>
+      <body>
+        <h1>#{headline}</h1>
+        <p>#{lead}</p>
+        <p><a href="#{verification_url}">#{verification_url}</a></p>
+        <p>#{verification_expiry_line(locale)}</p>
+        <p>#{outro}</p>
+      </body>
+    </html>
+    """
+  end
+
+  defp verification_expiry_line("kk"), do: "Сілтеме 24 сағат бойы жарамды."
+  defp verification_expiry_line(_), do: "Ссылка действует 24 часа."
+
   defp signup_link(email) do
     base_url = System.get_env("BASE_URL") || "http://localhost:4000"
     "#{base_url}/signup?email=#{URI.encode_www_form(email)}"
@@ -95,6 +140,9 @@ defmodule EdocApi.EmailSender do
   defp normalize_company_name(nil), do: "your company"
   defp normalize_company_name(""), do: "your company"
   defp normalize_company_name(name), do: name
+
+  defp normalize_locale("kk"), do: "kk"
+  defp normalize_locale(_), do: "ru"
 
   defp normalize_invite_locale("kk"), do: "kk"
   defp normalize_invite_locale(_), do: "ru"

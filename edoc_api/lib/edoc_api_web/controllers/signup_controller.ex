@@ -26,7 +26,7 @@ defmodule EdocApiWeb.SignupController do
         {:ok, user} ->
           {:ok, %{token: token}} = EmailVerification.create_token_for_user(user.id)
 
-          case EmailSender.send_verification_email(user.email, token) do
+          case EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
             {:ok, _} ->
               Logger.info("Verification email sent to #{masked_email(email)}")
 
@@ -42,6 +42,8 @@ defmodule EdocApiWeb.SignupController do
 
         {:error, :validation, changeset: changeset} ->
           if duplicate_email_error?(changeset) do
+            _ = resend_verification_for_existing_unverified_account(email, conn.assigns[:locale] || "ru")
+
             conn
             |> put_flash(
               :info,
@@ -100,5 +102,22 @@ defmodule EdocApiWeb.SignupController do
 
   defp normalize_invited_email(email) when is_binary(email) do
     email |> String.trim()
+  end
+
+  defp resend_verification_for_existing_unverified_account(email, locale) when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %Accounts.User{verified_at: nil} = user ->
+        with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
+             {:ok, _} <- EmailSender.send_verification_email(user.email, token, locale) do
+          :ok
+        else
+          {:error, reason} ->
+            Logger.warning("Failed to resend verification email for existing account: #{inspect(reason)}")
+            :error
+        end
+
+      _ ->
+        :noop
+    end
   end
 end

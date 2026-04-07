@@ -36,13 +36,16 @@
           id="resend-btn"
           hx-post="/v1/auth/resend-verification"
           hx-vals={"{\"email\": \"#{@email}\"}"}
-          hx-target="#resend-result"
+          hx-swap="none"
           hx-disabled-elt="#resend-btn"
+          data-resend-error-message={gettext("Unable to show resend status. Please try again.")}
+          hx-on::before-request="const feedback = document.getElementById('resend-feedback'); if (feedback) { feedback.textContent = ''; feedback.className = 'hidden'; }"
+          hx-on::after-request="const feedback = document.getElementById('resend-feedback'); if (!feedback) return; try { const payload = JSON.parse(event.detail.xhr.responseText || '{}'); const status = payload.status || 'generic'; feedback.textContent = payload.message || ''; feedback.className = status === 'rate_limited' ? 'rounded-md bg-amber-50 p-3 text-sm text-amber-800' : status === 'sent' ? 'rounded-md bg-green-50 p-3 text-sm text-green-800' : 'rounded-md bg-blue-50 p-3 text-sm text-blue-700'; } catch (_error) { feedback.textContent = this.dataset.resendErrorMessage || ''; feedback.className = 'rounded-md bg-red-50 p-3 text-sm text-red-700'; }"
           class="flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-inset ring-blue-300 hover:bg-blue-50">
           <%= gettext("Resend verification email") %>
         </button>
 
-        <div id="resend-result" class="text-center text-sm"></div>
+        <div id="resend-feedback" class="hidden" aria-live="polite"></div>
       </div>
 
       <div class="mt-6 pt-6 border-t border-gray-200">

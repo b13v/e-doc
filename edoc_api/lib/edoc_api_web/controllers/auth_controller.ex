@@ -13,7 +13,7 @@ defmodule EdocApiWeb.AuthController do
   def signup(conn, params) do
     with {:ok, user} <- Accounts.register_user(params),
          {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
-         {:ok, _} <- EmailSender.send_verification_email(user.email, token) do
+         {:ok, _} <- EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
       # Avoid leaking verification token in the API response
       :ok
 
@@ -26,6 +26,8 @@ defmodule EdocApiWeb.AuthController do
     else
       {:error, %Ecto.Changeset{} = changeset} ->
         if duplicate_email_error?(changeset) do
+          _ = resend_verification_for_existing_unverified_account(params, conn.assigns[:locale] || "ru")
+
           conn
           |> put_status(:accepted)
           |> json(%{
@@ -37,6 +39,8 @@ defmodule EdocApiWeb.AuthController do
 
       {:error, :validation, changeset: %Ecto.Changeset{} = changeset} ->
         if duplicate_email_error?(changeset) do
+          _ = resend_verification_for_existing_unverified_account(params, conn.assigns[:locale] || "ru")
+
           conn
           |> put_status(:accepted)
           |> json(%{
@@ -148,25 +152,25 @@ defmodule EdocApiWeb.AuthController do
   def resend_verification(conn, %{"email" => email}) do
     case Accounts.get_user_by_email(email) do
       nil ->
-        resend_verification_generic_response(conn)
+        resend_verification_response(conn, :generic)
 
       user ->
         if user.verified_at != nil do
-          resend_verification_generic_response(conn)
+          resend_verification_response(conn, :generic)
         else
-          case EmailVerification.can_resend?(user.id) do
+          case resend_verification_availability(user.id) do
             {:ok, :allowed} ->
               with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
-                   {:ok, _} <- EmailSender.send_verification_email(user.email, token) do
-                resend_verification_generic_response(conn)
+                   {:ok, _} <- EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
+                resend_verification_response(conn, :sent)
               else
                 {:error, reason} ->
                   Logger.warning("Verification resend failed: #{inspect(reason)}")
-                  resend_verification_generic_response(conn)
+                  resend_verification_response(conn, :generic)
               end
 
             {:error, :rate_limited} ->
-              resend_verification_generic_response(conn)
+              resend_verification_response(conn, :rate_limited)
           end
         end
     end
@@ -198,11 +202,57 @@ defmodule EdocApiWeb.AuthController do
     end)
   end
 
-  defp resend_verification_generic_response(conn) do
+  defp resend_verification_response(conn, status) do
     json(conn, %{
       success: true,
-      message:
-        "If the account exists and is not verified, verification instructions will be sent."
+      status: to_string(status),
+      message: resend_verification_message(status)
     })
+  end
+
+  defp resend_verification_message(:sent),
+    do: gettext("Verification email sent. Please check your inbox.")
+
+  defp resend_verification_message(:rate_limited),
+    do: gettext("Please wait before requesting another verification email.")
+
+  defp resend_verification_message(:generic),
+    do: gettext("If the email is eligible, verification instructions will be sent shortly.")
+
+  defp resend_verification_availability(user_id) do
+    one_hour_ago = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+    case EmailVerification.get_latest_token(user_id) do
+      {:ok, token} ->
+        if DateTime.compare(token.inserted_at, one_hour_ago) == :gt do
+          {:error, :rate_limited}
+        else
+          EmailVerification.can_resend?(user_id)
+        end
+
+      _ ->
+        EmailVerification.can_resend?(user_id)
+    end
+  end
+
+  defp resend_verification_for_existing_unverified_account(%{"email" => email}, locale)
+       when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %Accounts.User{verified_at: nil} = user ->
+        with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
+             {:ok, _} <- EmailSender.send_verification_email(user.email, token, locale) do
+          :ok
+        else
+          {:error, reason} ->
+            Logger.warning(
+              "Failed to resend verification email for existing API signup account: #{inspect(reason)}"
+            )
+
+            :error
+        end
+
+      _ ->
+        :noop
+    end
   end
 end
