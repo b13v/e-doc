@@ -135,6 +135,41 @@ defmodule EdocApiWeb.ActsControllerTest do
     end
   end
 
+  describe "tenant visibility" do
+    test "active member sees owner-created acts on index and show pages", %{conn: conn} do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      member = create_user!(%{"email" => "act-member@example.com"})
+      Accounts.mark_email_verified!(member.id)
+
+      {:ok, _invite} =
+        Monetization.invite_member(company.id, %{
+          "email" => member.email,
+          "role" => "member"
+        })
+
+      [_membership_id] = Monetization.accept_pending_memberships_for_user(member)
+
+      act = create_act!(owner, company, "draft")
+
+      index_body =
+        html_conn(conn, member)
+        |> get("/acts")
+        |> html_response(200)
+
+      assert index_body =~ act.number
+
+      show_body =
+        html_conn(conn, member)
+        |> get("/acts/#{act.id}")
+        |> html_response(200)
+
+      assert show_body =~ act.number
+    end
+  end
+
   defp create_act!(user, company, status) do
     {:ok, buyer} =
       Buyers.create_buyer_for_company(company.id, %{
@@ -157,5 +192,12 @@ defmodule EdocApiWeb.ActsControllerTest do
     act
     |> Ecto.Changeset.change(status: status)
     |> EdocApi.Repo.update!()
+  end
+
+  defp html_conn(conn, user) do
+    conn
+    |> Plug.Test.init_test_session(%{user_id: user.id})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
   end
 end

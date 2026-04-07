@@ -139,4 +139,49 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
                )
     end
   end
+
+  describe "tenant visibility" do
+    test "active member sees owner-created invoices on index and show pages", %{conn: conn} do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+      create_company_bank_account!(company)
+
+      member = create_user!(%{"email" => "invoice-member@example.com"})
+      Accounts.mark_email_verified!(member.id)
+
+      {:ok, _invite} =
+        Monetization.invite_member(company.id, %{
+          "email" => member.email,
+          "role" => "member"
+        })
+
+      [_membership_id] = Monetization.accept_pending_memberships_for_user(member)
+
+      invoice = create_invoice_with_items!(owner, company)
+
+      member_conn = html_conn(conn, member)
+
+      index_body =
+        member_conn
+        |> get("/invoices")
+        |> html_response(200)
+
+      assert index_body =~ invoice.number
+
+      show_body =
+        html_conn(conn, member)
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert show_body =~ invoice.number
+    end
+  end
+
+  defp html_conn(conn, user) do
+    conn
+    |> Plug.Test.init_test_session(%{user_id: user.id})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
+  end
 end

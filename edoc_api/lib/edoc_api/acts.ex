@@ -12,20 +12,32 @@ defmodule EdocApi.Acts do
   alias EdocApi.Monetization
 
   def list_acts_for_user(user_id) when is_binary(user_id) do
-    Act
-    |> where([a], a.user_id == ^user_id)
-    |> order_by([a], desc: a.inserted_at)
-    |> Repo.all()
-    |> Repo.preload([:items, :company, :buyer, :contract])
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        []
+
+      %Company{id: company_id} ->
+        Act
+        |> where([a], a.company_id == ^company_id)
+        |> order_by([a], desc: a.inserted_at)
+        |> Repo.all()
+        |> Repo.preload([:items, :company, :buyer, :contract])
+    end
   end
 
   def get_act_for_user(user_id, act_id) when is_binary(user_id) and is_binary(act_id) do
-    Act
-    |> where([a], a.user_id == ^user_id and a.id == ^act_id)
-    |> Repo.one()
-    |> case do
-      nil -> nil
-      act -> Repo.preload(act, [:items, :company, :buyer, :contract])
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        nil
+
+      %Company{id: company_id} ->
+        Act
+        |> where([a], a.company_id == ^company_id and a.id == ^act_id)
+        |> Repo.one()
+        |> case do
+          nil -> nil
+          act -> Repo.preload(act, [:items, :company, :buyer, :contract])
+        end
     end
   end
 

@@ -21,12 +21,11 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.ContractStatus
 
   def get_invoice_for_user(user_id, invoice_id) do
-    Invoice
-    |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
-    |> Repo.one()
-    |> case do
-      nil -> nil
-      invoice -> preload_invoice(invoice)
+    with {:ok, company_id} <- fetch_company_id(user_id),
+         %Invoice{} = invoice <- fetch_company_invoice(company_id, invoice_id) do
+      preload_invoice(invoice)
+    else
+      _ -> nil
     end
   end
 
@@ -97,33 +96,45 @@ defmodule EdocApi.Invoicing do
   end
 
   def list_invoices_for_user(user_id, opts \\ []) do
-    Invoice
-    |> where([i], i.user_id == ^user_id)
-    |> order_by([i], desc: i.inserted_at)
-    |> apply_pagination(opts)
-    |> Repo.all()
-    |> Repo.preload([
-      :items,
-      :bank_snapshot,
-      :contract,
-      :company,
-      :kbe_code,
-      :knp_code,
-      bank_account: [:bank, :kbe_code, :knp_code]
-    ])
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        Invoice
+        |> where([i], i.company_id == ^company_id)
+        |> order_by([i], desc: i.inserted_at)
+        |> apply_pagination(opts)
+        |> Repo.all()
+        |> Repo.preload([
+          :items,
+          :bank_snapshot,
+          :contract,
+          :company,
+          :kbe_code,
+          :knp_code,
+          bank_account: [:bank, :kbe_code, :knp_code]
+        ])
+
+      :error ->
+        []
+    end
   end
 
   def count_invoices_for_user(user_id) when is_binary(user_id) do
-    Invoice
-    |> where([i], i.user_id == ^user_id)
-    |> Repo.aggregate(:count, :id)
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        Invoice
+        |> where([i], i.company_id == ^company_id)
+        |> Repo.aggregate(:count, :id)
+
+      :error ->
+        0
+    end
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do
     RepoHelpers.transaction(fn ->
       invoice =
         RepoHelpers.fetch_or_abort(
-          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          company_invoice_query(user_id, invoice_id),
           :invoice
         )
 
@@ -157,7 +168,7 @@ defmodule EdocApi.Invoicing do
     RepoHelpers.transaction(fn ->
       invoice =
         RepoHelpers.fetch_or_abort(
-          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          company_invoice_query(user_id, invoice_id),
           :invoice
         )
         |> preload_invoice()
@@ -292,7 +303,7 @@ defmodule EdocApi.Invoicing do
     RepoHelpers.transaction(fn ->
       invoice =
         RepoHelpers.fetch_or_abort(
-          from(i in Invoice, where: i.user_id == ^user_id and i.id == ^invoice_id),
+          company_invoice_query(user_id, invoice_id),
           :invoice
         )
 
@@ -367,7 +378,7 @@ defmodule EdocApi.Invoicing do
         |> maybe_put_subtotal(new_subtotal)
 
       invoice_changeset =
-        Invoice.changeset(invoice, invoice_attrs, user_id, invoice.company_id)
+        Invoice.changeset(invoice, invoice_attrs, invoice.user_id, invoice.company_id)
 
       {:ok, updated_invoice} = RepoHelpers.update_or_abort(invoice_changeset)
       {:ok, preload_invoice(updated_invoice)}
@@ -901,9 +912,10 @@ defmodule EdocApi.Invoicing do
 
   def delete_invoice_for_user(user_id, invoice_id) do
     invoice =
-      Invoice
-      |> where([i], i.id == ^invoice_id and i.user_id == ^user_id)
-      |> Repo.one()
+      case fetch_company_id(user_id) do
+        {:ok, company_id} -> fetch_company_invoice(company_id, invoice_id)
+        :error -> nil
+      end
 
     if invoice do
       if InvoiceStatus.is_issued?(invoice.status) do
@@ -946,6 +958,30 @@ defmodule EdocApi.Invoicing do
     else
       Errors.not_found(:invoice)
     end
+  end
+
+  defp fetch_company_id(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      %Company{id: company_id} -> {:ok, company_id}
+      _ -> :error
+    end
+  end
+
+  defp company_invoice_query(user_id, invoice_id) when is_binary(user_id) and is_binary(invoice_id) do
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        from(i in Invoice, where: i.company_id == ^company_id and i.id == ^invoice_id)
+
+      :error ->
+        from(i in Invoice, where: false and i.id == ^invoice_id)
+    end
+  end
+
+  defp fetch_company_invoice(company_id, invoice_id)
+       when is_binary(company_id) and is_binary(invoice_id) do
+    Invoice
+    |> where([i], i.company_id == ^company_id and i.id == ^invoice_id)
+    |> Repo.one()
   end
 
   @doc false
