@@ -144,33 +144,39 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        attrs = %{
-          "plan" => Map.get(subscription_params, "plan", "starter"),
-          "skip_trial" => true
-        }
+        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
+          attrs = %{
+            "plan" => Map.get(subscription_params, "plan", "starter"),
+            "skip_trial" => true
+          }
 
-        case Monetization.validate_plan_change(company.id, attrs["plan"]) do
-          {:ok, _details} ->
-            case Monetization.activate_subscription_for_company(company.id, attrs) do
-              {:ok, _subscription} ->
-                conn
-                |> put_flash(:info, gettext("Subscription updated successfully."))
-                |> redirect(to: "/company")
+          case Monetization.validate_plan_change(company.id, attrs["plan"]) do
+            {:ok, _details} ->
+              case Monetization.activate_subscription_for_company(company.id, attrs) do
+                {:ok, _subscription} ->
+                  conn
+                  |> put_flash(:info, gettext("Subscription updated successfully."))
+                  |> redirect(to: "/company")
 
-              {:error, :validation, _details} ->
-                conn
-                |> put_flash(:error, gettext("Failed to update the subscription."))
-                |> redirect(to: "/company")
+                {:error, :validation, _details} ->
+                  conn
+                  |> put_flash(:error, gettext("Failed to update the subscription."))
+                  |> redirect(to: "/company")
 
-              {:error, _reason} ->
-                conn
-                |> put_flash(:error, gettext("Failed to update the subscription."))
-                |> redirect(to: "/company")
-            end
+                {:error, _reason} ->
+                  conn
+                  |> put_flash(:error, gettext("Failed to update the subscription."))
+                  |> redirect(to: "/company")
+              end
 
-          {:error, :seat_limit_exceeded_on_downgrade, details} ->
-            conn
-            |> render_company_settings(user, company, downgrade_warning: details)
+            {:error, :seat_limit_exceeded_on_downgrade, details} ->
+              conn
+              |> render_company_settings(user, company, downgrade_warning: details)
+          end
+        else
+          conn
+          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> redirect(to: "/company")
         end
     end
   end
@@ -216,53 +222,59 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        case Monetization.invite_member(company.id, membership_params) do
-          {:ok, membership} ->
-            _ =
-              case EmailSender.send_membership_invite_email(membership.invite_email, %{
-                     company_name: company.name,
-                     inviter_email: user.email,
-                     locale: conn.assigns[:locale] || "ru"
-                   }) do
-                {:ok, _receipt} ->
-                  :ok
+        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
+          case Monetization.invite_member(company.id, membership_params) do
+            {:ok, membership} ->
+              _ =
+                case EmailSender.send_membership_invite_email(membership.invite_email, %{
+                       company_name: company.name,
+                       inviter_email: user.email,
+                       locale: conn.assigns[:locale] || "ru"
+                     }) do
+                  {:ok, _receipt} ->
+                    :ok
 
-                {:error, reason} ->
-                  Logger.warning(
-                    "Failed to send team invitation email to #{membership.invite_email}: #{inspect(reason)}"
-                  )
+                  {:error, reason} ->
+                    Logger.warning(
+                      "Failed to send team invitation email to #{membership.invite_email}: #{inspect(reason)}"
+                    )
 
-                  :error
-              end
+                    :error
+                end
 
-            conn
-            |> put_flash(:info, gettext("Team member invited successfully."))
-            |> redirect(to: "/company")
+              conn
+              |> put_flash(:info, gettext("Team member invited successfully."))
+              |> redirect(to: "/company")
 
-          {:error, :seat_limit_reached, _details} ->
-            conn
-            |> put_flash(:error, gettext("No seats available. Upgrade your subscription to invite more users."))
-            |> redirect(to: "/company")
+            {:error, :seat_limit_reached, _details} ->
+              conn
+              |> put_flash(:error, gettext("No seats available. Upgrade your subscription to invite more users."))
+              |> redirect(to: "/company")
 
-          {:error, :duplicate_invite, _details} ->
-            conn
-            |> put_flash(:error, gettext("This email is already invited to your company."))
-            |> redirect(to: "/company")
+            {:error, :duplicate_invite, _details} ->
+              conn
+              |> put_flash(:error, gettext("This email is already invited to your company."))
+              |> redirect(to: "/company")
 
-          {:error, :duplicate_member, _details} ->
-            conn
-            |> put_flash(:error, gettext("This user is already a team member."))
-            |> redirect(to: "/company")
+            {:error, :duplicate_member, _details} ->
+              conn
+              |> put_flash(:error, gettext("This user is already a team member."))
+              |> redirect(to: "/company")
 
-          {:error, :invalid_role} ->
-            conn
-            |> put_flash(:error, gettext("Select a valid team role."))
-            |> redirect(to: "/company")
+            {:error, :invalid_role} ->
+              conn
+              |> put_flash(:error, gettext("Select a valid team role."))
+              |> redirect(to: "/company")
 
-          {:error, %Ecto.Changeset{}} ->
-            conn
-            |> put_flash(:error, gettext("Enter a valid email address to invite a team member."))
-            |> redirect(to: "/company")
+            {:error, %Ecto.Changeset{}} ->
+              conn
+              |> put_flash(:error, gettext("Enter a valid email address to invite a team member."))
+              |> redirect(to: "/company")
+          end
+        else
+          conn
+          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> redirect(to: "/company")
         end
     end
   end
@@ -275,21 +287,27 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        case Monetization.remove_membership(company.id, id) do
-          {:ok, _membership} ->
-            conn
-            |> put_flash(:info, gettext("Team member removed successfully."))
-            |> redirect(to: "/company")
+        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
+          case Monetization.remove_membership(company.id, id) do
+            {:ok, _membership} ->
+              conn
+              |> put_flash(:info, gettext("Team member removed successfully."))
+              |> redirect(to: "/company")
 
-          {:error, :last_owner} ->
-            conn
-            |> put_flash(:error, gettext("You cannot remove the last owner from the company."))
-            |> redirect(to: "/company")
+            {:error, :last_owner} ->
+              conn
+              |> put_flash(:error, gettext("You cannot remove the last owner from the company."))
+              |> redirect(to: "/company")
 
-          {:error, :not_found} ->
-            conn
-            |> put_flash(:error, gettext("Team member not found."))
-            |> redirect(to: "/company")
+            {:error, :not_found} ->
+              conn
+              |> put_flash(:error, gettext("Team member not found."))
+              |> redirect(to: "/company")
+          end
+        else
+          conn
+          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> redirect(to: "/company")
         end
     end
   end
@@ -362,6 +380,7 @@ defmodule EdocApiWeb.CompaniesController do
     banks = Payments.list_banks()
     subscription = Monetization.subscription_snapshot(company.id)
     memberships = Monetization.list_memberships(company.id)
+    can_manage_billing_and_team = Monetization.can_manage_billing_and_team?(company.id, user.id)
 
     assigns =
       [
@@ -370,6 +389,7 @@ defmodule EdocApiWeb.CompaniesController do
         banks: banks,
         subscription: subscription,
         memberships: memberships,
+        can_manage_billing_and_team: can_manage_billing_and_team,
         page_title: gettext("Company Settings")
       ]
       |> Keyword.merge(extra_assigns)

@@ -4,6 +4,7 @@
   <% subscription = assigns[:subscription] %>
   <% memberships = assigns[:memberships] || [] %>
   <% downgrade_warning = assigns[:downgrade_warning] %>
+  <% can_manage_billing_and_team = assigns[:can_manage_billing_and_team] || false %>
   <% blocking_ids =
     downgrade_warning
     |> case do
@@ -73,21 +74,27 @@
         </div>
       <% end %>
 
-      <form action="/company/subscription" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
-        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <%= if can_manage_billing_and_team do %>
+        <form action="/company/subscription" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700"><%= gettext("Plan") %></label>
-          <select name="subscription[plan]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-            <option value="starter" selected={subscription.plan == "starter"}><%= gettext("Starter") %></option>
-            <option value="basic" selected={subscription.plan == "basic"}><%= gettext("Basic") %></option>
-          </select>
+          <div>
+            <label class="block text-sm font-medium text-gray-700"><%= gettext("Plan") %></label>
+            <select name="subscription[plan]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="starter" selected={subscription.plan == "starter"}><%= gettext("Starter") %></option>
+              <option value="basic" selected={subscription.plan == "basic"}><%= gettext("Basic") %></option>
+            </select>
+          </div>
+
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            <%= gettext("Update Subscription") %>
+          </button>
+        </form>
+      <% else %>
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
+          <%= gettext("Only the owner or an admin can manage the tariff and team members.") %>
         </div>
-
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-          <%= gettext("Update Subscription") %>
-        </button>
-      </form>
+      <% end %>
     </div>
   </div>
 
@@ -105,32 +112,38 @@
     </div>
 
     <div class="px-6 py-6 space-y-6">
-      <form action="/company/memberships" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
-        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <%= if can_manage_billing_and_team do %>
+        <form action="/company/memberships" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700"><%= gettext("Team Email") %></label>
-          <input
-            type="email"
-            name="membership[email]"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border"
-            placeholder={gettext("teammate@example.com")}
-            required
-          />
+          <div>
+            <label class="block text-sm font-medium text-gray-700"><%= gettext("Team Email") %></label>
+            <input
+              type="email"
+              name="membership[email]"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border"
+              placeholder={gettext("teammate@example.com")}
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700"><%= gettext("Role") %></label>
+            <select name="membership[role]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              <option value="member"><%= gettext("Member") %></option>
+              <option value="admin"><%= gettext("Admin") %></option>
+            </select>
+          </div>
+
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            <%= gettext("Invite Member") %>
+          </button>
+        </form>
+      <% else %>
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
+          <%= gettext("Only the owner or an admin can manage the tariff and team members.") %>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700"><%= gettext("Role") %></label>
-          <select name="membership[role]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-            <option value="member"><%= gettext("Member") %></option>
-            <option value="admin"><%= gettext("Admin") %></option>
-          </select>
-        </div>
-
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-          <%= gettext("Invite Member") %>
-        </button>
-      </form>
+      <% end %>
 
       <%= if Enum.empty?(memberships) do %>
         <p class="text-sm text-gray-500"><%= gettext("No team members yet.") %></p>
@@ -142,7 +155,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Email") %></th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Role") %></th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Status") %></th>
-                <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Actions") %></th>
+                <th :if={can_manage_billing_and_team} class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Actions") %></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
@@ -170,7 +183,7 @@
                       <div class="mt-1 text-xs text-amber-700"><%= reason %></div>
                     <% end %>
                   </td>
-                  <td class="w-px whitespace-nowrap px-6 py-4 text-right">
+                  <td :if={can_manage_billing_and_team} class="w-px whitespace-nowrap px-6 py-4 text-right">
                     <%= if membership.role != "owner" do %>
                       <form action={"/company/memberships/#{membership.id}"} method="post" class="inline">
                         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />

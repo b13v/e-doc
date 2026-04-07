@@ -128,6 +128,23 @@ defmodule EdocApi.Monetization do
     |> Repo.all()
   end
 
+  def active_membership_for_user(company_id, user_id)
+      when is_binary(company_id) and is_binary(user_id) do
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.user_id == ^user_id and m.status == "active")
+    |> preload([:user])
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  def can_manage_billing_and_team?(company_id, user_id)
+      when is_binary(company_id) and is_binary(user_id) do
+    case active_membership_for_user(company_id, user_id) do
+      %TenantMembership{role: role} when role in ["owner", "admin"] -> true
+      _ -> false
+    end
+  end
+
   def invite_member(company_id, attrs) when is_binary(company_id) and is_map(attrs) do
     email = attrs |> Map.get("email") |> Email.normalize()
     role = Map.get(attrs, "role", "member")

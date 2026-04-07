@@ -165,6 +165,11 @@ msgstr "Кемінде 8 таңба"
 msgid "Missing verification token."
 msgstr "Растау токені жоқ."
 
+#: lib/edoc_api_web/controllers/auth_controller.ex:217
+#, elixir-autogen
+msgid "Please wait before requesting another verification email."
+msgstr "Қайта растау хатын сұрамас бұрын сәл күтіңіз."
+
 #: lib/edoc_api_web/endpoint.ex:75
 #, elixir-autogen
 msgid "Your session expired. Please sign in again."
@@ -200,6 +205,11 @@ msgstr "Жүйеге кірмес бұрын электрондық поштаң
 #, elixir-autogen
 msgid "Resend verification email"
 msgstr "Растау хатын қайта жіберу"
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:41
+#, elixir-autogen
+msgid "Unable to show resend status. Please try again."
+msgstr "Қайта жіберу мәртебесін көрсету мүмкін болмады. Қайталап көріңіз."
 
 #: lib/edoc_api_web/components/layouts.ex:66
 #: lib/edoc_api_web/controllers/session_controller.ex:8
@@ -242,6 +252,11 @@ msgstr "Басқа email қолданасыз ба?"
 #, elixir-autogen
 msgid "Verify Your Email"
 msgstr ""
+
+#: lib/edoc_api_web/controllers/auth_controller.ex:214
+#, elixir-autogen
+msgid "Verification email sent. Please check your inbox."
+msgstr "Растау хаты жіберілді. Кіріс жәшігіңізді тексеріңіз."
 
 #: lib/edoc_api_web/controllers/session_controller.ex:34
 #, elixir-autogen
@@ -2469,3 +2484,6 @@ msgstr "Орын күтілуде"
 
 msgid "Invite accepted, but no seats are available right now."
 msgstr "Шақыру қабылданды, бірақ қазір бос орын жоқ."
+
+msgid "Only the owner or an admin can manage the tariff and team members."
+msgstr "Тек иесі немесе әкімші тариф пен команда мүшелерін басқара алады."

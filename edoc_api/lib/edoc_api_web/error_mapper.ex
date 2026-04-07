@@ -39,6 +39,12 @@ defmodule EdocApiWeb.ErrorMapper do
     |> Controller.json(build_body(conn, code, details))
   end
 
+  def forbidden(conn, code \\ "forbidden", details \\ nil) when is_binary(code) do
+    conn
+    |> put_status(:forbidden)
+    |> Controller.json(build_body(conn, code, details))
+  end
+
   def unprocessable(conn, code, details \\ nil) when is_binary(code) do
     conn
     |> put_status(:unprocessable_entity)

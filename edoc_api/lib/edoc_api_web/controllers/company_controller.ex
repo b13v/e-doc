@@ -49,30 +49,36 @@ defmodule EdocApiWeb.CompanyController do
         ErrorMapper.unprocessable(conn, "company_required")
 
       company ->
-        attrs = %{
-          "plan" => plan,
-          "skip_trial" => true
-        }
+        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
+          attrs = %{
+            "plan" => plan,
+            "skip_trial" => true
+          }
 
-        case Monetization.validate_plan_change(company.id, plan) do
-          {:ok, _details} ->
-            case Monetization.activate_subscription_for_company(company.id, attrs) do
-              {:ok, _subscription} ->
-                json(conn, %{subscription: Monetization.subscription_snapshot(company.id)})
+          case Monetization.validate_plan_change(company.id, plan) do
+            {:ok, _details} ->
+              case Monetization.activate_subscription_for_company(company.id, attrs) do
+                {:ok, _subscription} ->
+                  json(conn, %{subscription: Monetization.subscription_snapshot(company.id)})
 
-              {:error, :validation, %{changeset: changeset}} ->
-                ErrorMapper.validation(conn, changeset)
+                {:error, :validation, %{changeset: changeset}} ->
+                  ErrorMapper.validation(conn, changeset)
 
-              {:error, _reason} ->
-                ErrorMapper.unprocessable(conn, "subscription_update_failed")
-            end
+                {:error, _reason} ->
+                  ErrorMapper.unprocessable(conn, "subscription_update_failed")
+              end
 
-          {:error, :seat_limit_exceeded_on_downgrade, details} ->
-            ErrorMapper.unprocessable(
-              conn,
-              "seat_limit_exceeded_on_downgrade",
-              downgrade_details_to_json(details)
-            )
+            {:error, :seat_limit_exceeded_on_downgrade, details} ->
+              ErrorMapper.unprocessable(
+                conn,
+                "seat_limit_exceeded_on_downgrade",
+                downgrade_details_to_json(details)
+              )
+          end
+        else
+          ErrorMapper.forbidden(conn, "forbidden", %{
+            message: gettext("Only the owner or an admin can manage the tariff and team members.")
+          })
         end
     end
   end

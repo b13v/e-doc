@@ -164,6 +164,11 @@ msgstr ""
 msgid "Missing verification token."
 msgstr ""
 
+#: lib/edoc_api_web/controllers/auth_controller.ex:217
+#, elixir-autogen
+msgid "Please wait before requesting another verification email."
+msgstr ""
+
 #: lib/edoc_api_web/endpoint.ex:75
 #, elixir-autogen
 msgid "Your session expired. Please sign in again."
@@ -198,6 +203,11 @@ msgstr ""
 #: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:42
 #, elixir-autogen
 msgid "Resend verification email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/verification_pending_html/new.html.heex:41
+#, elixir-autogen
+msgid "Unable to show resend status. Please try again."
 msgstr ""
 
 #: lib/edoc_api_web/components/layouts.ex:66
@@ -240,6 +250,11 @@ msgstr ""
 #: lib/edoc_api_web/controllers/verification_pending_controller.ex:7
 #, elixir-autogen
 msgid "Verify Your Email"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/auth_controller.ex:214
+#, elixir-autogen
+msgid "Verification email sent. Please check your inbox."
 msgstr ""
 
 #: lib/edoc_api_web/controllers/session_controller.ex:34
@@ -2455,4 +2470,14 @@ msgstr ""
 #: lib/edoc_api_web/controllers/acts_controller.ex:218
 #, elixir-autogen, elixir-format
 msgid "Document limit reached for this billing period. Upgrade your plan to continue."
+msgstr ""
+
+#: lib/edoc_api_web/controllers/company_controller.ex:73
+#: lib/edoc_api_web/controllers/companies_controller.ex:172
+#: lib/edoc_api_web/controllers/companies_controller.ex:279
+#: lib/edoc_api_web/controllers/companies_controller.ex:313
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:79
+#: lib/edoc_api_web/controllers/companies_html/edit.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Only the owner or an admin can manage the tariff and team members."
 msgstr ""

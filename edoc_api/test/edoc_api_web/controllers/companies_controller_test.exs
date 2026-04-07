@@ -7,6 +7,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
+  alias EdocApi.Core.TenantMembership
   alias EdocApi.Monetization
   alias EdocApi.Repo
 
@@ -341,8 +342,10 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       body = html_response(conn, 200)
 
       assert body =~ "Удалите 1 пользователей перед переходом на Starter."
+
       assert body =~
                "Перед применением этого изменения тарифа удалите выделенных участников команды."
+
       assert count_occurrences(body, "Удалите 1 пользователей перед переходом на Starter.") == 1
 
       assert count_occurrences(
@@ -392,6 +395,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       body = html_response(conn, 200)
 
       assert body =~ "Starter тарифіне ауысу үшін 1 пайдаланушыны алып тастаңыз."
+
       assert body =~
                "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
 
@@ -612,6 +616,156 @@ defmodule EdocApiWeb.CompaniesControllerTest do
     end
   end
 
+  describe "role guards" do
+    setup %{conn: conn} do
+      owner = create_user!()
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      {:ok, _sub} =
+        Monetization.activate_subscription_for_company(company.id, %{"plan" => "basic"})
+
+      member_user = create_user!(%{"email" => "member-role@example.com"})
+      admin_user = create_user!(%{"email" => "admin-role@example.com"})
+
+      Accounts.mark_email_verified!(member_user.id)
+      Accounts.mark_email_verified!(admin_user.id)
+
+      {:ok, _member_invite} =
+        Monetization.invite_member(company.id, %{
+          "email" => member_user.email,
+          "role" => "member"
+        })
+
+      {:ok, _admin_invite} =
+        Monetization.invite_member(company.id, %{
+          "email" => admin_user.email,
+          "role" => "member"
+        })
+
+      [member_membership_id] = Monetization.accept_pending_memberships_for_user(member_user)
+      [admin_membership_id] = Monetization.accept_pending_memberships_for_user(admin_user)
+
+      member_membership = Repo.get!(TenantMembership, member_membership_id)
+      admin_membership = Repo.get!(TenantMembership, admin_membership_id)
+
+      {:ok, _updated_admin} =
+        admin_membership
+        |> Ecto.Changeset.change(role: "admin")
+        |> Repo.update()
+
+      {:ok,
+       conn: conn,
+       company: company,
+       member_conn: html_conn(conn, member_user),
+       admin_conn: html_conn(conn, admin_user),
+       member_membership_id: member_membership.id}
+    end
+
+    test "member cannot update subscription via /company/subscription", %{
+      member_conn: conn,
+      company: company
+    } do
+      before_plan = Monetization.subscription_snapshot(company.id).plan
+
+      conn =
+        post(conn, "/company/subscription", %{
+          "subscription" => %{"plan" => "basic"}
+        })
+
+      assert html_response(conn, 403)
+
+      assert Monetization.subscription_snapshot(company.id).plan == before_plan
+    end
+
+    test "member cannot invite via /company/memberships", %{member_conn: conn, company: company} do
+      before_count = Enum.count(Monetization.list_memberships(company.id))
+
+      conn =
+        post(conn, "/company/memberships", %{
+          "membership" => %{
+            "email" => "blocked-member@example.com",
+            "role" => "member"
+          }
+        })
+
+      assert html_response(conn, 403)
+      assert Enum.count(Monetization.list_memberships(company.id)) == before_count
+    end
+
+    test "member cannot remove via /company/memberships/:id", %{
+      member_conn: conn,
+      company: company,
+      member_membership_id: membership_id
+    } do
+      before_count = Enum.count(Monetization.list_memberships(company.id))
+
+      conn = delete(conn, "/company/memberships/#{membership_id}")
+
+      assert html_response(conn, 403)
+      assert Enum.count(Monetization.list_memberships(company.id)) == before_count
+    end
+
+    test "member company page does not render actionable billing or team controls", %{
+      member_conn: conn
+    } do
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      refute body =~ ~s(name="subscription[plan]")
+      refute body =~ ~s(name="membership[email]")
+      refute body =~ ~s(name="membership[role]")
+      refute body =~ ~S|<button type="submit" class="text-red-600 hover:text-red-800">|
+    end
+
+    test "admin can still update subscription, invite, and remove members", %{
+      admin_conn: conn,
+      company: company
+    } do
+      conn =
+        post(conn, "/company/subscription", %{
+          "subscription" => %{"plan" => "basic"}
+        })
+
+      assert redirected_to(conn) == "/company"
+      assert Monetization.subscription_snapshot(company.id).plan == "basic"
+
+      invitee_email = "admin-invite-#{System.unique_integer([:positive])}@example.com"
+
+      conn =
+        conn
+        |> recycle()
+        |> post("/company/memberships", %{
+          "membership" => %{
+            "email" => invitee_email,
+            "role" => "member"
+          }
+        })
+
+      assert redirected_to(conn) == "/company"
+
+      invited_membership =
+        Monetization.list_memberships(company.id)
+        |> Enum.find(&(&1.invite_email == invitee_email))
+
+      assert invited_membership
+
+      conn =
+        conn
+        |> recycle()
+        |> delete("/company/memberships/#{invited_membership.id}")
+
+      assert redirected_to(conn) == "/company"
+
+      refute Enum.any?(
+               Monetization.list_memberships(company.id),
+               &(&1.id == invited_membership.id)
+             )
+    end
+  end
+
   defp create_payment_refs! do
     suffix = Integer.to_string(System.unique_integer([:positive]))
 
@@ -636,5 +790,12 @@ defmodule EdocApiWeb.CompaniesControllerTest do
     |> String.split(needle)
     |> length()
     |> Kernel.-(1)
+  end
+
+  defp html_conn(conn, user) do
+    conn
+    |> Plug.Test.init_test_session(%{user_id: user.id})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
   end
 end
