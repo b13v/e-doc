@@ -3,12 +3,13 @@ defmodule EdocApi.Acts do
 
   alias EdocApi.Repo
   alias EdocApi.ActStatus
+  alias EdocApi.ContractStatus
   alias EdocApi.Core.Act
   alias EdocApi.Core.ActItem
   alias EdocApi.Core.Company
+  alias EdocApi.Core.Contract
   alias EdocApi.Companies
   alias EdocApi.Buyers
-  alias EdocApi.Invoicing
   alias EdocApi.Monetization
 
   def list_acts_for_user(user_id) when is_binary(user_id) do
@@ -37,6 +38,38 @@ defmodule EdocApi.Acts do
         |> case do
           nil -> nil
           act -> Repo.preload(act, [:items, :company, :buyer, :contract])
+        end
+    end
+  end
+
+  def list_signed_contracts_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        []
+
+      %Company{id: company_id} ->
+        signed_contracts_without_issued_acts_query(company_id)
+        |> order_by([c], desc: c.inserted_at)
+        |> Repo.all()
+        |> Repo.preload([:buyer])
+    end
+  end
+
+  def get_signed_contract_for_user(user_id, contract_id)
+      when is_binary(user_id) and is_binary(contract_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        {:error, :company_required}
+
+      %Company{id: company_id} ->
+        signed_contracts_without_issued_acts_query(company_id, contract_id)
+        |> Repo.one()
+        |> case do
+          nil ->
+            {:error, :not_found}
+
+          contract ->
+            {:ok, Repo.preload(contract, [:buyer, :contract_items, :bank_account])}
         end
     end
   end
@@ -119,12 +152,12 @@ defmodule EdocApi.Acts do
   end
 
   def list_issued_contracts_for_user(user_id) when is_binary(user_id) do
-    Invoicing.list_issued_contracts_for_user(user_id)
+    list_signed_contracts_for_user(user_id)
   end
 
   def build_act_from_contract(user_id, contract_id)
       when is_binary(user_id) and is_binary(contract_id) do
-    with {:ok, contract} <- Invoicing.get_issued_contract_for_user(user_id, contract_id) do
+    with {:ok, contract} <- get_signed_contract_for_user(user_id, contract_id) do
       buyer = contract.buyer
 
       items =
@@ -271,10 +304,32 @@ defmodule EdocApi.Acts do
         {:ok, nil, normalize_vat_rate(Map.get(attrs, "vat_rate"))}
 
       contract_id ->
-        case Invoicing.get_issued_contract_for_user(user_id, contract_id) do
+        case get_signed_contract_for_user(user_id, contract_id) do
           {:ok, contract} -> {:ok, contract, contract.vat_rate || 0}
-          _ -> {:error, :business_rule, %{rule: :contract_not_issued_or_not_found}}
+          _ -> {:error, :business_rule, %{rule: :contract_not_signed_or_not_found}}
         end
+    end
+  end
+
+  defp signed_contracts_without_issued_acts_query(company_id, contract_id \\ nil) do
+    issued_contract_ids =
+      from(a in Act,
+        where:
+          a.company_id == ^company_id and a.status == ^ActStatus.issued() and not is_nil(a.contract_id),
+        select: a.contract_id
+      )
+
+    base_query =
+      from(c in Contract,
+        where:
+          c.company_id == ^company_id and
+            c.status == ^ContractStatus.signed() and
+            c.id not in subquery(issued_contract_ids)
+      )
+
+    case contract_id do
+      nil -> base_query
+      id -> from(c in base_query, where: c.id == ^id)
     end
   end
 

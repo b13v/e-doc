@@ -59,7 +59,7 @@ defmodule EdocApiWeb.InvoicesController do
         |> redirect(to: "/company/setup")
 
       company ->
-        contracts = Invoicing.list_issued_contracts_for_user(user.id)
+        contracts = Invoicing.list_invoice_source_contracts_for_user(user.id)
         buyers = Buyers.list_buyers_for_company(company.id)
         bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
 
@@ -270,7 +270,7 @@ defmodule EdocApiWeb.InvoicesController do
 
     cond do
       contract_id && contract_id != "" ->
-        case Invoicing.get_issued_contract_for_user(user.id, contract_id) do
+        case Invoicing.get_invoice_source_contract_for_user(user.id, contract_id) do
           {:ok, contract} when contract.buyer != nil ->
             put_buyer_fields(invoice_params, contract.buyer)
 
@@ -298,7 +298,7 @@ defmodule EdocApiWeb.InvoicesController do
   end
 
   defp render_with_data(conn, user, company, invoice_params, error_message) do
-    contracts = Invoicing.list_issued_contracts_for_user(user.id)
+    contracts = Invoicing.list_invoice_source_contracts_for_user(user.id)
     buyers = Buyers.list_buyers_for_company(company.id)
     bank_accounts = Payments.list_company_bank_accounts_for_user(user.id)
     kbe_codes = Payments.list_kbe_codes()
@@ -410,12 +410,12 @@ defmodule EdocApiWeb.InvoicesController do
   defp validate_selected_contract(_user_id, contract_id) when contract_id in [nil, ""], do: :ok
 
   defp validate_selected_contract(user_id, contract_id) do
-    case Invoicing.get_issued_contract_for_user(user_id, contract_id) do
+    case Invoicing.get_invoice_source_contract_for_user(user_id, contract_id) do
       {:ok, _contract} ->
         :ok
 
       {:error, :not_found} ->
-        {:error, gettext("Please select an issued contract.")}
+        {:error, gettext("Please select a signed contract.")}
 
       {:error, :company_required} ->
         {:error, gettext("Please set up your company first.")}

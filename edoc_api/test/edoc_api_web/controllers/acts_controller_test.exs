@@ -6,7 +6,10 @@ defmodule EdocApiWeb.ActsControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Acts
   alias EdocApi.Buyers
+  alias EdocApi.Core.Contract
+  alias EdocApi.Core.ContractItem
   alias EdocApi.Monetization
+  alias EdocApi.Repo
 
   setup %{conn: conn} do
     user = create_user!()
@@ -133,6 +136,154 @@ defmodule EdocApiWeb.ActsControllerTest do
                  "Document limit reached for this billing period. Upgrade your plan to continue."
                )
     end
+
+    test "new act from contract shows only signed contracts that do not already have an issued act",
+         %{
+           conn: conn,
+           user: user,
+           company: company
+         } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Act Contract Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      eligible_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-OK",
+          "buyer_id" => buyer.id
+        })
+
+      used_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-USED",
+          "buyer_id" => buyer.id
+        })
+
+      _issued_only =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "ACT-ISSUED-HIDE",
+          "buyer_id" => buyer.id
+        })
+
+      Enum.each([eligible_contract, used_contract], fn contract ->
+        %ContractItem{}
+        |> ContractItem.changeset(
+          %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
+          contract.id
+        )
+        |> Repo.insert!()
+      end)
+
+      _issued_act = create_contract_act!(user, company, used_contract.id, "issued")
+
+      body =
+        conn
+        |> get("/acts/new")
+        |> html_response(200)
+
+      assert body =~ eligible_contract.number
+      refute body =~ used_contract.number
+      refute body =~ "ACT-ISSUED-HIDE"
+    end
+
+    test "creates an act from a signed contract", %{conn: conn, user: user, company: company} do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-CREATE",
+          "buyer_id" => buyer.id
+        })
+
+      %ContractItem{}
+      |> ContractItem.changeset(
+        %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
+        contract.id
+      )
+      |> Repo.insert!()
+
+      conn =
+        post(conn, "/acts", %{
+          "act" => %{
+            "act_type" => "contract",
+            "contract_id" => contract.id,
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "actual_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) =~ "/acts/"
+
+      [created | _] = Acts.list_acts_for_user(user.id)
+      assert created.contract_id == contract.id
+      assert created.buyer_name == buyer.name
+    end
+
+    test "rejects creating an act from an issued-only contract", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "ACT-ISSUED-REJECT",
+          "buyer_id" => buyer.id
+        })
+
+      conn =
+        post(conn, "/acts", %{
+          "act" => %{
+            "act_type" => "contract",
+            "contract_id" => contract.id,
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "actual_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/new?act_type=contract"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+    end
   end
 
   describe "tenant visibility" do
@@ -188,6 +339,26 @@ defmodule EdocApiWeb.ActsControllerTest do
     }
 
     {:ok, act} = Acts.create_act_for_user(user.id, company.id, attrs)
+
+    act
+    |> Ecto.Changeset.change(status: status)
+    |> EdocApi.Repo.update!()
+  end
+
+  defp create_contract_act!(user, company, contract_id, status) do
+    contract = Repo.get!(Contract, contract_id)
+
+    {:ok, act} =
+      Acts.create_act_for_user(user.id, company.id, %{
+        "issue_date" => Date.to_iso8601(Date.utc_today()),
+        "actual_date" => Date.to_iso8601(Date.utc_today()),
+        "buyer_id" => contract.buyer_id,
+        "buyer_address" => "Buyer Address",
+        "contract_id" => contract_id,
+        "items" => [
+          %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+        ]
+      })
 
     act
     |> Ecto.Changeset.change(status: status)

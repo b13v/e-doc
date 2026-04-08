@@ -35,7 +35,7 @@ defmodule EdocApiWeb.ActsController do
 
       company ->
         buyers = Buyers.list_buyers_for_company(company.id)
-        contracts = Acts.list_issued_contracts_for_user(user.id)
+        contracts = Acts.list_signed_contracts_for_user(user.id)
         units = Core.list_units_of_measurements()
 
         act_type = params["act_type"] || "contract"
@@ -118,9 +118,9 @@ defmodule EdocApiWeb.ActsController do
                 |> put_flash(:error, gettext("Please select a buyer."))
                 |> redirect(to: "/acts/new")
 
-              {:error, :business_rule, %{rule: :contract_not_issued_or_not_found}} ->
+              {:error, :business_rule, %{rule: :contract_not_signed_or_not_found}} ->
                 conn
-                |> put_flash(:error, gettext("Please select an issued contract."))
+                |> put_flash(:error, gettext("Please select a signed contract."))
                 |> redirect(to: "/acts/new?act_type=contract")
 
               {:error, :business_rule, %{rule: :quota_exceeded}} ->

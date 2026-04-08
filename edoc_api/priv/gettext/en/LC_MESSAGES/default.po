@@ -1302,7 +1302,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/acts_controller.ex:114
 #: lib/edoc_api_web/controllers/invoices_controller.ex:389
 #, elixir-autogen, elixir-format
-msgid "Please select an issued contract."
+msgid "Please select a signed contract."
 msgstr ""
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:28
@@ -1406,7 +1406,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:51
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:56
 #, elixir-autogen, elixir-format
-msgid "Select an issued contract..."
+msgid "Select a signed contract..."
 msgstr ""
 
 #: lib/edoc_api_web/controllers/contract_html/edit.html.heex:106

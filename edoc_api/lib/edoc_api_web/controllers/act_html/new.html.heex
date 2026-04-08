@@ -68,7 +68,7 @@
                   onchange="onContractSelectChange(this.value)"
                   class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 >
-                  <option value=""><%= gettext("Select an issued contract...") %></option>
+                  <option value=""><%= gettext("Select a signed contract...") %></option>
                   <%= for contract <- @contracts do %>
                     <option value={contract.id} selected={@selected_contract_id == contract.id}>
                       <%= contract.number %> - <%= if contract.buyer, do: contract.buyer.name, else: gettext("Unknown") %> (<%= contract.issue_date %>)

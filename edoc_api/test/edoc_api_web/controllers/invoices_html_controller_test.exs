@@ -4,8 +4,11 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
   import EdocApi.TestFixtures
 
   alias EdocApi.Accounts
+  alias EdocApi.Buyers
+  alias EdocApi.Core.ContractItem
   alias EdocApi.Invoicing
   alias EdocApi.Monetization
+  alias EdocApi.Repo
 
   @bin_iin_error "Failed to create invoice: Buyer bin iin: has invalid checksum"
 
@@ -137,6 +140,148 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
                  EdocApiWeb.Gettext,
                  "Document limit reached for this billing period. Upgrade your plan to continue."
                )
+    end
+
+    test "new invoice from contract shows only signed contracts that do not already have an issued invoice",
+         %{
+           conn: conn,
+           user: user,
+           company: company
+         } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Invoice Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      eligible_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "CON-SIGNED-OK",
+          "buyer_id" => buyer.id
+        })
+
+      used_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "CON-SIGNED-USED",
+          "buyer_id" => buyer.id
+        })
+
+      _issued_only =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "CON-ISSUED-HIDE",
+          "buyer_id" => buyer.id
+        })
+
+      issued_invoice =
+        create_invoice_with_items!(user, company, %{
+          "contract_id" => used_contract.id
+        })
+
+      assert {:ok, _issued_invoice} = Invoicing.issue_invoice_for_user(user.id, issued_invoice.id)
+
+      body =
+        conn
+        |> get("/invoices/new")
+        |> html_response(200)
+
+      assert body =~ eligible_contract.number
+      refute body =~ used_contract.number
+      refute body =~ "CON-ISSUED-HIDE"
+    end
+
+    test "creates an invoice from a signed contract", %{conn: conn, user: user, company: company} do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Invoice Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "CON-SIGNED-CREATE",
+          "buyer_id" => buyer.id
+        })
+
+      %ContractItem{}
+      |> ContractItem.changeset(
+        %{"name" => "Service", "qty" => "1", "unit_price" => "100.00", "code" => "C-1"},
+        contract.id
+      )
+      |> Repo.insert!()
+
+      conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "contract",
+            "contract_id" => contract.id,
+            "service_name" => "Contract invoice",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_id" => buyer.id,
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) =~ "/invoices/"
+
+      [created | _] = Invoicing.list_invoices_for_user(user.id)
+      assert created.contract_id == contract.id
+      assert created.buyer_name == buyer.name
+    end
+
+    test "rejects creating an invoice from an issued-only contract", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Invoice Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "CON-ISSUED-REJECT",
+          "buyer_id" => buyer.id
+        })
+
+      conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "contract",
+            "contract_id" => contract.id,
+            "service_name" => "Contract invoice",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
     end
   end
 

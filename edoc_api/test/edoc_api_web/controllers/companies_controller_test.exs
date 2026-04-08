@@ -1,6 +1,7 @@
 defmodule EdocApiWeb.CompaniesControllerTest do
   use EdocApiWeb.ConnCase
 
+  import Ecto.Query, warn: false
   import EdocApi.TestFixtures
   import Swoosh.TestAssertions
 
@@ -818,10 +819,13 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         bic: bic
       })
 
-    kbe_code = Repo.one(KbeCode) || Repo.insert!(%KbeCode{code: "99", description: "KBE 99"})
+    kbe_code =
+      Repo.one(from(k in KbeCode, order_by: [asc: k.code], limit: 1)) ||
+        Repo.insert!(%KbeCode{code: "99", description: "KBE 99"})
 
     knp_code =
-      Repo.one(KnpCode) || Repo.insert!(%KnpCode{code: "999", description: "KNP 999"})
+      Repo.one(from(k in KnpCode, order_by: [asc: k.code], limit: 1)) ||
+        Repo.insert!(%KnpCode{code: "999", description: "KNP 999"})
 
     %{bank: bank, kbe_code: kbe_code, knp_code: knp_code}
   end

@@ -65,12 +65,12 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
              end) == "Выставлен"
 
       assert Gettext.with_locale(EdocApiWeb.Gettext, "ru", fn ->
-               Gettext.gettext(EdocApiWeb.Gettext, "Please select an issued contract.")
-             end) == "Выберите выставленный договор."
+               Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+             end) == "Выберите подписанный договор."
 
       assert Gettext.with_locale(EdocApiWeb.Gettext, "ru", fn ->
-               Gettext.gettext(EdocApiWeb.Gettext, "Select an issued contract...")
-             end) == "Выберите выставленный договор..."
+               Gettext.gettext(EdocApiWeb.Gettext, "Select a signed contract...")
+             end) == "Выберите подписанный договор..."
 
       _invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-2026-2"})
 
@@ -1777,6 +1777,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
           "Проверьте номер IBAN. Он должен содержать ровно 20 буквенно-цифровых символов.",
         "Buyers are used for contracts and invoices." =>
           "Покупатели используются для договоров и счетов.",
+        "Please select a signed contract." => "Выберите подписанный договор.",
         "Keep buyer details current before creating contracts and invoices." =>
           "Держите данные покупателей актуальными перед созданием договоров и счетов.",
         "Create Act" => "Создать акт",
@@ -1836,6 +1837,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
           "IBAN нөмірін тексеріңіз. Ол дәл 20 әріптік-сандық таңбадан тұруы керек.",
         "Buyers are used for contracts and invoices." =>
           "Сатып алушылар келісімшарттар мен шоттар үшін пайдаланылады.",
+        "Please select a signed contract." => "Қол қойылған келісімшартты таңдаңыз.",
         "Contract %{number}" => "Келісімшарт № %{number}",
         "Contract has already been marked as signed." =>
           "Келісімшарт қол қойылған деп бұрыннан белгіленген.",

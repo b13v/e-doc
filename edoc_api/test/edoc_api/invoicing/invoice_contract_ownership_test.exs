@@ -71,4 +71,44 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
                Invoicing.create_invoice_for_user(user.id, company.id, invoice_attrs())
     end
   end
+
+  describe "invoice source contracts" do
+    test "returns only signed contracts without issued invoices" do
+      user = create_user!()
+      company = create_company!(user)
+      create_company_bank_account!(company)
+
+      {:ok, buyer} =
+        EdocApi.Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      eligible_contract =
+        create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
+
+      used_contract =
+        create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
+
+      issued_only_contract =
+        create_contract!(company, %{"status" => "issued", "buyer_id" => buyer.id})
+
+      invoice = create_invoice_with_items!(user, company, %{"contract_id" => used_contract.id})
+      assert {:ok, _issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+
+      contracts = Invoicing.list_invoice_source_contracts_for_user(user.id)
+
+      assert Enum.map(contracts, & &1.id) == [eligible_contract.id]
+
+      assert {:ok, _contract} =
+               Invoicing.get_invoice_source_contract_for_user(user.id, eligible_contract.id)
+
+      assert {:error, :not_found} =
+               Invoicing.get_invoice_source_contract_for_user(user.id, used_contract.id)
+
+      assert {:error, :not_found} =
+               Invoicing.get_invoice_source_contract_for_user(user.id, issued_only_contract.id)
+    end
+  end
 end

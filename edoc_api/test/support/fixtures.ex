@@ -15,7 +15,12 @@ defmodule EdocApi.TestFixtures do
   alias EdocApi.Repo
 
   def unique_email do
-    "user#{System.unique_integer([:positive])}@example.com"
+    token =
+      Ecto.UUID.generate()
+      |> String.replace("-", "")
+      |> String.slice(0, 12)
+
+    "user-#{token}@example.com"
   end
 
   def create_user!(attrs \\ %{}) do
@@ -248,8 +253,23 @@ defmodule EdocApi.TestFixtures do
 
   defp create_bank! do
     suffix = Integer.to_string(System.unique_integer([:positive]))
-    bic = "BIC#{String.slice(suffix, 0, 8)}"
+    bic = bank_bic_for_suffix(suffix)
     Repo.insert!(%Bank{name: "Test Bank #{suffix}", bic: bic})
+  end
+
+  def bank_bic_for_suffix(suffix) when is_integer(suffix) do
+    suffix
+    |> Integer.to_string()
+    |> bank_bic_for_suffix()
+  end
+
+  def bank_bic_for_suffix(suffix) when is_binary(suffix) do
+    digest =
+      :crypto.hash(:sha256, suffix)
+      |> Base.encode16(case: :upper)
+      |> binary_part(0, 8)
+
+    "BIC#{digest}"
   end
 
   defp create_kbe_code! do

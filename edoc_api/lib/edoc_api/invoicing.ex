@@ -29,21 +29,25 @@ defmodule EdocApi.Invoicing do
     end
   end
 
-  def list_issued_contracts_for_user(user_id) when is_binary(user_id) do
+  def list_invoice_source_contracts_for_user(user_id) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
         []
 
       %Company{id: company_id} ->
         Contract
-        |> where([c], c.company_id == ^company_id and c.status == "issued")
+        |> where([c], c.company_id == ^company_id and c.status == "signed")
+        |> join(:left, [c], i in Invoice,
+          on: i.contract_id == c.id and i.status == "issued"
+        )
+        |> where([_c, i], is_nil(i.id))
         |> order_by([c], desc: c.inserted_at)
         |> Repo.all()
         |> Repo.preload([:buyer])
     end
   end
 
-  def get_issued_contract_for_user(user_id, contract_id)
+  def get_invoice_source_contract_for_user(user_id, contract_id)
       when is_binary(user_id) and is_binary(contract_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
@@ -53,8 +57,12 @@ defmodule EdocApi.Invoicing do
         Contract
         |> where(
           [c],
-          c.company_id == ^company_id and c.id == ^contract_id and c.status == "issued"
+          c.company_id == ^company_id and c.id == ^contract_id and c.status == "signed"
         )
+        |> join(:left, [c], i in Invoice,
+          on: i.contract_id == c.id and i.status == "issued"
+        )
+        |> where([_c, i], is_nil(i.id))
         |> Repo.one()
         |> case do
           nil ->
@@ -68,7 +76,7 @@ defmodule EdocApi.Invoicing do
 
   def build_invoice_from_contract(user_id, contract_id)
       when is_binary(user_id) and is_binary(contract_id) do
-    with {:ok, contract} <- get_issued_contract_for_user(user_id, contract_id) do
+    with {:ok, contract} <- get_invoice_source_contract_for_user(user_id, contract_id) do
       bank_accounts = Payments.list_company_bank_accounts_for_user(user_id)
       selected_bank_account_id = resolve_contract_bank_account_id(contract, bank_accounts)
 
