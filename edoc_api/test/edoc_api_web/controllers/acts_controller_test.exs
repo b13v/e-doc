@@ -137,7 +137,7 @@ defmodule EdocApiWeb.ActsControllerTest do
                )
     end
 
-    test "new act from contract shows only signed contracts that do not already have an issued act",
+    test "new act from contract shows only signed contracts that do not already have acts",
          %{
            conn: conn,
            user: user,
@@ -157,10 +157,24 @@ defmodule EdocApiWeb.ActsControllerTest do
           "buyer_id" => buyer.id
         })
 
-      used_contract =
+      used_draft_contract =
         create_contract!(company, %{
           "status" => "signed",
-          "number" => "ACT-SIGNED-USED",
+          "number" => "ACT-SIGNED-USED-DRAFT",
+          "buyer_id" => buyer.id
+        })
+
+      used_issued_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-USED-ISSUED",
+          "buyer_id" => buyer.id
+        })
+
+      used_signed_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-USED-SIGNED",
           "buyer_id" => buyer.id
         })
 
@@ -171,7 +185,7 @@ defmodule EdocApiWeb.ActsControllerTest do
           "buyer_id" => buyer.id
         })
 
-      Enum.each([eligible_contract, used_contract], fn contract ->
+      Enum.each([eligible_contract, used_draft_contract, used_issued_contract, used_signed_contract], fn contract ->
         %ContractItem{}
         |> ContractItem.changeset(
           %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
@@ -180,7 +194,9 @@ defmodule EdocApiWeb.ActsControllerTest do
         |> Repo.insert!()
       end)
 
-      _issued_act = create_contract_act!(user, company, used_contract.id, "issued")
+      _draft_act = create_contract_act!(user, company, used_draft_contract.id, "draft")
+      _issued_act = create_contract_act!(user, company, used_issued_contract.id, "issued")
+      _signed_act = create_contract_act!(user, company, used_signed_contract.id, "signed")
 
       body =
         conn
@@ -188,8 +204,38 @@ defmodule EdocApiWeb.ActsControllerTest do
         |> html_response(200)
 
       assert body =~ eligible_contract.number
-      refute body =~ used_contract.number
+      refute body =~ used_draft_contract.number
+      refute body =~ used_issued_contract.number
+      refute body =~ used_signed_contract.number
       refute body =~ "ACT-ISSUED-HIDE"
+    end
+
+    test "new direct act keeps buyer placeholder unselected from any concrete buyer", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer_one} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Direct Buyer One",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address One"
+        })
+
+      {:ok, buyer_two} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Direct Buyer Two",
+          "bin_iin" => "090215385679",
+          "address" => "Buyer Address Two"
+        })
+
+      body =
+        conn
+        |> get("/acts/new?act_type=direct")
+        |> html_response(200)
+
+      assert body =~ ~s(id="buyer_select")
+      refute body =~ ~r/<option\s+value="#{buyer_one.id}"[^>]*selected/
+      refute body =~ ~r/<option\s+value="#{buyer_two.id}"[^>]*selected/
     end
 
     test "creates an act from a signed contract", %{conn: conn, user: user, company: company} do
@@ -258,6 +304,60 @@ defmodule EdocApiWeb.ActsControllerTest do
           "number" => "ACT-ISSUED-REJECT",
           "buyer_id" => buyer.id
         })
+
+      conn =
+        post(conn, "/acts", %{
+          "act" => %{
+            "act_type" => "contract",
+            "contract_id" => contract.id,
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "actual_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/new?act_type=contract"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+    end
+
+    test "rejects creating an act from a signed contract that already has a draft act", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "ACT-SIGNED-USED-DRAFT-REJECT",
+          "buyer_id" => buyer.id
+        })
+
+      %ContractItem{}
+      |> ContractItem.changeset(
+        %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
+        contract.id
+      )
+      |> Repo.insert!()
+
+      _draft_act = create_contract_act!(user, company, contract.id, "draft")
 
       conn =
         post(conn, "/acts", %{

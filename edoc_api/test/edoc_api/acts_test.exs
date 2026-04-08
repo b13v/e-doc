@@ -161,6 +161,43 @@ defmodule EdocApi.ActsTest do
     end
   end
 
+  describe "contract source eligibility" do
+    test "returns only signed contracts without any acts" do
+      user = create_user!()
+      company = create_company!(user)
+      buyer = create_buyer!(company)
+
+      eligible_contract =
+        create_contract!(company, %{"status" => "signed", "number" => "ACT-CON-ELIGIBLE", "buyer_id" => buyer.id})
+
+      used_draft_contract =
+        create_contract!(company, %{"status" => "signed", "number" => "ACT-CON-DRAFT", "buyer_id" => buyer.id})
+
+      used_issued_contract =
+        create_contract!(company, %{"status" => "signed", "number" => "ACT-CON-ISSUED", "buyer_id" => buyer.id})
+
+      used_signed_contract =
+        create_contract!(company, %{"status" => "signed", "number" => "ACT-CON-SIGNED", "buyer_id" => buyer.id})
+
+      issued_only_contract =
+        create_contract!(company, %{"status" => "issued", "number" => "ACT-CON-ISSUED-ONLY", "buyer_id" => buyer.id})
+
+      _draft_act = create_contract_act!(user, company, buyer, used_draft_contract.id, ActStatus.draft())
+      _issued_act = create_contract_act!(user, company, buyer, used_issued_contract.id, ActStatus.issued())
+      _signed_act = create_contract_act!(user, company, buyer, used_signed_contract.id, ActStatus.signed())
+
+      contracts = Acts.list_signed_contracts_for_user(user.id)
+
+      assert Enum.map(contracts, & &1.id) == [eligible_contract.id]
+
+      assert {:ok, _contract} = Acts.get_signed_contract_for_user(user.id, eligible_contract.id)
+      assert {:error, :not_found} = Acts.get_signed_contract_for_user(user.id, used_draft_contract.id)
+      assert {:error, :not_found} = Acts.get_signed_contract_for_user(user.id, used_issued_contract.id)
+      assert {:error, :not_found} = Acts.get_signed_contract_for_user(user.id, used_signed_contract.id)
+      assert {:error, :not_found} = Acts.get_signed_contract_for_user(user.id, issued_only_contract.id)
+    end
+  end
+
   defp create_buyer!(company) do
     {:ok, buyer} =
       Buyers.create_buyer_for_company(company.id, %{
@@ -177,6 +214,25 @@ defmodule EdocApi.ActsTest do
       "issue_date" => Date.utc_today(),
       "buyer_id" => buyer.id,
       "buyer_address" => "Buyer Address",
+      "items" => [
+        %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+      ]
+    }
+
+    {:ok, act} = Acts.create_act_for_user(user.id, company.id, attrs)
+
+    act
+    |> Ecto.Changeset.change(status: status)
+    |> Repo.update!()
+  end
+
+  defp create_contract_act!(user, company, buyer, contract_id, status) do
+    attrs = %{
+      "issue_date" => Date.utc_today(),
+      "actual_date" => Date.utc_today(),
+      "buyer_id" => buyer.id,
+      "buyer_address" => "Buyer Address",
+      "contract_id" => contract_id,
       "items" => [
         %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
       ]

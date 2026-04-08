@@ -38,7 +38,7 @@ defmodule EdocApi.Invoicing do
         Contract
         |> where([c], c.company_id == ^company_id and c.status == "signed")
         |> join(:left, [c], i in Invoice,
-          on: i.contract_id == c.id and i.status == "issued"
+          on: i.contract_id == c.id
         )
         |> where([_c, i], is_nil(i.id))
         |> order_by([c], desc: c.inserted_at)
@@ -60,7 +60,7 @@ defmodule EdocApi.Invoicing do
           c.company_id == ^company_id and c.id == ^contract_id and c.status == "signed"
         )
         |> join(:left, [c], i in Invoice,
-          on: i.contract_id == c.id and i.status == "issued"
+          on: i.contract_id == c.id
         )
         |> where([_c, i], is_nil(i.id))
         |> Repo.one()

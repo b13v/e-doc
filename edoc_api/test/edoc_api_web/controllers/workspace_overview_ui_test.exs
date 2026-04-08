@@ -641,6 +641,38 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 
+  test "act new syncs buyer address when direct mode buyer changes", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, _buyer_one} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Act Buyer 1",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address 1"
+      })
+
+    {:ok, _buyer_two} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Act Buyer 2",
+        "bin_iin" => "090215385679",
+        "address" => "Buyer Address 2"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=direct")
+      |> html_response(200)
+
+    assert body =~ ~s(name="act[buyer_address]")
+    assert body =~ ~s(data-address=)
+    assert body =~ "function setBuyerAddress(value) {"
+    assert body =~ "document.getElementById('buyer_select')?.addEventListener('change'"
+    assert body =~ "setBuyerAddress(option.getAttribute('data-address') || '')"
+  end
+
   test "contract show uses workspace detail chrome and keeps contracts nav active", %{
     conn: conn
   } do

@@ -332,6 +332,11 @@
     window.location.href = url.toString();
   }
 
+  function setBuyerAddress(value) {
+    const input = document.getElementById("act_buyer_address");
+    if (input) input.value = value || "";
+  }
+
   function handleTypeChange(mode) {
     const url = new URL(window.location.href);
     url.searchParams.set("act_type", mode);
@@ -343,6 +348,12 @@
 
   document.getElementById("act_type_contract").addEventListener("change", () => handleTypeChange("contract"));
   document.getElementById("act_type_direct").addEventListener("change", () => handleTypeChange("direct"));
+  document.getElementById('buyer_select')?.addEventListener('change', function(event) {
+    const option = event.target.options[event.target.selectedIndex];
+    if (option) {
+      setBuyerAddress(option.getAttribute('data-address') || '');
+    }
+  });
 
   if (Array.isArray(prefillItems) && prefillItems.length > 0) {
     clearItems();

@@ -73,7 +73,7 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
   end
 
   describe "invoice source contracts" do
-    test "returns only signed contracts without issued invoices" do
+    test "returns only signed contracts without any invoices" do
       user = create_user!()
       company = create_company!(user)
       create_company_bank_account!(company)
@@ -88,14 +88,31 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
       eligible_contract =
         create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
 
-      used_contract =
+      used_draft_contract =
+        create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
+
+      used_issued_contract =
+        create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
+
+      used_paid_contract =
         create_contract!(company, %{"status" => "signed", "buyer_id" => buyer.id})
 
       issued_only_contract =
         create_contract!(company, %{"status" => "issued", "buyer_id" => buyer.id})
 
-      invoice = create_invoice_with_items!(user, company, %{"contract_id" => used_contract.id})
-      assert {:ok, _issued} = Invoicing.issue_invoice_for_user(user.id, invoice.id)
+      _draft_invoice =
+        create_invoice_with_items!(user, company, %{"contract_id" => used_draft_contract.id})
+
+      issued_invoice =
+        create_invoice_with_items!(user, company, %{"contract_id" => used_issued_contract.id})
+
+      assert {:ok, _issued} = Invoicing.issue_invoice_for_user(user.id, issued_invoice.id)
+
+      paid_invoice =
+        create_invoice_with_items!(user, company, %{"contract_id" => used_paid_contract.id})
+
+      assert {:ok, issued_paid_invoice} = Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+      assert {:ok, _paid} = Invoicing.pay_invoice_for_user(user.id, issued_paid_invoice.id)
 
       contracts = Invoicing.list_invoice_source_contracts_for_user(user.id)
 
@@ -105,7 +122,13 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
                Invoicing.get_invoice_source_contract_for_user(user.id, eligible_contract.id)
 
       assert {:error, :not_found} =
-               Invoicing.get_invoice_source_contract_for_user(user.id, used_contract.id)
+               Invoicing.get_invoice_source_contract_for_user(user.id, used_draft_contract.id)
+
+      assert {:error, :not_found} =
+               Invoicing.get_invoice_source_contract_for_user(user.id, used_issued_contract.id)
+
+      assert {:error, :not_found} =
+               Invoicing.get_invoice_source_contract_for_user(user.id, used_paid_contract.id)
 
       assert {:error, :not_found} =
                Invoicing.get_invoice_source_contract_for_user(user.id, issued_only_contract.id)

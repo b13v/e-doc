@@ -142,7 +142,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
                )
     end
 
-    test "new invoice from contract shows only signed contracts that do not already have an issued invoice",
+    test "new invoice from contract shows only signed contracts that do not already have invoices",
          %{
            conn: conn,
            user: user,
@@ -162,10 +162,24 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
           "buyer_id" => buyer.id
         })
 
-      used_contract =
+      used_draft_contract =
         create_contract!(company, %{
           "status" => "signed",
-          "number" => "CON-SIGNED-USED",
+          "number" => "CON-SIGNED-USED-DRAFT",
+          "buyer_id" => buyer.id
+        })
+
+      used_issued_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "CON-SIGNED-USED-ISSUED",
+          "buyer_id" => buyer.id
+        })
+
+      used_paid_contract =
+        create_contract!(company, %{
+          "status" => "signed",
+          "number" => "CON-SIGNED-USED-PAID",
           "buyer_id" => buyer.id
         })
 
@@ -176,12 +190,25 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
           "buyer_id" => buyer.id
         })
 
+      _draft_invoice =
+        create_invoice_with_items!(user, company, %{
+          "contract_id" => used_draft_contract.id
+        })
+
       issued_invoice =
         create_invoice_with_items!(user, company, %{
-          "contract_id" => used_contract.id
+          "contract_id" => used_issued_contract.id
         })
 
       assert {:ok, _issued_invoice} = Invoicing.issue_invoice_for_user(user.id, issued_invoice.id)
+
+      paid_invoice =
+        create_invoice_with_items!(user, company, %{
+          "contract_id" => used_paid_contract.id
+        })
+
+      assert {:ok, issued_paid_invoice} = Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+      assert {:ok, _paid_invoice} = Invoicing.pay_invoice_for_user(user.id, issued_paid_invoice.id)
 
       body =
         conn
@@ -189,7 +216,9 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
         |> html_response(200)
 
       assert body =~ eligible_contract.number
-      refute body =~ used_contract.number
+      refute body =~ used_draft_contract.number
+      refute body =~ used_issued_contract.number
+      refute body =~ used_paid_contract.number
       refute body =~ "CON-ISSUED-HIDE"
     end
 

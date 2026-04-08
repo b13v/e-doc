@@ -45,6 +45,7 @@ defmodule EdocApiWeb.ActsController do
         selected_buyer_id =
           case {act_type, prefill.selected_buyer_id} do
             {"contract", nil} -> nil
+            {"direct", nil} -> nil
             {_, selected_id} when not is_nil(selected_id) -> selected_id
             _ -> buyers != [] && hd(buyers).id
           end

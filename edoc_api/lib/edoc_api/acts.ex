@@ -312,10 +312,9 @@ defmodule EdocApi.Acts do
   end
 
   defp signed_contracts_without_issued_acts_query(company_id, contract_id \\ nil) do
-    issued_contract_ids =
+    act_contract_ids =
       from(a in Act,
-        where:
-          a.company_id == ^company_id and a.status == ^ActStatus.issued() and not is_nil(a.contract_id),
+        where: a.company_id == ^company_id and not is_nil(a.contract_id),
         select: a.contract_id
       )
 
@@ -324,7 +323,7 @@ defmodule EdocApi.Acts do
         where:
           c.company_id == ^company_id and
             c.status == ^ContractStatus.signed() and
-            c.id not in subquery(issued_contract_ids)
+            c.id not in subquery(act_contract_ids)
       )
 
     case contract_id do
