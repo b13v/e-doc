@@ -152,6 +152,23 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert Phoenix.Flash.get(conn.assigns.flash, :error)
   end
 
+  test "login page includes theme switcher and keeps navbar links visible", %{conn: conn} do
+    conn = get(conn, "/login")
+    body = html_response(conn, 200)
+
+    assert body =~ ~s(data-theme-toggle)
+    assert body =~ ~s(data-theme-label)
+    assert body =~ ~s|window.toggleWorkspaceTheme = function()|
+    assert body =~ ~s(>Dark<)
+    refute body =~ ~s(data-theme-lock="light")
+    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
+    assert body =~ ~s(workspace-locale-inactive)
+    assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
+    refute body =~ ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
+  end
+
   defp extract_csrf_token(body) do
     [_, token] = Regex.run(~r/name="_csrf_token" value="([^"]+)"/, body)
     token

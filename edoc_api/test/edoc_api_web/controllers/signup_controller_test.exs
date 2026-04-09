@@ -32,6 +32,15 @@ defmodule EdocApiWeb.SignupControllerTest do
 
     assert body =~ ~s(name="email")
     assert body =~ ~s(value="invitee@example.com")
+    assert body =~ ~s(data-theme-toggle)
+    assert body =~ ~s(data-theme-label)
+    assert body =~ ~s|window.toggleWorkspaceTheme = function()|
+    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
+    assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
+    refute body =~ ~s(data-theme-lock="light")
+    refute body =~ ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
   end
 
   test "signup sends russian verification email with Edocly branding by default", %{conn: conn} do

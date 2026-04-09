@@ -56,16 +56,16 @@ defmodule EdocApiWeb.SignupController do
             conn
             |> put_flash(:error, error_message)
             |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
-          end
+        end
 
-        {:error, changeset} ->
-          error_message = format_changeset_errors(changeset)
+      {:error, changeset} ->
+        error_message = format_changeset_errors(changeset)
 
-          conn
-          |> put_flash(:error, error_message)
-          |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
-      end
+        conn
+        |> put_flash(:error, error_message)
+        |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
     end
+  end
   end
 
   defp format_changeset_errors(changeset) do

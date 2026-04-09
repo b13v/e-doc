@@ -10,7 +10,11 @@ defmodule EdocApiWeb.Layouts do
   def root(assigns) do
     ~H"""
     <!DOCTYPE html>
-    <html lang={assigns[:locale] || "ru"} class="[scrollbar-gutter:stable]">
+    <html
+      lang={assigns[:locale] || "ru"}
+      class="[scrollbar-gutter:stable]"
+      data-theme-lock={assigns[:theme_lock]}
+    >
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -20,13 +24,18 @@ defmodule EdocApiWeb.Layouts do
         <script>
           (function() {
             var root = document.documentElement;
+            var themeLock = root.getAttribute("data-theme-lock");
             var storageKey = "edoc_theme";
             var preferred = null;
 
-            try {
-              preferred = window.localStorage.getItem(storageKey);
-            } catch (_error) {
-              preferred = null;
+            if (themeLock === "dark" || themeLock === "light") {
+              preferred = themeLock;
+            } else {
+              try {
+                preferred = window.localStorage.getItem(storageKey);
+              } catch (_error) {
+                preferred = null;
+              }
             }
 
             if (preferred !== "dark" && preferred !== "light") {
@@ -107,6 +116,12 @@ defmodule EdocApiWeb.Layouts do
           };
 
           document.addEventListener('DOMContentLoaded', function() {
+            var themeLock = document.documentElement.getAttribute('data-theme-lock');
+            if (themeLock === 'dark' || themeLock === 'light') {
+              applyWorkspaceTheme(themeLock);
+              return;
+            }
+
             var stored = getSavedTheme();
             var initial = stored === 'dark' || stored === 'light' ? stored : resolveSystemTheme();
             applyWorkspaceTheme(initial);
@@ -115,6 +130,9 @@ defmodule EdocApiWeb.Layouts do
           if (window.matchMedia) {
             var media = window.matchMedia('(prefers-color-scheme: dark)');
             var onThemeMediaChange = function(event) {
+              var themeLock = document.documentElement.getAttribute('data-theme-lock');
+              if (themeLock === 'dark' || themeLock === 'light') return;
+
               var stored = getSavedTheme();
               if (stored === 'dark' || stored === 'light') return;
               applyWorkspaceTheme(event.matches ? 'dark' : 'light');
@@ -252,6 +270,14 @@ defmodule EdocApiWeb.Layouts do
           html[data-theme="dark"] .text-slate-600,
           html[data-theme="dark"] .text-slate-500 {
             color: #cbd5e1;
+          }
+
+          html[data-theme="dark"] .workspace-public-nav-link {
+            color: #000000;
+          }
+
+          html[data-theme="dark"] .workspace-public-nav-link:hover {
+            color: #000000;
           }
 
           html[data-theme="dark"] .border-gray-200,
@@ -403,11 +429,14 @@ defmodule EdocApiWeb.Layouts do
   Public navigation for unauthenticated users
   """
   def public_nav(assigns) do
+    assigns = Map.put_new(assigns, :nav_context, :public)
+
     ~H"""
-    <nav class="flex items-center space-x-6">
-      <a href="/" class="font-medium text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"><%= gettext("Home") %></a>
-      <a href="/about" class="font-medium text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"><%= gettext("About") %></a>
+    <nav class="flex items-center gap-4">
+      <a href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("Home") %></a>
+      <a href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("About") %></a>
       <%= locale_switcher(assigns) %>
+      <%= theme_switcher(assigns, :desktop) %>
       <a href="/login" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
         <%= gettext("Sign In") %>
       </a>
@@ -420,6 +449,7 @@ defmodule EdocApiWeb.Layouts do
   """
   def auth_nav(assigns) do
     assigns = Map.put_new(assigns, :current_section, nil)
+    assigns = Map.put_new(assigns, :nav_context, :workspace)
 
     ~H"""
     <div class="flex w-full flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:justify-end">
@@ -551,7 +581,8 @@ defmodule EdocApiWeb.Layouts do
     assigns =
       Map.merge(assigns, %{
         current_path: assigns[:current_path] || "/",
-        locale: assigns[:locale] || "ru"
+        locale: assigns[:locale] || "ru",
+        nav_context: assigns[:nav_context] || :workspace
       })
 
     ~H"""
@@ -562,8 +593,18 @@ defmodule EdocApiWeb.Layouts do
           "workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
           if(
             @locale == "kk",
-            do: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
-            else: "text-black dark:text-black dark:hover:text-black"
+            do:
+              if(
+                @nav_context == :public,
+                do: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white",
+                else: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+              ),
+            else:
+              if(
+                @nav_context == :public,
+                do: "text-slate-600 hover:text-slate-900 dark:text-white dark:hover:text-white",
+                else: "text-black dark:text-black dark:hover:text-black"
+              )
           )
         ]}
       >
@@ -575,8 +616,18 @@ defmodule EdocApiWeb.Layouts do
           "workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
           if(
             @locale == "ru",
-            do: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
-            else: "text-black dark:text-black dark:hover:text-black"
+            do:
+              if(
+                @nav_context == :public,
+                do: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white",
+                else: "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+              ),
+            else:
+              if(
+                @nav_context == :public,
+                do: "text-slate-600 hover:text-slate-900 dark:text-white dark:hover:text-white",
+                else: "text-black dark:text-black dark:hover:text-black"
+              )
           )
         ]}
       >
