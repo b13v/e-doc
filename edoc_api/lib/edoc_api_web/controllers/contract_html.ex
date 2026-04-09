@@ -69,6 +69,7 @@ defmodule EdocApiWeb.ContractHTML do
           [
             %{
               label: gettext("Edit"),
+              tone: :success,
               transport: :link,
               method: :get,
               href: "/contracts/#{contract.id}/edit"

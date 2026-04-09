@@ -790,6 +790,31 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     end
   end
 
+  test "invoice and contract edit row-actions are explicitly marked as success tone like buyers",
+       %{conn: _conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    contract = create_contract!(company, %{"status" => "draft", "number" => "C-EDIT-TONE-1"})
+
+    invoice_edit_action =
+      invoice
+      |> EdocApiWeb.InvoicesHTML.row_actions()
+      |> Map.fetch!(:secondary)
+      |> Enum.find(&(&1[:href] == "/invoices/#{invoice.id}/edit"))
+
+    contract_edit_action =
+      contract
+      |> EdocApiWeb.ContractHTML.contract_row_actions()
+      |> Map.fetch!(:secondary)
+      |> Enum.find(&(&1[:href] == "/contracts/#{contract.id}/edit"))
+
+    assert invoice_edit_action[:tone] == :success
+    assert contract_edit_action[:tone] == :success
+  end
+
   test "workspace index table rows include shared dark-mode hover hook", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)

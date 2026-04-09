@@ -31,6 +31,7 @@ defmodule EdocApiWeb.InvoicesHTML do
           [
             %{
               label: gettext("Edit"),
+              tone: :success,
               transport: :link,
               method: :get,
               href: "/invoices/#{invoice.id}/edit"
