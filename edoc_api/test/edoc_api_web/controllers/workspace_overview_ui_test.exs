@@ -260,7 +260,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Выставленные счета"
     assert body =~ "Оплаченные счета"
     assert body =~ "overflow-y-visible"
-    assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+    assert body =~ "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
     refute body =~ "Счета зависят от готовых данных компании и покупателя."
   end
 
@@ -376,7 +376,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Signed Buyer"
     assert body =~ "xl:grid-cols-[minmax(0,1fr)_15rem]"
     assert body =~ "overflow-y-visible"
-    assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+    assert body =~ "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
     assert body =~ ~r/>1<\/dd>/
   end
 
@@ -550,6 +550,11 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert signed_body =~ "Подписан - Қол қойылған"
     assert signed_body =~ "signed-watermark"
+    assert signed_body =~ "top: 45%;"
+    assert signed_body =~ "left: 50%;"
+    assert signed_body =~ "transform: translate(-50%, -50%) rotate(-24deg);"
+    refute signed_body =~ "border: 6px solid"
+    refute signed_body =~ "padding: 18px 28px"
   end
 
   test "act show exposes issue action for draft acts", %{conn: conn} do
@@ -706,9 +711,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> html_response(200)
 
     assert invoice_body =~
-             "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+             "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
 
-    assert invoice_body =~ "overflow-x-auto overflow-y-visible"
+    assert invoice_body =~ "overflow-x-auto"
 
     assert invoice_body =~ "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
     assert invoice_body =~ "data-row-actions-menu"
@@ -716,9 +721,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert invoice_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
 
     assert contract_body =~
-             "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+             "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
 
-    assert contract_body =~ "overflow-x-auto overflow-y-visible"
+    assert contract_body =~ "overflow-x-auto"
 
     assert contract_body =~
              "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
@@ -727,8 +732,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert contract_body =~ "fixed left-0 top-0 z-[80]"
     assert contract_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
 
-    assert act_body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
-    assert act_body =~ "overflow-x-auto overflow-y-visible"
+    assert act_body =~ "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
+    assert act_body =~ "overflow-x-auto"
 
     assert act_body =~ "relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right"
     assert act_body =~ "data-row-actions-menu"
@@ -830,6 +835,55 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       assert body =~ "workspace-table-row"
       assert body =~ ~s|html[data-theme="dark"] .workspace-table-row:hover|
     end
+  end
+
+  test "workspace index table shells clip to rounded corners like buyers", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    _contract = create_contract!(company, %{"status" => "draft", "number" => "C-ROUNDED-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Rounded Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    buyer_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    clipped_shell = "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
+
+    assert buyer_body =~ clipped_shell
+    assert invoice_body =~ clipped_shell
+    assert contract_body =~ clipped_shell
+    assert act_body =~ clipped_shell
   end
 
   test "invoice new uses workspace form chrome and keeps invoices nav active", %{conn: conn} do

@@ -451,15 +451,17 @@ defmodule EdocApiWeb.PdfTemplates do
           }
           .act-doc .signed-watermark {
             position: absolute;
-            top: 46%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-24deg);
-            font-size: 44px;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            color: rgba(5, 150, 105, 0.2);
-            border: 6px solid rgba(5, 150, 105, 0.18);
-            padding: 18px 28px;
+            top: 50%;
+            left: 0;
+            right: 0;
+            margin-top: -28px;
+            text-align: center;
+            -webkit-transform: rotate(-24deg);
+            transform: rotate(-24deg);
+            font-size: 56px;
+            font-weight: 700;
+            color: rgba(5, 150, 105, 0.18);
+            letter-spacing: 2px;
             text-transform: uppercase;
             pointer-events: none;
             white-space: nowrap;

@@ -78,6 +78,13 @@ defmodule EdocApi.PdfTest do
       html = PdfTemplates.act_html(act)
 
       assert html =~ "Подписан - Қол қойылған"
+      assert html =~ "top: 50%;"
+      assert html =~ "left: 0;"
+      assert html =~ "right: 0;"
+      assert html =~ "margin-top: -28px;"
+      assert html =~ "transform: rotate(-24deg);"
+      refute html =~ "border: 6px solid"
+      refute html =~ "padding: 18px 28px"
     end
   else
     @tag skip: "wkhtmltopdf is not available in PATH"

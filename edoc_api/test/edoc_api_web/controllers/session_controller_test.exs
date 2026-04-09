@@ -45,6 +45,68 @@ defmodule EdocApiWeb.SessionControllerTest do
              "Сессияның мерзімі аяқталды. Қайта кіріңіз."
   end
 
+  test "logout with invalid csrf token redirects to login with retry flash", %{conn: conn} do
+    user = create_user!()
+    Accounts.mark_email_verified!(user.id)
+
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> put_private(:plug_skip_csrf_protection, false)
+      |> post("/logout", %{
+        "_method" => "delete",
+        "_csrf_token" => "invalid-token"
+      })
+
+    assert redirected_to(conn) == "/login"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
+  end
+
+  test "logout POST without csrf token redirects to login with retry flash", %{conn: conn} do
+    user = create_user!()
+    Accounts.mark_email_verified!(user.id)
+
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> put_private(:plug_skip_csrf_protection, false)
+      |> post("/logout", %{})
+
+    assert redirected_to(conn) == "/login"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
+  end
+
+  test "logout with invalid csrf token redirects even when session was not fetched", %{conn: conn} do
+    conn =
+      conn
+      |> put_private(:plug_skip_csrf_protection, false)
+      |> post("/logout", %{
+        "_method" => "delete",
+        "_csrf_token" => "invalid-token"
+      })
+
+    assert redirected_to(conn) == "/login"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
+  end
+
+  test "logout with stale session cookie and invalid csrf token redirects to login", %{conn: conn} do
+    conn =
+      conn
+      |> Plug.Test.put_req_cookie("_edoc_api_key", "stale-invalid-cookie")
+      |> put_private(:plug_skip_csrf_protection, false)
+      |> post("/logout", %{
+        "_method" => "delete",
+        "_csrf_token" => "invalid-token"
+      })
+
+    assert redirected_to(conn) == "/login"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
+  end
+
   test "html login activates invited memberships", %{conn: conn} do
     owner = create_user!()
     Accounts.mark_email_verified!(owner.id)

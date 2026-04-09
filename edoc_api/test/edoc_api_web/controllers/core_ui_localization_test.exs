@@ -702,7 +702,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "min-w-44"
       assert body =~ "w-px whitespace-nowrap px-6 py-4 text-right"
       assert body =~ "overflow-y-visible"
-      assert body =~ "overflow-visible rounded-3xl border border-stone-200 bg-white shadow-sm"
+      assert body =~ "overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
       refute body =~ "text-blue-600 hover:text-blue-900 mr-4"
       assert body =~ ~s(href="/acts/#{act.id}")
       assert body =~ "data-row-actions-menu"

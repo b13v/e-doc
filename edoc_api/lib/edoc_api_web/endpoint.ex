@@ -54,29 +54,53 @@ defmodule EdocApiWeb.Endpoint do
   plug(EdocApiWeb.Router)
 
   def call(conn, opts) do
+    conn =
+      case conn do
+        %Plug.Conn{method: "POST", request_path: "/logout"} ->
+          %{conn | method: "DELETE"}
+
+        _ ->
+          conn
+      end
+
     super(conn, opts)
   rescue
     error in Plug.Conn.WrapperError ->
       case error.reason do
         %Plug.CSRFProtection.InvalidCSRFTokenError{} = csrf_error ->
-          handle_invalid_csrf(conn, csrf_error, error.stack)
+          handle_invalid_csrf(Map.get(error, :conn, conn), csrf_error, error.stack)
 
         _other ->
           reraise error, __STACKTRACE__
       end
 
     error in Plug.CSRFProtection.InvalidCSRFTokenError ->
-      handle_invalid_csrf(conn, error, __STACKTRACE__)
+      handle_invalid_csrf(Map.get(error, :conn, conn), error, __STACKTRACE__)
   end
 
   defp handle_invalid_csrf(%Plug.Conn{method: "POST", request_path: "/login"} = conn, _error, _stack) do
     conn
-    |> fetch_flash([])
+    |> prepare_invalid_csrf_redirect()
+    |> put_flash(:error, gettext("Your session expired. Please sign in again."))
+    |> redirect(to: "/login")
+  end
+
+  defp handle_invalid_csrf(%Plug.Conn{method: method, request_path: "/logout"} = conn, _error, _stack)
+       when method in ["POST", "DELETE"] do
+    conn
+    |> prepare_invalid_csrf_redirect()
+    |> Plug.Conn.configure_session(renew: true)
     |> put_flash(:error, gettext("Your session expired. Please sign in again."))
     |> redirect(to: "/login")
   end
 
   defp handle_invalid_csrf(_conn, error, stack) do
     reraise error, stack
+  end
+
+  defp prepare_invalid_csrf_redirect(conn) do
+    conn
+    |> Plug.Conn.fetch_session()
+    |> fetch_flash([])
   end
 end
