@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="company-settings-page space-y-6">
   <% bank_account_params = assigns[:bank_account_params] || %{} %>
   <% show_add_bank_form = assigns[:show_add_bank_form] || false %>
   <% subscription = assigns[:subscription] %>
@@ -20,38 +20,38 @@
 
   <.flash_error flash={@flash} />
 
-  <div class="bg-white shadow rounded-lg">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+  <div class="rounded-lg bg-white shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-800">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900"><%= gettext("Subscription") %></h1>
-        <p class="mt-1 text-sm text-gray-500">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= gettext("Subscription") %></h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
           <%= gettext("Control document limits and user seats for your company.") %>
         </p>
       </div>
-      <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700">
+      <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700 dark:bg-slate-800 dark:text-slate-200">
         <%= plan_label %>
       </span>
     </div>
 
     <div class="px-6 py-6 space-y-6">
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
-          <div class="text-sm font-medium text-stone-500"><%= gettext("Documents Used") %></div>
-          <div class="mt-2 text-2xl font-semibold text-stone-900">
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
+          <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Documents Used") %></div>
+          <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100">
             <%= subscription.documents_used %> / <%= subscription.document_limit %>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
-          <div class="text-sm font-medium text-stone-500"><%= gettext("Users") %></div>
-          <div class="mt-2 text-2xl font-semibold text-stone-900">
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
+          <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Users") %></div>
+          <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100">
             <%= subscription.seats_used %> / <%= subscription.seat_limit %>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
-          <div class="text-sm font-medium text-stone-500"><%= gettext("Billing Period") %></div>
-          <div class="mt-2 text-sm font-medium text-stone-900">
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
+          <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Billing Period") %></div>
+          <div class="mt-2 text-sm font-medium text-gray-900 dark:text-slate-100">
             <%= Calendar.strftime(subscription.period_start, "%d.%m.%Y") %>
             -
             <%= Calendar.strftime(subscription.period_end, "%d.%m.%Y") %>
@@ -79,8 +79,8 @@
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Plan") %></label>
-            <select name="subscription[plan]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Plan") %></label>
+            <select name="subscription[plan]" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               <option value="starter" selected={subscription.plan == "starter"}><%= gettext("Starter") %></option>
               <option value="basic" selected={subscription.plan == "basic"}><%= gettext("Basic") %></option>
             </select>
@@ -91,22 +91,22 @@
           </button>
         </form>
       <% else %>
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
+        <div class="company-member-warning rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
           <%= gettext("Only the owner or an admin can manage the tariff and team members.") %>
         </div>
       <% end %>
     </div>
   </div>
 
-  <div class="bg-white shadow rounded-lg">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+  <div class="rounded-lg bg-white shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-800">
       <div>
-        <h2 class="text-2xl font-bold text-gray-900"><%= gettext("Team") %></h2>
-        <p class="mt-1 text-sm text-gray-500">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= gettext("Team") %></h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
           <%= gettext("Invite teammates and manage who can work inside your company.") %>
         </p>
       </div>
-      <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700">
+      <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700 dark:bg-slate-800 dark:text-slate-200">
         <%= subscription.seats_used %> / <%= subscription.seat_limit %>
       </span>
     </div>
@@ -117,19 +117,19 @@
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Team Email") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Team Email") %></label>
             <input
               type="email"
               name="membership[email]"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border"
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               placeholder={gettext("teammate@example.com")}
               required
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Role") %></label>
-            <select name="membership[role]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Role") %></label>
+            <select name="membership[role]" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               <option value="member"><%= gettext("Member") %></option>
               <option value="admin"><%= gettext("Admin") %></option>
             </select>
@@ -140,47 +140,48 @@
           </button>
         </form>
       <% else %>
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
+        <div class="company-member-warning rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
           <%= gettext("Only the owner or an admin can manage the tariff and team members.") %>
         </div>
       <% end %>
 
       <%= if Enum.empty?(memberships) do %>
-        <p class="text-sm text-gray-500"><%= gettext("No team members yet.") %></p>
+        <p class="text-sm text-gray-500 dark:text-slate-400"><%= gettext("No team members yet.") %></p>
       <% else %>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+            <thead class="bg-gray-50 dark:bg-slate-800/80">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Email") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Role") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Status") %></th>
-                <th :if={can_manage_billing_and_team} class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"><%= gettext("Actions") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400"><%= gettext("Email") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400"><%= gettext("Role") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400"><%= gettext("Status") %></th>
+                <th :if={can_manage_billing_and_team} class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400"><%= gettext("Actions") %></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody class="divide-y divide-gray-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
               <%= for membership <- memberships do %>
                 <tr
                   data-membership-id={membership.id}
-                  class={
+                  class={[
+                    "company-team-row",
                     cond do
                       MapSet.member?(blocking_ids, membership.id) ->
-                        "bg-amber-50 hover:bg-amber-100"
+                        "bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/25 dark:hover:bg-amber-900/40"
 
                       membership.status == "pending_seat" ->
-                        "bg-amber-50 hover:bg-amber-100"
+                        "bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/25 dark:hover:bg-amber-900/40"
 
                       true ->
-                        "hover:bg-gray-50"
+                        "hover:bg-gray-50 dark:hover:bg-slate-800"
                     end
-                  }
+                  ]}
                 >
-                  <td class="px-6 py-4 text-sm text-gray-900"><%= membership_email(membership) %></td>
-                  <td class="px-6 py-4 text-sm text-gray-700"><%= membership_role_label(membership.role) %></td>
-                  <td class="px-6 py-4 text-sm text-gray-700">
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-slate-100"><%= membership_email(membership) %></td>
+                  <td class="px-6 py-4 text-sm text-gray-700 dark:text-slate-300"><%= membership_role_label(membership.role) %></td>
+                  <td class="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                     <div><%= membership_status_label(membership.status) %></div>
                     <%= if reason = membership_status_reason(membership.status) do %>
-                      <div class="mt-1 text-xs text-amber-700"><%= reason %></div>
+                      <div class="mt-1 text-xs text-amber-700 dark:text-amber-300"><%= reason %></div>
                     <% end %>
                   </td>
                   <td :if={can_manage_billing_and_team} class="w-px whitespace-nowrap px-6 py-4 text-right">
@@ -193,7 +194,7 @@
                         </button>
                       </form>
                     <% else %>
-                      <span class="text-sm text-gray-400"><%= gettext("Owner") %></span>
+                      <span class="text-sm text-gray-400 dark:text-slate-500"><%= gettext("Owner") %></span>
                     <% end %>
                   </td>
                 </tr>
@@ -206,10 +207,10 @@
   </div>
 
   <!-- Company Info Form -->
-  <div class="bg-white shadow rounded-lg">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900"><%= gettext("Company Information") %></h1>
-      <button onclick="toggleEdit('company-form')" class="text-blue-600 hover:text-blue-900 font-medium">
+  <div class="rounded-lg bg-white shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-800">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= gettext("Company Information") %></h1>
+      <button onclick="toggleEdit('company-form')" class="font-medium text-blue-600 hover:text-blue-900 dark:text-sky-400 dark:hover:text-sky-300">
         <%= gettext("Edit") %>
       </button>
     </div>
@@ -221,14 +222,14 @@
 
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
           <div class="sm:col-span-2">
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Company Name") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Company Name") %></label>
             <input type="text" name="company[name]" value={@company.name} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Legal Form") %></label>
-            <select name="company[legal_form]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Legal Form") %></label>
+            <select name="company[legal_form]" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               <option
                 value="Товарищество с ограниченной ответственностью"
                 selected={EdocApi.LegalForms.display(@company.legal_form) == "Товарищество с ограниченной ответственностью"}>
@@ -248,56 +249,56 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("BIN / IIN") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("BIN / IIN") %></label>
             <input type="text" name="company[bin_iin]" value={@company.bin_iin} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("City") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("City") %></label>
             <input type="text" name="company[city]" value={@company.city} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Email") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Email") %></label>
             <input type="email" name="company[email]" value={@company.email}
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div class="sm:col-span-2">
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Address") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Address") %></label>
             <input type="text" name="company[address]" value={@company.address} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Phone") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Phone") %></label>
             <input type="tel" name="company[phone]" value={@company.phone}
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Representative Name") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Representative Name") %></label>
             <input type="text" name="company[representative_name]" value={@company.representative_name} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Representative Title") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Representative Title") %></label>
             <input type="text" name="company[representative_title]" value={@company.representative_title} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
 
           <div class="sm:col-span-2">
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Basis") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Basis") %></label>
             <input type="text" name="company[basis]" value={@company.basis} required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
           </div>
         </div>
 
         <div class="mt-6 flex justify-end space-x-4">
-          <button type="button" onclick="toggleEdit('company-form')" class="px-4 py-2 text-gray-700 hover:text-gray-900">
+          <button type="button" onclick="toggleEdit('company-form')" class="px-4 py-2 text-gray-700 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100">
             <%= gettext("Cancel") %>
           </button>
           <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -309,62 +310,62 @@
       <!-- Display View (shown by default) -->
       <div id="company-display" class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Company Name") %></dt>
-          <dd class="mt-1 text-lg text-gray-900"><%= @company.name %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Company Name") %></dt>
+          <dd class="mt-1 text-lg text-gray-900 dark:text-slate-100"><%= @company.name %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Legal Form") %></dt>
-          <dd class="mt-1 text-gray-900"><%= EdocApi.LegalForms.display(@company.legal_form) %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Legal Form") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= EdocApi.LegalForms.display(@company.legal_form) %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("BIN / IIN") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.bin_iin %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("BIN / IIN") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.bin_iin %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("City") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.city %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("City") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.city %></dd>
         </div>
 
         <div class="sm:col-span-2">
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Address") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.address %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Address") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.address %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Email") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.email || "-" %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Email") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.email || "-" %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Phone") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.phone || "-" %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Phone") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.phone || "-" %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Representative") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.representative_name %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Representative") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.representative_name %></dd>
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Representative Title") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.representative_title %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Representative Title") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.representative_title %></dd>
         </div>
 
         <div class="sm:col-span-2">
-          <dt class="text-sm font-medium text-gray-500"><%= gettext("Basis") %></dt>
-          <dd class="mt-1 text-gray-900"><%= @company.basis %></dd>
+          <dt class="text-sm font-medium text-gray-500 dark:text-slate-400"><%= gettext("Basis") %></dt>
+          <dd class="mt-1 text-gray-900 dark:text-slate-100"><%= @company.basis %></dd>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Bank Accounts -->
-  <div class="bg-white shadow rounded-lg">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-      <h2 class="text-xl font-bold text-gray-900"><%= gettext("Bank Accounts") %></h2>
+  <div class="rounded-lg bg-white shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-800">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100"><%= gettext("Bank Accounts") %></h2>
       <button type="button" onclick="toggleEdit('add-bank-form')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
         + <%= gettext("Add Bank Account") %>
       </button>
@@ -372,23 +373,23 @@
 
     <div class="px-6 py-4">
       <!-- Add Bank Account Form -->
-      <form id="add-bank-form" action="/company/bank-accounts" method="post" class={if show_add_bank_form, do: "mb-6 p-4 bg-gray-50 rounded-lg", else: "hidden mb-6 p-4 bg-gray-50 rounded-lg"}>
+      <form id="add-bank-form" action="/company/bank-accounts" method="post" class={if show_add_bank_form, do: "mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800", else: "hidden mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800"}>
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
-        <h3 class="text-lg font-medium text-gray-900 mb-4"><%= gettext("Add New Bank Account") %></h3>
+        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-slate-100"><%= gettext("Add New Bank Account") %></h3>
 
         <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Label") %></label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Label") %></label>
             <input type="text" name="bank_account[label]" placeholder={gettext("e.g., Primary Account")}
               value={bank_account_params["label"]}
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("Bank") %> *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("Bank") %> *</label>
             <select name="bank_account[bank_id]" required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
               <option value=""><%= gettext("Select Bank...") %></option>
               <%= for bank <- @banks do %>
                 <option value={bank.id} selected={to_string(bank.id) == to_string(bank_account_params["bank_id"])}><%= bank.name %></option>
@@ -397,21 +398,21 @@
           </div>
 
           <div class="sm:col-span-2">
-            <label class="block text-sm font-medium text-gray-700"><%= gettext("IBAN") %> *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= gettext("IBAN") %> *</label>
             <input type="text" name="bank_account[iban]" value={bank_account_params["iban"]} placeholder={gettext("KZ...")} required minlength="20" maxlength="20" pattern="[A-Za-z0-9]{20}" title={gettext("IBAN must be exactly 20 alphanumeric characters")}
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border font-mono" />
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" />
           </div>
 
           <div>
             <label class="flex items-center">
-              <input type="checkbox" name="bank_account[is_default]" value="true" checked={bank_account_params["is_default"] in [true, "true", "on", "1"]} class="rounded border-gray-300" />
-              <span class="ml-2 text-sm text-gray-700"><%= gettext("Set as default") %></span>
+              <input type="checkbox" name="bank_account[is_default]" value="true" checked={bank_account_params["is_default"] in [true, "true", "on", "1"]} class="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-900" />
+              <span class="ml-2 text-sm text-gray-700 dark:text-slate-300"><%= gettext("Set as default") %></span>
             </label>
           </div>
         </div>
 
         <div class="mt-4 flex justify-end space-x-4">
-          <button type="button" onclick="toggleEdit('add-bank-form')" class="px-4 py-2 text-gray-700 hover:text-gray-900">
+          <button type="button" onclick="toggleEdit('add-bank-form')" class="px-4 py-2 text-gray-700 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100">
             <%= gettext("Cancel") %>
           </button>
           <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -422,34 +423,34 @@
 
       <!-- Bank Accounts List -->
       <%= if Enum.empty?(@bank_accounts) do %>
-        <p class="text-gray-500"><%= gettext(~s(No bank accounts configured. Click "+ Add Bank Account" to add one.)) %></p>
+        <p class="text-gray-500 dark:text-slate-400"><%= gettext(~s(No bank accounts configured. Click "+ Add Bank Account" to add one.)) %></p>
       <% else %>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+            <thead class="bg-gray-50 dark:bg-slate-800/80">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Label") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Bank") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("BIC") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("IBAN") %></th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Default") %></th>
-                <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"><%= gettext("Actions") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("Label") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("Bank") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("BIC") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("IBAN") %></th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("Default") %></th>
+                <th class="w-px whitespace-nowrap px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400"><%= gettext("Actions") %></th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
               <%= for account <- @bank_accounts do %>
                 <% actions = bank_account_row_actions(account, length(@bank_accounts)) %>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr class="company-bank-row hover:bg-gray-50 dark:hover:bg-slate-800">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                     <%= account.label %>
                     <%= if account.is_default do %>
                       <span class="ml-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"><%= gettext("Default") %></span>
                     <% end %>
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-900"><%= account.bank.name %></td>
-                  <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= account.bank.bic %></td>
-                  <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= account.iban %></td>
-                  <td class="px-6 py-4 text-sm text-gray-500">
+                  <td class="px-6 py-4 text-sm text-gray-900 dark:text-slate-100"><%= account.bank.name %></td>
+                  <td class="px-6 py-4 text-sm font-mono text-gray-500 dark:text-slate-400"><%= account.bank.bic %></td>
+                  <td class="px-6 py-4 text-sm font-mono text-gray-500 dark:text-slate-400"><%= account.iban %></td>
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
                     <%= if account.is_default do %>
                       <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -458,7 +459,7 @@
                       <form action={"/company/bank-accounts/#{account.id}/set-default"} method="post" class="inline">
                         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
                         <input type="hidden" name="_method" value="put" />
-                        <button type="submit" class="text-blue-600 hover:text-blue-900 text-sm underline">
+                        <button type="submit" class="text-sm text-blue-600 underline hover:text-blue-900 dark:text-sky-400 dark:hover:text-sky-300">
                           <%= gettext("Set as Default") %>
                         </button>
                       </form>

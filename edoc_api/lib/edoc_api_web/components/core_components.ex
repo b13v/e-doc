@@ -61,14 +61,14 @@ defmodule EdocApiWeb.CoreComponents do
 
   def workspace_support_panel(assigns) do
     ~H"""
-    <aside class={["rounded-2xl border border-slate-200 bg-slate-50/80 p-5", @class]}>
+    <aside class={["workspace-support-panel rounded-2xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-900/95", @class]}>
       <div class="space-y-1">
-        <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+        <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-100">
           <%= @heading %>
         </h2>
-        <p :if={@subtitle} class="text-sm leading-6 text-slate-600"><%= @subtitle %></p>
+        <p :if={@subtitle} class="text-sm leading-6 text-slate-600 dark:text-slate-200"><%= @subtitle %></p>
       </div>
-      <div class="mt-4 text-sm leading-6 text-slate-700">
+      <div class="mt-4 text-sm leading-6 text-slate-700 dark:text-slate-100 dark:text-slate-200">
         <%= render_slot(@inner_block) %>
       </div>
     </aside>

@@ -390,6 +390,7 @@ defmodule EdocApiWeb.CompaniesController do
         subscription: subscription,
         memberships: memberships,
         can_manage_billing_and_team: can_manage_billing_and_team,
+        current_section: :company,
         page_title: gettext("Company Settings")
       ]
       |> Keyword.merge(extra_assigns)

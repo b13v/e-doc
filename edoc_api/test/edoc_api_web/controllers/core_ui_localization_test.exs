@@ -791,14 +791,14 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert length(Regex.scan(~r/Добро пожаловать!/, body)) == 1
     end
 
-    test "company shell falls back to localized menu label in Russian", %{
+    test "company shell uses localized company label in Russian", %{
       conn: conn,
       user: user
     } do
       body = conn |> browser_conn(user, "ru") |> get("/company") |> html_response(200)
-      assert body =~ ~r/<summary[^>]*>.*?<span>\s*Меню\s*<\/span>/s
-      refute body =~ ~r/<a[^>]*aria-current="page"/
-      refute body =~ ~r/<summary[^>]*>.*?<span>\s*Компания\s*<\/span>/s
+      assert body =~ ~r/<summary[^>]*>.*?<span>\s*Компания\s*<\/span>/s
+      assert body =~ ~r/<a[^>]*href="\/company"[^>]*aria-current="page"/
+      refute body =~ ~r/<summary[^>]*>.*?<span>\s*Меню\s*<\/span>/s
     end
 
     test "company settings page localizes legal form label in Russian and Kazakh", %{

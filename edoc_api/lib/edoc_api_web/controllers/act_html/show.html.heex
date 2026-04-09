@@ -213,7 +213,7 @@
         </:primary_action>
       </.workspace_page_header>
 
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section class="workspace-document-shell rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="space-y-4">
           <div class="space-y-1">
             <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
@@ -221,7 +221,7 @@
 
           <div id={"act-send-panel-#{@act.id}"} class="send-panel"></div>
 
-          <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
+          <div class="workspace-document-preview-surface overflow-x-auto rounded-2xl border border-stone-200 bg-white p-6">
             <div class="act-doc relative min-w-[720px]">
   <%= if EdocApi.ActStatus.is_signed?(@act) do %>
     <div class="signed-watermark">Подписан - Қол қойылған</div>

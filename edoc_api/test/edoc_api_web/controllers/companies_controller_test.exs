@@ -220,7 +220,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Банк: не может быть пустым"
 
       assert body =~
-               ~S|<form id="add-bank-form" action="/company/bank-accounts" method="post" class="mb-6 p-4 bg-gray-50 rounded-lg">|
+               ~r/<form id="add-bank-form" action="\/company\/bank-accounts" method="post" class="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800">/
 
       assert body =~ ~S|name="bank_account[iban]" value="KZ|
     end
@@ -725,6 +725,13 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       refute body =~ ~s(name="membership[email]")
       refute body =~ ~s(name="membership[role]")
       refute body =~ ~S|<button type="submit" class="text-red-600 hover:text-red-800">|
+
+      assert length(
+               Regex.scan(
+                 ~r/class="[^"]*rounded-2xl[^"]*dark:text-slate-100[^"]*"[^>]*>\s*Только владелец или администратор может управлять тарифом и участниками команды\./u,
+                 body
+               )
+             ) >= 2
     end
 
     test "admin can still update subscription, invite, and remove members", %{

@@ -43,6 +43,180 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
   end
 
+  test "workspace navbar inactive links use black text classes", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*class="[^"]*dark:text-black[^"]*"/
+    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*class="[^"]*dark:text-black[^"]*"/
+    assert body =~ ~s|html[data-theme="dark"] .workspace-nav-link-inactive|
+  end
+
+  test "workspace locale and account controls include dark contrast fallback hooks", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ "workspace-locale-inactive"
+    assert body =~ "workspace-account-email"
+    assert body =~ "workspace-account-logout"
+    assert body =~ ~r/<a[^>]*class="[^"]*workspace-locale-inactive[^"]*"/
+    assert body =~ ~r/<p[^>]*class="[^"]*workspace-account-email[^"]*"/
+    assert body =~ ~r/<button[^>]*class="[^"]*workspace-account-logout[^"]*"/
+    assert body =~ ~s|html[data-theme="dark"] .workspace-locale-inactive|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-account-email|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-account-logout|
+  end
+
+  test "company page keeps company nav active with shared styling", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~
+             ~r/<a[^>]*href="\/company"[^>]*aria-current="page"[^>]*class="[^"]*rounded-full[^"]*bg-white[^"]*shadow-sm[^"]*ring-1[^"]*"/
+
+    refute body =~ ~r/<a[^>]*href="\/acts"[^>]*aria-current="page"/
+  end
+
+  test "company page renders theme bootstrap and workspace toggle controls", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ ~s(meta name="color-scheme" content="light dark")
+    assert body =~ ~s|window.localStorage.getItem('edoc_theme')|
+    assert body =~ ~s|window.toggleWorkspaceTheme = function()|
+    assert body =~ ~s|root.setAttribute('data-theme', theme)|
+    assert body =~ ~s|darkMode: "class"|
+    assert body =~ ~s(data-theme-toggle)
+    assert body =~ ~s(data-theme-label)
+    refute body =~ ">Theme<"
+    assert body =~ ~s|html[data-theme="dark"]|
+    assert body =~ ~s(data-workspace-theme-root)
+    assert body =~ "dark:bg-slate-950"
+    assert body =~ "dark:bg-slate-900"
+    refute body =~ ~s|html[data-theme="dark"] .text-gray-800|
+  end
+
+  test "company page includes dark-theme fallback palette overrides", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ ~s|html[data-theme="dark"] body[data-workspace-theme-root]|
+    assert body =~ ~s|html[data-theme="dark"] .bg-white|
+    assert body =~ ~s|html[data-theme="dark"] .text-gray-900|
+  end
+
+  test "company subscription summary cards use high-contrast text classes", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "en")
+      |> get("/company")
+      |> html_response(200)
+
+    assert length(Regex.scan(~r/text-sm font-medium text-gray-900 dark:text-slate-100/, body)) >=
+             3
+
+    assert body =~ ~s|mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100|
+    assert body =~ ~s|mt-2 text-sm font-medium text-gray-900 dark:text-slate-100|
+  end
+
+  test "company team rows include dark hover fallback styling hook", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ "company-team-row"
+    assert body =~ ~s|html[data-theme="dark"] .company-team-row:hover|
+  end
+
+  test "company bank account rows include dark hover fallback styling hook", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ "company-bank-row"
+    assert body =~ ~s|html[data-theme="dark"] .company-bank-row:hover|
+  end
+
+  test "company member warning blocks include dark high-contrast fallback styling hook", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    member_user = create_user!(%{"email" => "company-member-warning-ui@example.com"})
+    EdocApi.Accounts.mark_email_verified!(member_user.id)
+
+    {:ok, _invite} =
+      EdocApi.Monetization.invite_member(company.id, %{
+        "email" => member_user.email,
+        "role" => "member"
+      })
+
+    EdocApi.Monetization.accept_pending_memberships_for_user(member_user)
+
+    body =
+      conn
+      |> browser_conn(member_user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert length(Regex.scan(~r/company-member-warning/, body)) >= 2
+    assert body =~ ~s|html[data-theme="dark"] .company-member-warning|
+  end
+
   test "invoice overview renders corrected table columns and derived counts", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
@@ -270,6 +444,56 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "signed-watermark"
   end
 
+  test "document show pages include explicit dark-mode contrast hooks for preview surfaces", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    invoice = insert_invoice!(user, company, %{status: "draft", number: "INV-DARK-1"})
+    contract = create_contract!(company, %{"status" => "draft", "number" => "C-DARK-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body] do
+      assert body =~ ~s|html[data-theme="dark"] .workspace-document-preview-surface|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-document-shell|
+    end
+
+    assert invoice_body =~ ~r/<section[^>]*class="[^"]*workspace-document-shell[^"]*"/
+    assert invoice_body =~ ~r/<div[^>]*class="[^"]*workspace-document-preview-surface[^"]*"/
+    assert contract_body =~ ~r/<section[^>]*class="[^"]*workspace-document-shell[^"]*"/
+    assert contract_body =~ ~r/<div[^>]*class="[^"]*workspace-document-preview-surface[^"]*"/
+    assert act_body =~ ~r/<section[^>]*class="[^"]*workspace-document-shell[^"]*"/
+    assert act_body =~ ~r/<div[^>]*class="[^"]*workspace-document-preview-surface[^"]*"/
+  end
+
   test "acts overview exposes a signed action for issued acts", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
@@ -385,6 +609,65 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/>1<\/dd>/
   end
 
+  test "overview side panels use explicit dark-mode contrast classes across workspace index pages", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    _contract = create_contract!(company, %{"status" => "draft", "number" => "C-OV-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Overview Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _act} = create_act_for_overview(user, company, buyer, "draft")
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Buyer Overview",
+        "bin_iin" => "060215385673"
+      })
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    buyer_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body, buyer_body] do
+      assert body =~ "workspace-support-panel"
+      assert body =~ "dark:bg-slate-900/95"
+      assert body =~ "dark:border-slate-700"
+      assert body =~ "dark:text-slate-100"
+      assert body =~ "dark:text-slate-200"
+      assert body =~ ~s|html[data-theme="dark"] .workspace-support-panel|
+    end
+  end
+
   test "workspace overview tables render fixed upward action overlays above short tables", %{
     conn: conn
   } do
@@ -451,6 +734,102 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert act_body =~ "data-row-actions-menu"
     assert act_body =~ "fixed left-0 top-0 z-[80]"
     assert act_body =~ "ontoggle=\"window.positionWorkspaceRowActions"
+  end
+
+  test "workspace index table headings include explicit dark-mode contrast hooks", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    _contract = create_contract!(company, %{"status" => "draft", "number" => "C-HEAD-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Headings Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    buyer_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body, buyer_body] do
+      assert body =~ "workspace-table-head-surface"
+      assert body =~ "workspace-table-heading"
+      assert body =~ ~s|html[data-theme="dark"] .workspace-table-heading|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-table-head-surface|
+    end
+  end
+
+  test "workspace index table rows include shared dark-mode hover hook", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+    _contract = create_contract!(company, %{"status" => "draft", "number" => "C-HOVER-1"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Hover Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, _act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts")
+      |> html_response(200)
+
+    buyer_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/buyers")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body, buyer_body] do
+      assert body =~ "workspace-table-row"
+      assert body =~ ~s|html[data-theme="dark"] .workspace-table-row:hover|
+    end
   end
 
   test "invoice new uses workspace form chrome and keeps invoices nav active", %{conn: conn} do
@@ -973,17 +1352,32 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert act_menu =~ "text-sky-700"
     assert act_menu =~ "text-rose-700"
 
-    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
-    assert invoice_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+    assert invoice_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
 
-    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
-    assert contract_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+    assert invoice_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
 
-    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
-    assert act_body =~ "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+    assert invoice_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+
+    assert contract_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+
+    assert contract_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+
+    assert contract_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+
+    assert act_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+
+    assert act_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+
+    assert act_body =~
+             "send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
   end
 
   test "send submenu items keep action-menu hover treatment while using semantic text colors",

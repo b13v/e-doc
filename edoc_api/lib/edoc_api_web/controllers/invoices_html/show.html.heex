@@ -1,4 +1,4 @@
-<div class="bg-white shadow rounded-lg">
+<div class="workspace-document-shell bg-white shadow rounded-lg">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h1 class="text-2xl font-bold text-gray-900"><%= gettext("Invoice %{number}", number: @invoice.number) %></h1>
     <div class="flex space-x-4">
@@ -29,7 +29,7 @@
     </div>
   </div>
 
-  <div class="px-6 py-6">
+  <div class="workspace-document-preview-surface px-6 py-6">
     <div class="grid grid-cols-2 gap-6">
       <div>
         <h3 class="text-sm font-medium text-gray-500"><%= gettext("Seller") %></h3>
