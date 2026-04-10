@@ -24,6 +24,40 @@ defmodule EdocApi.Accounts do
     |> Errors.from_changeset()
   end
 
+  def update_user_profile(user_id, attrs) when is_binary(user_id) and is_map(attrs) do
+    case Repo.get(User, user_id) do
+      nil ->
+        {:error, :not_found}
+
+      %User{} = user ->
+        user
+        |> User.profile_changeset(attrs)
+        |> Repo.update()
+        |> Errors.from_changeset()
+    end
+  end
+
+  def update_user_password(user_id, current_password, new_password, password_confirmation)
+      when is_binary(user_id) do
+    case Repo.get(User, user_id) do
+      nil ->
+        {:error, :not_found}
+
+      %User{} = user ->
+        if Argon2.verify_pass(current_password || "", user.password_hash) do
+          user
+          |> User.password_update_changeset(%{
+            "password" => new_password,
+            "password_confirmation" => password_confirmation
+          })
+          |> Repo.update()
+          |> Errors.from_changeset()
+        else
+          Errors.business_rule(:invalid_current_password)
+        end
+    end
+  end
+
   def authenticate_user(email, password) do
     case get_user_by_email(email) do
       nil ->

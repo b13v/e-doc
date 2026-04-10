@@ -75,7 +75,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "workspace-account-email"
     assert body =~ "workspace-account-logout"
     assert body =~ ~r/<a[^>]*class="[^"]*workspace-locale-inactive[^"]*"/
-    assert body =~ ~r/<p[^>]*class="[^"]*workspace-account-email[^"]*"/
+    assert body =~ ~r/<a[^>]*class="[^"]*workspace-account-email[^"]*"/
     assert body =~ ~r/<button[^>]*class="[^"]*workspace-account-logout[^"]*"/
     assert body =~ ~s|html[data-theme="dark"] .workspace-locale-inactive|
     assert body =~ ~s|html[data-theme="dark"] .workspace-account-email|
@@ -614,9 +614,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/>1<\/dd>/
   end
 
-  test "overview side panels use explicit dark-mode contrast classes across workspace index pages", %{
-    conn: conn
-  } do
+  test "overview side panels use explicit dark-mode contrast classes across workspace index pages",
+       %{
+         conn: conn
+       } do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)

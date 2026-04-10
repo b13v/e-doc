@@ -2487,3 +2487,45 @@ msgstr "Приглашение принято, но свободных мест 
 
 msgid "Only the owner or an admin can manage the tariff and team members."
 msgstr "Только владелец или администратор может управлять тарифом и участниками команды."
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Manage your profile and password."
+msgstr "Управляйте профилем и паролем."
+
+msgid "Profile"
+msgstr "Профиль"
+
+msgid "First name"
+msgstr "Имя"
+
+msgid "Surname"
+msgstr "Фамилия"
+
+msgid "Save profile"
+msgstr "Сохранить профиль"
+
+msgid "Current password"
+msgstr "Текущий пароль"
+
+msgid "New password"
+msgstr "Новый пароль"
+
+msgid "Confirm new password"
+msgstr "Подтвердите новый пароль"
+
+msgid "Save password"
+msgstr "Сохранить пароль"
+
+msgid "Profile updated successfully."
+msgstr "Профиль успешно обновлен."
+
+msgid "Password updated successfully."
+msgstr "Пароль успешно обновлен."
+
+msgid "Current password is incorrect."
+msgstr "Текущий пароль указан неверно."
+
+msgid "User not found."
+msgstr "Пользователь не найден."

@@ -182,7 +182,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/signup_html/new.html.heex:27
 #, elixir-autogen
 msgid "Password"
-msgstr ""
+msgstr "Password"
 
 #: lib/edoc_api_web/controllers/signup_controller.ex:21
 #, elixir-autogen
@@ -2303,3 +2303,45 @@ msgstr "Pending seat"
 
 msgid "Invite accepted, but no seats are available right now."
 msgstr "Invite accepted, but no seats are available right now."
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Manage your profile and password."
+msgstr "Manage your profile and password."
+
+msgid "Profile"
+msgstr "Profile"
+
+msgid "First name"
+msgstr "First name"
+
+msgid "Surname"
+msgstr "Surname"
+
+msgid "Save profile"
+msgstr "Save profile"
+
+msgid "Current password"
+msgstr "Current password"
+
+msgid "New password"
+msgstr "New password"
+
+msgid "Confirm new password"
+msgstr "Confirm new password"
+
+msgid "Save password"
+msgstr "Save password"
+
+msgid "Profile updated successfully."
+msgstr "Profile updated successfully."
+
+msgid "Password updated successfully."
+msgstr "Password updated successfully."
+
+msgid "Current password is incorrect."
+msgstr "Current password is incorrect."
+
+msgid "User not found."
+msgstr "User not found."

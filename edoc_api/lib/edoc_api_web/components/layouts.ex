@@ -493,7 +493,9 @@ defmodule EdocApiWeb.Layouts do
           <div class="mt-3 border-t border-stone-200 pt-3 dark:border-slate-700">
             <%= locale_switcher(assigns) %>
             <%= theme_switcher(assigns, :mobile) %>
-            <p class="workspace-account-email mt-3 text-sm text-black dark:text-black"><%= @current_user.email %></p>
+            <a href="/settings" class="workspace-account-email mt-3 block text-sm text-black dark:text-black">
+              <%= @current_user.email %>
+            </a>
             <form method="post" action="/logout" class="mt-3">
               <input type="hidden" name="_method" value="delete" />
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -512,7 +514,7 @@ defmodule EdocApiWeb.Layouts do
         <%= locale_switcher(assigns) %>
         <%= theme_switcher(assigns, :desktop) %>
         <div class="flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200 dark:bg-slate-900/85 dark:ring-slate-700">
-          <span class="workspace-account-email text-black dark:text-black"><%= @current_user.email %></span>
+          <a href="/settings" class="workspace-account-email text-black dark:text-black"><%= @current_user.email %></a>
           <form method="post" action="/logout">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />

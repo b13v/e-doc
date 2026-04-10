@@ -2487,3 +2487,45 @@ msgstr "Шақыру қабылданды, бірақ қазір бос орын
 
 msgid "Only the owner or an admin can manage the tariff and team members."
 msgstr "Тек иесі немесе әкімші тариф пен команда мүшелерін басқара алады."
+
+msgid "Settings"
+msgstr "Баптаулар"
+
+msgid "Manage your profile and password."
+msgstr "Профиль мен құпиясөзді басқарыңыз."
+
+msgid "Profile"
+msgstr "Профиль"
+
+msgid "First name"
+msgstr "Аты"
+
+msgid "Surname"
+msgstr "Тегі"
+
+msgid "Save profile"
+msgstr "Профильді сақтау"
+
+msgid "Current password"
+msgstr "Ағымдағы құпиясөз"
+
+msgid "New password"
+msgstr "Жаңа құпиясөз"
+
+msgid "Confirm new password"
+msgstr "Жаңа құпиясөзді растаңыз"
+
+msgid "Save password"
+msgstr "Құпиясөзді сақтау"
+
+msgid "Profile updated successfully."
+msgstr "Профиль сәтті жаңартылды."
+
+msgid "Password updated successfully."
+msgstr "Құпиясөз сәтті жаңартылды."
+
+msgid "Current password is incorrect."
+msgstr "Ағымдағы құпиясөз қате."
+
+msgid "User not found."
+msgstr "Пайдаланушы табылмады."
