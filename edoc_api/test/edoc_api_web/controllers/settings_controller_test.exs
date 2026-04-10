@@ -46,6 +46,15 @@ defmodule EdocApiWeb.SettingsControllerTest do
     updated = Accounts.get_user(user.id)
     assert updated.first_name == "Ivan"
     assert updated.last_name == "Petrov"
+
+    redirected =
+      conn
+      |> recycle()
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> get("/settings")
+
+    body = html_response(redirected, 200)
+    assert body =~ "Профиль успешно обновлен."
   end
 
   test "PUT /settings/password rejects invalid current password", %{conn: conn, user: user} do
@@ -65,6 +74,15 @@ defmodule EdocApiWeb.SettingsControllerTest do
     assert redirected_to(conn) == "/settings"
     assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Текущий пароль указан неверно."
     assert Accounts.get_user(user.id).password_hash == old_hash
+
+    redirected =
+      conn
+      |> recycle()
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> get("/settings")
+
+    body = html_response(redirected, 200)
+    assert body =~ "Текущий пароль указан неверно."
   end
 
   test "PUT /settings/password updates password hash with valid current password", %{
