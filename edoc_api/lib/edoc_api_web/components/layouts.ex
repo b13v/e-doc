@@ -239,12 +239,35 @@ defmodule EdocApiWeb.Layouts do
           .htmx-request .htmx-indicator { display: inline; }
           .htmx-request.htmx-indicator { display: inline; }
 
+          :root {
+            --workspace-surface-bg: #ffffff;
+            --workspace-surface-border: #e7e5e4;
+            --workspace-text-strong: #0f172a;
+            --workspace-text-muted: #475569;
+            --workspace-support-bg: #f8fafc;
+            --workspace-support-border: #e2e8f0;
+            --workspace-table-head-bg: #f8fafc;
+            --workspace-table-heading: #475569;
+            --workspace-table-row-hover: #f5f5f4;
+            --workspace-shell-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+          }
+
           html[data-theme="light"] {
             color-scheme: light;
           }
 
           html[data-theme="dark"] {
             color-scheme: dark;
+            --workspace-surface-bg: #0f172a;
+            --workspace-surface-border: #334155;
+            --workspace-text-strong: #f8fafc;
+            --workspace-text-muted: #cbd5e1;
+            --workspace-support-bg: #1e293b;
+            --workspace-support-border: #475569;
+            --workspace-table-head-bg: #0f172a;
+            --workspace-table-heading: #f8fafc;
+            --workspace-table-row-hover: #1e293b;
+            --workspace-shell-shadow: 0 1px 2px rgba(2, 6, 23, 0.5);
           }
 
           html[data-theme="dark"] body[data-workspace-theme-root] {
@@ -319,39 +342,57 @@ defmodule EdocApiWeb.Layouts do
           }
 
           html[data-theme="dark"] .workspace-support-panel {
-            background-color: #1e293b;
-            border-color: #475569;
-            color: #f8fafc;
+            background-color: var(--workspace-support-bg);
+            border-color: var(--workspace-support-border);
+            color: var(--workspace-text-strong);
           }
 
           html[data-theme="dark"] .workspace-support-panel h2 {
-            color: #f8fafc;
+            color: var(--workspace-text-strong);
           }
 
           html[data-theme="dark"] .workspace-support-panel p,
           html[data-theme="dark"] .workspace-support-panel dt {
-            color: #e2e8f0;
+            color: var(--workspace-text-muted);
           }
 
           html[data-theme="dark"] .workspace-support-panel dd {
-            color: #f8fafc;
+            color: var(--workspace-text-strong);
+          }
+
+          .workspace-table-shell {
+            border-color: var(--workspace-surface-border);
+            background-color: var(--workspace-surface-bg);
+            box-shadow: var(--workspace-shell-shadow);
+            border-radius: 1.5rem;
+          }
+
+          .workspace-table-head-surface {
+            background-color: var(--workspace-table-head-bg);
           }
 
           html[data-theme="dark"] .workspace-table-head-surface {
-            background-color: #0f172a;
+            background-color: var(--workspace-table-head-bg);
+          }
+
+          .workspace-table-heading {
+            color: var(--workspace-table-heading);
           }
 
           html[data-theme="dark"] .workspace-table-heading {
-            color: #f8fafc;
+            color: var(--workspace-table-heading);
           }
 
-          html[data-theme="dark"] .workspace-table-row {
-            transition: background-color 150ms ease, color 150ms ease;
+          .workspace-table-row { transition: background-color 150ms ease, color 150ms ease; }
+
+          .workspace-table-row:hover {
+            background-color: var(--workspace-table-row-hover);
+            color: var(--workspace-text-strong);
           }
 
           html[data-theme="dark"] .workspace-table-row:hover {
-            background-color: #1e293b;
-            color: #f8fafc;
+            background-color: var(--workspace-table-row-hover);
+            color: var(--workspace-text-strong);
           }
 
           html[data-theme="dark"] .workspace-document-shell {
@@ -390,6 +431,94 @@ defmodule EdocApiWeb.Layouts do
             color: inherit;
           }
 
+          .workspace-detail-shell {
+            border-color: var(--workspace-surface-border);
+            background-color: var(--workspace-surface-bg);
+            color: var(--workspace-text-strong);
+          }
+
+          .workspace-preview-title {
+            color: var(--workspace-text-strong);
+          }
+
+          .workspace-overview-term {
+            color: var(--workspace-text-muted);
+          }
+
+          .workspace-overview-value {
+            color: var(--workspace-text-strong);
+          }
+
+          .workspace-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.25rem;
+            transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+          }
+
+          .workspace-action-btn-secondary {
+            border: 1px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #334155;
+          }
+
+          .workspace-action-btn-secondary:hover {
+            border-color: #94a3b8;
+            color: #0f172a;
+          }
+
+          .workspace-action-btn-success {
+            background-color: #059669;
+            color: #ffffff;
+          }
+
+          .workspace-action-btn-success:hover {
+            background-color: #047857;
+          }
+
+          .workspace-action-btn-primary {
+            background-color: #0284c7;
+            color: #ffffff;
+          }
+
+          .workspace-action-btn-primary:hover {
+            background-color: #0369a1;
+          }
+
+          .workspace-action-btn-danger {
+            background-color: #be123c;
+            color: #ffffff;
+          }
+
+          .workspace-action-btn-danger:hover {
+            background-color: #9f1239;
+          }
+
+          .workspace-action-btn-neutral {
+            background-color: #0f172a;
+            color: #ffffff;
+          }
+
+          .workspace-action-btn-neutral:hover {
+            background-color: #1e293b;
+          }
+
+          html[data-theme="dark"] .workspace-action-btn-secondary {
+            border-color: #475569;
+            background-color: #0f172a;
+            color: #e2e8f0;
+          }
+
+          html[data-theme="dark"] .workspace-action-btn-secondary:hover {
+            border-color: #64748b;
+            color: #f8fafc;
+          }
+
           html[data-theme="dark"] .company-team-row {
             transition: background-color 150ms ease, color 150ms ease;
           }
@@ -412,6 +541,37 @@ defmodule EdocApiWeb.Layouts do
             background-color: #0f172a;
             border-color: #334155;
             color: #f8fafc;
+          }
+
+          .workspace-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+          .workspace-form select,
+          .workspace-form textarea {
+            transition:
+              background-color 150ms ease,
+              border-color 150ms ease,
+              box-shadow 150ms ease,
+              color 150ms ease;
+          }
+
+          .workspace-form label {
+            color: #334155;
+          }
+
+          html[data-theme="dark"] .workspace-form label {
+            color: #e2e8f0;
+          }
+
+          html[data-theme="dark"] .workspace-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+          html[data-theme="dark"] .workspace-form select,
+          html[data-theme="dark"] .workspace-form textarea {
+            background-color: #0f172a;
+            border-color: #475569;
+            color: #f8fafc;
+          }
+
+          html[data-theme="dark"] .workspace-form input::placeholder,
+          html[data-theme="dark"] .workspace-form textarea::placeholder {
+            color: #94a3b8;
           }
         </style>
       </head>

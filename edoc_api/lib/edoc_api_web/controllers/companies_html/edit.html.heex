@@ -75,7 +75,7 @@
       <% end %>
 
       <%= if can_manage_billing_and_team do %>
-        <form action="/company/subscription" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+        <form action="/company/subscription" method="post" class="workspace-form grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
           <div>
@@ -113,7 +113,7 @@
 
     <div class="px-6 py-6 space-y-6">
       <%= if can_manage_billing_and_team do %>
-        <form action="/company/memberships" method="post" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+        <form action="/company/memberships" method="post" class="workspace-form grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
           <div>
@@ -216,7 +216,7 @@
     </div>
 
     <div class="px-6 py-6">
-      <form id="company-form" action="/company" method="post" class="hidden">
+      <form id="company-form" action="/company" method="post" class="workspace-form hidden">
         <input type="hidden" name="_method" value="put" />
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 

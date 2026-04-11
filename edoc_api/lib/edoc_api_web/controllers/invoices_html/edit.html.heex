@@ -17,7 +17,7 @@
         </:primary_action>
       </.workspace_page_header>
 
-      <form action={"/invoices/#{@invoice.id}"} method="post" class="space-y-6">
+      <form action={"/invoices/#{@invoice.id}"} method="post" class="workspace-form space-y-6">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
         <input type="hidden" name="_method" value="put" />
 

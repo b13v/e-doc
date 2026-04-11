@@ -147,14 +147,14 @@
         <:primary_action>
           <a
             href="/invoices"
-            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+            class="workspace-action-btn workspace-action-btn-secondary"
           >
             <%= gettext("Back to Invoices") %>
           </a>
           <%= if @invoice.status == "draft" do %>
             <a
               href={"/invoices/#{@invoice.id}/edit"}
-              class="inline-flex items-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              class="workspace-action-btn workspace-action-btn-success"
             >
               <%= gettext("Edit") %>
             </a>
@@ -167,7 +167,7 @@
                 <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
                 <button
                   type="submit"
-                  class="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+                  class="workspace-action-btn workspace-action-btn-primary"
                 >
                   <%= gettext("Issue") %>
                 </button>
@@ -183,7 +183,7 @@
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
               <button
                 type="submit"
-                class="inline-flex items-center rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                class="workspace-action-btn workspace-action-btn-success"
               >
                 <%= gettext("Mark as Paid") %>
               </button>
@@ -195,7 +195,7 @@
               data-send-menu-root
               ontoggle="window.positionWorkspaceSendMenu && window.positionWorkspaceSendMenu(this)"
             >
-              <summary class="inline-flex cursor-pointer list-none items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
+              <summary class="workspace-action-btn workspace-action-btn-neutral cursor-pointer list-none">
                 <%= gettext("Send") %>
               </summary>
               <div
@@ -225,17 +225,17 @@
           <a
             href={"/invoices/#{@invoice.id}/pdf"}
             target="_blank"
-            class="inline-flex items-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+            class="workspace-action-btn workspace-action-btn-danger"
           >
             <%= gettext("Download PDF") %>
           </a>
         </:primary_action>
       </.workspace_page_header>
 
-      <section class="workspace-document-shell rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section class="workspace-document-shell workspace-detail-shell rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="space-y-4">
           <div class="space-y-1">
-            <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
+            <h2 class="workspace-preview-title text-lg font-semibold text-slate-900"><%= gettext("Document preview") %></h2>
           </div>
 
           <div id={"invoice-send-panel-#{@invoice.id}"} class="send-panel"></div>
@@ -404,26 +404,26 @@
     <.workspace_support_panel heading={gettext("Overview")}>
       <dl class="space-y-4">
         <div>
-          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Status") %></dt>
+          <dt class="workspace-overview-term text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Status") %></dt>
           <dd class="mt-2"><%= EdocApiWeb.CoreComponents.status_badge(@invoice.status) %></dd>
         </div>
         <div>
-          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Buyer") %></dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900"><%= @invoice.buyer_name %></dd>
+          <dt class="workspace-overview-term text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Buyer") %></dt>
+          <dd class="workspace-overview-value mt-1 text-sm font-medium text-slate-900"><%= @invoice.buyer_name %></dd>
         </div>
         <div>
-          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Issue date") %></dt>
-          <dd class="mt-1 text-sm text-slate-900"><%= EdocApiWeb.ContractHTML.fmt_date(@invoice.issue_date) %></dd>
+          <dt class="workspace-overview-term text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Issue date") %></dt>
+          <dd class="workspace-overview-value mt-1 text-sm text-slate-900"><%= EdocApiWeb.ContractHTML.fmt_date(@invoice.issue_date) %></dd>
         </div>
         <div>
-          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Total") %></dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900">
+          <dt class="workspace-overview-term text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Total") %></dt>
+          <dd class="workspace-overview-value mt-1 text-sm font-medium text-slate-900">
             <%= EdocApiWeb.CoreComponents.format_money(@invoice, :total) %>
           </dd>
         </div>
         <div>
-          <dt class="text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Contract") %></dt>
-          <dd class="mt-1 text-sm text-slate-900">
+          <dt class="workspace-overview-term text-xs uppercase tracking-[0.16em] text-slate-500"><%= gettext("Contract") %></dt>
+          <dd class="workspace-overview-value mt-1 text-sm text-slate-900">
             <%= if contract, do: contract.number, else: "—" %>
           </dd>
         </div>

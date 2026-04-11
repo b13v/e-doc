@@ -179,14 +179,14 @@ defmodule EdocApiWeb.CoreComponents do
     <div :if={@show_info || @show_error} class={["mb-4 space-y-3", @class]}>
       <div
         :if={@show_info}
-        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-sm"
+        class="workspace-flash-info rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-sm dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-100"
       >
         <p class="text-sm font-medium leading-6"><%= @flash["info"] %></p>
       </div>
 
       <div
         :if={@show_error}
-        class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900 shadow-sm"
+        class="workspace-flash-error rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900 shadow-sm dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100"
       >
         <p class="text-sm font-medium leading-6"><%= @flash["error"] %></p>
       </div>
@@ -286,7 +286,10 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :default, :link))
+      |> assign(
+        :classes,
+        action[:class] || row_action_classes(tone, action[:tone] || :default, :link)
+      )
 
     ~H"""
     <a href={@action.href} class={@classes}><%= @action.label %></a>
@@ -297,7 +300,10 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :default, :form))
+      |> assign(
+        :classes,
+        action[:class] || row_action_classes(tone, action[:tone] || :default, :form)
+      )
       |> assign(:form_method, form_method(action))
       |> assign(:csrf_token, csrf_token(action))
       |> assign(:method_override, method_override(action))
@@ -321,7 +327,10 @@ defmodule EdocApiWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:action, action)
-      |> assign(:classes, action[:class] || row_action_classes(tone, action[:tone] || :danger, :htmx_delete))
+      |> assign(
+        :classes,
+        action[:class] || row_action_classes(tone, action[:tone] || :danger, :htmx_delete)
+      )
 
     ~H"""
     <button

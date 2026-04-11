@@ -12,13 +12,7 @@
 
   <div class={["grid gap-6", if(@contracts != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
     <div class="space-y-4">
-      <%= if @flash["info"] do %>
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <%= @flash["info"] %>
-        </div>
-      <% end %>
-
-      <.flash_error flash={@flash} include_info={false} />
+      <.flash_error flash={@flash} />
 
       <%= if Enum.empty?(@contracts) do %>
         <.workspace_empty_state
@@ -28,7 +22,7 @@
           action_href="/contracts/new"
         />
       <% else %>
-        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm workspace-table-shell">
           <div class="overflow-x-auto overflow-y-visible">
             <table class="min-w-full divide-y divide-stone-200">
               <thead class="workspace-table-head-surface bg-stone-50/80">
