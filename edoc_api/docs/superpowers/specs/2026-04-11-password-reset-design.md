@@ -79,7 +79,7 @@ Public contracts:
 
 Responsibilities:
 - Normalize email
-- Apply user/email cooldown policy
+- Apply per-user cooldown policy for existing accounts
 - Generate secure token, store hash only
 - Invalidate previous active reset tokens for the user
 - Send localized reset email (if user exists)
@@ -177,7 +177,7 @@ Create failing tests first, then implement:
 Controller/UI tests:
 - `/login` includes forgot-password link.
 - `/password/forgot` renders.
-- Submit known email returns neutral success and enqueues email.
+- Submit known email returns neutral success and attempts email delivery.
 - Submit unknown email returns same neutral success and does not reveal account state.
 - `/password/reset` with valid token renders reset form.
 - `/password/reset` invalid/expired/used token is rejected with localized message.
