@@ -1513,6 +1513,62 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute act_body =~ ".act-doc .send-menu-item:hover"
   end
 
+  test "actions and send submenus include explicit dark-mode contrast classes", %{conn: conn} do
+    buyer_actions =
+      EdocApiWeb.BuyerHTML.row_actions(%{
+        id: Ecto.UUID.generate()
+      })
+
+    buyer_menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: buyer_actions.primary,
+        secondary: buyer_actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
+    assert buyer_menu =~ "dark:text-sky-300"
+    assert buyer_menu =~ "dark:text-emerald-300"
+    assert buyer_menu =~ "dark:text-rose-300"
+    assert buyer_menu =~ "dark:hover:bg-slate-700"
+
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    invoice = insert_invoice!(user, company, %{status: "issued", number: "INV-2026-2"})
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    assert invoice_body =~ "dark:text-slate-100"
+    assert invoice_body =~ "dark:text-emerald-300"
+    assert invoice_body =~ "dark:text-sky-300"
+    assert invoice_body =~ "dark:hover:bg-slate-700"
+  end
+
+  test "layout includes dark-mode overlay submenu contrast hooks", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    assert body =~ ~s|html[data-theme="dark"] [data-row-actions-menu],|
+    assert body =~ ~s|html[data-theme="dark"] [data-send-menu-panel] {|
+    assert body =~ "background-color: #334155;"
+    assert body =~ "border-color: #94a3b8;"
+    assert body =~ ~s|html[data-theme="dark"] [data-row-actions-menu] .text-sky-700,|
+    assert body =~ ~s|html[data-theme="dark"] [data-send-menu-panel] .text-sky-700 {|
+    assert body =~ "color: #7dd3fc;"
+  end
+
   test "workspace_row_actions get forms preserve method semantics without CSRF fields",
        _context do
     html =

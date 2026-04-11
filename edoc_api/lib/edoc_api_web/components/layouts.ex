@@ -360,6 +360,39 @@ defmodule EdocApiWeb.Layouts do
             color: var(--workspace-text-strong);
           }
 
+          html[data-theme="dark"] [data-row-actions-menu],
+          html[data-theme="dark"] [data-send-menu-panel] {
+            background-color: #334155;
+            border-color: #94a3b8;
+          }
+
+          html[data-theme="dark"] [data-row-actions-menu] .text-sky-700,
+          html[data-theme="dark"] [data-send-menu-panel] .text-sky-700 {
+            color: #7dd3fc;
+          }
+
+          html[data-theme="dark"] [data-row-actions-menu] .text-emerald-700,
+          html[data-theme="dark"] [data-send-menu-panel] .text-emerald-700 {
+            color: #86efac;
+          }
+
+          html[data-theme="dark"] [data-row-actions-menu] .text-rose-700,
+          html[data-theme="dark"] [data-send-menu-panel] .text-rose-700 {
+            color: #fda4af;
+          }
+
+          html[data-theme="dark"] [data-row-actions-menu] .text-slate-700,
+          html[data-theme="dark"] [data-send-menu-panel] .text-slate-700 {
+            color: #e2e8f0;
+          }
+
+          html[data-theme="dark"] [data-row-actions-menu] :is(button, a):hover,
+          html[data-theme="dark"] [data-send-menu-panel] :is(button, a):hover,
+          html[data-theme="dark"] [data-row-actions-menu] .send-menu-item:hover,
+          html[data-theme="dark"] [data-send-menu-panel] .send-menu-item:hover {
+            background-color: #475569;
+          }
+
           .workspace-table-shell {
             border-color: var(--workspace-surface-border);
             background-color: var(--workspace-surface-bg);

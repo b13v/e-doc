@@ -361,19 +361,19 @@ defmodule EdocApiWeb.CoreComponents do
 
   defp row_action_classes(:mobile, :info, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900 dark:text-sky-300 dark:hover:bg-slate-700 dark:hover:text-sky-200"
 
   defp row_action_classes(:mobile, :success, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-slate-700 dark:hover:text-emerald-200"
 
   defp row_action_classes(:mobile, :danger, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-slate-100 hover:text-rose-900"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-slate-100 hover:text-rose-900 dark:text-rose-300 dark:hover:bg-slate-700 dark:hover:text-rose-200"
 
   defp row_action_classes(:mobile, _semantic_tone, _transport),
     do:
-      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+      "block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-50"
 
   defp row_action_form_classes(:mobile), do: "block"
   defp row_action_form_classes(_tone), do: "inline"

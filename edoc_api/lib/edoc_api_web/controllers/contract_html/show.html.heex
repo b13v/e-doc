@@ -136,7 +136,7 @@
               >
                 <button
                   type="button"
-                  class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                  class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-50"
                   hx-get={"/documents/contract/#{c.id}/send/email"}
                   hx-target={"#contract-send-panel-#{c.id}"}
                   hx-swap="innerHTML"
@@ -145,11 +145,11 @@
                 </button>
                 <form action={"/documents/contract/#{c.id}/share/whatsapp"} method="post" class="send-menu-form">
                   <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900"><%= gettext("WhatsApp") %></button>
+                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-slate-100 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-slate-700 dark:hover:text-emerald-200"><%= gettext("WhatsApp") %></button>
                 </form>
                 <form action={"/documents/contract/#{c.id}/share/telegram"} method="post" class="send-menu-form">
                   <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900"><%= gettext("Telegram") %></button>
+                  <button type="submit" class="send-menu-item block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-slate-100 hover:text-sky-900 dark:text-sky-300 dark:hover:bg-slate-700 dark:hover:text-sky-200"><%= gettext("Telegram") %></button>
                 </form>
               </div>
             </details>
