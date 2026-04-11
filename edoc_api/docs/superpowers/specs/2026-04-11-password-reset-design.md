@@ -71,6 +71,12 @@ Add `EdocApi.PasswordReset` context module:
 - `verify_token(token)`
 - `reset_password(token, password, confirmation)`
 
+Public contracts:
+- `request_reset/3 :: {:ok, :accepted}`  
+  Notes: always returns `{:ok, :accepted}` to callers for neutral UX, regardless of account existence, throttling, or mailer failure.
+- `verify_token/1 :: {:ok, %{user_id: binary(), token_hash: binary()}} | {:error, :invalid_or_expired}`
+- `reset_password/3 :: {:ok, :password_reset} | {:error, :invalid_or_expired} | {:error, :validation_failed, Ecto.Changeset.t()}`
+
 Responsibilities:
 - Normalize email
 - Apply user/email cooldown policy
@@ -80,7 +86,7 @@ Responsibilities:
 - Enforce one-time token consumption
 - Enforce expiry (24h)
 - Update password through `Accounts`/`User` changeset path
-- Revoke refresh tokens after successful reset
+- Revoke refresh tokens after successful reset via `Accounts.revoke_all_refresh_tokens/1` (new function)
 
 ## 4.3 Persistence
 
@@ -96,7 +102,7 @@ Indexes:
 - unique index on `token_hash`
 - index on `user_id`
 - index on `expires_at`
-- optional partial index for active tokens (`used_at IS NULL`) if needed
+- partial index on active tokens (`used_at IS NULL`) for efficient active-token checks
 
 ## 4.4 Email integration
 
@@ -104,6 +110,11 @@ Extend `EdocApi.EmailSender`:
 - `send_password_reset_email(recipient_email, token, locale \\ "ru")`
 - RU/KK subject/body variants with Edocly branding
 - Reset URL: `${BASE_URL}/password/reset?token=...`
+
+Delivery semantics:
+- Keep current app pattern: synchronous `Mailer.deliver/1` inside request path.
+- If delivery fails, log error with structured context; do not change caller response (still neutral success).
+- No background queue in this slice (keeps scope aligned with current architecture).
 
 ## 5. Security Model
 
@@ -116,11 +127,19 @@ Extend `EdocApi.EmailSender`:
 - Password update path preserves existing password policy.
 - Revoke refresh tokens upon successful password reset.
 
+Concurrency rule:
+- `reset_password/3` must consume token with single-winner semantics inside DB transaction:
+  - `UPDATE ... SET used_at = now() WHERE token_hash = ? AND used_at IS NULL AND expires_at > now()`
+  - exactly one updated row is required; otherwise return `{:error, :invalid_or_expired}`.
+
 ## 6. Rate Limiting
 
 Two layers:
-1. HTTP/IP layer: plug-level rate limit for `POST /password/forgot`.
-2. Domain layer: per-account/email resend cooldown and hourly cap.
+1. HTTP/IP layer: plug-level rate limit for `POST /password/forgot` at `5 requests / 60 seconds` (subject `:ip`).
+2. Domain layer (for existing users only, keyed by `user_id`):
+  - cooldown: minimum `60 seconds` between reset-email sends
+  - cap: maximum `3 reset emails / rolling 1 hour`
+  - counters derived from `password_reset_tokens.inserted_at` (no new counter store)
 
 Behavior:
 - Response to caller stays neutral even when throttled.
@@ -135,7 +154,9 @@ All new strings localized in RU/KK:
 - Token invalid/expired messages
 - Email subjects and bodies
 
-No English fallback in user-visible RU/KK paths except existing global fallback behavior.
+Localization policy for this slice:
+- Every new reset-flow key must have RU and KK translations in repo.
+- Missing key fallback technically follows gettext defaults, but tests will treat missing RU/KK keys as failure for reset-flow strings.
 
 ## 8. Error Handling
 
@@ -179,4 +200,3 @@ Localization tests:
 - Backward compatible: adds new routes and table; existing login path unchanged.
 - No migration impact on existing auth tables.
 - Feature can be released behind standard deploy/migrate flow.
-
