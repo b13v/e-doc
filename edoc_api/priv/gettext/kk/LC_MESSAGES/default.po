@@ -168,7 +168,7 @@ msgstr "Растау токені жоқ."
 #: lib/edoc_api_web/controllers/auth_controller.ex:217
 #, elixir-autogen
 msgid "Please wait before requesting another verification email."
-msgstr "Қайта растау хатын сұрамас бұрын сәл күтіңіз."
+msgstr "Растау хатын қайта сұрамас бұрын сәл күтіңіз."
 
 #: lib/edoc_api_web/endpoint.ex:75
 #, elixir-autogen

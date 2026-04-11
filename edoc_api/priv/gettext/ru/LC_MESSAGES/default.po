@@ -168,7 +168,7 @@ msgstr "Отсутствует токен подтверждения."
 #: lib/edoc_api_web/controllers/auth_controller.ex:217
 #, elixir-autogen
 msgid "Please wait before requesting another verification email."
-msgstr "Пожалуйста, подождите, прежде чем запрашивать письмо для подтверждения повторно."
+msgstr "Подождите немного перед повторной отправкой письма для подтверждения."
 
 #: lib/edoc_api_web/endpoint.ex:75
 #, elixir-autogen

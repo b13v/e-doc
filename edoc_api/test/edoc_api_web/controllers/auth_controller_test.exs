@@ -220,6 +220,44 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert verification_email_count(user.email) == 1
     end
 
+    test "returns localized rate-limit message in russian locale" do
+      user = create_user!()
+
+      _conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "ru"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "ru"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+
+      assert json_response(conn, 200)["message"] ==
+               "Подождите немного перед повторной отправкой письма для подтверждения."
+    end
+
+    test "returns localized rate-limit message in kazakh locale" do
+      user = create_user!()
+
+      _conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "kk"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "kk"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+
+      assert json_response(conn, 200)["message"] ==
+               "Растау хатын қайта сұрамас бұрын сәл күтіңіз."
+    end
+
     test "returns generic response for unknown email and rate limits repeated requests" do
       conn =
         build_conn()

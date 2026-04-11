@@ -149,7 +149,12 @@ defmodule EdocApiWeb.AuthController do
     end
   end
 
-  def resend_verification(conn, %{"email" => email}) do
+  def resend_verification(conn, %{"email" => email} = params) do
+    conn = fetch_session(conn)
+    locale = request_locale(conn, params)
+
+    Gettext.put_locale(EdocApiWeb.Gettext, locale)
+
     case Accounts.get_user_by_email(email) do
       nil ->
         resend_verification_response(conn, :generic)
@@ -254,5 +259,12 @@ defmodule EdocApiWeb.AuthController do
       _ ->
         :noop
     end
+  end
+
+  defp request_locale(conn, params) do
+    Map.get(params, "locale") ||
+      conn.assigns[:locale] ||
+      get_session(conn, :locale) ||
+      "en"
   end
 end
