@@ -163,7 +163,7 @@ defmodule EdocApiWeb.AuthController do
         if user.verified_at != nil do
           resend_verification_response(conn, :generic)
         else
-          case resend_verification_availability(user.id) do
+          case EmailVerification.can_resend?(user.id) do
             {:ok, :allowed} ->
               with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
                    {:ok, _} <- EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
@@ -223,22 +223,6 @@ defmodule EdocApiWeb.AuthController do
 
   defp resend_verification_message(:generic),
     do: gettext("If the email is eligible, verification instructions will be sent shortly.")
-
-  defp resend_verification_availability(user_id) do
-    one_hour_ago = DateTime.add(DateTime.utc_now(), -3600, :second)
-
-    case EmailVerification.get_latest_token(user_id) do
-      {:ok, token} ->
-        if DateTime.compare(token.inserted_at, one_hour_ago) == :gt do
-          {:error, :rate_limited}
-        else
-          EmailVerification.can_resend?(user_id)
-        end
-
-      _ ->
-        EmailVerification.can_resend?(user_id)
-    end
-  end
 
   defp resend_verification_for_existing_unverified_account(%{"email" => email}, locale)
        when is_binary(email) do

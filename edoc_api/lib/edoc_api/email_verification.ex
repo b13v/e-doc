@@ -138,19 +138,38 @@ defmodule EdocApi.EmailVerification do
   Returns {:ok, :allowed} or {:error, :rate_limited}.
   """
   def can_resend?(user_id) when is_binary(user_id) do
-    one_hour_ago = DateTime.utc_now() |> DateTime.add(-3600, :second)
+    now = DateTime.utc_now()
+    one_minute_ago = DateTime.add(now, -60, :second)
+    one_hour_ago = DateTime.add(now, -3600, :second)
 
-    count =
+    latest_token_query =
       from(t in EmailVerificationToken,
         where: t.user_id == ^user_id,
-        where: t.inserted_at > ^one_hour_ago
+        order_by: [desc: t.inserted_at],
+        limit: 1
       )
-      |> Repo.aggregate(:count, :id)
 
-    if count < @max_resend_per_hour do
-      {:ok, :allowed}
-    else
-      {:error, :rate_limited}
+    case Repo.one(latest_token_query) do
+      %EmailVerificationToken{inserted_at: inserted_at} ->
+        if DateTime.compare(inserted_at, one_minute_ago) == :gt do
+          {:error, :rate_limited}
+        else
+          count =
+            from(t in EmailVerificationToken,
+              where: t.user_id == ^user_id,
+              where: t.inserted_at > ^one_hour_ago
+            )
+            |> Repo.aggregate(:count, :id)
+
+          if count < @max_resend_per_hour do
+            {:ok, :allowed}
+          else
+            {:error, :rate_limited}
+          end
+        end
+
+      _ ->
+        {:ok, :allowed}
     end
   end
 

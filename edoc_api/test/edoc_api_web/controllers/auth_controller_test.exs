@@ -1,10 +1,14 @@
 defmodule EdocApiWeb.AuthControllerTest do
   use EdocApiWeb.ConnCase, async: false
 
+  import Ecto.Query
   import EdocApi.TestFixtures
   alias EdocApi.Accounts
   alias EdocApi.Companies
+  alias EdocApi.EmailVerification
+  alias EdocApi.EmailVerificationToken
   alias EdocApi.Monetization
+  alias EdocApi.Repo
   alias EdocApiWeb.Plugs.RateLimit
 
   setup do
@@ -218,6 +222,62 @@ defmodule EdocApiWeb.AuthControllerTest do
                "Please wait before requesting another verification email."
 
       assert verification_email_count(user.email) == 1
+    end
+
+    test "allows resend after 60 seconds when under hourly cap" do
+      user = create_user!()
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["status"] == "sent"
+
+      {:ok, latest} = EmailVerification.get_latest_token(user.id)
+      cooldown_passed_at = DateTime.add(DateTime.utc_now(), -61, :second) |> DateTime.truncate(:second)
+
+      from(t in EmailVerificationToken, where: t.id == ^latest.id)
+      |> Repo.update_all(set: [inserted_at: cooldown_passed_at])
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["status"] == "sent"
+      assert verification_email_count(user.email) == 2
+    end
+
+    test "blocks fourth resend within one hour" do
+      user = create_user!()
+
+      for age_in_seconds <- [180, 150, 120] do
+        conn =
+          build_conn()
+          |> Plug.Test.init_test_session(%{locale: "en"})
+          |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+        assert conn.status == 200
+        assert json_response(conn, 200)["status"] == "sent"
+
+        {:ok, latest} = EmailVerification.get_latest_token(user.id)
+        backdated_at = DateTime.add(DateTime.utc_now(), -age_in_seconds, :second) |> DateTime.truncate(:second)
+
+        from(t in EmailVerificationToken, where: t.id == ^latest.id)
+        |> Repo.update_all(set: [inserted_at: backdated_at])
+      end
+
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{locale: "en"})
+        |> post("/v1/auth/resend-verification", %{"email" => user.email})
+
+      assert conn.status == 200
+      assert json_response(conn, 200)["status"] == "rate_limited"
+      assert verification_email_count(user.email) == 3
     end
 
     test "returns localized rate-limit message in russian locale" do
