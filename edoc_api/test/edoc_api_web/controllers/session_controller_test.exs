@@ -22,6 +22,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       })
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
@@ -41,6 +42,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       })
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              "Сессияның мерзімі аяқталды. Қайта кіріңіз."
   end
@@ -59,6 +61,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       })
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
@@ -74,6 +77,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       |> post("/logout", %{})
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
@@ -88,6 +92,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       })
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
@@ -103,6 +108,7 @@ defmodule EdocApiWeb.SessionControllerTest do
       })
 
     assert redirected_to(conn) == "/login"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
@@ -158,15 +164,23 @@ defmodule EdocApiWeb.SessionControllerTest do
 
     assert body =~ ~s(data-theme-toggle)
     assert body =~ ~s(data-theme-label)
+    assert body =~ ~s(href="/password/forgot")
     assert body =~ ~s|window.toggleWorkspaceTheme = function()|
     assert body =~ ~s(>Dark<)
     refute body =~ ~s(data-theme-lock="light")
-    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
-    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+
+    assert body =~
+             ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+
+    assert body =~
+             ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+
     assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
     assert body =~ ~s(workspace-locale-inactive)
     assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
-    refute body =~ ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
+
+    refute body =~
+             ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
   end
 
   defp extract_csrf_token(body) do

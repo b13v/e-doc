@@ -7,6 +7,7 @@ defmodule EdocApi.EmailSender do
 
   @verification_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
   @invite_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
+  @password_reset_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
 
   def send_verification_email(recipient_email, token, locale \\ "ru") do
     verification_url = verification_link(token)
@@ -64,9 +65,39 @@ defmodule EdocApi.EmailSender do
     end
   end
 
+  def send_password_reset_email(recipient_email, token, locale \\ "ru") do
+    locale = normalize_password_reset_locale(locale)
+    reset_url = password_reset_link(token)
+
+    email =
+      new()
+      |> to({nil, recipient_email})
+      |> from(@password_reset_from)
+      |> subject(password_reset_subject(locale))
+      |> html_body(password_reset_html_body(locale, reset_url))
+      |> text_body(password_reset_text_body(locale, reset_url))
+
+    Logger.info("[EMAIL] Sending password reset email to: #{recipient_email}")
+
+    case Mailer.deliver(email) do
+      {:ok, receipt} ->
+        Logger.info("[EMAIL] Password reset email delivered successfully: #{inspect(receipt)}")
+        {:ok, receipt}
+
+      {:error, reason} ->
+        Logger.error("[EMAIL] Password reset email failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
   defp verification_link(token) do
     base_url = System.get_env("BASE_URL") || "http://localhost:4000"
     "#{base_url}/verify-email?token=#{token}"
+  end
+
+  defp password_reset_link(token) do
+    base_url = System.get_env("BASE_URL") || "http://localhost:4000"
+    "#{base_url}/password/reset?token=#{token}"
   end
 
   defp verification_subject("kk"), do: "Edocly email-ды растаңыз"
@@ -147,6 +178,9 @@ defmodule EdocApi.EmailSender do
   defp normalize_invite_locale("kk"), do: "kk"
   defp normalize_invite_locale(_), do: "ru"
 
+  defp normalize_password_reset_locale("kk"), do: "kk"
+  defp normalize_password_reset_locale(_), do: "ru"
+
   defp invite_subject("kk", company_name), do: "Шақыру • Edocly • #{company_name}"
   defp invite_subject("ru", company_name), do: "Приглашение • Edocly • #{company_name}"
 
@@ -215,4 +249,62 @@ defmodule EdocApi.EmailSender do
   defp invite_sender_line("ru", nil), do: ""
   defp invite_sender_line("ru", ""), do: ""
   defp invite_sender_line("ru", inviter_email), do: "Пригласил: #{inviter_email}"
+
+  defp password_reset_subject("kk"), do: "Edocly құпиясөзін жаңартыңыз"
+  defp password_reset_subject(_), do: "Сбросьте пароль в Edocly"
+
+  defp password_reset_text_body("kk", reset_url) do
+    """
+    Құпиясөзіңізді жаңарту үшін төмендегі сілтемеге өтіңіз:
+    #{reset_url}
+
+    Сілтеме 24 сағат бойы жарамды.
+
+    Егер сіз құпиясөзді жаңартуды сұрамаған болсаңыз, бұл хатты елемеңіз.
+    """
+  end
+
+  defp password_reset_text_body(_, reset_url) do
+    """
+    Чтобы сбросить пароль, перейдите по ссылке ниже:
+    #{reset_url}
+
+    Ссылка действует 24 часа.
+
+    Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.
+    """
+  end
+
+  defp password_reset_html_body(locale, reset_url) do
+    {headline, lead, expiry_line, outro} =
+      case locale do
+        "kk" ->
+          {
+            "Құпиясөзіңізді жаңартыңыз",
+            "Құпиясөзіңізді жаңарту үшін төмендегі сілтемеге өтіңіз:",
+            "Сілтеме 24 сағат бойы жарамды.",
+            "Егер сіз құпиясөзді жаңартуды сұрамаған болсаңыз, бұл хатты елемеңіз."
+          }
+
+        _ ->
+          {
+            "Сбросьте пароль в Edocly",
+            "Чтобы сбросить пароль, перейдите по ссылке ниже:",
+            "Ссылка действует 24 часа.",
+            "Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо."
+          }
+      end
+
+    """
+    <html>
+      <body>
+        <h1>#{headline}</h1>
+        <p>#{lead}</p>
+        <p><a href="#{reset_url}">#{reset_url}</a></p>
+        <p>#{expiry_line}</p>
+        <p>#{outro}</p>
+      </body>
+    </html>
+    """
+  end
 end

@@ -169,6 +169,18 @@ defmodule EdocApi.Accounts do
     :ok
   end
 
+  def revoke_all_refresh_tokens(user_id) when is_binary(user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(rt in RefreshToken,
+      where: rt.user_id == ^user_id,
+      where: is_nil(rt.revoked_at)
+    )
+    |> Repo.update_all(set: [revoked_at: now, updated_at: now])
+
+    :ok
+  end
+
   @doc """
   Returns user with verified status check.
   """

@@ -2529,3 +2529,42 @@ msgstr "Текущий пароль указан неверно."
 
 msgid "User not found."
 msgstr "Пользователь не найден."
+
+msgid "Forgot Password"
+msgstr "Восстановление пароля"
+
+msgid "Forgot your password?"
+msgstr "Забыли пароль?"
+
+msgid "We'll send a reset link if the address is registered."
+msgstr "Мы отправим ссылку для сброса, если адрес зарегистрирован."
+
+msgid "Send reset link"
+msgstr "Отправить ссылку для сброса"
+
+msgid "Back to sign in"
+msgstr "Назад ко входу"
+
+msgid "Reset Password"
+msgstr "Сброс пароля"
+
+msgid "Reset link expired"
+msgstr "Ссылка для сброса истекла"
+
+msgid "This password reset link is invalid or expired."
+msgstr "Эта ссылка для сброса пароля недействительна или устарела."
+
+msgid "Go back to password recovery"
+msgstr "Вернуться к восстановлению пароля"
+
+msgid "Reset your password"
+msgstr "Сбросьте пароль"
+
+msgid "Reset password"
+msgstr "Сбросить пароль"
+
+msgid "If an account exists for that email, password reset instructions will be sent shortly."
+msgstr "Если аккаунт с таким адресом существует, инструкции по сбросу пароля будут отправлены в ближайшее время."
+
+msgid "Your password has been reset. Please sign in again."
+msgstr "Ваш пароль был сброшен. Пожалуйста, войдите снова."

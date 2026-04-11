@@ -2529,3 +2529,42 @@ msgstr "Ағымдағы құпиясөз қате."
 
 msgid "User not found."
 msgstr "Пайдаланушы табылмады."
+
+msgid "Forgot Password"
+msgstr "Құпиясөзді қалпына келтіру"
+
+msgid "Forgot your password?"
+msgstr "Құпиясөзіңізді ұмыттыңыз ба?"
+
+msgid "We'll send a reset link if the address is registered."
+msgstr "Егер мекенжай тіркелген болса, біз қалпына келтіру сілтемесін жібереміз."
+
+msgid "Send reset link"
+msgstr "Қалпына келтіру сілтемесін жіберу"
+
+msgid "Back to sign in"
+msgstr "Кіру бетіне оралу"
+
+msgid "Reset Password"
+msgstr "Құпиясөзді қалпына келтіру"
+
+msgid "Reset link expired"
+msgstr "Қалпына келтіру сілтемесінің мерзімі аяқталды"
+
+msgid "This password reset link is invalid or expired."
+msgstr "Бұл құпиясөзді қалпына келтіру сілтемесі жарамсыз немесе мерзімі өткен."
+
+msgid "Go back to password recovery"
+msgstr "Құпиясөзді қалпына келтіруге оралу"
+
+msgid "Reset your password"
+msgstr "Құпиясөзіңізді жаңартыңыз"
+
+msgid "Reset password"
+msgstr "Құпиясөзді қалпына келтіру"
+
+msgid "If an account exists for that email, password reset instructions will be sent shortly."
+msgstr "Егер мұндай мекенжаймен тіркелгі болса, құпиясөзді қалпына келтіру нұсқаулығы жақын арада жіберіледі."
+
+msgid "Your password has been reset. Please sign in again."
+msgstr "Құпиясөзіңіз қалпына келтірілді. Қайта кіріңіз."

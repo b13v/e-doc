@@ -48,6 +48,15 @@ defmodule EdocApiWeb.Router do
     )
   end
 
+  pipeline :password_reset_rate_limit do
+    plug(EdocApiWeb.Plugs.RateLimit,
+      limit: 5,
+      window_seconds: 60,
+      action: "password_reset_request",
+      subject: :ip
+    )
+  end
+
   pipeline :api_mutation_rate_limit do
     plug(EdocApiWeb.Plugs.RateLimit,
       limit: 30,
@@ -195,12 +204,26 @@ defmodule EdocApiWeb.Router do
     get("/locale/:locale", LocaleController, :update)
     get("/about", AboutController, :index)
     get("/login", SessionController, :new)
+    get("/password/forgot", PasswordResetController, :new)
+    get("/password/reset", PasswordResetController, :edit)
     post("/login", SessionController, :create)
     delete("/logout", SessionController, :delete)
     get("/signup", SignupController, :new)
     post("/signup", SignupController, :create)
     get("/verify-email-pending", VerificationPendingController, :new)
     get("/verify-email", VerificationPendingController, :verify)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through([:browser, :password_reset_rate_limit])
+
+    post("/password/forgot", PasswordResetController, :create)
+  end
+
+  scope "/", EdocApiWeb do
+    pipe_through(:browser)
+
+    post("/password/reset", PasswordResetController, :update)
   end
 
   scope "/", EdocApiWeb do
