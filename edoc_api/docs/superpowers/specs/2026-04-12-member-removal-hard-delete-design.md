@@ -1,4 +1,4 @@
-# Member Removal Hard-Delete Design
+# Member Removal Company-Scoped Offboarding Design
 
 Date: 2026-04-12
 Status: Draft for review
@@ -19,17 +19,18 @@ This is not aligned with required business logic.
 When a member is removed by owner/admin:
 
 1. Reassign all removed member records to company owner.
-2. Fully delete removed member account from database.
-3. Ensure future login with old credentials fails; user must sign up again.
+2. Remove user access to this company completely.
+3. Delete user account globally only when they have no remaining company associations.
 
 ## 3. Scope
 
 In scope:
 
 - Company member removal flow (`/company/memberships/:id`).
-- Domain-level reassignment + hard delete for active member users.
+- Domain-level reassignment + company-scoped offboarding for active members.
+- Conditional hard delete logic when user has no other companies.
 - Error mapping and localized flash behavior.
-- Test coverage for reassignment + deletion + auth outcome.
+- Test coverage for reassignment + offboarding + conditional auth outcome.
 
 Out of scope:
 
@@ -39,13 +40,13 @@ Out of scope:
 
 ## 4. Chosen Approach
 
-Chosen approach: transactional **reassign -> hard delete**.
+Chosen approach: transactional **company-scoped reassignment -> membership removal -> conditional hard delete**.
 
 Decision details:
 
 - Reassignment target: **company owner** (not actor admin).
 - For members with user-linked records, all affected records are moved to owner first.
-- User is then hard-deleted from `users`.
+- User is hard-deleted only if they have no other active/invited/pending memberships and are not owner in any company record.
 - Operation is all-or-nothing in one DB transaction.
 
 ## 5. Functional Behavior
@@ -58,14 +59,15 @@ When owner/admin removes an active member:
 2. Validate target is not last owner (existing guard).
 3. Resolve active owner membership for same company.
 4. Reassign target user-owned records in same company to owner.
-5. Remove membership association and hard-delete user.
-6. Return success flash.
+5. Remove membership association from current company.
+6. Conditionally hard-delete user only if no remaining cross-company ties.
+7. Return success flash.
 
 Lifecycle contract for active-member path:
 
-- membership row is not preserved as tombstone;
-- membership row is deleted via FK cascade when user is hard-deleted;
+- membership row is not preserved as tombstone for removed target company access;
 - `remove_membership/2` success return contract is explicit and branch-specific:
+  - active user company-only offboard branch: `{:ok, %{mode: :company_removed_only, membership_id: ..., user_id: ...}}`
   - active user hard-delete branch: `{:ok, %{mode: :hard_deleted_user, membership_id: ..., user_id: ...}}`
   - invited/pending soft-remove branch: `{:ok, %{mode: :soft_removed_membership, membership_id: ...}}`
 
@@ -78,10 +80,10 @@ If target membership has no `user_id` (invited/pending), keep existing behavior:
 
 ### 5.3 Post-removal auth behavior
 
-After successful hard delete:
+After removal:
 
-- old credentials cannot authenticate;
-- user must perform signup to access system again.
+- if `mode == :hard_deleted_user`: old credentials cannot authenticate; signup is required;
+- if `mode == :company_removed_only`: user can still log in for their other companies, but has no access to removed company.
 
 ## 6. Architecture and Boundaries
 
@@ -95,10 +97,11 @@ After successful hard delete:
 
 - New service function (name finalized in implementation plan) to:
   - receive `company_id`, `member_user_id`, `owner_user_id`;
-  - run transaction for reassignment + user delete;
+  - run transaction for reassignment + company offboarding + conditional user delete;
   - return domain errors on failure.
 - Precondition checks include:
-  - target user is not owner of any company record in `companies.user_id` (otherwise reject with dedicated business error to avoid FK failure).
+  - target user is not the last owner for the target company (existing guard);
+  - cross-company ownership/membership is used to choose `company_removed_only` vs `hard_deleted_user`, not as a hard error.
 
 ### Unit C: Controller flash mapping
 
@@ -107,25 +110,30 @@ After successful hard delete:
 
 ## 7. Data Reassignment Rules
 
-Reassignment is explicit and table-by-table:
+Reassignment for target company is explicit and table-by-table:
 
 - `invoices.user_id` (company-scoped) -> reassign to owner.
 - `acts.user_id` (company-scoped) -> reassign to owner.
-- `generated_documents.user_id` (user-scoped cache/history) -> reassign to owner.
 
-Delete-by-cascade (no reassignment needed):
+`generated_documents` policy:
+
+- do not reassign globally to owner (avoids cross-company ownership mixing).
+- if account is hard-deleted, delete all `generated_documents` rows for that user explicitly in same transaction.
+- if account is kept (`company_removed_only`), generated documents are left unchanged in this slice (cleanup can be a follow-up).
+
+Delete behavior for user-linked auth/session rows:
 
 - `refresh_tokens` (`on_delete: :delete_all`).
 - `email_verification_tokens` (`on_delete: :delete_all`).
 - `password_reset_tokens` (`on_delete: :delete_all`).
-- `tenant_memberships.user_id` (`on_delete: :delete_all`).
+- `tenant_memberships.user_id` (`on_delete: :delete_all`) on hard-delete branch only.
 
 Reassignment filter for company-bound tables:
 
 - `company_id == target_company_id`;
 - `user_id == removed_member_user_id`.
 
-User-scoped tables without `company_id` (like `generated_documents`) are reassigned by `user_id` only.
+User-scoped tables without `company_id` are never reassigned to another user in this design.
 
 Invoice uniqueness collision policy:
 
@@ -139,7 +147,6 @@ Potential new errors from domain layer:
 - `:owner_not_found` — no active owner available for reassignment.
 - `:reassign_failed` — reassignment/update/delete failure.
 - `:invoice_number_conflict_on_reassign` — invoice number uniqueness conflict during ownership transfer.
-- `:member_owns_company` — target user owns a company and cannot be hard-deleted safely.
 - existing: `:not_found`, `:last_owner`.
 
 Transaction semantics:
@@ -149,7 +156,7 @@ Transaction semantics:
 
 Controller mapping contract:
 
-- `:owner_not_found`, `:reassign_failed`, `:invoice_number_conflict_on_reassign`, `:member_owns_company`
+- `:owner_not_found`, `:reassign_failed`, `:invoice_number_conflict_on_reassign`
   - redirect to `/company`
   - localized error flash (RU/KK) with actionable text;
   - no internal technical details in UI.
@@ -161,11 +168,13 @@ Required tests:
 1. Monetization/domain:
    - active member with invoices/acts is removed;
    - invoices/acts reassigned to owner;
-   - user row deleted.
+   - branch result is `:company_removed_only` when user still belongs elsewhere.
+   - branch result is `:hard_deleted_user` when user has no remaining company ties.
 2. Regression:
    - invited member removal still works.
    - last owner protection unchanged.
    - soft-remove branch returns `mode: :soft_removed_membership`.
+   - company-only branch returns `mode: :company_removed_only`.
    - hard-delete branch returns `mode: :hard_deleted_user`.
 3. Controller:
    - owner/admin removal success path unchanged UX-wise.
@@ -174,17 +183,19 @@ Required tests:
      - `:owner_not_found`
      - `:reassign_failed`
      - `:invoice_number_conflict_on_reassign`
-     - `:member_owns_company`
 4. Auth outcome:
-   - removed user login fails (`invalid_credentials` path).
+   - hard-deleted removed user login fails (`invalid_credentials` path).
+   - company-only removed user still logs in and does not regain removed company access.
 5. Conflict path:
    - invoice number collision during reassignment returns explicit error and preserves all rows unchanged.
 
 ## 10. Acceptance Criteria
 
-1. Removing active member fully deletes that user account.
-2. Member historical documents are reassigned to owner, not lost.
-3. Removed member cannot log in with previous credentials.
-4. Removing invited member remains supported.
-5. Last owner removal remains blocked.
-6. Tests proving above behavior pass.
+1. Removing active member always removes their access to the target company.
+2. Member historical documents in the target company are reassigned to owner, not lost.
+3. User account is hard-deleted only when no remaining company ties exist.
+4. If hard-deleted, old credentials fail and signup is required.
+5. If not hard-deleted, user can still access their other companies only.
+6. Removing invited member remains supported.
+7. Last owner removal remains blocked.
+8. Tests proving above behavior pass.
