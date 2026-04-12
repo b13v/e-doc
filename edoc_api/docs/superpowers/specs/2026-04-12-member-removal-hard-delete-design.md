@@ -45,8 +45,12 @@ Chosen approach: transactional **company-scoped reassignment -> membership remov
 Decision details:
 
 - Reassignment target: **company owner** (not actor admin).
-- For members with user-linked records, all affected records are moved to owner first.
-- User is hard-deleted only if they have no other active/invited/pending memberships and are not owner in any company record.
+- For members with user-linked records in target company, affected records are moved to target-company owner first.
+- User is hard-deleted only if there are no global FK blockers after target-company offboarding:
+  - no `companies.user_id == member_user_id`
+  - no `tenant_memberships.user_id == member_user_id` (any status)
+  - no `invoices.user_id == member_user_id` (any company)
+  - no `acts.user_id == member_user_id` (any company)
 - Operation is all-or-nothing in one DB transaction.
 
 ## 5. Functional Behavior
@@ -102,6 +106,7 @@ After removal:
 - Precondition checks include:
   - target user is not the last owner for the target company (existing guard);
   - cross-company ownership/membership is used to choose `company_removed_only` vs `hard_deleted_user`, not as a hard error.
+  - hard-delete eligibility is based on `user_id` blockers listed in section 4, not on email invite rows.
 
 ### Unit C: Controller flash mapping
 
@@ -120,6 +125,11 @@ Reassignment for target company is explicit and table-by-table:
 - do not reassign globally to owner (avoids cross-company ownership mixing).
 - if account is hard-deleted, delete all `generated_documents` rows for that user explicitly in same transaction.
 - if account is kept (`company_removed_only`), generated documents are left unchanged in this slice (cleanup can be a follow-up).
+
+Email-invite policy (`tenant_memberships.invite_email`):
+
+- invite/pending rows keyed by email are not treated as hard-delete blockers;
+- they may remain and can be accepted later if user signs up again with same email.
 
 Delete behavior for user-linked auth/session rows:
 
@@ -188,6 +198,8 @@ Required tests:
    - company-only removed user still logs in and does not regain removed company access.
 5. Conflict path:
    - invoice number collision during reassignment returns explicit error and preserves all rows unchanged.
+6. Hard-delete eligibility path:
+   - if any global blocker remains (`companies`, `tenant_memberships`, `invoices`, `acts` by `user_id`), mode must be `:company_removed_only` and user row remains.
 
 ## 10. Acceptance Criteria
 
