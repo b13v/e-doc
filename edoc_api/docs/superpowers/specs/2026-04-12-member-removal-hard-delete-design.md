@@ -123,8 +123,9 @@ Reassignment for target company is explicit and table-by-table:
 `generated_documents` policy:
 
 - do not reassign globally to owner (avoids cross-company ownership mixing).
-- if account is hard-deleted, delete all `generated_documents` rows for that user explicitly in same transaction.
-- if account is kept (`company_removed_only`), generated documents are left unchanged in this slice (cleanup can be a follow-up).
+- on `company_removed_only`: delete removed user’s `generated_documents` that reference documents from the target company (invoice/act/contract ids in that company), so removed-company cached PDFs are not retrievable anymore.
+- on `hard_deleted_user`: delete all `generated_documents` rows for that user explicitly.
+- for rows with `file_path`, perform best-effort filesystem cleanup after DB commit (log-and-continue on file delete failure; DB operation remains successful).
 
 Email-invite policy (`tenant_memberships.invite_email`):
 
@@ -200,6 +201,10 @@ Required tests:
    - invoice number collision during reassignment returns explicit error and preserves all rows unchanged.
 6. Hard-delete eligibility path:
    - if any global blocker remains (`companies`, `tenant_memberships`, `invoices`, `acts` by `user_id`), mode must be `:company_removed_only` and user row remains.
+7. Generated-document cleanup path:
+   - `company_removed_only` removes target-company cached PDFs for removed member.
+   - `hard_deleted_user` removes all cached PDFs for deleted user.
+   - file-backed artifacts (`file_path`) are attempted to be deleted (best effort).
 
 ## 10. Acceptance Criteria
 
