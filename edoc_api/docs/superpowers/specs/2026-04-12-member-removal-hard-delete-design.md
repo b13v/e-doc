@@ -65,7 +65,9 @@ Lifecycle contract for active-member path:
 
 - membership row is not preserved as tombstone;
 - membership row is deleted via FK cascade when user is hard-deleted;
-- `remove_membership/2` returns `{:ok, result}` where `result` can be an operation marker for hard-delete path (controller only matches `{:ok, _}`).
+- `remove_membership/2` success return contract is explicit and branch-specific:
+  - active user hard-delete branch: `{:ok, %{mode: :hard_deleted_user, membership_id: ..., user_id: ...}}`
+  - invited/pending soft-remove branch: `{:ok, %{mode: :soft_removed_membership, membership_id: ...}}`
 
 ### 5.2 Invited/pending membership removal
 
@@ -163,9 +165,16 @@ Required tests:
 2. Regression:
    - invited member removal still works.
    - last owner protection unchanged.
+   - soft-remove branch returns `mode: :soft_removed_membership`.
+   - hard-delete branch returns `mode: :hard_deleted_user`.
 3. Controller:
    - owner/admin removal success path unchanged UX-wise.
    - non-privileged member still blocked.
+   - each new domain error maps to localized RU/KK flash:
+     - `:owner_not_found`
+     - `:reassign_failed`
+     - `:invoice_number_conflict_on_reassign`
+     - `:member_owns_company`
 4. Auth outcome:
    - removed user login fails (`invalid_credentials` path).
 5. Conflict path:
