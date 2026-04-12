@@ -1,9 +1,16 @@
 defmodule EdocApi.MonetizationTest do
   use EdocApi.DataCase, async: true
 
+  alias EdocApi.Auth.RefreshToken
+  alias EdocApi.DocumentDelivery.PublicAccessToken
+  alias EdocApi.Documents.GeneratedDocument
+  alias EdocApi.EmailVerificationToken
+  alias EdocApi.PasswordResetToken
+  alias EdocApi.Core.{Act, Buyer, TenantMembership}
   alias EdocApi.Core.TenantSubscription
   alias EdocApi.Monetization
   alias EdocApi.Repo
+  alias EdocApi.Buyers
   import EdocApi.TestFixtures
 
   test "creates a trial subscription lazily on first quota consumption" do
@@ -325,6 +332,164 @@ defmodule EdocApi.MonetizationTest do
              Monetization.remove_membership(company.id, owner_membership.id)
   end
 
+  test "remove_membership/2 returns soft_removed_membership mode for invited membership" do
+    owner = create_user!()
+    company = create_company!(owner)
+
+    assert {:ok, invited} =
+             Monetization.invite_member(company.id, %{
+               "email" => "invited-soft-remove@example.com",
+               "role" => "member"
+             })
+
+    assert {:ok, %{mode: :soft_removed_membership, membership_id: membership_id}} =
+             Monetization.remove_membership(company.id, invited.id)
+
+    assert membership_id == invited.id
+    assert Repo.get(TenantMembership, invited.id) == nil
+  end
+
+  test "remove_membership/2 returns company_removed_only and keeps user when user has another company membership" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    other_owner = create_user!()
+    other_company = create_company!(other_owner)
+
+    membership = insert_active_membership!(company.id, member.id)
+    _other_membership = insert_active_membership!(other_company.id, member.id)
+
+    assert {:ok, %{mode: :company_removed_only, membership_id: membership_id, user_id: user_id}} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert membership_id == membership.id
+    assert user_id == member.id
+    assert Repo.get(TenantMembership, membership.id) == nil
+    assert Repo.get(EdocApi.Accounts.User, member.id) != nil
+  end
+
+  test "remove_membership/2 returns hard_deleted_user when no blockers remain" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    membership = insert_active_membership!(company.id, member.id)
+
+    assert {:ok, %{mode: :hard_deleted_user, membership_id: membership_id, user_id: user_id}} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert membership_id == membership.id
+    assert user_id == member.id
+    assert Repo.get(TenantMembership, membership.id) == nil
+    assert Repo.get(EdocApi.Accounts.User, member.id) == nil
+  end
+
+  test "remove_membership/2 reassigns target-company docs to owner and cleans links/cached docs for removed company only" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    membership = insert_active_membership!(company.id, member.id)
+
+    other_owner = create_user!()
+    other_company = create_company!(other_owner)
+    _other_membership = insert_active_membership!(other_company.id, member.id)
+
+    member_invoice = insert_invoice!(member, company, %{number: "12345000001"})
+    owner_invoice = insert_invoice!(owner, company, %{number: "12345000002"})
+
+    other_invoice =
+      insert_invoice!(member, other_company, %{number: "22345000001", company_id: other_company.id})
+
+    member_act = insert_act!(member, company, %{number: "ACT-001"})
+    other_act = insert_act!(member, other_company, %{number: "ACT-901"})
+
+    target_token =
+      insert_public_token!(member.id, "invoice", member_invoice.id)
+
+    other_token =
+      insert_public_token!(member.id, "invoice", other_invoice.id)
+
+    target_doc =
+      insert_generated_document!(member.id, "invoice", member_invoice.id, "/tmp/member-target.pdf")
+
+    other_doc =
+      insert_generated_document!(member.id, "invoice", other_invoice.id, "/tmp/member-other.pdf")
+
+    assert {:ok, %{mode: :company_removed_only}} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert Repo.get!(EdocApi.Core.Invoice, member_invoice.id).user_id == owner.id
+    assert Repo.get!(EdocApi.Core.Invoice, owner_invoice.id).user_id == owner.id
+    assert Repo.get!(EdocApi.Core.Invoice, other_invoice.id).user_id == member.id
+
+    assert Repo.get!(Act, member_act.id).user_id == owner.id
+    assert Repo.get!(Act, other_act.id).user_id == member.id
+
+    assert Repo.get(PublicAccessToken, target_token.id) == nil
+    assert Repo.get(PublicAccessToken, other_token.id) != nil
+
+    assert Repo.get(GeneratedDocument, target_doc.id) == nil
+    assert Repo.get(GeneratedDocument, other_doc.id) != nil
+  end
+
+  test "remove_membership/2 rolls back on invoice number conflict during reassignment" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    membership = insert_active_membership!(company.id, member.id)
+
+    _owner_invoice = insert_invoice!(owner, company, %{number: "11111000001"})
+    member_invoice = insert_invoice!(member, company, %{number: "11111000001"})
+
+    assert {:error, :invoice_number_conflict_on_reassign} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert Repo.get(TenantMembership, membership.id) != nil
+    assert Repo.get!(EdocApi.Core.Invoice, member_invoice.id).user_id == member.id
+    assert Repo.get(EdocApi.Accounts.User, member.id) != nil
+  end
+
+  test "remove_membership/2 keeps user when user owns another company" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    membership = insert_active_membership!(company.id, member.id)
+    _owned_by_member = create_company!(member)
+
+    assert {:ok, %{mode: :company_removed_only}} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert Repo.get(EdocApi.Accounts.User, member.id) != nil
+  end
+
+  test "remove_membership/2 hard-delete branch removes auth tokens and all generated documents for user" do
+    owner = create_user!()
+    company = create_company!(owner)
+    member = create_user!()
+    membership = insert_active_membership!(company.id, member.id)
+
+    invoice = insert_invoice!(member, company, %{number: "76543000001"})
+    _member_act = insert_act!(member, company, %{number: "ACT-765"})
+    doc = insert_generated_document!(member.id, "invoice", invoice.id, "/tmp/hard-delete.pdf")
+    _refresh = insert_refresh_token!(member.id)
+    _verification = insert_email_verification_token!(member.id)
+    _reset = insert_password_reset_token!(member.id)
+
+    assert {:ok, %{mode: :hard_deleted_user}} =
+             Monetization.remove_membership(company.id, membership.id)
+
+    assert Repo.get(GeneratedDocument, doc.id) == nil
+    assert Repo.get(EdocApi.Accounts.User, member.id) == nil
+    assert Repo.aggregate(Ecto.assoc(member, :refresh_tokens), :count, :id) == 0
+
+    assert Repo.one(
+             from(t in EmailVerificationToken, where: t.user_id == ^member.id, select: count(t.id))
+           ) == 0
+
+    assert Repo.one(
+             from(t in PasswordResetToken, where: t.user_id == ^member.id, select: count(t.id))
+           ) == 0
+  end
+
   test "accept_pending_memberships_for_user/1 marks invite as pending_seat when no seats are available and activates later" do
     owner = create_user!()
     company = create_company!(owner)
@@ -398,5 +563,119 @@ defmodule EdocApi.MonetizationTest do
         updated_at: now
       ]
     )
+  end
+
+  defp insert_active_membership!(company_id, user_id, role \\ "member") do
+    %TenantMembership{}
+    |> TenantMembership.changeset(%{
+      company_id: company_id,
+      user_id: user_id,
+      role: role,
+      status: "active"
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_public_token!(user_id, document_type, document_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %PublicAccessToken{}
+    |> PublicAccessToken.changeset(%{
+      token_hash: "#{Ecto.UUID.generate()}-#{document_type}",
+      document_type: document_type,
+      document_id: document_id,
+      expires_at: DateTime.add(now, 3600, :second),
+      created_by_user_id: user_id
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_generated_document!(user_id, document_type, document_id, file_path) do
+    %GeneratedDocument{}
+    |> GeneratedDocument.changeset(%{
+      user_id: user_id,
+      document_type: document_type,
+      document_id: document_id,
+      status: "completed",
+      file_path: file_path
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_refresh_token!(user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %RefreshToken{}
+    |> RefreshToken.changeset(%{
+      user_id: user_id,
+      token_hash: "rt-#{Ecto.UUID.generate()}",
+      expires_at: DateTime.add(now, 3600, :second)
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_email_verification_token!(user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %EmailVerificationToken{}
+    |> EmailVerificationToken.changeset(%{
+      user_id: user_id,
+      token_hash: "evt-#{Ecto.UUID.generate()}",
+      expires_at: DateTime.add(now, 3600, :second)
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_password_reset_token!(user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %PasswordResetToken{}
+    |> PasswordResetToken.changeset(%{
+      user_id: user_id,
+      token_hash: "prt-#{Ecto.UUID.generate()}",
+      expires_at: DateTime.add(now, 3600, :second)
+    })
+    |> Repo.insert!()
+  end
+
+  defp insert_act!(user, company, overrides) do
+    buyer =
+      Repo.one(from(b in Buyer, where: b.company_id == ^company.id, limit: 1)) ||
+        create_buyer_for_company!(company)
+
+    base = %Act{
+      number: "ACT-#{System.unique_integer([:positive])}",
+      status: "draft",
+      issue_date: Date.utc_today(),
+      actual_date: Date.utc_today(),
+      currency: "KZT",
+      vat_rate: 16,
+      seller_name: company.name,
+      seller_bin_iin: company.bin_iin,
+      seller_address: company.address,
+      seller_phone: company.phone,
+      buyer_name: buyer.name,
+      buyer_bin_iin: buyer.bin_iin,
+      buyer_address: buyer.address || "Buyer Address",
+      buyer_phone: buyer.phone,
+      company_id: company.id,
+      user_id: user.id,
+      buyer_id: buyer.id
+    }
+
+    Repo.insert!(struct(base, overrides))
+  end
+
+  defp create_buyer_for_company!(company) do
+    {:ok, buyer} =
+      Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Buyer-#{System.unique_integer([:positive])}",
+        "bin_iin" => "060215385673",
+        "address" => "Buyer Address",
+        "email" => "buyer-#{System.unique_integer([:positive])}@example.com",
+        "phone" => "+7 (777) 123 45 67"
+      })
+
+    buyer
   end
 end

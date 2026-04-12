@@ -3,6 +3,9 @@ defmodule EdocApi.Accounts do
   alias EdocApi.Repo
   alias EdocApi.Accounts.User
   alias EdocApi.Auth.RefreshToken
+  alias EdocApi.Core.{Act, Company, Contract, Invoice, TenantMembership}
+  alias EdocApi.DocumentDelivery.PublicAccessToken
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Errors
 
   @lockout_threshold 5
@@ -181,6 +184,39 @@ defmodule EdocApi.Accounts do
     :ok
   end
 
+  def offboard_member_from_company(company_id, membership_id, member_user_id, owner_user_id)
+      when is_binary(company_id) and is_binary(membership_id) and is_binary(member_user_id) and
+             is_binary(owner_user_id) do
+    now = utc_now()
+
+    Repo.transaction(fn ->
+      with :ok <- reassign_company_invoices(company_id, member_user_id, owner_user_id, now),
+           :ok <- reassign_company_acts(company_id, member_user_id, owner_user_id, now),
+           :ok <- delete_membership(company_id, membership_id, member_user_id),
+           :ok <- delete_public_tokens_for_company(company_id, member_user_id),
+           :ok <- delete_generated_documents_for_company(company_id, member_user_id),
+           {:ok, blockers} <- offboarding_blockers(member_user_id),
+           {:ok, mode} <- maybe_hard_delete_user(member_user_id, blockers) do
+        %{mode: mode, membership_id: membership_id, user_id: member_user_id}
+      else
+        {:error, :invoice_number_conflict_on_reassign} ->
+          Repo.rollback(:invoice_number_conflict_on_reassign)
+
+        {:error, :reassign_failed} ->
+          Repo.rollback(:reassign_failed)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, :invoice_number_conflict_on_reassign} -> {:error, :invoice_number_conflict_on_reassign}
+      {:error, :reassign_failed} -> {:error, :reassign_failed}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   @doc """
   Returns user with verified status check.
   """
@@ -274,5 +310,210 @@ defmodule EdocApi.Accounts do
       ttl when is_integer(ttl) and ttl > 0 -> ttl
       _ -> @default_refresh_ttl_seconds
     end
+  end
+
+  defp reassign_company_invoices(company_id, member_user_id, owner_user_id, now) do
+    if invoice_number_conflict_on_reassign?(company_id, member_user_id, owner_user_id) do
+      {:error, :invoice_number_conflict_on_reassign}
+    else
+      case from(i in Invoice, where: i.company_id == ^company_id and i.user_id == ^member_user_id)
+           |> Repo.update_all(set: [user_id: owner_user_id, updated_at: now]) do
+        {_count, _} -> :ok
+        _ -> {:error, :reassign_failed}
+      end
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp reassign_company_acts(company_id, member_user_id, owner_user_id, now) do
+    case from(a in Act, where: a.company_id == ^company_id and a.user_id == ^member_user_id)
+         |> Repo.update_all(set: [user_id: owner_user_id, updated_at: now]) do
+      {_count, _} -> :ok
+      _ -> {:error, :reassign_failed}
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp delete_membership(company_id, membership_id, member_user_id) do
+    case from(m in TenantMembership,
+           where:
+             m.id == ^membership_id and m.company_id == ^company_id and m.user_id == ^member_user_id
+         )
+         |> Repo.delete_all() do
+      {1, _} -> :ok
+      {0, _} -> {:error, :reassign_failed}
+      _ -> {:error, :reassign_failed}
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp delete_public_tokens_for_company(company_id, member_user_id) do
+    with {:ok, invoice_ids} <- company_invoice_ids(company_id),
+         :ok <- delete_public_tokens(member_user_id, "invoice", invoice_ids),
+         {:ok, act_ids} <- company_act_ids(company_id),
+         :ok <- delete_public_tokens(member_user_id, "act", act_ids),
+         {:ok, contract_ids} <- company_contract_ids(company_id),
+         :ok <- delete_public_tokens(member_user_id, "contract", contract_ids) do
+      :ok
+    else
+      {:error, _} -> {:error, :reassign_failed}
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp delete_generated_documents_for_company(company_id, member_user_id) do
+    with {:ok, invoice_ids} <- company_invoice_ids(company_id),
+         :ok <- delete_generated_documents(member_user_id, "invoice", invoice_ids),
+         {:ok, act_ids} <- company_act_ids(company_id),
+         :ok <- delete_generated_documents(member_user_id, "act", act_ids),
+         {:ok, contract_ids} <- company_contract_ids(company_id),
+         :ok <- delete_generated_documents(member_user_id, "contract", contract_ids) do
+      :ok
+    else
+      {:error, _} -> {:error, :reassign_failed}
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp company_invoice_ids(company_id) do
+    {:ok, Repo.all(from(i in Invoice, where: i.company_id == ^company_id, select: i.id))}
+  end
+
+  defp company_act_ids(company_id) do
+    {:ok, Repo.all(from(a in Act, where: a.company_id == ^company_id, select: a.id))}
+  end
+
+  defp company_contract_ids(company_id) do
+    {:ok, Repo.all(from(c in Contract, where: c.company_id == ^company_id, select: c.id))}
+  end
+
+  defp delete_public_tokens(member_user_id, document_type, document_ids) when is_list(document_ids) do
+    if document_ids == [] do
+      :ok
+    else
+      from(t in PublicAccessToken,
+        where:
+          t.created_by_user_id == ^member_user_id and t.document_type == ^document_type and
+            t.document_id in ^document_ids
+      )
+      |> Repo.delete_all()
+
+      :ok
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp delete_generated_documents(member_user_id, document_type, document_ids) when is_list(document_ids) do
+    if document_ids == [] do
+      :ok
+    else
+      from(g in GeneratedDocument,
+        where:
+          g.user_id == ^member_user_id and g.document_type == ^document_type and
+            g.document_id in ^document_ids
+      )
+      |> Repo.delete_all()
+
+      :ok
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp offboarding_blockers(member_user_id) do
+    blockers =
+      []
+      |> maybe_add_blocker(company_ownership_blocker?(member_user_id), :company_ownership)
+      |> maybe_add_blocker(company_membership_blocker?(member_user_id), :tenant_memberships)
+      |> maybe_add_blocker(invoice_blocker?(member_user_id), :invoices)
+      |> maybe_add_blocker(act_blocker?(member_user_id), :acts)
+
+    {:ok, blockers}
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp maybe_add_blocker(blockers, true, blocker), do: [blocker | blockers]
+  defp maybe_add_blocker(blockers, false, _blocker), do: blockers
+
+  defp company_ownership_blocker?(member_user_id) do
+    Repo.exists?(from(c in Company, where: c.user_id == ^member_user_id))
+  end
+
+  defp company_membership_blocker?(member_user_id) do
+    Repo.exists?(from(m in TenantMembership, where: m.user_id == ^member_user_id))
+  end
+
+  defp invoice_blocker?(member_user_id) do
+    Repo.exists?(from(i in Invoice, where: i.user_id == ^member_user_id))
+  end
+
+  defp act_blocker?(member_user_id) do
+    Repo.exists?(from(a in Act, where: a.user_id == ^member_user_id))
+  end
+
+  defp maybe_hard_delete_user(member_user_id, blockers) when is_list(blockers) do
+    if blockers == [] do
+      case delete_all_generated_documents_for_user(member_user_id) do
+        :ok ->
+          case Repo.get(User, member_user_id) do
+            nil ->
+              {:ok, :hard_deleted_user}
+
+            %User{} = user ->
+              case Repo.delete(user) do
+                {:ok, _user} -> {:ok, :hard_deleted_user}
+                {:error, _changeset} -> {:error, :reassign_failed}
+              end
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:ok, :company_removed_only}
+    end
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp delete_all_generated_documents_for_user(member_user_id) do
+    from(g in GeneratedDocument, where: g.user_id == ^member_user_id)
+    |> Repo.delete_all()
+
+    :ok
+  rescue
+    _ -> {:error, :reassign_failed}
+  end
+
+  defp invoice_number_conflict_on_reassign?(company_id, member_user_id, owner_user_id) do
+    conflict_query =
+      from(member_invoice in Invoice,
+        where:
+          member_invoice.company_id == ^company_id and
+            member_invoice.user_id == ^member_user_id and
+            not is_nil(member_invoice.number),
+        join: owner_invoice in Invoice,
+        on:
+          owner_invoice.company_id == member_invoice.company_id and
+            owner_invoice.user_id == ^owner_user_id and
+            owner_invoice.number == member_invoice.number,
+        select: member_invoice.id,
+        limit: 1
+      )
+
+    Repo.exists?(conflict_query)
+  rescue
+    _ -> false
+  end
+
+  defp utc_now do
+    DateTime.utc_now() |> DateTime.truncate(:second)
   end
 end

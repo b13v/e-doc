@@ -303,6 +303,32 @@ defmodule EdocApiWeb.CompaniesController do
               conn
               |> put_flash(:error, gettext("Team member not found."))
               |> redirect(to: "/company")
+
+            {:error, :owner_not_found} ->
+              conn
+              |> put_flash(
+                :error,
+                gettext("Team owner was not found. Please restore the owner and try again.")
+              )
+              |> redirect(to: "/company")
+
+            {:error, :invoice_number_conflict_on_reassign} ->
+              conn
+              |> put_flash(
+                :error,
+                gettext(
+                  "Cannot remove this member because invoice numbers conflict during reassignment."
+                )
+              )
+              |> redirect(to: "/company")
+
+            {:error, :reassign_failed} ->
+              conn
+              |> put_flash(
+                :error,
+                gettext("Failed to remove team member. Please try again.")
+              )
+              |> redirect(to: "/company")
           end
         else
           conn

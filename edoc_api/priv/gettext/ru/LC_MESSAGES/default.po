@@ -2432,6 +2432,15 @@ msgstr "Участник команды не найден."
 msgid "Team member removed successfully."
 msgstr "Участник команды успешно удален."
 
+msgid "Failed to remove team member. Please try again."
+msgstr "Не удалось удалить участника команды. Пожалуйста, попробуйте снова."
+
+msgid "Team owner was not found. Please restore the owner and try again."
+msgstr "Владелец компании не найден. Восстановите владельца и повторите попытку."
+
+msgid "Cannot remove this member because invoice numbers conflict during reassignment."
+msgstr "Невозможно удалить участника: при переназначении возник конфликт номеров счетов."
+
 msgid "This email is already invited to your company."
 msgstr "Этот email уже приглашен в вашу компанию."
 

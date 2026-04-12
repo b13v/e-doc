@@ -2432,6 +2432,15 @@ msgstr "Команда мүшесі табылмады."
 msgid "Team member removed successfully."
 msgstr "Команда мүшесі сәтті жойылды."
 
+msgid "Failed to remove team member. Please try again."
+msgstr "Команда мүшесін жою мүмкін болмады. Қайталап көріңіз."
+
+msgid "Team owner was not found. Please restore the owner and try again."
+msgstr "Компания иесі табылмады. Иені қалпына келтіріп, қайта көріңіз."
+
+msgid "Cannot remove this member because invoice numbers conflict during reassignment."
+msgstr "Бұл қатысушыны жою мүмкін емес: қайта тағайындау кезінде шот нөмірлері қақтығысты."
+
 msgid "This email is already invited to your company."
 msgstr "Бұл email компанияңызға әлдеқашан шақырылған."
 

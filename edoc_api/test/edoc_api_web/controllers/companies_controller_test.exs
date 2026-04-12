@@ -615,6 +615,88 @@ defmodule EdocApiWeb.CompaniesControllerTest do
                listed.id != membership.id
              end)
     end
+
+    test "shows conflict flash when invoice numbers collide during member reassignment", %{
+      conn: conn,
+      company: company
+    } do
+      owner_id = get_session(conn, :user_id)
+      member = create_user!(%{"email" => "invoice-conflict-member@example.com"})
+
+      membership =
+        %TenantMembership{}
+        |> TenantMembership.changeset(%{
+          company_id: company.id,
+          user_id: member.id,
+          role: "member",
+          status: "active"
+        })
+        |> Repo.insert!()
+
+      _owner_invoice = insert_invoice!(Accounts.get_user(owner_id), company, %{number: "99999000001"})
+      _member_invoice = insert_invoice!(member, company, %{number: "99999000001"})
+
+      conn = delete(conn, "/company/memberships/#{membership.id}")
+
+      assert redirected_to(conn) == "/company"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Невозможно удалить участника: при переназначении возник конфликт номеров счетов."
+
+      assert Repo.get(TenantMembership, membership.id)
+    end
+
+    test "shows owner-missing flash when no owner exists for reassignment", %{
+      conn: conn,
+      company: company
+    } do
+      owner_id = get_session(conn, :user_id)
+      admin_user = create_user!(%{"email" => "member-remove-admin@example.com"})
+      member_user = create_user!(%{"email" => "member-remove-user@example.com"})
+      Accounts.mark_email_verified!(admin_user.id)
+      Accounts.mark_email_verified!(member_user.id)
+
+      %TenantMembership{}
+        |> TenantMembership.changeset(%{
+          company_id: company.id,
+          user_id: admin_user.id,
+          role: "admin",
+          status: "active"
+        })
+        |> Repo.insert!()
+
+      member_membership =
+        %TenantMembership{}
+        |> TenantMembership.changeset(%{
+          company_id: company.id,
+          user_id: member_user.id,
+          role: "member",
+          status: "active"
+        })
+        |> Repo.insert!()
+
+      owner_membership =
+        TenantMembership
+        |> where(
+          [m],
+          m.company_id == ^company.id and m.user_id == ^owner_id and m.role == "owner" and
+            m.status == "active"
+        )
+        |> Repo.one!()
+
+      Repo.delete!(owner_membership)
+
+      admin_conn = html_conn(conn, admin_user)
+      conn = delete(admin_conn, "/company/memberships/#{member_membership.id}")
+
+      assert redirected_to(conn) == "/company"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Владелец компании не найден. Восстановите владельца и повторите попытку."
+
+      assert Repo.get(TenantMembership, member_membership.id)
+      assert Repo.get(Accounts.User, member_user.id)
+    end
   end
 
   describe "role guards" do

@@ -184,9 +184,36 @@ defmodule EdocApi.Monetization do
         if last_owner?(membership) do
           {:error, :last_owner}
         else
-          membership
-          |> Ecto.Changeset.change(status: "removed", invite_email: nil, user_id: nil)
-          |> Repo.update()
+          if is_nil(membership.user_id) do
+            case Repo.delete(membership) do
+              {:ok, _deleted} ->
+                {:ok,
+                 %{
+                   mode: :soft_removed_membership,
+                   membership_id: membership.id,
+                   status: "removed"
+                 }}
+
+              {:error, _changeset} ->
+                {:error, :reassign_failed}
+            end
+          else
+            case offboarding_owner_user_id(company_id, membership.user_id) do
+              nil ->
+                {:error, :owner_not_found}
+
+              owner_user_id ->
+                case EdocApi.Accounts.offboard_member_from_company(
+                       company_id,
+                       membership.id,
+                       membership.user_id,
+                       owner_user_id
+                     ) do
+                  {:ok, payload} -> {:ok, payload}
+                  {:error, reason} -> {:error, reason}
+                end
+            end
+          end
         end
     end
   end
@@ -309,6 +336,19 @@ defmodule EdocApi.Monetization do
   end
 
   defp last_owner?(_membership), do: false
+
+  defp offboarding_owner_user_id(company_id, excluded_user_id) do
+    TenantMembership
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.status == "active" and m.role == "owner" and
+        m.user_id != ^excluded_user_id
+    )
+    |> order_by([m], asc: m.inserted_at)
+    |> select([m], m.user_id)
+    |> limit(1)
+    |> Repo.one()
+  end
 
   defp pending_membership_block_reason(%TenantMembership{} = membership, user_id) do
     cond do
