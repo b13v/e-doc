@@ -61,6 +61,12 @@ When owner/admin removes an active member:
 5. Remove membership association and hard-delete user.
 6. Return success flash.
 
+Lifecycle contract for active-member path:
+
+- membership row is not preserved as tombstone;
+- membership row is deleted via FK cascade when user is hard-deleted;
+- `remove_membership/2` returns `{:ok, result}` where `result` can be an operation marker for hard-delete path (controller only matches `{:ok, _}`).
+
 ### 5.2 Invited/pending membership removal
 
 If target membership has no `user_id` (invited/pending), keep existing behavior:
@@ -89,6 +95,8 @@ After successful hard delete:
   - receive `company_id`, `member_user_id`, `owner_user_id`;
   - run transaction for reassignment + user delete;
   - return domain errors on failure.
+- Precondition checks include:
+  - target user is not owner of any company record in `companies.user_id` (otherwise reject with dedicated business error to avoid FK failure).
 
 ### Unit C: Controller flash mapping
 
@@ -97,17 +105,30 @@ After successful hard delete:
 
 ## 7. Data Reassignment Rules
 
-Minimum required reassignment before deleting user:
+Reassignment is explicit and table-by-table:
 
-- `invoices.user_id` within target company.
-- `acts.user_id` within target company.
+- `invoices.user_id` (company-scoped) -> reassign to owner.
+- `acts.user_id` (company-scoped) -> reassign to owner.
+- `generated_documents.user_id` (user-scoped cache/history) -> reassign to owner.
 
-Any additional `users` FKs with `on_delete: :nothing` in current schema must also be included if encountered during implementation.
+Delete-by-cascade (no reassignment needed):
 
-Reassignment filter:
+- `refresh_tokens` (`on_delete: :delete_all`).
+- `email_verification_tokens` (`on_delete: :delete_all`).
+- `password_reset_tokens` (`on_delete: :delete_all`).
+- `tenant_memberships.user_id` (`on_delete: :delete_all`).
 
-- scoped by `company_id == target_company_id`;
-- only records currently owned by removed member.
+Reassignment filter for company-bound tables:
+
+- `company_id == target_company_id`;
+- `user_id == removed_member_user_id`.
+
+User-scoped tables without `company_id` (like `generated_documents`) are reassigned by `user_id` only.
+
+Invoice uniqueness collision policy:
+
+- `invoices` has unique index `[:user_id, :number]`;
+- if reassignment causes collision with owner invoice numbers, transaction is rolled back and removal fails with explicit domain error (`:invoice_number_conflict_on_reassign`), no partial changes.
 
 ## 8. Failure Handling
 
@@ -115,12 +136,21 @@ Potential new errors from domain layer:
 
 - `:owner_not_found` — no active owner available for reassignment.
 - `:reassign_failed` — reassignment/update/delete failure.
+- `:invoice_number_conflict_on_reassign` — invoice number uniqueness conflict during ownership transfer.
+- `:member_owns_company` — target user owns a company and cannot be hard-deleted safely.
 - existing: `:not_found`, `:last_owner`.
 
 Transaction semantics:
 
 - Any step failure rolls back all previous updates.
 - No partial reassignment and no partial deletion.
+
+Controller mapping contract:
+
+- `:owner_not_found`, `:reassign_failed`, `:invoice_number_conflict_on_reassign`, `:member_owns_company`
+  - redirect to `/company`
+  - localized error flash (RU/KK) with actionable text;
+  - no internal technical details in UI.
 
 ## 9. Testing Strategy (TDD)
 
@@ -138,6 +168,8 @@ Required tests:
    - non-privileged member still blocked.
 4. Auth outcome:
    - removed user login fails (`invalid_credentials` path).
+5. Conflict path:
+   - invoice number collision during reassignment returns explicit error and preserves all rows unchanged.
 
 ## 10. Acceptance Criteria
 
@@ -147,4 +179,3 @@ Required tests:
 4. Removing invited member remains supported.
 5. Last owner removal remains blocked.
 6. Tests proving above behavior pass.
-
