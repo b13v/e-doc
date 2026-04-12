@@ -181,6 +181,18 @@ defmodule EdocApiWeb.SessionControllerTest do
 
     refute body =~
              ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
+
+  end
+
+  test "public asset bundle endpoints referenced by auth pages are available", %{conn: conn} do
+    # Regression: ISSUE-QA-001 — /login and /signup reference app.css/app.js but both returned 404
+    # Found by /qa on 2026-04-12
+    # Report: .gstack/qa-reports/qa-report-localhost-4000-2026-04-12.md
+    conn = get(conn, "/assets/app.css")
+    assert response(conn, 200)
+
+    conn = build_conn() |> get("/assets/app.js")
+    assert response(conn, 200)
   end
 
   defp extract_csrf_token(body) do
