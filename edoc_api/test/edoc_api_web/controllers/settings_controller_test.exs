@@ -111,6 +111,44 @@ defmodule EdocApiWeb.SettingsControllerTest do
     refute Argon2.verify_pass("password123", updated.password_hash)
   end
 
+  test "PUT /settings/password localizes mismatch confirmation error in Russian", %{
+    conn: conn,
+    user: user
+  } do
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id, locale: "ru"})
+      |> put("/settings/password", %{
+        "password" => %{
+          "current_password" => "password123",
+          "password" => "new-password-123",
+          "password_confirmation" => "different-password-123"
+        }
+      })
+
+    assert redirected_to(conn) == "/settings"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Новый пароль и подтверждение не совпадают."
+  end
+
+  test "PUT /settings/password localizes mismatch confirmation error in Kazakh", %{
+    conn: conn,
+    user: user
+  } do
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id, locale: "kk"})
+      |> put("/settings/password", %{
+        "password" => %{
+          "current_password" => "password123",
+          "password" => "new-password-123",
+          "password_confirmation" => "different-password-123"
+        }
+      })
+
+    assert redirected_to(conn) == "/settings"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Жаңа құпиясөз және растау сәйкес келмейді."
+  end
+
   test "authenticated navbar links account email to /settings", %{conn: conn, user: user} do
     _company = create_company!(user)
 

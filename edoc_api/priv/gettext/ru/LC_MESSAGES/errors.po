@@ -33,7 +33,7 @@ msgid "is reserved"
 msgstr "зарезервировано"
 
 msgid "does not match confirmation"
-msgstr "не совпадает с подтверждением"
+msgstr "Новый пароль и подтверждение не совпадают."
 
 msgid "is still associated with this entry"
 msgstr "всё ещё связано с этой записью"

@@ -33,7 +33,7 @@ msgid "is reserved"
 msgstr "резервтелген"
 
 msgid "does not match confirmation"
-msgstr "растаумен сәйкес келмейді"
+msgstr "Жаңа құпиясөз және растау сәйкес келмейді."
 
 msgid "is still associated with this entry"
 msgstr "осы жазбамен әлі де байланысты"

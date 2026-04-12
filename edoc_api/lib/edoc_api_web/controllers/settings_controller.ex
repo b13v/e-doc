@@ -2,6 +2,7 @@ defmodule EdocApiWeb.SettingsController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Accounts
+  alias EdocApiWeb.ErrorHelpers
 
   def edit(conn, _params) do
     user = conn.assigns.current_user
@@ -69,9 +70,6 @@ defmodule EdocApiWeb.SettingsController do
 
   defp first_changeset_error(changeset) do
     {_field, {message, opts}} = List.first(changeset.errors) || {:base, {"Invalid data", []}}
-
-    Enum.reduce(opts, message, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", to_string(value))
-    end)
+    ErrorHelpers.translate_error({message, opts})
   end
 end
