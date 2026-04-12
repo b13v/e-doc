@@ -131,21 +131,10 @@ defmodule EdocApi.Buyers do
 
   def get_default_bank_account(buyer_id) when is_binary(buyer_id) do
     BuyerBankAccount
-    |> where([a], a.buyer_id == ^buyer_id and a.is_default == true)
-    |> order_by([a], desc: a.inserted_at)
+    |> where([a], a.buyer_id == ^buyer_id)
+    |> order_by([a], desc: a.is_default, desc: a.inserted_at)
     |> limit(1)
     |> Repo.one()
-    |> case do
-      nil ->
-        BuyerBankAccount
-        |> where([a], a.buyer_id == ^buyer_id)
-        |> order_by([a], desc: a.inserted_at)
-        |> limit(1)
-        |> Repo.one()
-
-      account ->
-        account
-    end
     |> case do
       nil -> nil
       account -> Repo.preload(account, :bank)

@@ -76,6 +76,21 @@
             </table>
           </div>
         </div>
+        <div :if={@total_pages > 1} class="flex items-center justify-between px-2 text-sm text-slate-600">
+          <a
+            href={"/contracts?page=#{@page - 1}&page_size=#{@page_size}"}
+            class={["rounded-md px-3 py-1.5 font-medium transition", @page > 1 && "text-sky-700 hover:bg-sky-50", @page <= 1 && "pointer-events-none text-slate-400"]}
+          >
+            <%= gettext("Previous") %>
+          </a>
+          <span><%= gettext("Page %{page} of %{total}", page: @page, total: @total_pages) %></span>
+          <a
+            href={"/contracts?page=#{@page + 1}&page_size=#{@page_size}"}
+            class={["rounded-md px-3 py-1.5 font-medium transition", @page < @total_pages && "text-sky-700 hover:bg-sky-50", @page >= @total_pages && "pointer-events-none text-slate-400"]}
+          >
+            <%= gettext("Next") %>
+          </a>
+        </div>
       <% end %>
     </div>
 

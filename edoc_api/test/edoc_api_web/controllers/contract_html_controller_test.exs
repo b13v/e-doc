@@ -68,4 +68,46 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
                "Document limit reached for this billing period. Upgrade your plan to continue."
              )
   end
+
+  test "index paginates contracts and keeps overview available", %{
+    conn: conn,
+    company: company,
+    buyer: buyer
+  } do
+    draft_contract =
+      create_contract!(company, %{
+        "number" => "PAG-CON-DRAFT",
+        "status" => "draft",
+        "buyer_id" => buyer.id
+      })
+
+    issued_contract =
+      create_contract!(company, %{
+        "number" => "PAG-CON-ISSUED",
+        "status" => "issued",
+        "buyer_id" => buyer.id
+      })
+
+    signed_contract =
+      create_contract!(company, %{
+        "number" => "PAG-CON-SIGNED",
+        "status" => "signed",
+        "buyer_id" => buyer.id
+      })
+
+    body =
+      conn
+      |> get("/contracts?page=1&page_size=1")
+      |> html_response(200)
+
+    numbers = [draft_contract.number, issued_contract.number, signed_contract.number]
+    assert Enum.count(numbers, &String.contains?(body, &1)) == 1
+
+    assert body =~
+             Gettext.gettext(EdocApiWeb.Gettext, "Page %{page} of %{total}", page: 1, total: 3)
+
+    assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Draft contracts")
+    assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Issued contracts")
+    assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Signed contracts")
+  end
 end

@@ -10,14 +10,20 @@ defmodule EdocApiWeb.ContractHTMLController do
   alias EdocApi.ContractStatus
   alias EdocApiWeb.ErrorHelpers
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    contracts = Core.list_contracts_for_user(user.id)
+    %{page: page, page_size: page_size, offset: offset} = html_pagination_params(params)
+    contracts = Core.list_contracts_for_user(user.id, limit: page_size, offset: offset)
+    total_count = Core.count_contracts_for_user(user.id)
 
     render(conn, :index,
       contracts: contracts,
-      contract_summary: contract_summary(contracts),
+      contract_summary: Core.contract_summary_for_user(user.id),
       current_section: :contracts,
+      page: page,
+      page_size: page_size,
+      total_count: total_count,
+      total_pages: total_pages(total_count, page_size),
       page_title: gettext("Contracts")
     )
   end
@@ -82,15 +88,25 @@ defmodule EdocApiWeb.ContractHTMLController do
     create_contract_with_params(conn, user, contract_params, items_params)
   end
 
-  defp contract_summary(contracts) do
-    Enum.reduce(contracts, %{draft: 0, issued: 0, signed: 0}, fn contract, acc ->
-      case contract.status do
-        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
-        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
-        "signed" -> Map.update!(acc, :signed, &(&1 + 1))
-        _ -> acc
-      end
-    end)
+  defp html_pagination_params(params) do
+    page = params |> Map.get("page", "1") |> parse_positive_int(1)
+    page_size = params |> Map.get("page_size", "50") |> parse_positive_int(50) |> min(100)
+    offset = (page - 1) * page_size
+
+    %{page: page, page_size: page_size, offset: offset}
+  end
+
+  defp parse_positive_int(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} when parsed > 0 -> parsed
+      _ -> default
+    end
+  end
+
+  defp parse_positive_int(_, default), do: default
+
+  defp total_pages(total_count, page_size) when page_size > 0 do
+    max(1, div(total_count + page_size - 1, page_size))
   end
 
   defp create_contract_with_params(conn, user, contract_params, items_params) do
@@ -168,7 +184,9 @@ defmodule EdocApiWeb.ContractHTMLController do
             conn
             |> put_flash(
               :error,
-              gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+              gettext(
+                "Document limit reached for this billing period. Upgrade your plan to continue."
+              )
             )
             |> render(:new,
               contract: nil,
@@ -478,7 +496,9 @@ defmodule EdocApiWeb.ContractHTMLController do
         conn
         |> put_flash(
           :error,
-          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+          gettext(
+            "Document limit reached for this billing period. Upgrade your plan to continue."
+          )
         )
         |> redirect(to: "/contracts/#{id}")
 

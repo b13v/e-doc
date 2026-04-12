@@ -2577,3 +2577,13 @@ msgstr "Егер мұндай мекенжаймен тіркелгі болса
 
 msgid "Your password has been reset. Please sign in again."
 msgstr "Құпиясөзіңіз қалпына келтірілді. Қайта кіріңіз."
+
+msgid "Previous"
+msgstr "Алдыңғы"
+
+msgid "Next"
+msgstr "Келесі"
+
+#, elixir-autogen, elixir-format
+msgid "Page %{page} of %{total}"
+msgstr "%{page} / %{total} бет"

@@ -73,6 +73,28 @@ defmodule EdocApi.Core do
     end
   end
 
+  def contract_summary_for_user(%{id: user_id}), do: contract_summary_for_user(user_id)
+
+  def contract_summary_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        %{draft: 0, issued: 0, signed: 0}
+
+      %Company{id: company_id} ->
+        Contract
+        |> where([c], c.company_id == ^company_id)
+        |> group_by([c], c.status)
+        |> select([c], {c.status, count(c.id)})
+        |> Repo.all()
+        |> Enum.reduce(%{draft: 0, issued: 0, signed: 0}, fn
+          {"draft", count}, acc -> %{acc | draft: count}
+          {"issued", count}, acc -> %{acc | issued: count}
+          {"signed", count}, acc -> %{acc | signed: count}
+          _, acc -> acc
+        end)
+    end
+  end
+
   def create_contract_for_user(%{id: user_id}, attrs),
     do: create_contract_for_user(user_id, attrs)
 
@@ -97,7 +119,9 @@ defmodule EdocApi.Core do
                        do: {:ok, nil},
                        else: create_contract_items(contract, items_attrs)
                      ) do
-                reloaded_contract = Repo.get(Contract, contract.id) |> Repo.preload(:contract_items)
+                reloaded_contract =
+                  Repo.get(Contract, contract.id) |> Repo.preload(:contract_items)
+
                 {:ok, reloaded_contract}
               end
             end)

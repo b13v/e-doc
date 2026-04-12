@@ -37,9 +37,7 @@ defmodule EdocApi.Invoicing do
       %Company{id: company_id} ->
         Contract
         |> where([c], c.company_id == ^company_id and c.status == "signed")
-        |> join(:left, [c], i in Invoice,
-          on: i.contract_id == c.id
-        )
+        |> join(:left, [c], i in Invoice, on: i.contract_id == c.id)
         |> where([_c, i], is_nil(i.id))
         |> order_by([c], desc: c.inserted_at)
         |> Repo.all()
@@ -59,9 +57,7 @@ defmodule EdocApi.Invoicing do
           [c],
           c.company_id == ^company_id and c.id == ^contract_id and c.status == "signed"
         )
-        |> join(:left, [c], i in Invoice,
-          on: i.contract_id == c.id
-        )
+        |> join(:left, [c], i in Invoice, on: i.contract_id == c.id)
         |> where([_c, i], is_nil(i.id))
         |> Repo.one()
         |> case do
@@ -135,6 +131,26 @@ defmodule EdocApi.Invoicing do
 
       :error ->
         0
+    end
+  end
+
+  def invoice_summary_for_user(user_id) when is_binary(user_id) do
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        Invoice
+        |> where([i], i.company_id == ^company_id)
+        |> group_by([i], i.status)
+        |> select([i], {i.status, count(i.id)})
+        |> Repo.all()
+        |> Enum.reduce(%{draft: 0, issued: 0, paid: 0}, fn
+          {"draft", count}, acc -> %{acc | draft: count}
+          {"issued", count}, acc -> %{acc | issued: count}
+          {"paid", count}, acc -> %{acc | paid: count}
+          _, acc -> acc
+        end)
+
+      :error ->
+        %{draft: 0, issued: 0, paid: 0}
     end
   end
 
@@ -286,13 +302,7 @@ defmodule EdocApi.Invoicing do
 
           {:ok, invoice} = RepoHelpers.insert_or_abort(invoice_changeset)
 
-          Enum.each(prepared_items, fn item_attrs ->
-            cs =
-              %InvoiceItem{}
-              |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
-
-            RepoHelpers.insert_or_abort(cs)
-          end)
+          insert_invoice_items_batch!(invoice.id, prepared_items)
 
           {:ok, preload_invoice(invoice)}
         end)
@@ -303,7 +313,10 @@ defmodule EdocApi.Invoicing do
   end
 
   def contract_ready_for_progression?(%{contract_id: nil}), do: true
-  def contract_ready_for_progression?(%{contract: %Contract{} = contract}), do: ContractStatus.is_signed?(contract)
+
+  def contract_ready_for_progression?(%{contract: %Contract{} = contract}),
+    do: ContractStatus.is_signed?(contract)
+
   def contract_ready_for_progression?(%{contract_id: _contract_id}), do: false
   def contract_ready_for_progression?(_invoice), do: true
 
@@ -362,13 +375,7 @@ defmodule EdocApi.Invoicing do
           |> Repo.delete_all()
 
           # Insert new items
-          Enum.each(prepared_items, fn item_attrs ->
-            cs =
-              %InvoiceItem{}
-              |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice.id))
-
-            RepoHelpers.insert_or_abort(cs)
-          end)
+          insert_invoice_items_batch!(invoice.id, prepared_items)
 
           subtotal
         end
@@ -579,6 +586,38 @@ defmodule EdocApi.Invoicing do
         _ -> nil
       end
     end
+  end
+
+  defp insert_invoice_items_batch!(invoice_id, prepared_items) when is_binary(invoice_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    rows =
+      Enum.map(prepared_items, fn item_attrs ->
+        changeset =
+          %InvoiceItem{}
+          |> InvoiceItem.changeset(Map.put(item_attrs, "invoice_id", invoice_id))
+
+        if changeset.valid? do
+          item = Ecto.Changeset.apply_changes(changeset)
+
+          %{
+            id: item.id || Ecto.UUID.generate(),
+            invoice_id: item.invoice_id,
+            code: item.code,
+            name: item.name,
+            qty: item.qty,
+            unit_price: item.unit_price,
+            amount: item.amount,
+            inserted_at: now,
+            updated_at: now
+          }
+        else
+          RepoHelpers.abort({:validation, %{changeset: changeset}})
+        end
+      end)
+
+    Repo.insert_all(InvoiceItem, rows)
+    :ok
   end
 
   defp zero_decimal do
@@ -829,7 +868,7 @@ defmodule EdocApi.Invoicing do
              {:ok, inv} <- update_invoice_status(invoice, InvoiceStatus.issued()) do
           {:ok, preload_invoice(inv)}
         end
-      end
+    end
   end
 
   defp contract_progression_details(invoice) do
@@ -975,7 +1014,8 @@ defmodule EdocApi.Invoicing do
     end
   end
 
-  defp company_invoice_query(user_id, invoice_id) when is_binary(user_id) and is_binary(invoice_id) do
+  defp company_invoice_query(user_id, invoice_id)
+       when is_binary(user_id) and is_binary(invoice_id) do
     case fetch_company_id(user_id) do
       {:ok, company_id} ->
         from(i in Invoice, where: i.company_id == ^company_id and i.id == ^invoice_id)

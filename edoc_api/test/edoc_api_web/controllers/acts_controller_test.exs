@@ -15,6 +15,7 @@ defmodule EdocApiWeb.ActsControllerTest do
     user = create_user!()
     Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
+
     conn =
       conn
       |> Plug.Test.init_test_session(%{user_id: user.id})
@@ -185,14 +186,17 @@ defmodule EdocApiWeb.ActsControllerTest do
           "buyer_id" => buyer.id
         })
 
-      Enum.each([eligible_contract, used_draft_contract, used_issued_contract, used_signed_contract], fn contract ->
-        %ContractItem{}
-        |> ContractItem.changeset(
-          %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
-          contract.id
-        )
-        |> Repo.insert!()
-      end)
+      Enum.each(
+        [eligible_contract, used_draft_contract, used_issued_contract, used_signed_contract],
+        fn contract ->
+          %ContractItem{}
+          |> ContractItem.changeset(
+            %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
+            contract.id
+          )
+          |> Repo.insert!()
+        end
+      )
 
       _draft_act = create_contract_act!(user, company, used_draft_contract.id, "draft")
       _issued_act = create_contract_act!(user, company, used_issued_contract.id, "issued")
@@ -383,6 +387,56 @@ defmodule EdocApiWeb.ActsControllerTest do
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+    end
+  end
+
+  describe "index pagination" do
+    test "renders paginated acts and keeps overview counts aggregated", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Paged Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      create_paged_act = fn status ->
+        {:ok, act} =
+          Acts.create_act_for_user(user.id, company.id, %{
+            "issue_date" => Date.utc_today(),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address",
+            "items" => [
+              %{"name" => "Services", "code" => "A-1", "qty" => "1", "unit_price" => "100.00"}
+            ]
+          })
+
+        act
+        |> Ecto.Changeset.change(status: status)
+        |> EdocApi.Repo.update!()
+      end
+
+      draft_act = create_paged_act.("draft")
+      issued_act = create_paged_act.("issued")
+      signed_act = create_paged_act.("signed")
+
+      body =
+        conn
+        |> get("/acts?page=1&page_size=1")
+        |> html_response(200)
+
+      numbers = [draft_act.number, issued_act.number, signed_act.number]
+      assert Enum.count(numbers, &String.contains?(body, &1)) == 1
+
+      assert body =~
+               Gettext.gettext(EdocApiWeb.Gettext, "Page %{page} of %{total}", page: 1, total: 3)
+
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Draft acts")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Issued acts")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Signed acts")
     end
   end
 

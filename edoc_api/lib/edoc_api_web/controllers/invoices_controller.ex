@@ -18,14 +18,20 @@ defmodule EdocApiWeb.InvoicesController do
 
   defp current_user(conn), do: conn.assigns.current_user
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = current_user(conn)
-    invoices = Invoicing.list_invoices_for_user(user.id)
+    %{page: page, page_size: page_size, offset: offset} = html_pagination_params(params)
+    invoices = Invoicing.list_invoices_for_user(user.id, limit: page_size, offset: offset)
+    total_count = Invoicing.count_invoices_for_user(user.id)
 
     render(conn, :index,
       invoices: invoices,
-      invoice_summary: invoice_summary(invoices),
+      invoice_summary: Invoicing.invoice_summary_for_user(user.id),
       current_section: :invoices,
+      page: page,
+      page_size: page_size,
+      total_count: total_count,
+      total_pages: total_pages(total_count, page_size),
       page_title: gettext("Invoices")
     )
   end
@@ -165,7 +171,9 @@ defmodule EdocApiWeb.InvoicesController do
                   user,
                   company,
                   invoice_params,
-                  gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+                  gettext(
+                    "Document limit reached for this billing period. Upgrade your plan to continue."
+                  )
                 )
 
               {:error, reason} ->
@@ -202,15 +210,25 @@ defmodule EdocApiWeb.InvoicesController do
     redirect(conn, to: "/invoices/new?invoice_type=contract&contract_id=#{contract_id}")
   end
 
-  defp invoice_summary(invoices) do
-    Enum.reduce(invoices, %{draft: 0, issued: 0, paid: 0}, fn invoice, acc ->
-      case invoice.status do
-        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
-        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
-        "paid" -> Map.update!(acc, :paid, &(&1 + 1))
-        _ -> acc
-      end
-    end)
+  defp html_pagination_params(params) do
+    page = params |> Map.get("page", "1") |> parse_positive_int(1)
+    page_size = params |> Map.get("page_size", "50") |> parse_positive_int(50) |> min(100)
+    offset = (page - 1) * page_size
+
+    %{page: page, page_size: page_size, offset: offset}
+  end
+
+  defp parse_positive_int(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} when parsed > 0 -> parsed
+      _ -> default
+    end
+  end
+
+  defp parse_positive_int(_, default), do: default
+
+  defp total_pages(total_count, page_size) when page_size > 0 do
+    max(1, div(total_count + page_size - 1, page_size))
   end
 
   defp process_items(items_params) do
@@ -608,17 +626,20 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+          gettext(
+            "Invoices linked to a contract can only be issued after the contract is signed."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
-      {:error,
-       :business_rule,
+      {:error, :business_rule,
        %{rule: :business_rule, details: %{rule: :contract_must_be_signed_to_issue_invoice}}} ->
         conn
         |> put_flash(
           :error,
-          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+          gettext(
+            "Invoices linked to a contract can only be issued after the contract is signed."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
@@ -626,7 +647,9 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Invoices linked to a contract can only be issued after the contract is signed.")
+          gettext(
+            "Invoices linked to a contract can only be issued after the contract is signed."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
@@ -634,7 +657,9 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+          gettext(
+            "Document limit reached for this billing period. Upgrade your plan to continue."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
@@ -642,7 +667,9 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+          gettext(
+            "Document limit reached for this billing period. Upgrade your plan to continue."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
@@ -679,7 +706,9 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Invoices linked to a contract can only be marked as paid after the contract is signed.")
+          gettext(
+            "Invoices linked to a contract can only be marked as paid after the contract is signed."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 
@@ -697,7 +726,9 @@ defmodule EdocApiWeb.InvoicesController do
         conn
         |> put_flash(
           :error,
-          gettext("Invoices linked to a contract can only be marked as paid after the contract is signed.")
+          gettext(
+            "Invoices linked to a contract can only be marked as paid after the contract is signed."
+          )
         )
         |> redirect(to: "/invoices/#{id}")
 

@@ -12,7 +12,7 @@ defmodule EdocApi.Acts do
   alias EdocApi.Buyers
   alias EdocApi.Monetization
 
-  def list_acts_for_user(user_id) when is_binary(user_id) do
+  def list_acts_for_user(user_id, opts \\ []) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
       nil ->
         []
@@ -21,8 +21,41 @@ defmodule EdocApi.Acts do
         Act
         |> where([a], a.company_id == ^company_id)
         |> order_by([a], desc: a.inserted_at)
+        |> apply_pagination(opts)
         |> Repo.all()
         |> Repo.preload([:items, :company, :buyer, :contract])
+    end
+  end
+
+  def count_acts_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        0
+
+      %Company{id: company_id} ->
+        Act
+        |> where([a], a.company_id == ^company_id)
+        |> Repo.aggregate(:count, :id)
+    end
+  end
+
+  def act_summary_for_user(user_id) when is_binary(user_id) do
+    case Companies.get_company_by_user_id(user_id) do
+      nil ->
+        %{draft: 0, issued: 0, signed: 0}
+
+      %Company{id: company_id} ->
+        Act
+        |> where([a], a.company_id == ^company_id)
+        |> group_by([a], a.status)
+        |> select([a], {a.status, count(a.id)})
+        |> Repo.all()
+        |> Enum.reduce(%{draft: 0, issued: 0, signed: 0}, fn
+          {"draft", count}, acc -> %{acc | draft: count}
+          {"issued", count}, acc -> %{acc | issued: count}
+          {"signed", count}, acc -> %{acc | signed: count}
+          _, acc -> acc
+        end)
     end
   end
 
@@ -217,14 +250,7 @@ defmodule EdocApi.Acts do
       Repo.transaction(fn ->
         case %Act{} |> Act.changeset(act_attrs) |> Repo.insert() do
           {:ok, act} ->
-            Enum.each(prepared_items, fn item_attrs ->
-              attrs = Map.put(item_attrs, "act_id", act.id)
-
-              case %ActItem{} |> ActItem.changeset(attrs) |> Repo.insert() do
-                {:ok, _} -> :ok
-                {:error, changeset} -> Repo.rollback({:validation, %{changeset: changeset}})
-              end
-            end)
+            insert_act_items_batch!(act.id, prepared_items)
 
             Repo.preload(act, [:items, :company, :buyer, :contract])
 
@@ -260,6 +286,40 @@ defmodule EdocApi.Acts do
     end
   end
 
+  defp insert_act_items_batch!(act_id, prepared_items) when is_binary(act_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    rows =
+      Enum.map(prepared_items, fn item_attrs ->
+        attrs = Map.put(item_attrs, "act_id", act_id)
+        changeset = ActItem.changeset(%ActItem{}, attrs)
+
+        if changeset.valid? do
+          item = Ecto.Changeset.apply_changes(changeset)
+
+          %{
+            id: item.id || Ecto.UUID.generate(),
+            act_id: item.act_id,
+            name: item.name,
+            report_info: item.report_info,
+            code: item.code,
+            qty: item.qty,
+            unit_price: item.unit_price,
+            amount: item.amount,
+            vat_amount: item.vat_amount,
+            actual_date: item.actual_date,
+            inserted_at: now,
+            updated_at: now
+          }
+        else
+          Repo.rollback({:validation, %{changeset: changeset}})
+        end
+      end)
+
+    Repo.insert_all(ActItem, rows)
+    :ok
+  end
+
   def next_act_number!(company_id) when is_binary(company_id) do
     last_number =
       Act
@@ -281,6 +341,24 @@ defmodule EdocApi.Acts do
     seq = if last_number > 0, do: last_number + 1, else: 1
 
     String.pad_leading(Integer.to_string(seq), 11, "0")
+  end
+
+  defp apply_pagination(query, opts) do
+    limit = Keyword.get(opts, :limit)
+    offset = Keyword.get(opts, :offset)
+
+    query =
+      if is_integer(limit) do
+        from(q in query, limit: ^limit)
+      else
+        query
+      end
+
+    if is_integer(offset) and offset > 0 do
+      from(q in query, offset: ^offset)
+    else
+      query
+    end
   end
 
   defp fetch_buyer(attrs, company_id) do

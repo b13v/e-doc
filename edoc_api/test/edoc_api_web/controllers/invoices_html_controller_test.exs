@@ -58,6 +58,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
         })
 
       assert redirected_to(conn) =~ "/invoices/"
+
       assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
                Gettext.gettext(EdocApiWeb.Gettext, "Invoice created successfully.")
 
@@ -68,9 +69,10 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       assert Enum.any?(invoices, &(&1.number == "00000000002"))
     end
 
-    test "re-renders direct invoice form with translated validation details instead of crashing", %{
-      conn: conn
-    } do
+    test "re-renders direct invoice form with translated validation details instead of crashing",
+         %{
+           conn: conn
+         } do
       conn =
         post(conn, "/invoices", %{
           "invoice" => %{
@@ -207,8 +209,11 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
           "contract_id" => used_paid_contract.id
         })
 
-      assert {:ok, issued_paid_invoice} = Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
-      assert {:ok, _paid_invoice} = Invoicing.pay_invoice_for_user(user.id, issued_paid_invoice.id)
+      assert {:ok, issued_paid_invoice} =
+               Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+
+      assert {:ok, _paid_invoice} =
+               Invoicing.pay_invoice_for_user(user.id, issued_paid_invoice.id)
 
       body =
         conn
@@ -311,6 +316,38 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       body = html_response(conn, 200)
 
       assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+    end
+  end
+
+  describe "index pagination" do
+    test "renders paginated invoices and keeps overview counts aggregated", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      draft_invoice = create_invoice_with_items!(user, company, %{"number" => "00000001001"})
+      issued_invoice = create_invoice_with_items!(user, company, %{"number" => "00000001002"})
+      paid_invoice = create_invoice_with_items!(user, company, %{"number" => "00000001003"})
+
+      assert {:ok, _issued} = Invoicing.issue_invoice_for_user(user.id, issued_invoice.id)
+      assert {:ok, issued_paid} = Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+      assert {:ok, _paid} = Invoicing.pay_invoice_for_user(user.id, issued_paid.id)
+
+      body =
+        conn
+        |> get("/invoices?page=1&page_size=1")
+        |> html_response(200)
+
+      numbers = ["00000001001", "00000001002", "00000001003"]
+      assert Enum.count(numbers, &String.contains?(body, &1)) == 1
+
+      assert body =~
+               Gettext.gettext(EdocApiWeb.Gettext, "Page %{page} of %{total}", page: 1, total: 3)
+
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Draft invoices")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Issued invoices")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Paid invoices")
+      assert draft_invoice.id != issued_invoice.id
     end
   end
 

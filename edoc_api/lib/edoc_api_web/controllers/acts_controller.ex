@@ -12,14 +12,20 @@ defmodule EdocApiWeb.ActsController do
 
   defp current_user(conn), do: conn.assigns.current_user
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = current_user(conn)
-    acts = Acts.list_acts_for_user(user.id)
+    %{page: page, page_size: page_size, offset: offset} = html_pagination_params(params)
+    acts = Acts.list_acts_for_user(user.id, limit: page_size, offset: offset)
+    total_count = Acts.count_acts_for_user(user.id)
 
     render(conn, :index,
       page_title: gettext("Acts"),
       acts: acts,
-      act_summary: act_summary(acts),
+      act_summary: Acts.act_summary_for_user(user.id),
+      page: page,
+      page_size: page_size,
+      total_count: total_count,
+      total_pages: total_pages(total_count, page_size),
       current_section: :acts
     )
   end
@@ -128,7 +134,9 @@ defmodule EdocApiWeb.ActsController do
                 conn
                 |> put_flash(
                   :error,
-                  gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+                  gettext(
+                    "Document limit reached for this billing period. Upgrade your plan to continue."
+                  )
                 )
                 |> redirect(to: "/acts/new")
 
@@ -225,7 +233,9 @@ defmodule EdocApiWeb.ActsController do
         conn
         |> put_flash(
           :error,
-          gettext("Document limit reached for this billing period. Upgrade your plan to continue.")
+          gettext(
+            "Document limit reached for this billing period. Upgrade your plan to continue."
+          )
         )
         |> redirect(to: "/acts/#{id}")
 
@@ -299,15 +309,25 @@ defmodule EdocApiWeb.ActsController do
   defp normalize_id(v) when is_binary(v), do: v
   defp normalize_id(_), do: nil
 
-  defp act_summary(acts) do
-    Enum.reduce(acts, %{draft: 0, issued: 0, signed: 0}, fn act, acc ->
-      case act.status do
-        "draft" -> Map.update!(acc, :draft, &(&1 + 1))
-        "issued" -> Map.update!(acc, :issued, &(&1 + 1))
-        "signed" -> Map.update!(acc, :signed, &(&1 + 1))
-        _ -> acc
-      end
-    end)
+  defp html_pagination_params(params) do
+    page = params |> Map.get("page", "1") |> parse_positive_int(1)
+    page_size = params |> Map.get("page_size", "50") |> parse_positive_int(50) |> min(100)
+    offset = (page - 1) * page_size
+
+    %{page: page, page_size: page_size, offset: offset}
+  end
+
+  defp parse_positive_int(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} when parsed > 0 -> parsed
+      _ -> default
+    end
+  end
+
+  defp parse_positive_int(_, default), do: default
+
+  defp total_pages(total_count, page_size) when page_size > 0 do
+    max(1, div(total_count + page_size - 1, page_size))
   end
 
   defp blank?(value) when value in [nil, ""], do: true
