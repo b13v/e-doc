@@ -69,7 +69,7 @@ When owner/admin removes an active member:
 
 Lifecycle contract for active-member path:
 
-- membership row is not preserved as tombstone for removed target company access;
+- membership row is physically deleted (no tombstone) for removed target company access;
 - `remove_membership/2` success return contract is explicit and branch-specific:
   - active user company-only offboard branch: `{:ok, %{mode: :company_removed_only, membership_id: ..., user_id: ...}}`
   - active user hard-delete branch: `{:ok, %{mode: :hard_deleted_user, membership_id: ..., user_id: ...}}`
@@ -126,6 +126,11 @@ Reassignment for target company is explicit and table-by-table:
 - on `company_removed_only`: delete removed user’s `generated_documents` that reference documents from the target company (invoice/act/contract ids in that company), so removed-company cached PDFs are not retrievable anymore.
 - on `hard_deleted_user`: delete all `generated_documents` rows for that user explicitly.
 - for rows with `file_path`, perform best-effort filesystem cleanup after DB commit (log-and-continue on file delete failure; DB operation remains successful).
+
+Public share-link policy:
+
+- on both `company_removed_only` and `hard_deleted_user` branches, delete/revoke `public_access_tokens` for target-company documents created by removed user.
+- this invalidates previously shared public links initiated by removed member for the removed company.
 
 Email-invite policy (`tenant_memberships.invite_email`):
 
@@ -205,6 +210,8 @@ Required tests:
    - `company_removed_only` removes target-company cached PDFs for removed member.
    - `hard_deleted_user` removes all cached PDFs for deleted user.
    - file-backed artifacts (`file_path`) are attempted to be deleted (best effort).
+8. Public-link revocation path:
+   - target-company `public_access_tokens` created by removed member are removed/revoked during offboarding transaction.
 
 ## 10. Acceptance Criteria
 
