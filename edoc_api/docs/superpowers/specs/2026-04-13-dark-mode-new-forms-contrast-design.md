@@ -83,16 +83,30 @@ Make both pages clearly readable in dark mode without changing business logic, p
     - items block shell
     - items heading contrast
     - dynamic row class tokens in rendered `addItemRow()` JS template strings
-  - Add parity assertion:
-    - Initial visible row controls and `addItemRow()` controls include the same dark-mode class groups for labels/inputs/selects.
+  - Add parity assertion (server-side, token based):
+    - Dark class groups used by static form controls are also present in `addItemRow()` template strings for labels/inputs/selects.
   - Test intent: server-rendered class-contract assertions only (no browser runtime execution in this test suite).
+
+## Test Data Contract
+- Invoice direct mode (`/invoices/new?invoice_type=direct`):
+  - verified user + company
+  - at least one bank account
+  - at least one buyer
+- Invoice contract mode (`/invoices/new?invoice_type=contract`):
+  - all direct-mode fixtures
+  - at least one signed contract
+- Act direct mode (`/acts/new?act_type=direct`):
+  - verified user + company
+  - at least one buyer
+- Act contract mode (`/acts/new?act_type=contract`):
+  - all act direct-mode fixtures
+  - at least one signed contract
 
 ### Verification
 - Run targeted tests:
-  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:1103`
-  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:915`
-  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:1079`
-- Run full `workspace_overview_ui_test.exs` file to ensure no regressions in shared workspace shell contracts.
+  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs`
+- Optional focused reruns during implementation:
+  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs --seed 0`
 
 ## Error Handling / Risk
 - Risk: class-token assertions can be brittle if class order changes.
@@ -100,6 +114,6 @@ Make both pages clearly readable in dark mode without changing business logic, p
 
 ## Success Criteria
 - All class-token contracts in “Implementation Contract” are present for both direct and contract modes.
-- `addItemRow()` markup contains the same dark-mode class groups as initial visible row controls.
+- `addItemRow()` markup contains dark-mode class groups that match static form-control dark class groups (token-level parity).
 - Test commands in “Verification” pass.
 - Regression tests pass and existing workspace UI tests stay green.
