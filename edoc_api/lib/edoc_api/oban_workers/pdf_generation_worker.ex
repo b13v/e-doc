@@ -104,13 +104,14 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
   @doc """
   Get the PDF binary for a document.
 
-  Validates that the document belongs to the user before returning.
+  The document ownership check happens earlier when the document is fetched for
+  generation. Stored PDFs are keyed by document identity, so retrieval should
+  match that same key.
   """
-  def get_pdf(document_type, document_id, user_id) do
+  def get_pdf(document_type, document_id, _user_id) do
     case Repo.get_by(GeneratedDocument,
            document_type: to_string(document_type),
            document_id: document_id,
-           user_id: user_id,
            status: "completed"
          ) do
       nil -> {:error, :not_found}

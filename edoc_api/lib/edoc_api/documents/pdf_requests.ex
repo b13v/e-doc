@@ -44,7 +44,7 @@ defmodule EdocApi.Documents.PdfRequests do
       when is_binary(document_id) and is_binary(user_id) do
     normalized_type = normalize_type(document_type)
 
-    case get_generated_document(normalized_type, document_id, user_id) do
+    case get_generated_document(normalized_type, document_id) do
       nil -> {:error, :not_found}
       %GeneratedDocument{status: status} -> {:ok, String.to_existing_atom(status)}
     end
@@ -54,7 +54,7 @@ defmodule EdocApi.Documents.PdfRequests do
   end
 
   defp ensure_pending_and_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun) do
-    case get_generated_document(document_type, document_id, user_id) do
+    case get_generated_document(document_type, document_id) do
       %GeneratedDocument{status: "completed", pdf_binary: pdf_binary}
       when is_binary(pdf_binary) ->
         {:ok, pdf_binary}
@@ -71,14 +71,33 @@ defmodule EdocApi.Documents.PdfRequests do
         do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun)
 
       nil ->
-        Repo.insert!(%GeneratedDocument{
-          user_id: user_id,
-          document_type: document_type,
-          document_id: document_id,
-          status: "pending"
-        })
+        case Repo.insert(
+               GeneratedDocument.changeset(%GeneratedDocument{}, %{
+                 user_id: user_id,
+                 document_type: document_type,
+                 document_id: document_id,
+                 status: "pending"
+               })
+             ) do
+          {:ok, _generated_document} ->
+            do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun)
 
-        do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun)
+          {:error, changeset} ->
+            case get_generated_document(document_type, document_id) do
+              %GeneratedDocument{status: "completed", pdf_binary: pdf_binary}
+              when is_binary(pdf_binary) ->
+                {:ok, pdf_binary}
+
+              %GeneratedDocument{status: status} when status in ["pending", "processing"] ->
+                {:pending, :already_queued}
+
+              %GeneratedDocument{} ->
+                {:pending, :already_queued}
+
+              nil ->
+                {:error, changeset}
+            end
+        end
     end
   end
 
@@ -89,12 +108,11 @@ defmodule EdocApi.Documents.PdfRequests do
     end
   end
 
-  defp get_generated_document(document_type, document_id, user_id) do
+  defp get_generated_document(document_type, document_id) do
     GeneratedDocument
     |> where(
       [g],
-      g.document_type == ^document_type and g.document_id == ^document_id and
-        g.user_id == ^user_id
+      g.document_type == ^document_type and g.document_id == ^document_id
     )
     |> limit(1)
     |> Repo.one()
