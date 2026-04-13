@@ -36,6 +36,13 @@ defmodule EdocApiWeb.VerificationPendingControllerTest do
     assert body =~ ~s(hx-on::after-request=)
   end
 
+  test "pending page does not show register-again link", %{conn: conn} do
+    conn = get(conn, "/verify-email-pending?email=example@example.com")
+    body = html_response(conn, 200)
+
+    refute body =~ ~s(class="mt-6 pt-6 border-t border-gray-200")
+  end
+
   test "missing email redirects to signup", %{conn: conn} do
     conn = get(conn, "/verify-email-pending")
 
