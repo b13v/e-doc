@@ -55,18 +55,18 @@ Make both pages clearly readable in dark mode without changing business logic, p
 - Preserve existing field names and JS behavior.
 
 ## Implementation Contract
-| Page | Target | Required class tokens |
+| Page | Target (anchor) | Required class tokens |
 |---|---|---|
-| `/invoices/new` | Mode toggle container | `dark:border-slate-600`, `dark:bg-slate-800/80` |
-| `/invoices/new` | Mode toggle labels | `dark:text-slate-100` |
-| `/invoices/new` | Items heading | `dark:text-slate-100` |
-| `/invoices/new` | Items surface wrapper | `dark:bg-slate-900/80` |
-| `/invoices/new` | `addItemRow()` template labels/inputs/selects | `dark:text-slate-300`, `dark:bg-slate-800`, `dark:text-slate-100`, `dark:ring-slate-600` |
-| `/acts/new` | Mode toggle container | `dark:border-slate-600`, `dark:bg-slate-800/80` |
-| `/acts/new` | Mode toggle labels | `dark:text-slate-100` |
-| `/acts/new` | Items heading | `dark:text-slate-100` |
-| `/acts/new` | Items surface wrapper | `dark:bg-slate-900/80` |
-| `/acts/new` | `addItemRow()` template labels/inputs/selects | `dark:text-slate-300`, `dark:bg-slate-800`, `dark:text-slate-100`, `dark:ring-slate-600` |
+| `/invoices/new` | Mode toggle container (parent of `#invoice_type_contract`, `#invoice_type_direct`) | `dark:border-slate-600`, `dark:bg-slate-800/80` |
+| `/invoices/new` | Mode toggle labels (same block as above) | `dark:text-slate-100` |
+| `/invoices/new` | Items heading (same section as `#add-item-btn`) | `dark:text-slate-100` |
+| `/invoices/new` | Items surface wrapper (contains `#items-container`) | `dark:bg-slate-900/80` |
+| `/invoices/new` | `addItemRow()` template labels/inputs/selects in script | `dark:text-slate-300`, `dark:bg-slate-800`, `dark:text-slate-100`, `dark:ring-slate-600` |
+| `/acts/new` | Mode toggle container (parent of `#act_type_contract`, `#act_type_direct`) | `dark:border-slate-600`, `dark:bg-slate-800/80` |
+| `/acts/new` | Mode toggle labels (same block as above) | `dark:text-slate-100` |
+| `/acts/new` | Items heading (same section as `#add-item-btn`) | `dark:text-slate-100` |
+| `/acts/new` | Items surface wrapper (contains `#items-container`) | `dark:bg-slate-900/80` |
+| `/acts/new` | `addItemRow()` template labels/inputs/selects in script | `dark:text-slate-300`, `dark:bg-slate-800`, `dark:text-slate-100`, `dark:ring-slate-600` |
 
 ## Testing Strategy
 ### Regression test (first)
@@ -83,12 +83,15 @@ Make both pages clearly readable in dark mode without changing business logic, p
     - items block shell
     - items heading contrast
     - dynamic row class tokens in rendered `addItemRow()` JS template strings
+  - Add parity assertion:
+    - Initial visible row controls and `addItemRow()` controls include the same dark-mode class groups for labels/inputs/selects.
   - Test intent: server-rendered class-contract assertions only (no browser runtime execution in this test suite).
 
 ### Verification
 - Run targeted tests:
-  - new regression test location
-  - existing invoice/act new form-chrome tests in same test module
+  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:1103`
+  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:915`
+  - `mix test test/edoc_api_web/controllers/workspace_overview_ui_test.exs:1079`
 - Run full `workspace_overview_ui_test.exs` file to ensure no regressions in shared workspace shell contracts.
 
 ## Error Handling / Risk
@@ -96,7 +99,7 @@ Make both pages clearly readable in dark mode without changing business logic, p
 - Mitigation: assert stable token substrings and semantic class groups instead of full exact class strings where possible.
 
 ## Success Criteria
-- In dark mode, mode-toggle text is clearly readable on both pages.
-- Items block is visually consistent with dark theme.
-- Dynamically added rows remain readable.
+- All class-token contracts in “Implementation Contract” are present for both direct and contract modes.
+- `addItemRow()` markup contains the same dark-mode class groups as initial visible row controls.
+- Test commands in “Verification” pass.
 - Regression tests pass and existing workspace UI tests stay green.
