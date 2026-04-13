@@ -26,6 +26,13 @@ defmodule EdocApi.Application do
       EdocApiWeb.Endpoint
     ]
 
+    children =
+      if dictionary_cache_enabled?() do
+        List.insert_at(children, 2, EdocApi.Payments.DictionaryCache)
+      else
+        children
+      end
+
     Logger.info("[EdocApi] Starting #{length(children)} supervised children...")
 
     opts = [strategy: :one_for_one, name: EdocApi.Supervisor]
@@ -54,6 +61,11 @@ defmodule EdocApi.Application do
     Logger.info("[EdocApi] HTTP endpoint listening on port #{port}")
 
     Logger.info("[EdocApi] All systems operational")
+  end
+
+  defp dictionary_cache_enabled? do
+    Application.get_env(:edoc_api, EdocApi.Payments.DictionaryCache, [])
+    |> Keyword.get(:enabled, true)
   end
 
   # Tell Phoenix to update the endpoint configuration

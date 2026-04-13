@@ -36,6 +36,8 @@ config :edoc_api, Oban,
   queues: [default: 10, pdf_generation: 5],
   testing: :inline
 
+config :edoc_api, EdocApi.Payments.DictionaryCache, enabled: false
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

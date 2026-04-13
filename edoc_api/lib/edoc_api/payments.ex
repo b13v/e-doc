@@ -4,6 +4,7 @@ defmodule EdocApi.Payments do
   alias EdocApi.Repo
   alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
+  alias EdocApi.Payments.DictionaryCache
   alias EdocApi.Validators.Iban
 
   def list_company_bank_accounts_for_user(user_id) do
@@ -157,15 +158,44 @@ defmodule EdocApi.Payments do
   end
 
   def list_banks do
-    Bank |> order_by([b], asc: b.name) |> Repo.all()
+    if dictionary_cache_enabled?() do
+      DictionaryCache.get(:banks)
+    else
+      list_banks_from_db()
+    end
   end
 
   def list_kbe_codes do
-    KbeCode |> order_by([k], asc: k.code) |> Repo.all()
+    if dictionary_cache_enabled?() do
+      DictionaryCache.get(:kbe_codes)
+    else
+      list_kbe_codes_from_db()
+    end
   end
 
   def list_knp_codes do
+    if dictionary_cache_enabled?() do
+      DictionaryCache.get(:knp_codes)
+    else
+      list_knp_codes_from_db()
+    end
+  end
+
+  defp list_banks_from_db do
+    Bank |> order_by([b], asc: b.name) |> Repo.all()
+  end
+
+  defp list_kbe_codes_from_db do
+    KbeCode |> order_by([k], asc: k.code) |> Repo.all()
+  end
+
+  defp list_knp_codes_from_db do
     KnpCode |> order_by([k], asc: k.code) |> Repo.all()
+  end
+
+  defp dictionary_cache_enabled? do
+    Application.get_env(:edoc_api, DictionaryCache, [])
+    |> Keyword.get(:enabled, true)
   end
 
   defp merge_code_ids_for_create(company_id, attrs) do

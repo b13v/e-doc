@@ -93,3 +93,7 @@ config :edoc_api, EdocApi.Auth,
   jwt_secret: jwt_secret,
   access_ttl_seconds: parse_positive_env_int.("JWT_ACCESS_TTL_SECONDS", 15 * 60),
   refresh_ttl_seconds: parse_positive_env_int.("JWT_REFRESH_TTL_SECONDS", 30 * 24 * 60 * 60)
+
+config :edoc_api, EdocApi.Payments.DictionaryCache,
+  enabled: true,
+  refresh_ms: parse_positive_env_int.("DICTIONARY_CACHE_REFRESH_MS", 5 * 60 * 1000)
