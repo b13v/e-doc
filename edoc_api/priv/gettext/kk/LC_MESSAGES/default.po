@@ -2587,3 +2587,6 @@ msgstr "Келесі"
 #, elixir-autogen, elixir-format
 msgid "Page %{page} of %{total}"
 msgstr "%{page} / %{total} бет"
+
+msgid "PDF is being prepared. Please try again in a few seconds."
+msgstr "PDF файлы дайындалып жатыр. Бірнеше секундтан кейін қайта көріңіз."

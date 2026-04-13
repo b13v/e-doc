@@ -74,13 +74,16 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
   """
   def enqueue(document_type, document_id, user_id, html_binary)
       when document_type in ~w(contract invoice act) and is_binary(html_binary) do
-    %{
-      "document_type" => document_type,
-      "document_id" => document_id,
-      "user_id" => user_id,
-      "html" => html_binary
-    }
-    |> Oban.Job.new(queue: :pdf_generation, max_attempts: 3)
+    __MODULE__.new(
+      %{
+        "document_type" => document_type,
+        "document_id" => document_id,
+        "user_id" => user_id,
+        "html" => html_binary
+      },
+      queue: :pdf_generation,
+      max_attempts: 3
+    )
     |> Oban.insert()
   end
 

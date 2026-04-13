@@ -2,7 +2,7 @@ defmodule EdocApiWeb.ContractController do
   use EdocApiWeb, :controller
 
   alias EdocApi.Core
-  alias EdocApi.Documents.ContractPdf
+  alias EdocApi.Documents.PdfRequests
   alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
 
   def index(conn, params) do
@@ -113,18 +113,9 @@ defmodule EdocApiWeb.ContractController do
       {:ok, contract} ->
         # Pre-render HTML in web layer, then pass to PDF module
         html = EdocApiWeb.PdfTemplates.contract_html(contract)
-        result = ContractPdf.render(html)
 
-        error_map = %{
-          pdf_generation_failed: fn conn ->
-            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
-          end
-        }
-
-        ControllerHelpers.handle_result(
-          conn,
-          result,
-          fn conn, pdf_binary ->
+        case PdfRequests.fetch_or_enqueue(:contract, contract.id, user.id, html) do
+          {:ok, pdf_binary} ->
             conn
             |> put_pdf_security_headers()
             |> put_resp_content_type("application/pdf")
@@ -133,9 +124,39 @@ defmodule EdocApiWeb.ContractController do
               ~s(inline; filename="contract-#{contract.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
-          end,
-          error_map
-        )
+
+          {:pending, _} ->
+            conn
+            |> put_status(:accepted)
+            |> json(%{status: "pending", poll_url: "/v1/contracts/#{contract.id}/pdf/status"})
+
+          {:error, _reason} ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
+        end
+    end
+  end
+
+  def pdf_status(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Core.get_contract_for_user(user, id) do
+      {:error, :not_found, _details} ->
+        ErrorMapper.not_found(conn, "contract_not_found")
+
+      {:ok, contract} ->
+        case PdfRequests.status(:contract, contract.id, user.id) do
+          {:ok, :completed} ->
+            json(conn, %{status: "ready"})
+
+          {:ok, status} when status in [:pending, :processing] ->
+            conn |> put_status(:accepted) |> json(%{status: "pending"})
+
+          {:ok, :failed} ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
+
+          {:error, :not_found} ->
+            ErrorMapper.not_found(conn, "pdf_not_found")
+        end
     end
   end
 

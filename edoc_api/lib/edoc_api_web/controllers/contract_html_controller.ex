@@ -8,6 +8,7 @@ defmodule EdocApiWeb.ContractHTMLController do
   alias EdocApi.Companies
   alias EdocApi.Payments
   alias EdocApi.ContractStatus
+  alias EdocApi.Documents.PdfRequests
   alias EdocApiWeb.ErrorHelpers
 
   def index(conn, params) do
@@ -447,7 +448,7 @@ defmodule EdocApiWeb.ContractHTMLController do
         # Pre-render HTML in web layer, then pass to PDF module
         html = EdocApiWeb.PdfTemplates.contract_html(contract)
 
-        case EdocApi.Documents.ContractPdf.render(html) do
+        case PdfRequests.fetch_or_enqueue(:contract, contract.id, user.id, html) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)
@@ -457,6 +458,14 @@ defmodule EdocApiWeb.ContractHTMLController do
               ~s(inline; filename="contract-#{contract.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
+
+          {:pending, _reason} ->
+            conn
+            |> put_flash(
+              :info,
+              gettext("PDF is being prepared. Please try again in a few seconds.")
+            )
+            |> redirect(to: "/contracts/#{id}")
 
           {:error, _reason} ->
             conn

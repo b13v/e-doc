@@ -2,7 +2,9 @@ defmodule EdocApiWeb.ContractControllerTest do
   use EdocApiWeb.ConnCase
 
   alias EdocApi.Buyers
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Monetization
+  alias EdocApi.Repo
   import EdocApi.TestFixtures
 
   setup %{conn: conn} do
@@ -145,28 +147,62 @@ defmodule EdocApiWeb.ContractControllerTest do
   end
 
   describe "pdf/2" do
-    if System.find_executable("wkhtmltopdf") do
-      test "returns contract pdf", %{conn: conn, company: company} do
-        contract = create_contract!(company)
+    test "returns 202 with poll URL when pdf generation is pending", %{
+      conn: conn,
+      company: company
+    } do
+      contract = create_contract!(company)
 
-        conn = get(conn, "/v1/contracts/#{contract.id}/pdf")
-        assert response(conn, 200)
-        assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+      conn = get(conn, "/v1/contracts/#{contract.id}/pdf")
 
-        assert get_resp_header(conn, "content-disposition") ==
-                 [~s(inline; filename="contract-#{contract.number}.pdf")]
+      assert conn.status == 202
+      body = json_response(conn, 202)
+      assert body["status"] == "pending"
+      assert body["poll_url"] == "/v1/contracts/#{contract.id}/pdf/status"
+    end
 
-        assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
-        assert get_resp_header(conn, "pragma") == ["no-cache"]
-        assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
-      end
-    else
-      @tag skip: "wkhtmltopdf is not available in PATH"
-      test "returns contract pdf", %{conn: conn, company: company} do
-        contract = create_contract!(company)
-        conn = get(conn, "/v1/contracts/#{contract.id}/pdf")
-        assert response(conn, 200)
-      end
+    test "returns cached contract pdf", %{conn: conn, user: user, company: company} do
+      contract = create_contract!(company)
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "contract",
+        document_id: contract.id,
+        status: "completed",
+        pdf_binary: "%PDF-api-contract"
+      })
+
+      conn = get(conn, "/v1/contracts/#{contract.id}/pdf")
+      assert response(conn, 200)
+      assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+
+      assert get_resp_header(conn, "content-disposition") ==
+               [~s(inline; filename="contract-#{contract.number}.pdf")]
+
+      assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+      assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
+      assert conn.resp_body == "%PDF-api-contract"
+    end
+
+    test "returns ready status for cached contract pdf", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      contract = create_contract!(company)
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "contract",
+        document_id: contract.id,
+        status: "completed",
+        pdf_binary: "%PDF-api-contract"
+      })
+
+      conn = get(conn, "/v1/contracts/#{contract.id}/pdf/status")
+      assert response(conn, 200)
+      assert json_response(conn, 200) == %{"status" => "ready"}
     end
   end
 end

@@ -5,7 +5,9 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
 
   alias EdocApi.Accounts
   alias EdocApi.Buyers
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Monetization
+  alias EdocApi.Repo
 
   setup %{conn: conn} do
     user = create_user!()
@@ -26,6 +28,59 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
       })
 
     {:ok, conn: conn, user: user, company: company, buyer: buyer}
+  end
+
+  describe "pdf/2" do
+    test "returns cached pdf immediately when available", %{
+      conn: conn,
+      user: user,
+      company: company,
+      buyer: buyer
+    } do
+      contract =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "C-PDF-CACHED",
+          "buyer_id" => buyer.id
+        })
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "contract",
+        document_id: contract.id,
+        status: "completed",
+        pdf_binary: "%PDF-cached-contract"
+      })
+
+      conn = get(conn, "/contracts/#{contract.id}/pdf")
+
+      assert conn.status == 200
+      assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+      assert conn.resp_body == "%PDF-cached-contract"
+    end
+
+    test "enqueues generation and redirects with info when cache is missing", %{
+      conn: conn,
+      company: company,
+      buyer: buyer
+    } do
+      contract =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "C-PDF-PENDING",
+          "buyer_id" => buyer.id
+        })
+
+      conn = get(conn, "/contracts/#{contract.id}/pdf")
+
+      assert redirected_to(conn) == "/contracts/#{contract.id}"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "PDF is being prepared. Please try again in a few seconds."
+               )
+    end
   end
 
   test "shows upgrade prompt when trial document limit is exhausted", %{

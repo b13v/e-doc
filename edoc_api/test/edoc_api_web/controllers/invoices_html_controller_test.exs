@@ -6,6 +6,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Buyers
   alias EdocApi.Core.ContractItem
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Invoicing
   alias EdocApi.Monetization
   alias EdocApi.Repo
@@ -25,6 +26,48 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       |> put_req_header("accept", "text/html")
 
     {:ok, conn: conn, user: user, company: company}
+  end
+
+  describe "pdf/2" do
+    test "returns cached pdf immediately when available", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "invoice",
+        document_id: invoice.id,
+        status: "completed",
+        pdf_binary: "%PDF-cached-invoice"
+      })
+
+      conn = get(conn, "/invoices/#{invoice.id}/pdf")
+
+      assert conn.status == 200
+      assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+      assert conn.resp_body == "%PDF-cached-invoice"
+    end
+
+    test "enqueues generation and redirects with info when cache is missing", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      conn = get(conn, "/invoices/#{invoice.id}/pdf")
+
+      assert redirected_to(conn) == "/invoices/#{invoice.id}"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "PDF is being prepared. Please try again in a few seconds."
+               )
+    end
   end
 
   describe "create/2" do

@@ -3,6 +3,7 @@ defmodule EdocApiWeb.InvoiceControllerTest do
 
   import Ecto.Query, only: [from: 2]
   alias EdocApi.Core.TenantSubscription
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Invoicing
   alias EdocApi.Monetization
   alias EdocApi.Repo
@@ -206,7 +207,11 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       assert json_response(conn, 422)["error"] == "contract_must_be_signed_to_issue_invoice"
     end
 
-    test "returns 422 when document quota is exceeded", %{conn: conn, user: user, company: company} do
+    test "returns 422 when document quota is exceeded", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
       {:ok, _sub} =
         Monetization.activate_subscription_for_company(company.id, %{
           "plan" => "starter",
@@ -224,7 +229,11 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       assert json_response(conn, 422)["error"] == "quota_exceeded"
     end
 
-    test "returns 422 when trial 14-day window is expired", %{conn: conn, user: user, company: company} do
+    test "returns 422 when trial 14-day window is expired", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
       invoice = create_invoice_with_items!(user, company)
       _snapshot = Monetization.subscription_snapshot(company.id)
       expire_trial!(company.id, 15)
@@ -236,33 +245,64 @@ defmodule EdocApiWeb.InvoiceControllerTest do
   end
 
   describe "pdf/2" do
-    if System.find_executable("wkhtmltopdf") do
-      test "returns invoice pdf with security headers", %{
-        conn: conn,
-        user: user,
-        company: company
-      } do
-        invoice = create_invoice_with_items!(user, company)
+    test "returns 202 with poll URL when pdf generation is pending", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
 
-        conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
+      conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
 
-        assert response(conn, 200)
-        assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
-        assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
-        assert get_resp_header(conn, "pragma") == ["no-cache"]
-        assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
-      end
-    else
-      @tag skip: "wkhtmltopdf is not available in PATH"
-      test "returns invoice pdf with security headers", %{
-        conn: conn,
-        user: user,
-        company: company
-      } do
-        invoice = create_invoice_with_items!(user, company)
-        conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
-        assert response(conn, 200)
-      end
+      assert conn.status == 202
+      body = json_response(conn, 202)
+      assert body["status"] == "pending"
+      assert body["poll_url"] == "/v1/invoices/#{invoice.id}/pdf/status"
+    end
+
+    test "returns cached invoice pdf with security headers", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "invoice",
+        document_id: invoice.id,
+        status: "completed",
+        pdf_binary: "%PDF-api-invoice"
+      })
+
+      conn = get(conn, "/v1/invoices/#{invoice.id}/pdf")
+
+      assert response(conn, 200)
+      assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+      assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+      assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
+      assert conn.resp_body == "%PDF-api-invoice"
+    end
+
+    test "returns ready status for cached invoice pdf", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice = create_invoice_with_items!(user, company)
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "invoice",
+        document_id: invoice.id,
+        status: "completed",
+        pdf_binary: "%PDF-api-invoice"
+      })
+
+      conn = get(conn, "/v1/invoices/#{invoice.id}/pdf/status")
+      assert response(conn, 200)
+      assert json_response(conn, 200) == %{"status" => "ready"}
     end
   end
 

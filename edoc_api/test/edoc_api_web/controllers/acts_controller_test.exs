@@ -8,6 +8,7 @@ defmodule EdocApiWeb.ActsControllerTest do
   alias EdocApi.Buyers
   alias EdocApi.Core.Contract
   alias EdocApi.Core.ContractItem
+  alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Monetization
   alias EdocApi.Repo
 
@@ -23,6 +24,48 @@ defmodule EdocApiWeb.ActsControllerTest do
       |> put_req_header("accept", "text/html")
 
     {:ok, conn: conn, user: user, company: company}
+  end
+
+  describe "pdf/2" do
+    test "returns cached pdf immediately when available", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company, "issued")
+
+      Repo.insert!(%GeneratedDocument{
+        user_id: user.id,
+        document_type: "act",
+        document_id: act.id,
+        status: "completed",
+        pdf_binary: "%PDF-cached-act"
+      })
+
+      conn = get(conn, "/acts/#{act.id}/pdf")
+
+      assert conn.status == 200
+      assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+      assert conn.resp_body == "%PDF-cached-act"
+    end
+
+    test "enqueues generation and redirects with info when cache is missing", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company, "issued")
+
+      conn = get(conn, "/acts/#{act.id}/pdf")
+
+      assert redirected_to(conn) == "/acts/#{act.id}"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "PDF is being prepared. Please try again in a few seconds."
+               )
+    end
   end
 
   describe "sign/2" do

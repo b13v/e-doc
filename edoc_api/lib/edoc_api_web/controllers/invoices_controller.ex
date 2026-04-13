@@ -9,7 +9,7 @@ defmodule EdocApiWeb.InvoicesController do
 
   alias EdocApi.Invoicing
   alias EdocApi.InvoiceStatus
-  alias EdocApi.Documents.InvoicePdf
+  alias EdocApi.Documents.PdfRequests
   alias EdocApiWeb.ErrorHelpers
   alias EdocApiWeb.UnifiedErrorHandler
   alias EdocApi.Companies
@@ -454,7 +454,7 @@ defmodule EdocApiWeb.InvoicesController do
         # Pre-render HTML in web layer, then pass to PDF module
         html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
 
-        case InvoicePdf.render(html) do
+        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id, html) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)
@@ -464,6 +464,14 @@ defmodule EdocApiWeb.InvoicesController do
               ~s(inline; filename="invoice-#{invoice.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
+
+          {:pending, _reason} ->
+            conn
+            |> put_flash(
+              :info,
+              gettext("PDF is being prepared. Please try again in a few seconds.")
+            )
+            |> redirect(to: "/invoices/#{id}")
 
           {:error, _reason} ->
             conn

@@ -4,7 +4,7 @@ defmodule EdocApiWeb.InvoiceController do
   alias EdocApi.Companies
   alias EdocApiWeb.{ErrorMapper, ControllerHelpers}
   alias EdocApi.Invoicing
-  alias EdocApi.Documents.InvoicePdf
+  alias EdocApi.Documents.PdfRequests
   alias EdocApiWeb.Serializers.InvoiceSerializer
 
   def create(conn, params) do
@@ -114,18 +114,9 @@ defmodule EdocApiWeb.InvoiceController do
       invoice ->
         # Pre-render HTML in web layer, then pass to PDF module
         html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
-        result = InvoicePdf.render(html)
 
-        error_map = %{
-          pdf_generation_failed: fn conn ->
-            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
-          end
-        }
-
-        ControllerHelpers.handle_result(
-          conn,
-          result,
-          fn conn, pdf_binary ->
+        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id, html) do
+          {:ok, pdf_binary} ->
             conn
             |> put_pdf_security_headers()
             |> put_resp_content_type("application/pdf")
@@ -134,9 +125,39 @@ defmodule EdocApiWeb.InvoiceController do
               ~s(inline; filename="invoice-#{invoice.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
-          end,
-          error_map
-        )
+
+          {:pending, _} ->
+            conn
+            |> put_status(:accepted)
+            |> json(%{status: "pending", poll_url: "/v1/invoices/#{invoice.id}/pdf/status"})
+
+          {:error, _reason} ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
+        end
+    end
+  end
+
+  def pdf_status(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Invoicing.get_invoice_for_user(user.id, id) do
+      nil ->
+        ErrorMapper.not_found(conn, "invoice_not_found")
+
+      invoice ->
+        case PdfRequests.status(:invoice, invoice.id, user.id) do
+          {:ok, :completed} ->
+            json(conn, %{status: "ready"})
+
+          {:ok, status} when status in [:pending, :processing] ->
+            conn |> put_status(:accepted) |> json(%{status: "pending"})
+
+          {:ok, :failed} ->
+            ErrorMapper.unprocessable(conn, "pdf_generation_failed")
+
+          {:error, :not_found} ->
+            ErrorMapper.not_found(conn, "pdf_not_found")
+        end
     end
   end
 

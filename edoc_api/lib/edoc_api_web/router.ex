@@ -193,7 +193,9 @@ defmodule EdocApiWeb.Router do
     pipe_through([:auth_api, :api_pdf_rate_limit])
 
     get("/contracts/:id/pdf", ContractController, :pdf)
+    get("/contracts/:id/pdf/status", ContractController, :pdf_status)
     get("/invoices/:id/pdf", InvoiceController, :pdf)
+    get("/invoices/:id/pdf/status", InvoiceController, :pdf_status)
   end
 
   # HTML/htmx UI routes

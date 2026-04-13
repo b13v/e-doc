@@ -7,7 +7,7 @@ defmodule EdocApiWeb.ActsController do
   alias EdocApi.Core
   alias EdocApi.Buyers
   alias EdocApi.Companies
-  alias EdocApi.Documents.ActPdf
+  alias EdocApi.Documents.PdfRequests
   alias EdocApiWeb.ErrorHelpers
 
   defp current_user(conn), do: conn.assigns.current_user
@@ -284,7 +284,7 @@ defmodule EdocApiWeb.ActsController do
         # Pre-render HTML in web layer, then pass to PDF module
         html = EdocApiWeb.PdfTemplates.act_html(act)
 
-        case ActPdf.render(html) do
+        case PdfRequests.fetch_or_enqueue(:act, act.id, user.id, html) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)
@@ -294,6 +294,14 @@ defmodule EdocApiWeb.ActsController do
               ~s(inline; filename="act-#{act.number}.pdf")
             )
             |> send_resp(200, pdf_binary)
+
+          {:pending, _reason} ->
+            conn
+            |> put_flash(
+              :info,
+              gettext("PDF is being prepared. Please try again in a few seconds.")
+            )
+            |> redirect(to: "/acts/#{id}")
 
           {:error, _reason} ->
             conn
