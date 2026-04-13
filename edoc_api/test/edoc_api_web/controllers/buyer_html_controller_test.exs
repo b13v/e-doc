@@ -23,6 +23,15 @@ defmodule EdocApiWeb.BuyerHTMLControllerTest do
   end
 
   describe "create/2" do
+    test "new page does not render top back link", %{conn: conn} do
+      body =
+        conn
+        |> get("/buyers/new")
+        |> html_response(200)
+
+      refute body =~ "&larr;"
+    end
+
     test "shows flash error for invalid BIN/IIN", %{conn: conn} do
       conn =
         post(conn, "/buyers", %{
