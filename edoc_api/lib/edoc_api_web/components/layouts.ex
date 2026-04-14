@@ -594,6 +594,24 @@ defmodule EdocApiWeb.Layouts do
             color: #e2e8f0;
           }
 
+          html[data-theme="dark"] .workspace-form-mode-surface {
+            background-color: #1e293b;
+            border-color: #475569;
+          }
+
+          html[data-theme="dark"] .workspace-form-mode-option,
+          html[data-theme="dark"] .workspace-form-items-heading {
+            color: #f8fafc;
+          }
+
+          html[data-theme="dark"] .workspace-form-items-surface {
+            background-color: #020617;
+          }
+
+          html[data-theme="dark"] .workspace-form-item-label {
+            color: #cbd5e1;
+          }
+
           html[data-theme="dark"] .workspace-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
           html[data-theme="dark"] .workspace-form select,
           html[data-theme="dark"] .workspace-form textarea {

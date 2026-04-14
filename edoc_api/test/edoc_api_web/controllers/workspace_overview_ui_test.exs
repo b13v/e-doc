@@ -1100,6 +1100,75 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 
+  test "invoice and act new include explicit dark-theme fallback hooks for mode toggles and items areas",
+       %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Dark Contrast Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    _signed_contract =
+      create_contract!(company, %{"status" => "signed", "number" => "C-DARK-MODE-1"})
+
+    invoice_direct_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/new?invoice_type=direct")
+      |> html_response(200)
+
+    invoice_contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/new?invoice_type=contract")
+      |> html_response(200)
+
+    act_direct_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=direct")
+      |> html_response(200)
+
+    act_contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=contract")
+      |> html_response(200)
+
+    for body <- [invoice_direct_body, invoice_contract_body, act_direct_body, act_contract_body] do
+      assert body =~ "workspace-form-mode-surface"
+      assert body =~ "workspace-form-mode-option"
+      assert body =~ "workspace-form-items-surface"
+      assert body =~ "workspace-form-items-heading"
+      assert body =~ "workspace-form-item-label"
+      assert body =~ "dark:border-slate-600 dark:bg-slate-800/80"
+      assert body =~ "text-sm font-medium text-slate-700 dark:text-slate-100"
+      assert body =~ "rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/80"
+      assert body =~ "text-lg font-semibold text-slate-900 dark:text-slate-100"
+      assert body =~ ~s|html[data-theme="dark"] .workspace-form-mode-surface|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-form-mode-option|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-form-items-surface|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-form-items-heading|
+      assert body =~ ~s|html[data-theme="dark"] .workspace-form-item-label|
+    end
+
+    assert invoice_direct_body =~
+             ~s(<form action="/invoices" method="post" class="workspace-form space-y-6">)
+
+    for body <- [invoice_direct_body, invoice_contract_body, act_direct_body, act_contract_body] do
+      assert body =~ "text-gray-500 dark:text-slate-300"
+      assert body =~ "text-gray-900 dark:text-slate-100"
+      assert body =~ "dark:bg-slate-800"
+      assert body =~ "ring-gray-300 dark:ring-slate-600"
+    end
+  end
+
   test "act new syncs buyer address when direct mode buyer changes", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
