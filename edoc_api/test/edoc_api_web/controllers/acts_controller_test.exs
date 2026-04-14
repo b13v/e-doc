@@ -285,7 +285,11 @@ defmodule EdocApiWeb.ActsControllerTest do
       refute body =~ ~r/<option\s+value="#{buyer_two.id}"[^>]*selected/
     end
 
-    test "creates an act from a signed contract", %{conn: conn, user: user, company: company} do
+    test "creates an act from a signed contract without requiring actual date", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
       {:ok, buyer} =
         Buyers.create_buyer_for_company(company.id, %{
           "name" => "Contract Act Buyer",
@@ -313,7 +317,6 @@ defmodule EdocApiWeb.ActsControllerTest do
             "act_type" => "contract",
             "contract_id" => contract.id,
             "issue_date" => Date.to_iso8601(Date.utc_today()),
-            "actual_date" => Date.to_iso8601(Date.utc_today()),
             "buyer_id" => buyer.id,
             "buyer_address" => "Buyer Address"
           },
@@ -332,50 +335,7 @@ defmodule EdocApiWeb.ActsControllerTest do
       [created | _] = Acts.list_acts_for_user(user.id)
       assert created.contract_id == contract.id
       assert created.buyer_name == buyer.name
-    end
-
-    test "rejects creating an act from an issued-only contract", %{
-      conn: conn,
-      company: company
-    } do
-      {:ok, buyer} =
-        Buyers.create_buyer_for_company(company.id, %{
-          "name" => "Contract Act Buyer",
-          "bin_iin" => "080215385677",
-          "address" => "Buyer Address"
-        })
-
-      contract =
-        create_contract!(company, %{
-          "status" => "issued",
-          "number" => "ACT-ISSUED-REJECT",
-          "buyer_id" => buyer.id
-        })
-
-      conn =
-        post(conn, "/acts", %{
-          "act" => %{
-            "act_type" => "contract",
-            "contract_id" => contract.id,
-            "issue_date" => Date.to_iso8601(Date.utc_today()),
-            "actual_date" => Date.to_iso8601(Date.utc_today()),
-            "buyer_id" => buyer.id,
-            "buyer_address" => "Buyer Address"
-          },
-          "items" => %{
-            "0" => %{
-              "name" => "Services",
-              "code" => "A-1",
-              "qty" => "1",
-              "unit_price" => "100.00"
-            }
-          }
-        })
-
-      assert redirected_to(conn) == "/acts/new?act_type=contract"
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
-               Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+      assert created.actual_date == nil
     end
 
     test "rejects creating an act from a signed contract that already has a draft act", %{
@@ -431,6 +391,51 @@ defmodule EdocApiWeb.ActsControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
     end
+
+    test "rejects creating an act from an issued-only contract", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Contract Act Buyer",
+          "bin_iin" => "080215385677",
+          "address" => "Buyer Address"
+        })
+
+      contract =
+        create_contract!(company, %{
+          "status" => "issued",
+          "number" => "ACT-ISSUED-REJECT",
+          "buyer_id" => buyer.id
+        })
+
+      conn =
+        post(conn, "/acts", %{
+          "act" => %{
+            "act_type" => "contract",
+            "contract_id" => contract.id,
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "actual_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/new?act_type=contract"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
+    end
+
   end
 
   describe "index pagination" do
@@ -515,6 +520,76 @@ defmodule EdocApiWeb.ActsControllerTest do
         |> html_response(200)
 
       assert show_body =~ act.number
+    end
+
+    test "active member sees localized create validation flash in Russian", %{conn: conn} do
+      owner = create_user!(%{"email" => "act-owner-ru@example.com"})
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      member = create_user!(%{"email" => "act-member-ru@example.com"})
+      Accounts.mark_email_verified!(member.id)
+
+      {:ok, _membership} =
+        Monetization.invite_member(company.id, %{
+          "email" => member.email,
+          "role" => "member"
+        })
+
+      [_membership_id] = Monetization.accept_pending_memberships_for_user(member)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: member.id, locale: "ru"})
+        |> put_private(:plug_skip_csrf_protection, true)
+        |> put_req_header("accept", "text/html")
+        |> post("/acts", %{
+          "act" => %{
+            "act_type" => "direct",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "buyer_id" => "",
+            "buyer_address" => "Buyer Address"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Services",
+              "code" => "A-1",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/new"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Выберите покупателя."
+    end
+
+    test "active admin sees localized delete flash in Kazakh", %{conn: conn} do
+      owner = create_user!(%{"email" => "act-owner-kk@example.com"})
+      Accounts.mark_email_verified!(owner.id)
+      company = create_company!(owner)
+
+      admin = create_user!(%{"email" => "act-admin-kk@example.com"})
+      Accounts.mark_email_verified!(admin.id)
+
+      {:ok, _membership} =
+        Monetization.invite_member(company.id, %{
+          "email" => admin.email,
+          "role" => "admin"
+        })
+
+      [_membership_id] = Monetization.accept_pending_memberships_for_user(admin)
+      draft_act = create_act!(admin, company, "draft")
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: admin.id, locale: "kk"})
+        |> put_private(:plug_skip_csrf_protection, true)
+        |> put_req_header("accept", "text/html")
+        |> delete("/acts/#{draft_act.id}")
+
+      assert redirected_to(conn) == "/acts"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Акт сәтті жойылды."
     end
   end
 

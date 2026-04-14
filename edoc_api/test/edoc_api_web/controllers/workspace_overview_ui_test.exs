@@ -1228,9 +1228,70 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert body =~ ~s(name="act[buyer_address]")
     assert body =~ ~s(data-address=)
+    assert body =~ ~s(data-overview-name=)
+    assert body =~ ~s(id="act-buyer-overview")
     assert body =~ "function setBuyerAddress(value) {"
+    assert body =~ "function updateBuyerOverview() {"
     assert body =~ "document.getElementById('buyer_select')?.addEventListener('change'"
     assert body =~ "setBuyerAddress(option.getAttribute('data-address') || '')"
+    assert body =~ "updateBuyerOverview();"
+  end
+
+  test "act show renders contract acceptance date only in footer when item dates are blank", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Act Footer Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    contract =
+      create_contract!(company, %{
+        "status" => "signed",
+        "number" => "ACT-FOOTER-DATE-1",
+        "buyer_id" => buyer.id,
+        "issue_date" => ~D[2024-01-10]
+      })
+
+    %EdocApi.Core.ContractItem{}
+    |> EdocApi.Core.ContractItem.changeset(
+      %{"name" => "Services", "qty" => "1", "unit_price" => "100.00", "code" => "A-1"},
+      contract.id
+    )
+    |> EdocApi.Repo.insert!()
+
+    {:ok, act} =
+      EdocApi.Acts.create_act_for_user(user.id, company.id, %{
+        "act_type" => "contract",
+        "contract_id" => contract.id,
+        "issue_date" => Date.to_iso8601(~D[2024-01-11]),
+        "actual_date" => Date.to_iso8601(~D[2024-02-03]),
+        "buyer_id" => buyer.id,
+        "buyer_address" => "Buyer Address",
+        "items" => %{
+          "0" => %{
+            "name" => "Services",
+            "code" => "A-1",
+            "qty" => "1",
+            "unit_price" => "100.00"
+          }
+        }
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    assert body =~ "Дата подписания (принятия) работ (услуг)"
+    assert length(Regex.scan(~r/03\.02\.2024/, body)) == 1
   end
 
   test "contract show uses workspace detail chrome and keeps contracts nav active", %{

@@ -89,65 +89,54 @@ defmodule EdocApiWeb.ActsController do
       company ->
         params = Map.put(act_params, "items", items_params)
 
-        cond do
-          act_params["act_type"] == "contract" and blank?(act_params["actual_date"]) ->
+        case Acts.create_act_for_user(user.id, company.id, params) do
+          {:ok, act} ->
+            conn
+            |> put_flash(:info, gettext("Act created successfully."))
+            |> redirect(to: "/acts/#{act.id}")
+
+          {:error, :validation, %{changeset: changeset}} ->
             conn
             |> put_flash(
               :error,
-              gettext("Actual date is required when creating an act from a contract.")
+              gettext("Failed to create act: %{details}",
+                details: ErrorHelpers.format_changeset_errors(changeset)
+              )
             )
+            |> redirect(to: "/acts/new")
+
+          {:error, :business_rule, %{rule: :items_required}} ->
+            conn
+            |> put_flash(:error, gettext("At least one item is required."))
+            |> redirect(to: "/acts/new")
+
+          {:error, :business_rule, %{rule: :buyer_required}} ->
+            conn
+            |> put_flash(:error, gettext("Please select a buyer."))
+            |> redirect(to: "/acts/new")
+
+          {:error, :business_rule, %{rule: :contract_not_signed_or_not_found}} ->
+            conn
+            |> put_flash(:error, gettext("Please select a signed contract."))
             |> redirect(to: "/acts/new?act_type=contract")
 
-          true ->
-            case Acts.create_act_for_user(user.id, company.id, params) do
-              {:ok, act} ->
-                conn
-                |> put_flash(:info, gettext("Act created successfully."))
-                |> redirect(to: "/acts/#{act.id}")
+          {:error, :business_rule, %{rule: :quota_exceeded}} ->
+            conn
+            |> put_flash(
+              :error,
+              gettext(
+                "Document limit reached for this billing period. Upgrade your plan to continue."
+              )
+            )
+            |> redirect(to: "/acts/new")
 
-              {:error, :validation, %{changeset: changeset}} ->
-                conn
-                |> put_flash(
-                  :error,
-                  gettext("Failed to create act: %{details}",
-                    details: ErrorHelpers.format_changeset_errors(changeset)
-                  )
-                )
-                |> redirect(to: "/acts/new")
-
-              {:error, :business_rule, %{rule: :items_required}} ->
-                conn
-                |> put_flash(:error, gettext("At least one item is required."))
-                |> redirect(to: "/acts/new")
-
-              {:error, :business_rule, %{rule: :buyer_required}} ->
-                conn
-                |> put_flash(:error, gettext("Please select a buyer."))
-                |> redirect(to: "/acts/new")
-
-              {:error, :business_rule, %{rule: :contract_not_signed_or_not_found}} ->
-                conn
-                |> put_flash(:error, gettext("Please select a signed contract."))
-                |> redirect(to: "/acts/new?act_type=contract")
-
-              {:error, :business_rule, %{rule: :quota_exceeded}} ->
-                conn
-                |> put_flash(
-                  :error,
-                  gettext(
-                    "Document limit reached for this billing period. Upgrade your plan to continue."
-                  )
-                )
-                |> redirect(to: "/acts/new")
-
-              {:error, reason} ->
-                conn
-                |> put_flash(
-                  :error,
-                  gettext("Failed to create act: %{reason}", reason: inspect(reason))
-                )
-                |> redirect(to: "/acts/new")
-            end
+          {:error, reason} ->
+            conn
+            |> put_flash(
+              :error,
+              gettext("Failed to create act: %{reason}", reason: inspect(reason))
+            )
+            |> redirect(to: "/acts/new")
         end
     end
   end
@@ -337,10 +326,6 @@ defmodule EdocApiWeb.ActsController do
   defp total_pages(total_count, page_size) when page_size > 0 do
     max(1, div(total_count + page_size - 1, page_size))
   end
-
-  defp blank?(value) when value in [nil, ""], do: true
-  defp blank?(value) when is_binary(value), do: String.trim(value) == ""
-  defp blank?(_), do: false
 
   defp prefill_from_contract(_user_id, nil) do
     %{

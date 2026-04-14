@@ -97,11 +97,12 @@
                     name="act[buyer_id]"
                     class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
-                    <option value=""><%= gettext("Select a buyer...") %></option>
+                    <option value="" data-overview-name="-"><%= gettext("Select a buyer...") %></option>
                     <%= for buyer <- @buyers do %>
                       <option
                         value={buyer.id}
                         data-address={buyer.address || ""}
+                        data-overview-name={buyer.name}
                         selected={@selected_buyer_id == buyer.id}
                       >
                         <%= buyer.name %> (<%= buyer.bin_iin %>)
@@ -221,7 +222,7 @@
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Buyer") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900">
+          <dd id="act-buyer-overview" class="mt-1 text-sm font-medium text-slate-900">
             <%= if selected_buyer, do: selected_buyer.name, else: "-" %>
           </dd>
         </div>
@@ -337,6 +338,15 @@
     if (input) input.value = value || "";
   }
 
+  function updateBuyerOverview() {
+    const overview = document.getElementById("act-buyer-overview");
+    const buyerSelect = document.getElementById("buyer_select");
+    if (!overview || !buyerSelect) return;
+
+    const option = buyerSelect.options[buyerSelect.selectedIndex];
+    overview.textContent = option?.getAttribute("data-overview-name") || "-";
+  }
+
   function handleTypeChange(mode) {
     const url = new URL(window.location.href);
     url.searchParams.set("act_type", mode);
@@ -353,7 +363,10 @@
     if (option) {
       setBuyerAddress(option.getAttribute('data-address') || '');
     }
+    updateBuyerOverview();
   });
+
+  updateBuyerOverview();
 
   if (Array.isArray(prefillItems) && prefillItems.length > 0) {
     clearItems();

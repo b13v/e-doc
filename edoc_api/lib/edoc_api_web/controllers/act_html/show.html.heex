@@ -371,7 +371,7 @@
         <tr>
           <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= idx %></td>
           <td style="border: 1px solid #000; padding: 4px; text-align: left; vertical-align: top;"><%= item.name || "" %></td>
-          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= EdocApiWeb.ActHTML.fmt_date(item.actual_date || @act.actual_date) %></td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= EdocApiWeb.ActHTML.fmt_date(item.actual_date) %></td>
           <td style="border: 1px solid #000; padding: 4px; text-align: left; vertical-align: top;"><%= item.report_info || "" %></td>
           <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= item.code || "" %></td>
           <td style="border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;"><%= Decimal.to_string(item.qty || Decimal.new(0), :normal) %></td>
@@ -396,7 +396,7 @@
 
   <% executor_title = assigns[:executor_title] || "Директор" %>
   <% appendix_pages = assigns[:appendix_pages] || "_____________" %>
-  <% acceptance_date = assigns[:acceptance_date] || "" %>
+  <% acceptance_date = assigns[:acceptance_date] || EdocApiWeb.ActHTML.fmt_date(@act.actual_date) %>
   <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; font-family: Arial, sans-serif; font-size: 11px; line-height: 1.15;">
     <colgroup>
       <%= for _ <- 1..28 do %>

@@ -330,19 +330,19 @@ msgstr "Акт № %{number}"
 #: lib/edoc_api_web/controllers/acts_controller.ex:89
 #, elixir-autogen, elixir-format
 msgid "Act created successfully."
-msgstr ""
+msgstr "Акт создан успешно."
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:152
 #, elixir-autogen, elixir-format
 msgid "Act deleted successfully."
-msgstr ""
+msgstr "Акт успешно удален."
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:138
 #: lib/edoc_api_web/controllers/acts_controller.ex:162
 #: lib/edoc_api_web/controllers/acts_controller.ex:174
 #, elixir-autogen, elixir-format
 msgid "Act not found."
-msgstr ""
+msgstr "Акт не найден."
 
 #: lib/edoc_api_web/controllers/act_html/index.html.heex:29
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:238
@@ -356,7 +356,7 @@ msgstr "Действия"
 #: lib/edoc_api_web/controllers/acts_controller.ex:82
 #, elixir-autogen, elixir-format
 msgid "Actual date is required when creating an act from a contract."
-msgstr ""
+msgstr "Фактическая дата обязательна при создании акта из договора."
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:137
 #: lib/edoc_api_web/controllers/contract_html/edit.html.heex:156
@@ -402,7 +402,7 @@ msgstr "Алматы"
 #: lib/edoc_api_web/controllers/invoices_controller.ex:180
 #, elixir-autogen, elixir-format
 msgid "At least one item is required."
-msgstr ""
+msgstr "Требуется как минимум одна позиция."
 
 #: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:72
 #: lib/edoc_api_web/controllers/buyer_html/index.html.heex:48
@@ -868,12 +868,12 @@ msgstr ""
 #: lib/edoc_api_web/controllers/acts_controller.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to create act: %{details}"
-msgstr ""
+msgstr "Не удалось создать акт: %{details}"
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:119
 #, elixir-autogen, elixir-format
 msgid "Failed to create act: %{reason}"
-msgstr ""
+msgstr "Не удалось создать акт: %{reason}"
 
 #: lib/edoc_api_web/controllers/buyer_html_controller.ex:130
 #, elixir-autogen, elixir-format
@@ -922,7 +922,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_controller.ex:421
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the PDF file."
-msgstr ""
+msgstr "Не удалось сформировать PDF-файл."
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:430
 #, elixir-autogen, elixir-format
@@ -1242,7 +1242,7 @@ msgstr "Номер"
 #: lib/edoc_api_web/controllers/acts_controller.ex:157
 #, elixir-autogen, elixir-format
 msgid "Only draft acts can be deleted."
-msgstr ""
+msgstr "Удалять можно только акты в статусе «Жоба»."
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:452
 #, elixir-autogen, elixir-format
