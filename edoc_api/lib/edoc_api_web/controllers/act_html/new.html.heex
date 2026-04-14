@@ -275,10 +275,17 @@
     const row = document.createElement("div");
     const idx = itemIndex++;
     row.className = "item-row grid grid-cols-12 gap-2 items-end";
+    const priceColumnClass = lockContractItems ? "col-span-3" : "col-span-2";
 
     const removeBtn = lockContractItems
       ? ""
       : `<button type="button" onclick="this.closest('.item-row').remove()" class="inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50">${escapeHtml(removeLabel)}</button>`;
+
+    const removeColumnHtml = lockContractItems
+      ? ""
+      : `<div class="col-span-1">
+        ${removeBtn}
+      </div>`;
 
     row.innerHTML = `
       <div class="col-span-4">
@@ -289,7 +296,7 @@
         <label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">${escapeHtml(itemActualDateLabel)}</label>
         <input type="date" name="items[${idx}][actual_date]" value="${escapeHtml(data.actual_date || "")}" class="w-full rounded-md border-0 bg-white py-1.5 text-gray-900 dark:text-slate-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 px-2 text-sm dark:bg-slate-800" />
       </div>
-      <div class="col-span-2">
+      <div class="col-span-1">
         <label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">${escapeHtml(reportInfoLabel)}</label>
         <input type="text" name="items[${idx}][report_info]" value="${escapeHtml(data.report_info || "")}" class="w-full rounded-md border-0 bg-white py-1.5 text-gray-900 dark:text-slate-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 px-2 text-sm dark:bg-slate-800" />
       </div>
@@ -303,13 +310,11 @@
         <label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">${escapeHtml(quantityLabel)}</label>
         <input type="number" name="items[${idx}][qty]" value="${escapeHtml(data.qty || "1")}" step="0.01" required class="w-full rounded-md border-0 bg-white py-1.5 text-gray-900 dark:text-slate-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 px-2 text-sm dark:bg-slate-800" />
       </div>
-      <div class="col-span-1">
+      <div class="${priceColumnClass}">
         <label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">${escapeHtml(priceLabel)}</label>
         <input type="number" name="items[${idx}][unit_price]" value="${escapeHtml(data.unit_price || "")}" step="0.01" required class="w-full rounded-md border-0 bg-white py-1.5 text-gray-900 dark:text-slate-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 px-2 text-sm dark:bg-slate-800" />
       </div>
-      <div class="col-span-1">
-        ${removeBtn}
-      </div>
+      ${removeColumnHtml}
     `;
 
     container.appendChild(row);

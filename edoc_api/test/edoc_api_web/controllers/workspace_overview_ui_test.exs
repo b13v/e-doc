@@ -1158,6 +1158,16 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       assert body =~ ~s|html[data-theme="dark"] .workspace-form-item-label|
     end
 
+    assert act_contract_body =~ "const priceColumnClass = lockContractItems"
+    assert act_contract_body =~ "col-span-3"
+    assert act_contract_body =~ "col-span-2"
+    assert act_contract_body =~ ~s(<div class="${priceColumnClass}">)
+
+    assert act_contract_body =~
+             ~r/<div class="col-span-1">\s*<label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">\$\{escapeHtml\(reportInfoLabel\)\}<\/label>\s*<input type="text" name="items\[\$\{idx\}\]\[report_info\]"/s
+
+    assert act_contract_body =~ "const removeColumnHtml = lockContractItems"
+
     assert invoice_direct_body =~
              ~s(<form action="/invoices" method="post" class="workspace-form space-y-6">)
 
@@ -1235,6 +1245,45 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "document.getElementById('buyer_select')?.addEventListener('change'"
     assert body =~ "setBuyerAddress(option.getAttribute('data-address') || '')"
     assert body =~ "updateBuyerOverview();"
+  end
+
+  test "act new widens the price field for locked contract item rows", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    {:ok, buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Act Contract Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    contract =
+      create_contract!(company, %{
+        "status" => "signed",
+        "number" => "ACT-PRICE-WIDTH-1",
+        "buyer_id" => buyer.id
+      })
+
+    %EdocApi.Core.ContractItem{}
+    |> EdocApi.Core.ContractItem.changeset(
+      %{"name" => "Long Contract Service", "qty" => "1", "unit_price" => "123456.78", "code" => "A-1"},
+      contract.id
+    )
+    |> EdocApi.Repo.insert!()
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=contract&contract_id=#{contract.id}")
+      |> html_response(200)
+
+    assert body =~ "const priceColumnClass = lockContractItems"
+    assert body =~ "col-span-3"
+    assert body =~ ~s(<div class="${priceColumnClass}">)
+    assert body =~ "const removeColumnHtml = lockContractItems"
+    assert body =~ "${removeColumnHtml}"
   end
 
   test "act show renders contract acceptance date only in footer when item dates are blank", %{
