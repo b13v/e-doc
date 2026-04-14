@@ -919,6 +919,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "Основание (полномочия)"
       assert body =~ "БИН/ИИН"
       refute body =~ "Edit Buyer"
+      refute body =~ ~r/<a[^>]*href="\/buyers"[^>]*>\s*&larr;\s*Назад к покупателям\s*<\/a>/
       refute body =~ "ФИО директора"
       refute body =~ "Должность директора"
       refute body =~ "Basis (Authority)"
@@ -933,13 +934,19 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       {:ok, buyer} =
         Buyers.create_buyer_for_company(company.id, %{
           "name" => "Покупатель для просмотра",
-          "bin_iin" => "101215385676"
+          "bin_iin" => "101215385676",
+          "director_name" => "Иван Иванов",
+          "director_title" => "Директор"
         })
 
       body = conn |> browser_conn(user, "ru") |> get("/buyers/#{buyer.id}") |> html_response(200)
 
       assert body =~ "ФИО"
+      assert body =~ "Должность"
+      assert body =~ "Иван Иванов"
+      assert body =~ "Директор"
       refute body =~ "ФИО директора"
+      refute body =~ ~r/>\s*Директор Иван Иванов\s*</
     end
   end
 
@@ -1335,7 +1342,6 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       body =
         conn |> browser_conn(user, "kk") |> get("/buyers/#{buyer.id}/edit") |> html_response(200)
 
-      assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*>\s*&larr;\s*Сатып алушыларға оралу\s*<\/a>/
       assert body =~ "Сатып алушыны өңдеу"
       assert body =~ "Аты-жөні"
       assert body =~ "Лауазымы"
@@ -1343,6 +1349,7 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "БСН/ЖСН"
       refute body =~ "Edit Buyer"
       refute body =~ "Back to Buyers"
+      refute body =~ ~r/<a[^>]*href="\/buyers"[^>]*>\s*&larr;\s*Сатып алушыларға оралу\s*<\/a>/
       refute body =~ "Director Name"
       refute body =~ "Director Title"
       refute body =~ "Basis (Authority)"
@@ -1357,13 +1364,19 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       {:ok, buyer} =
         Buyers.create_buyer_for_company(company.id, %{
           "name" => "Сатып алушыны көру",
-          "bin_iin" => "060215385673"
+          "bin_iin" => "060215385673",
+          "director_name" => "Айжан Тлеубек",
+          "director_title" => "Басшы"
         })
 
       body = conn |> browser_conn(user, "kk") |> get("/buyers/#{buyer.id}") |> html_response(200)
 
       assert body =~ "Аты-жөні"
+      assert body =~ "Лауазымы"
+      assert body =~ "Айжан Тлеубек"
+      assert body =~ "Басшы"
       refute body =~ ">Директор<"
+      refute body =~ ~r/>\s*Басшы Айжан Тлеубек\s*</
     end
 
     test "buyer index page localizes page chrome in Kazakh", %{
