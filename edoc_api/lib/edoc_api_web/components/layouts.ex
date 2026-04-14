@@ -608,6 +608,12 @@ defmodule EdocApiWeb.Layouts do
             background-color: #020617;
           }
 
+          html[data-theme="dark"] .workspace-form-static-value {
+            background-color: #0f172a;
+            border-color: #475569;
+            color: #f8fafc;
+          }
+
           html[data-theme="dark"] .workspace-form-item-label {
             color: #cbd5e1;
           }

@@ -757,7 +757,29 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
                "Таңдалған келісімшарт сатып алушыны, банк шотын және позицияларды автоматты түрде толтырады."
 
       assert body =~ ~r/<summary[^>]*>.*?<span>\s*Шоттар\s*<\/span>/s
+      assert body =~ ~r/<button[^>]*>\s*Шот жасау\s*<\/button>/s
+      assert body =~ "КБЕ коды"
+      assert body =~ "КНП коды"
+      assert body =~ "ҚҚС мөлшерлемесі"
+      assert body =~ ~r/id="invoice_type_contract"[\s\S]*?<span>\s*Келісімшарттан\s*<\/span>/s
+      assert body =~ ~r/id="invoice_type_direct"[\s\S]*?<span>\s*Келісімшартсыз\s*<\/span>/s
+      refute body =~ ~s(>KBE code<)
+      refute body =~ ~s(>KNP code<)
+      refute body =~ ~s(>VAT rate<)
+      refute body =~ ~s(>From Contract<)
+      refute body =~ ~s|>Direct (No Contract)<|
+      refute body =~ ~r/<button[^>]*>\s*Create Invoice\s*<\/button>/s
       refute body =~ "Selecting a contract pre-fills buyer, bank account, and items."
+    end
+
+    test "kazakh locale translates invoice mode radio labels" do
+      assert Gettext.with_locale(EdocApiWeb.Gettext, "kk", fn ->
+               Gettext.gettext(EdocApiWeb.Gettext, "From Contract")
+             end) == "Келісімшарттан"
+
+      assert Gettext.with_locale(EdocApiWeb.Gettext, "kk", fn ->
+               Gettext.gettext(EdocApiWeb.Gettext, "Direct (No Contract)")
+             end) == "Келісімшартсыз"
     end
 
     test "company settings page localizes bank-account chrome", %{
@@ -1543,15 +1565,23 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       body = html_response(conn, 200)
 
       assert body =~ "Жаңа келісімшарт"
+      assert body =~ "Сатып алушымен жаңа келісімшарт жасаңыз"
       assert body =~ "Келісімшарт тармақтары (1-қосымша)"
       assert body =~ "Тауар атауы"
       assert body =~ "Саны"
       assert body =~ "Бірлік бағасы"
+      assert body =~ ~r/<label[^>]*>\s*Күні\s*\*\s*<\/label>/s
+      assert body =~ ~r/<button[^>]*>\s*Жоба ретінде сақтау\s*<\/button>/s
+      assert body =~ ~r/<button[^>]*>\s*Жасау және шығару\s*<\/button>/s
       assert body =~ ~s(placeholder="Алматы")
       assert body =~ ~s(placeholder="Тармақ сипаттамасы")
       assert body =~ ~s(data-required-message="Осы өрісті толтырыңыз.")
       assert body =~ ~s|oninvalid="this.setCustomValidity(this.dataset.requiredMessage)"|
       refute body =~ "Contract items (Appendix 1)"
+      refute body =~ "Create a new contract with a buyer"
+      refute body =~ ~s(>Date<)
+      refute body =~ ~s(>Save as Draft<)
+      refute body =~ ~s(>Create and Issue<)
       refute body =~ ~s(placeholder="Almaty")
       refute body =~ ~s(placeholder="Item description")
       refute body =~ "Item name"
@@ -1733,6 +1763,70 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert index_body =~ "Қол қойылған"
       refute show_body =~ "Mark as Signed"
       refute index_body =~ ">Signed<"
+    end
+
+    test "act creation form labels are localized in Kazakh for contract and direct modes", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      create_company_bank_account!(company)
+      _act = create_act!(user, company, "signed")
+
+      {:ok, _buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Тест сатып алушы",
+          "bin_iin" => "060215385673"
+        })
+
+      contract_body =
+        conn
+        |> browser_conn(user, "kk")
+        |> get("/acts/new?act_type=contract")
+        |> html_response(200)
+
+      direct_body =
+        conn
+        |> browser_conn(user, "kk")
+        |> get("/acts/new?act_type=direct")
+        |> html_response(200)
+
+      for body <- [contract_body, direct_body] do
+        assert body =~ "Акт түрі"
+        assert body =~ "Келісімшартсыз"
+        assert body =~ "Келісімшарттан"
+        assert body =~ "Жасалған күні"
+        assert body =~ "Жұмыстар (қызметтер)"
+        assert body =~ "Атауы"
+        assert body =~ "Саны"
+        assert body =~ "Өлшем бірл."
+        assert body =~ "Бағасы"
+        assert body =~ "Есеп туралы мәліметтер"
+
+        refute body =~ "KBE Code"
+        refute body =~ "KNP Code"
+        refute body =~ "Без Договора"
+        refute body =~ "Из Договора"
+        refute body =~ "Дата составления"
+        refute body =~ "Работы (услуги)"
+      end
+    end
+
+    test "acts index localizes New Act button in Kazakh", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      _act = create_act!(user, company, "draft")
+
+      body =
+        conn
+        |> browser_conn(user, "kk")
+        |> get("/acts")
+        |> html_response(200)
+
+      assert body =~ "Жаңа акт"
+      refute body =~ ">New Act<"
     end
 
     test "contract delete success flash is localized and rendered once in Kazakh", %{

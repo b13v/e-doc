@@ -1169,6 +1169,38 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     end
   end
 
+  test "contract new includes explicit dark-theme hooks for currency and items surfaces", %{
+    conn: conn
+  } do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Contract Dark Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/new")
+      |> html_response(200)
+
+    assert body =~ ~s(<form action="/contracts" method="post" class="workspace-form space-y-6">)
+    assert body =~ ~r/class="[^"]*workspace-form-static-value[^"]*">[\s]*KZT[\s]*<\/div>/
+    assert body =~ ~r/class="[^"]*workspace-form-items-surface[^"]*"/
+    assert body =~ ~r/class="[^"]*workspace-form-items-heading[^"]*"/
+    assert body =~ ~r/class="[^"]*workspace-form-item-label[^"]*"/
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-static-value|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-items-surface|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-items-heading|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-item-label|
+  end
+
   test "act new syncs buyer address when direct mode buyer changes", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)

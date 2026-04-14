@@ -330,19 +330,19 @@ msgstr "Акт № %{number}"
 #: lib/edoc_api_web/controllers/acts_controller.ex:89
 #, elixir-autogen, elixir-format
 msgid "Act created successfully."
-msgstr ""
+msgstr "Акт сәтті құрылды."
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:152
 #, elixir-autogen, elixir-format
 msgid "Act deleted successfully."
-msgstr ""
+msgstr "Акт сәтті жойылды."
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:138
 #: lib/edoc_api_web/controllers/acts_controller.ex:162
 #: lib/edoc_api_web/controllers/acts_controller.ex:174
 #, elixir-autogen, elixir-format
 msgid "Act not found."
-msgstr ""
+msgstr "Акт табылмады."
 
 #: lib/edoc_api_web/controllers/act_html/index.html.heex:29
 #: lib/edoc_api_web/controllers/companies_html/edit.html.heex:238
@@ -356,7 +356,7 @@ msgstr "Әрекеттер"
 #: lib/edoc_api_web/controllers/acts_controller.ex:82
 #, elixir-autogen, elixir-format
 msgid "Actual date is required when creating an act from a contract."
-msgstr ""
+msgstr "Шарттан акт жасау үшін нақты күнді көрсету міндетті."
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:137
 #: lib/edoc_api_web/controllers/contract_html/edit.html.heex:156
@@ -402,7 +402,7 @@ msgstr "Алматы"
 #: lib/edoc_api_web/controllers/invoices_controller.ex:180
 #, elixir-autogen, elixir-format
 msgid "At least one item is required."
-msgstr ""
+msgstr "Кемінде бір тармақ қажет."
 
 #: lib/edoc_api_web/controllers/buyer_html/edit.html.heex:72
 #: lib/edoc_api_web/controllers/buyer_html/index.html.heex:48
@@ -691,17 +691,17 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_html/new.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Create Invoice"
-msgstr ""
+msgstr "Шот жасау"
 
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Create a new contract with a buyer"
-msgstr ""
+msgstr "Сатып алушымен жаңа келісімшарт жасаңыз"
 
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "Create and Issue"
-msgstr ""
+msgstr "Жасау және шығару"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:12
 #, elixir-autogen, elixir-format
@@ -734,7 +734,7 @@ msgstr "Валюта"
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Date"
-msgstr ""
+msgstr "Күні"
 
 #: lib/edoc_api_web/controllers/companies_controller.ex:170
 #, elixir-autogen, elixir-format
@@ -766,7 +766,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Direct (No Contract)"
-msgstr ""
+msgstr "Келісімшартсыз"
 
 #: lib/edoc_api_web/controllers/invoice_html/index.html.heex:22
 #, elixir-autogen, elixir-format
@@ -868,12 +868,12 @@ msgstr ""
 #: lib/edoc_api_web/controllers/acts_controller.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to create act: %{details}"
-msgstr ""
+msgstr "Актіні жасау мүмкін болмады: %{details}"
 
 #: lib/edoc_api_web/controllers/acts_controller.ex:119
 #, elixir-autogen, elixir-format
 msgid "Failed to create act: %{reason}"
-msgstr ""
+msgstr "Актіні жасау мүмкін болмады: %{reason}"
 
 #: lib/edoc_api_web/controllers/buyer_html_controller.ex:130
 #, elixir-autogen, elixir-format
@@ -922,7 +922,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/invoices_controller.ex:421
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the PDF file."
-msgstr ""
+msgstr "PDF файлын қалыптастыру мүмкін болмады."
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:430
 #, elixir-autogen, elixir-format
@@ -973,7 +973,7 @@ msgstr "Қазақстан бизнесіне арналған"
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "From Contract"
-msgstr ""
+msgstr "Келісімшарттан"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:13
 #, elixir-autogen, elixir-format
@@ -1146,13 +1146,13 @@ msgstr "Банк операциялары үшін КБЕ және КНП код
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "KBE code"
-msgstr ""
+msgstr "КБЕ коды"
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:120
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "KNP code"
-msgstr ""
+msgstr "КНП коды"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:9
 #, elixir-autogen, elixir-format
@@ -1188,7 +1188,7 @@ msgstr "Көптілді қолдау (қазақ, орыс)"
 #: lib/edoc_api_web/controllers/acts_controller.ex:53
 #, elixir-autogen, elixir-format
 msgid "New Act"
-msgstr ""
+msgstr "Жаңа акт"
 
 #: lib/edoc_api_web/controllers/buyer_html/index.html.heex:35
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:11
@@ -1242,7 +1242,7 @@ msgstr "Нөмір"
 #: lib/edoc_api_web/controllers/acts_controller.ex:157
 #, elixir-autogen, elixir-format
 msgid "Only draft acts can be deleted."
-msgstr ""
+msgstr "Тек «Жоба» күйіндегі актілерді ғана жоюға болады."
 
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:452
 #, elixir-autogen, elixir-format
@@ -1399,7 +1399,7 @@ msgstr "Өкілдің лауазымы"
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Save as Draft"
-msgstr ""
+msgstr "Жоба ретінде сақтау"
 
 #: lib/edoc_api_web/controllers/about_html/index.html.heex:17
 #, elixir-autogen, elixir-format
@@ -1540,12 +1540,12 @@ msgstr "Бірлік бағасы"
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Unknown"
-msgstr ""
+msgstr "Белгісіз"
 
 #: lib/edoc_api_web/controllers/invoice_html/new.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "VAT rate"
-msgstr ""
+msgstr "ҚҚС мөлшерлемесі"
 
 #: lib/edoc_api_web/controllers/contract_html/new.html.heex:130
 #: lib/edoc_api_web/controllers/invoices_html/edit.html.heex:77
@@ -2082,22 +2082,22 @@ msgstr "мысалы, Негізгі шот"
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Без Договора"
-msgstr ""
+msgstr "Келісімшартсыз"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Дата выполнения работ(оказания услуг)"
-msgstr ""
+msgstr "Жұмыстарды (қызметтерді) орындау күні"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Дата подписания (принятия) работ(услуг)"
-msgstr ""
+msgstr "Жұмыстарға (қызметтерге) қол қою (қабылдау) күні"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Дата составления"
-msgstr ""
+msgstr "Жасалған күні"
 
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:187
 #, elixir-autogen, elixir-format
@@ -2107,32 +2107,32 @@ msgstr ""
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Ед. изм."
-msgstr ""
+msgstr "Өлшем бірл."
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Из Договора"
-msgstr ""
+msgstr "Келісімшарттан"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Кол-во"
-msgstr ""
+msgstr "Саны"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Наименование"
-msgstr ""
+msgstr "Атауы"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Работы (услуги)"
-msgstr ""
+msgstr "Жұмыстар (қызметтер)"
 
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Сведения об отчете"
-msgstr ""
+msgstr "Есеп туралы мәліметтер"
 
 #: lib/edoc_api_web/controllers/buyer_html/new.html.heex:202
 #, elixir-autogen, elixir-format
@@ -2142,7 +2142,7 @@ msgstr ""
 #: lib/edoc_api_web/controllers/act_html/new.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Цена"
-msgstr ""
+msgstr "Бағасы"
 
 #: lib/edoc_api_web/controllers/invoices_html/index.html.heex:21
 #, elixir-autogen, elixir-format
