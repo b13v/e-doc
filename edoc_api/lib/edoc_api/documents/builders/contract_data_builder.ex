@@ -16,16 +16,16 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
     company = contract.company || %{}
 
     %{
-      name: Map.get(company, :name) || contract.company_id || "",
+      name: first_present([Map.get(company, :name), contract.company_id]) || "",
       legal_form: LegalForms.display(Map.get(company, :legal_form)),
-      bin_iin: Map.get(company, :bin_iin) || "",
-      city: Map.get(company, :city) || contract.city || "",
-      address: Map.get(company, :address) || "",
-      director_name: Map.get(company, :representative_name) || "",
-      director_title: "директор",
+      bin_iin: first_present([Map.get(company, :bin_iin)]) || "",
+      city: first_present([Map.get(company, :city), contract.city]) || "",
+      address: first_present([Map.get(company, :address)]) || "",
+      director_name: first_present([Map.get(company, :representative_name)]) || "",
+      director_title: first_present([Map.get(company, :representative_title)]) || "директор",
       basis: "Устав",
-      phone: Map.get(company, :phone) || "",
-      email: Map.get(company, :email) || ""
+      phone: first_present([Map.get(company, :phone)]) || "",
+      email: first_present([Map.get(company, :email)]) || ""
     }
   end
 
@@ -33,10 +33,10 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
   Builds buyer data from contract's buyer association or legacy fields.
   """
   def build_buyer_data(contract) do
-    if contract.buyer do
-      build_buyer_from_association(contract)
-    else
-      build_buyer_from_legacy_fields(contract)
+    case contract.buyer do
+      %Ecto.Association.NotLoaded{} -> build_buyer_from_legacy_fields(contract)
+      nil -> build_buyer_from_legacy_fields(contract)
+      _buyer -> build_buyer_from_association(contract)
     end
   end
 
@@ -114,16 +114,18 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
     buyer_bank = if buyer_bank_account, do: buyer_bank_account.bank, else: nil
 
     %{
-      name: buyer_entity.name || "",
+      name: first_present([buyer_entity.name]) || "",
       legal_form: LegalForms.display(buyer_entity.legal_form || contract.buyer_legal_form),
-      bin_iin: buyer_entity.bin_iin || "",
-      city: buyer_entity.city || "",
-      address: buyer_entity.address || "",
-      director_name: buyer_entity.director_name || contract.buyer_director_name || "",
-      director_title: "директор",
-      basis: buyer_entity.basis || contract.buyer_basis || "Устав",
-      phone: buyer_entity.phone || contract.buyer_phone || "",
-      email: buyer_entity.email || contract.buyer_email || "",
+      bin_iin: first_present([buyer_entity.bin_iin]) || "",
+      city: first_present([buyer_entity.city]) || "",
+      address: first_present([buyer_entity.address]) || "",
+      director_name:
+        first_present([buyer_entity.director_name, contract.buyer_director_name]) || "",
+      director_title:
+        first_present([buyer_entity.director_title, contract.buyer_director_title]) || "директор",
+      basis: first_present([buyer_entity.basis, contract.buyer_basis]) || "Устав",
+      phone: first_present([buyer_entity.phone, contract.buyer_phone]) || "",
+      email: first_present([buyer_entity.email, contract.buyer_email]) || "",
       bank_name: if(buyer_bank, do: buyer_bank.name || "", else: ""),
       iban: if(buyer_bank_account, do: buyer_bank_account.iban || "", else: ""),
       bic:
@@ -142,16 +144,16 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
 
   defp build_buyer_from_legacy_fields(contract) do
     %{
-      name: contract.buyer_name || "",
+      name: first_present([contract.buyer_name]) || "",
       legal_form: LegalForms.display(contract.buyer_legal_form),
-      bin_iin: contract.buyer_bin_iin || "",
+      bin_iin: first_present([contract.buyer_bin_iin]) || "",
       city: "",
-      address: contract.buyer_address || "",
-      director_name: contract.buyer_director_name || "",
-      director_title: contract.buyer_director_title || "директор",
-      basis: contract.buyer_basis || "Устав",
-      phone: contract.buyer_phone || "",
-      email: contract.buyer_email || "",
+      address: first_present([contract.buyer_address]) || "",
+      director_name: first_present([contract.buyer_director_name]) || "",
+      director_title: first_present([contract.buyer_director_title]) || "директор",
+      basis: first_present([contract.buyer_basis]) || "Устав",
+      phone: first_present([contract.buyer_phone]) || "",
+      email: first_present([contract.buyer_email]) || "",
       bank_name: "",
       iban: "",
       bic: ""
@@ -166,5 +168,19 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
       end
 
     Enum.find(bank_accounts, & &1.is_default) || List.first(bank_accounts)
+  end
+
+  defp first_present(values) do
+    Enum.find_value(values, fn
+      value when is_binary(value) ->
+        trimmed = String.trim(value)
+        if trimmed == "", do: nil, else: trimmed
+
+      nil ->
+        nil
+
+      value ->
+        value
+    end)
   end
 end

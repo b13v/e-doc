@@ -165,4 +165,61 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
     assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Issued contracts")
     assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Signed contracts")
   end
+
+  test "show renders company city and stored representative titles in contract body", %{
+    conn: conn,
+    user: user,
+    company: _company
+  } do
+    issue_date = Date.utc_today()
+
+    formatted_issue_date =
+      :io_lib.format("~2..0B.~2..0B.~4..0B", [issue_date.day, issue_date.month, issue_date.year])
+      |> IO.iodata_to_binary()
+
+    company =
+      create_company!(user, %{
+        "city" => "Шымкент",
+        "representative_name" => "Айдар Сатпаев",
+        "representative_title" => "Генеральный директор"
+      })
+
+    {:ok, buyer} =
+      Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Buyer With Title",
+        "bin_iin" => "101215385676",
+        "city" => "Караганда",
+        "address" => "Buyer Address",
+        "director_name" => "Мария Ким",
+        "director_title" => "Коммерческий директор",
+        "basis" => "Доверенности"
+      })
+
+    contract =
+      create_contract!(company, %{
+        "number" => "CON-SHOW-CITY-TITLE",
+        "buyer_id" => buyer.id,
+        "city" => nil,
+        "issue_date" => issue_date
+      })
+
+    body =
+      conn
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    assert body =~ "<h1>ДОГОВОР № CON-SHOW-CITY-TITLE</h1>"
+    assert body =~ "г. Шымкент"
+    assert body =~ formatted_issue_date
+
+    assert body =~
+             ~r/в лице <strong>Коммерческий директор Мария Ким<\/strong>,\s*действующего на основании <strong>Доверенности<\/strong>/s
+
+    assert body =~
+             ~r/в лице <strong>Генеральный директор Айдар Сатпаев<\/strong>,\s*действующего на основании <strong>Устав<\/strong>/s
+
+    refute body =~ "в лице <strong>директор Мария Ким</strong>"
+    refute body =~ "в лице <strong>директор Айдар Сатпаев</strong>"
+    refute body =~ "г. Астана"
+  end
 end

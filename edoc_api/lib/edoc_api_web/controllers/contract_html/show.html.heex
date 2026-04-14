@@ -52,6 +52,7 @@
 <% bank = @bank || %{} %>
 <% items = @items || [] %>
 <% totals = @totals || %{subtotal: Decimal.new(0), vat: Decimal.new(0), total: Decimal.new(0)} %>
+<% contract_city = seller.city || c.city || "Астана" %>
 <%
   {status_class, status_label} =
     case c.status do
@@ -179,7 +180,7 @@
 
     <h1>ДОГОВОР № <%= c.number || "____" %></h1>
     <div class="center muted">
-      г. <%= c.city || "Астана" %>, <%= EdocApiWeb.ContractHTML.fmt_date(c.issue_date) || "__.__.20__" %> г.
+      г. <%= contract_city %>, <%= EdocApiWeb.ContractHTML.fmt_date(c.issue_date) || "__.__.20__" %> г.
     </div>
 
     <div class="hr"></div>
