@@ -1211,6 +1211,37 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~s|html[data-theme="dark"] .workspace-form-item-label|
   end
 
+  test "contract new syncs selected buyer and bank account into overview panel", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Overview Sync Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/new")
+      |> html_response(200)
+
+    assert body =~ ~s(id="contract-overview-buyer")
+    assert body =~ ~s(id="contract-overview-bank-account")
+    assert body =~ ~s(data-overview-name=)
+    assert body =~ ~s(data-overview-bank=)
+    assert body =~ "function updateContractOverviewBuyer() {"
+    assert body =~ "function updateContractOverviewBankAccount() {"
+    assert body =~ "document.getElementById('buyer_id')?.addEventListener('change'"
+    assert body =~ "document.getElementById('bank_account_id')?.addEventListener('change'"
+    assert body =~ "updateContractOverviewBuyer();"
+    assert body =~ "updateContractOverviewBankAccount();"
+  end
+
   test "act new syncs buyer address when direct mode buyer changes", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)

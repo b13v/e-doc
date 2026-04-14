@@ -88,9 +88,9 @@
                     required
                     class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
-                    <option value=""><%= gettext("Select a buyer...") %></option>
+                    <option value="" data-overview-name="-"><%= gettext("Select a buyer...") %></option>
                     <%= for buyer <- @buyers do %>
-                      <option value={buyer.id}>
+                      <option value={buyer.id} data-overview-name={buyer.name}>
                         <%= buyer.name %> (<%= buyer.bin_iin %>)
                       </option>
                     <% end %>
@@ -113,9 +113,12 @@
                     name="contract[bank_account_id]"
                     class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
-                    <option value=""><%= gettext("Select bank account...") %></option>
+                    <option value="" data-overview-bank="-"><%= gettext("Select bank account...") %></option>
                     <%= for bank_account <- @bank_accounts do %>
-                      <option value={bank_account.id}>
+                      <option
+                        value={bank_account.id}
+                        data-overview-bank={"#{bank_account.bank.name} - #{bank_account.iban}"}
+                      >
                         <%= bank_account.bank.name %> - <%= bank_account.iban %>
                       </option>
                     <% end %>
@@ -265,13 +268,13 @@
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Buyer") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900"><%= length(@buyers) %></dd>
+          <dd id="contract-overview-buyer" class="mt-1 text-sm font-medium text-slate-900">-</dd>
         </div>
         <div>
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             <%= gettext("Bank account") %>
           </dt>
-          <dd class="mt-1 text-sm font-medium text-slate-900"><%= length(@bank_accounts) %></dd>
+          <dd id="contract-overview-bank-account" class="mt-1 text-sm font-medium text-slate-900">-</dd>
         </div>
         <div>
           <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -292,9 +295,27 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  const buyerSelect = document.getElementById('buyer_id');
+  const bankAccountSelect = document.getElementById('bank_account_id');
   const addBtn = document.getElementById('add-item-btn');
   const container = document.getElementById('items-container');
   const template = document.getElementById('items-template');
+
+  function updateContractOverviewBuyer() {
+    const overview = document.getElementById('contract-overview-buyer');
+    if (!overview || !buyerSelect) return;
+
+    const option = buyerSelect.options[buyerSelect.selectedIndex];
+    overview.textContent = option?.getAttribute('data-overview-name') || '-';
+  }
+
+  function updateContractOverviewBankAccount() {
+    const overview = document.getElementById('contract-overview-bank-account');
+    if (!overview || !bankAccountSelect) return;
+
+    const option = bankAccountSelect.options[bankAccountSelect.selectedIndex];
+    overview.textContent = option?.getAttribute('data-overview-bank') || '-';
+  }
 
   function addItem() {
     const div = document.createElement('div');
@@ -320,6 +341,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  document.getElementById('buyer_id')?.addEventListener('change', updateContractOverviewBuyer);
+  document.getElementById('bank_account_id')?.addEventListener('change', updateContractOverviewBankAccount);
+
+  updateContractOverviewBuyer();
+  updateContractOverviewBankAccount();
   addItem();
 });
 </script>
