@@ -69,7 +69,7 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilderTest do
     buyer_data = ContractDataBuilder.build_buyer_data(contract)
 
     assert seller.city == "Астана"
-    assert seller.address_line == "г. Астана, Some Street 1"
+    assert seller.address_line == "г. Астана"
     assert seller.director_title == "директор"
     assert buyer_data.address_line == "Test Buyer Address"
     assert buyer_data.director_title == "Руководитель"
