@@ -213,13 +213,15 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
     assert body =~ formatted_issue_date
 
     assert body =~
-             ~r/в лице <strong>Коммерческий директор Мария Ким<\/strong>,\s*действующего на основании <strong>Доверенности<\/strong>/s
+             ~r/адрес: г\. Караганда, Buyer Address,\s*в лице <strong>Коммерческий директор Мария Ким<\/strong>,\s*действующего на основании <strong>Доверенности<\/strong>/s
 
     assert body =~
-             ~r/в лице <strong>Генеральный директор Айдар Сатпаев<\/strong>,\s*действующего на основании <strong>Устав<\/strong>/s
+             ~r/адрес: г\. Шымкент, Some Street 1,\s*в лице <strong>Генеральный директор Айдар Сатпаев<\/strong>,\s*действующего на основании <strong>Устав<\/strong>/s
 
     refute body =~ "в лице <strong>директор Мария Ким</strong>"
     refute body =~ "в лице <strong>директор Айдар Сатпаев</strong>"
+    refute body =~ "адрес: Buyer Address,"
+    refute body =~ "адрес: Some Street 1,"
     refute body =~ "г. Астана"
   end
 end

@@ -813,14 +813,14 @@ defmodule EdocApiWeb.PdfTemplates do
         <p>
           <strong><%= EdocApi.LegalForms.display(buyer.legal_form) %> «<%= buyer.name || "____________" %>»</strong>,
           БИН <strong><%= buyer.bin_iin || "____________" %></strong>,
-          адрес: <%= buyer.address || "____________" %>,
+          адрес: <%= buyer.address_line || buyer.address || "____________" %>,
           в лице <strong><%= buyer.director_title || "Директора" %> <%= buyer.director_name || "____________" %></strong>,
           действующего на основании <strong><%= buyer.basis || "Устава" %></strong>,
           именуемое далее «Заказчик», с одной стороны, и
 
           <strong><%= EdocApi.LegalForms.display(seller.legal_form) %> «<%= seller.name || "____________" %>»</strong>,
           БИН <strong><%= seller.bin_iin || "____________" %></strong>,
-          адрес: <%= seller.address || "____________" %>,
+          адрес: <%= seller.address_line || seller.address || "____________" %>,
           в лице <strong><%= seller.director_title %> <%= seller.director_name || "____________" %></strong>,
           действующего на основании <strong><%= seller.basis %></strong>,
           именуемое далее «Исполнитель», с другой стороны, совместно именуемые «Стороны»,

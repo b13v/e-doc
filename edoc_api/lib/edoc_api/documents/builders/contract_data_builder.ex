@@ -14,13 +14,16 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
   """
   def build_seller_data(contract) do
     company = contract.company || %{}
+    city = first_present([Map.get(company, :city), contract.city]) || ""
+    address = first_present([Map.get(company, :address)]) || ""
 
     %{
       name: first_present([Map.get(company, :name), contract.company_id]) || "",
       legal_form: LegalForms.display(Map.get(company, :legal_form)),
       bin_iin: first_present([Map.get(company, :bin_iin)]) || "",
-      city: first_present([Map.get(company, :city), contract.city]) || "",
-      address: first_present([Map.get(company, :address)]) || "",
+      city: city,
+      address: address,
+      address_line: format_address(city, address),
       director_name: first_present([Map.get(company, :representative_name)]) || "",
       director_title: first_present([Map.get(company, :representative_title)]) || "директор",
       basis: "Устав",
@@ -112,13 +115,16 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
     buyer_entity = contract.buyer
     buyer_bank_account = default_buyer_bank_account(buyer_entity)
     buyer_bank = if buyer_bank_account, do: buyer_bank_account.bank, else: nil
+    city = first_present([buyer_entity.city]) || ""
+    address = first_present([buyer_entity.address]) || ""
 
     %{
       name: first_present([buyer_entity.name]) || "",
       legal_form: LegalForms.display(buyer_entity.legal_form || contract.buyer_legal_form),
       bin_iin: first_present([buyer_entity.bin_iin]) || "",
-      city: first_present([buyer_entity.city]) || "",
-      address: first_present([buyer_entity.address]) || "",
+      city: city,
+      address: address,
+      address_line: format_address(city, address),
       director_name:
         first_present([buyer_entity.director_name, contract.buyer_director_name]) || "",
       director_title:
@@ -143,12 +149,16 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
   end
 
   defp build_buyer_from_legacy_fields(contract) do
+    city = ""
+    address = first_present([contract.buyer_address]) || ""
+
     %{
       name: first_present([contract.buyer_name]) || "",
       legal_form: LegalForms.display(contract.buyer_legal_form),
       bin_iin: first_present([contract.buyer_bin_iin]) || "",
-      city: "",
-      address: first_present([contract.buyer_address]) || "",
+      city: city,
+      address: address,
+      address_line: format_address(city, address),
       director_name: first_present([contract.buyer_director_name]) || "",
       director_title: first_present([contract.buyer_director_title]) || "директор",
       basis: first_present([contract.buyer_basis]) || "Устав",
@@ -183,4 +193,23 @@ defmodule EdocApi.Documents.Builders.ContractDataBuilder do
         value
     end)
   end
+
+  defp format_address(city, address) do
+    parts =
+      []
+      |> maybe_add_city(city)
+      |> maybe_add_address(address)
+
+    case parts do
+      [] -> nil
+      [single] -> single
+      [city_part, address_part] -> city_part <> ", " <> address_part
+    end
+  end
+
+  defp maybe_add_city(parts, ""), do: parts
+  defp maybe_add_city(parts, city), do: parts ++ ["г. " <> city]
+
+  defp maybe_add_address(parts, ""), do: parts
+  defp maybe_add_address(parts, address), do: parts ++ [address]
 end
