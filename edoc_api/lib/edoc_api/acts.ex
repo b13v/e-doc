@@ -323,20 +323,13 @@ defmodule EdocApi.Acts do
   def next_act_number!(company_id) when is_binary(company_id) do
     last_number =
       Act
-      |> where([a], a.company_id == ^company_id)
-      |> select([a], a.number)
-      |> Repo.all()
-      |> Enum.flat_map(fn
-        nil ->
-          []
-
-        number ->
-          case Integer.parse(number) do
-            {value, ""} -> [value]
-            _ -> []
-          end
-      end)
-      |> Enum.max(fn -> 0 end)
+      |> where([a], a.company_id == ^company_id and fragment("? ~ ?", a.number, "^[0-9]+$"))
+      |> select([a], max(fragment("CAST(? AS BIGINT)", a.number)))
+      |> Repo.one()
+      |> case do
+        nil -> 0
+        value -> value
+      end
 
     seq = if last_number > 0, do: last_number + 1, else: 1
 
