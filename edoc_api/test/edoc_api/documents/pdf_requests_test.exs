@@ -19,13 +19,13 @@ defmodule EdocApi.Documents.PdfRequestsTest do
         pdf_binary: "%PDF-cached"
       })
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
+      enqueue_fun = fn _type, _doc_id, _user_id ->
         send(self(), :enqueued)
         {:ok, :job}
       end
 
       assert {:ok, "%PDF-cached"} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id,
                  enqueue_fun: enqueue_fun
                )
 
@@ -45,13 +45,13 @@ defmodule EdocApi.Documents.PdfRequestsTest do
         pdf_binary: "%PDF-cached"
       })
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
+      enqueue_fun = fn _type, _doc_id, _user_id ->
         send(self(), :enqueued)
         {:ok, :job}
       end
 
       assert {:ok, "%PDF-cached"} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, other_user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, other_user.id,
                  enqueue_fun: enqueue_fun
                )
 
@@ -62,17 +62,18 @@ defmodule EdocApi.Documents.PdfRequestsTest do
       user = TestFixtures.create_user!()
       document_id = Ecto.UUID.generate()
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
-        send(self(), :enqueued)
+      enqueue_fun = fn type, doc_id, user_id ->
+        send(self(), {:enqueued, type, doc_id, user_id})
         {:ok, :job}
       end
 
       assert {:pending, :enqueued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id,
                  enqueue_fun: enqueue_fun
                )
 
-      assert_received :enqueued
+      assert_received {:enqueued, "invoice", ^document_id, user_id}
+      assert user_id == user.id
 
       assert %GeneratedDocument{status: "pending"} =
                Repo.get_by(GeneratedDocument,
@@ -93,13 +94,13 @@ defmodule EdocApi.Documents.PdfRequestsTest do
         status: "pending"
       })
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
+      enqueue_fun = fn _type, _doc_id, _user_id ->
         send(self(), :enqueued)
         {:ok, :job}
       end
 
       assert {:pending, :already_queued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id,
                  enqueue_fun: enqueue_fun
                )
 
@@ -110,18 +111,18 @@ defmodule EdocApi.Documents.PdfRequestsTest do
       user = TestFixtures.create_user!()
       document_id = Ecto.UUID.generate()
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
+      enqueue_fun = fn _type, _doc_id, _user_id ->
         send(self(), :enqueued)
         {:ok, :job}
       end
 
       assert {:pending, :enqueued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id,
                  enqueue_fun: enqueue_fun
                )
 
       assert {:pending, :already_queued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user.id,
                  enqueue_fun: enqueue_fun
                )
 
@@ -134,18 +135,18 @@ defmodule EdocApi.Documents.PdfRequestsTest do
       user_2 = TestFixtures.create_user!()
       document_id = Ecto.UUID.generate()
 
-      enqueue_fun = fn _type, _doc_id, _user_id, _html ->
+      enqueue_fun = fn _type, _doc_id, _user_id ->
         send(self(), :enqueued)
         {:ok, :job}
       end
 
       assert {:pending, :enqueued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user_1.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user_1.id,
                  enqueue_fun: enqueue_fun
                )
 
       assert {:pending, :already_queued} =
-               PdfRequests.fetch_or_enqueue("invoice", document_id, user_2.id, "<html/>",
+               PdfRequests.fetch_or_enqueue("invoice", document_id, user_2.id,
                  enqueue_fun: enqueue_fun
                )
 

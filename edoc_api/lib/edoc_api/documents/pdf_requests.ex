@@ -10,15 +10,15 @@ defmodule EdocApi.Documents.PdfRequests do
 
   @type document_type :: :invoice | :contract | :act | binary()
 
-  @spec fetch_or_enqueue(document_type(), Ecto.UUID.t(), Ecto.UUID.t(), binary(), keyword()) ::
+  @spec fetch_or_enqueue(document_type(), Ecto.UUID.t(), Ecto.UUID.t(), keyword()) ::
           {:ok, binary()}
           | {:pending, :enqueued | :already_queued}
           | {:error, term()}
-  def fetch_or_enqueue(document_type, document_id, user_id, html_binary, opts \\ [])
-      when is_binary(document_id) and is_binary(user_id) and is_binary(html_binary) do
+  def fetch_or_enqueue(document_type, document_id, user_id, opts \\ [])
+      when is_binary(document_id) and is_binary(user_id) and is_list(opts) do
     normalized_type = normalize_type(document_type)
     worker = Keyword.get(opts, :worker, PdfGenerationWorker)
-    enqueue_fun = Keyword.get(opts, :enqueue_fun, &worker.enqueue/4)
+    enqueue_fun = Keyword.get(opts, :enqueue_fun, &worker.enqueue/3)
 
     case worker.get_pdf(normalized_type, document_id, user_id) do
       {:ok, pdf_binary} ->
@@ -29,7 +29,6 @@ defmodule EdocApi.Documents.PdfRequests do
           normalized_type,
           document_id,
           user_id,
-          html_binary,
           enqueue_fun
         )
 
@@ -53,7 +52,7 @@ defmodule EdocApi.Documents.PdfRequests do
       {:error, :not_found}
   end
 
-  defp ensure_pending_and_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun) do
+  defp ensure_pending_and_enqueue(document_type, document_id, user_id, enqueue_fun) do
     case get_generated_document(document_type, document_id) do
       %GeneratedDocument{status: "completed", pdf_binary: pdf_binary}
       when is_binary(pdf_binary) ->
@@ -68,7 +67,7 @@ defmodule EdocApi.Documents.PdfRequests do
           |> Ecto.Changeset.change(status: "pending", error_message: nil)
           |> Repo.update()
 
-        do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun)
+        do_enqueue(document_type, document_id, user_id, enqueue_fun)
 
       nil ->
         case Repo.insert(
@@ -80,7 +79,7 @@ defmodule EdocApi.Documents.PdfRequests do
                })
              ) do
           {:ok, _generated_document} ->
-            do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun)
+            do_enqueue(document_type, document_id, user_id, enqueue_fun)
 
           {:error, changeset} ->
             case get_generated_document(document_type, document_id) do
@@ -101,8 +100,8 @@ defmodule EdocApi.Documents.PdfRequests do
     end
   end
 
-  defp do_enqueue(document_type, document_id, user_id, html_binary, enqueue_fun) do
-    case enqueue_fun.(document_type, document_id, user_id, html_binary) do
+  defp do_enqueue(document_type, document_id, user_id, enqueue_fun) do
+    case enqueue_fun.(document_type, document_id, user_id) do
       {:ok, _job} -> {:pending, :enqueued}
       {:error, reason} -> {:error, reason}
     end

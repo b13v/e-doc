@@ -5,16 +5,9 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
   This worker generates PDFs for contracts, invoices, and acts.
   The PDF is stored in the generated_documents table for later retrieval.
 
-  ## Dependency Inversion
-
-  This worker accepts HTML as a binary argument (provided by the web layer)
-  rather than importing from EdocApiWeb, maintaining proper core→web separation.
-
   ## Usage
 
-      # In web layer controller:
-      html = PdfTemplates.contract_html(contract)
-      PdfGenerationWorker.enqueue("contract", contract.id, user.id, html)
+      PdfGenerationWorker.enqueue("contract", contract.id, user.id)
 
   ## Direct Generation (for testing or fallback)
 
@@ -32,11 +25,11 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     document_type = Map.get(args, "document_type")
     document_id = Map.get(args, "document_id")
     user_id = Map.get(args, "user_id")
-    html_binary = Map.get(args, "html")
 
     Logger.info("Generating PDF for #{document_type} #{document_id}")
 
-    with {:ok, _record} <- fetch_document(document_type, document_id, user_id),
+    with {:ok, record} <- fetch_document(document_type, document_id, user_id),
+         {:ok, html_binary} <- render_html(document_type, record),
          {:ok, pdf_binary} <- generate_pdf(document_type, html_binary),
          {:ok, _} <- store_pdf(document_type, document_id, user_id, pdf_binary) do
       Logger.info("Successfully generated PDF for #{document_type} #{document_id}")
@@ -65,21 +58,17 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
     * `document_type` - "contract", "invoice", or "act"
     * `document_id` - The UUID of the document
     * `user_id` - The UUID of the user who owns the document
-    * `html_binary` - Pre-rendered HTML binary (from PdfTemplates)
-
   ## Example
 
-      html = PdfTemplates.contract_html(contract)
-      {:ok, job} = PdfGenerationWorker.enqueue("contract", contract.id, user.id, html)
+      {:ok, job} = PdfGenerationWorker.enqueue("contract", contract.id, user.id)
   """
-  def enqueue(document_type, document_id, user_id, html_binary)
-      when document_type in ~w(contract invoice act) and is_binary(html_binary) do
+  def enqueue(document_type, document_id, user_id)
+      when document_type in ~w(contract invoice act) do
     __MODULE__.new(
       %{
         "document_type" => document_type,
         "document_id" => document_id,
-        "user_id" => user_id,
-        "html" => html_binary
+        "user_id" => user_id
       },
       queue: :pdf_generation,
       max_attempts: 3
@@ -165,6 +154,13 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
       act -> {:ok, act}
     end
   end
+
+  defp render_html("contract", contract),
+    do: {:ok, EdocApiWeb.PdfTemplates.contract_html(contract)}
+
+  defp render_html("invoice", invoice), do: {:ok, EdocApiWeb.PdfTemplates.invoice_html(invoice)}
+  defp render_html("act", act), do: {:ok, EdocApiWeb.PdfTemplates.act_html(act)}
+  defp render_html(_, _), do: {:error, :invalid_document_type}
 
   defp generate_pdf("contract", html) when is_binary(html) do
     EdocApi.Documents.ContractPdf.render(html)

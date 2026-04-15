@@ -103,9 +103,7 @@ def pdf_async(conn, %{"id" => id}) do
   user = conn.assigns.current_user
 
   with {:ok, contract} <- Core.get_contract_for_user(user.id, id),
-       # Pre-render HTML before enqueueing (dependency inversion)
-       html = PdfTemplates.contract_html(contract),
-       {:ok, _job} <- PdfGenerationWorker.enqueue("contract", id, user.id, html) do
+       {:ok, _job} <- PdfGenerationWorker.enqueue("contract", contract.id, user.id) do
     json(conn, %{status: "generating", "message" => "PDF will be available shortly"})
   end
 end

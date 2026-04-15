@@ -451,10 +451,7 @@ defmodule EdocApiWeb.InvoicesController do
         |> redirect(to: "/invoices")
 
       invoice ->
-        # Pre-render HTML in web layer, then pass to PDF module
-        html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
-
-        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id, html) do
+        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)

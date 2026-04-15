@@ -111,10 +111,7 @@ defmodule EdocApiWeb.ContractController do
         ErrorMapper.not_found(conn, "contract_not_found")
 
       {:ok, contract} ->
-        # Pre-render HTML in web layer, then pass to PDF module
-        html = EdocApiWeb.PdfTemplates.contract_html(contract)
-
-        case PdfRequests.fetch_or_enqueue(:contract, contract.id, user.id, html) do
+        case PdfRequests.fetch_or_enqueue(:contract, contract.id, user.id) do
           {:ok, pdf_binary} ->
             conn
             |> put_pdf_security_headers()

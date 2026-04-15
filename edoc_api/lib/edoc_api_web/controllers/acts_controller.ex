@@ -270,10 +270,7 @@ defmodule EdocApiWeb.ActsController do
         |> redirect(to: "/acts/new")
 
       act ->
-        # Pre-render HTML in web layer, then pass to PDF module
-        html = EdocApiWeb.PdfTemplates.act_html(act)
-
-        case PdfRequests.fetch_or_enqueue(:act, act.id, user.id, html) do
+        case PdfRequests.fetch_or_enqueue(:act, act.id, user.id) do
           {:ok, pdf_binary} ->
             conn
             |> put_layout(false)

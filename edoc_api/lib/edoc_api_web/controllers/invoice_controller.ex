@@ -112,10 +112,7 @@ defmodule EdocApiWeb.InvoiceController do
         ErrorMapper.not_found(conn, "invoice_not_found")
 
       invoice ->
-        # Pre-render HTML in web layer, then pass to PDF module
-        html = EdocApiWeb.PdfTemplates.invoice_html(invoice)
-
-        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id, html) do
+        case PdfRequests.fetch_or_enqueue(:invoice, invoice.id, user.id) do
           {:ok, pdf_binary} ->
             conn
             |> put_pdf_security_headers()
