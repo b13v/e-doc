@@ -44,10 +44,18 @@ defmodule EdocApi.Buyers do
   Supports optional pagination via :limit and :offset.
   """
   def list_buyers_for_company(company_id, opts \\ []) when is_binary(company_id) do
-    Buyer
-    |> where(company_id: ^company_id)
-    |> order_by([b], asc: b.name)
-    |> apply_pagination(opts)
+    paginated_buyers =
+      Buyer
+      |> where(company_id: ^company_id)
+      |> order_by([b], asc: b.name)
+      |> apply_pagination(opts)
+
+    from(b in subquery(paginated_buyers),
+      left_join: ba in assoc(b, :bank_accounts),
+      left_join: bank in assoc(ba, :bank),
+      preload: [bank_accounts: {ba, bank: bank}],
+      order_by: [asc: b.name]
+    )
     |> Repo.all()
   end
 

@@ -39,6 +39,34 @@ defmodule EdocApiWeb.BuyersControllerTest do
   end
 
   describe "index/2" do
+    test "preloads bank accounts without per-buyer queries", %{conn: conn, company: company} do
+      bank = create_bank!()
+
+      buyer_attrs = [
+        {"Buyer A", "060215385673"},
+        {"Buyer B", "070215385675"},
+        {"Buyer C", "080215385677"}
+      ]
+
+      for {name, bin_iin} <- buyer_attrs do
+        {:ok, _buyer} =
+          EdocApi.Buyers.create_buyer_for_company(company.id, %{
+            "name" => name,
+            "bin_iin" => bin_iin,
+            "bank_id" => bank.id,
+            "iban" => "KZ280000000000000010"
+          })
+      end
+
+      {conn, select_count} =
+        capture_select_count(fn ->
+          get(conn, "/v1/buyers?page=1&page_size=50")
+        end)
+
+      assert response(conn, 200)
+      assert select_count <= 4
+    end
+
     test "returns normalized pagination metadata", %{conn: conn, company: company} do
       {:ok, _buyer_1} =
         EdocApi.Buyers.create_buyer_for_company(company.id, %{
@@ -125,5 +153,36 @@ defmodule EdocApiWeb.BuyersControllerTest do
     suffix = Integer.to_string(System.unique_integer([:positive]))
     bic = "BIC#{String.slice(suffix, 0, 8)}"
     Repo.insert!(%Bank{name: "API Buyer Bank #{suffix}", bic: bic})
+  end
+
+  defp capture_select_count(fun) when is_function(fun, 0) do
+    test_pid = self()
+    handler_id = {__MODULE__, :repo_query, System.unique_integer([:positive])}
+
+    :telemetry.attach(
+      handler_id,
+      [:edoc_api, :repo, :query],
+      fn _event, _measurements, %{query: query}, _config ->
+        if String.starts_with?(query, "SELECT") do
+          send(test_pid, :select_query)
+        end
+      end,
+      nil
+    )
+
+    try do
+      result = fun.()
+      {result, drain_select_count(0)}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_select_count(count) do
+    receive do
+      :select_query -> drain_select_count(count + 1)
+    after
+      0 -> count
+    end
   end
 end

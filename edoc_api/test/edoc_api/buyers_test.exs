@@ -9,6 +9,27 @@ defmodule EdocApi.BuyersTest do
   import EdocApi.TestFixtures
 
   describe "buyer bank account integration" do
+    test "list_buyers_for_company/2 preloads bank accounts and banks" do
+      user = create_user!()
+      company = create_company!(user)
+      bank = create_bank!()
+
+      assert {:ok, _buyer} =
+               Buyers.create_buyer_for_company(company.id, %{
+                 "name" => "Buyer Listed With Bank",
+                 "bin_iin" => "060215385673",
+                 "bank_id" => bank.id,
+                 "iban" => "KZ770000000000000001"
+               })
+
+      [buyer] = Buyers.list_buyers_for_company(company.id)
+
+      assert Ecto.assoc_loaded?(buyer.bank_accounts)
+      assert [bank_account] = buyer.bank_accounts
+      assert Ecto.assoc_loaded?(bank_account.bank)
+      assert bank_account.bank.id == bank.id
+    end
+
     test "create_buyer_for_company/2 creates default buyer bank account" do
       user = create_user!()
       company = create_company!(user)
@@ -143,8 +164,12 @@ defmodule EdocApi.BuyersTest do
   end
 
   defp create_bank! do
-    suffix = Integer.to_string(System.unique_integer([:positive]))
-    bic = "BIC#{String.slice(suffix, 0, 8)}"
+    suffix =
+      System.unique_integer([:positive])
+      |> Integer.to_string()
+      |> String.pad_leading(9, "0")
+
+    bic = "BT#{String.slice(suffix, -9, 9)}"
     Repo.insert!(%Bank{name: "Buyer Test Bank #{suffix}", bic: bic})
   end
 end

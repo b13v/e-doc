@@ -24,10 +24,7 @@ defmodule EdocApiWeb.BuyersController do
         )
 
       company ->
-        buyers =
-          Buyers.list_buyers_for_company(company.id, limit: page_size, offset: offset)
-          |> Repo.preload(bank_accounts: :bank)
-
+        buyers = Buyers.list_buyers_for_company(company.id, limit: page_size, offset: offset)
         total_count = Buyers.count_buyers_for_company(company.id)
 
         render(conn, :index,

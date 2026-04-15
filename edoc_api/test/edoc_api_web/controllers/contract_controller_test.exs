@@ -124,6 +124,14 @@ defmodule EdocApiWeb.ContractControllerTest do
   end
 
   describe "index/2" do
+    test "legacy plural contracts controller applies pagination before listing" do
+      source = File.read!("lib/edoc_api_web/controllers/contracts_controller.ex")
+
+      assert source =~ "ControllerHelpers.pagination_params(params)"
+      assert source =~ "Core.list_contracts_for_user(user.id, limit: page_size, offset: offset)"
+      refute source =~ "Core.list_contracts_for_user(user.id)\n"
+    end
+
     test "returns normalized pagination metadata", %{conn: conn, company: company} do
       _contract_1 = create_contract!(company)
       _contract_2 = create_contract!(company)

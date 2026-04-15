@@ -4,11 +4,22 @@ defmodule EdocApiWeb.ContractsController do
   alias EdocApi.Core
   alias EdocApi.Documents.ContractPdf
   alias EdocApi.Documents.Builders.ContractDataBuilder
+  alias EdocApiWeb.ControllerHelpers
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    contracts = Core.list_contracts_for_user(user.id)
-    render(conn, :index, contracts: contracts, page_title: "Contracts")
+
+    %{page: page, page_size: page_size, offset: offset} =
+      ControllerHelpers.pagination_params(params)
+
+    contracts = Core.list_contracts_for_user(user.id, limit: page_size, offset: offset)
+    total_count = Core.count_contracts_for_user(user.id)
+
+    render(conn, :index,
+      contracts: contracts,
+      meta: ControllerHelpers.pagination_meta(page, page_size, total_count),
+      page_title: "Contracts"
+    )
   end
 
   def show(conn, %{"id" => id}) do
