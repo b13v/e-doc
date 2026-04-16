@@ -38,7 +38,7 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
       {:error, :not_found} ->
         Logger.warning("Document not found: #{document_type} #{document_id}")
         mark_failed(document_type, document_id, user_id, "Document not found")
-        {:error, :not_found}
+        {:cancel, "Document not found"}
 
       {:error, reason} ->
         Logger.error("Failed to generate PDF: #{inspect(reason)}")
