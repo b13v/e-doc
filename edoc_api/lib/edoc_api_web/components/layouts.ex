@@ -360,6 +360,10 @@ defmodule EdocApiWeb.Layouts do
             color: var(--workspace-text-strong);
           }
 
+          html[data-theme="dark"] .workspace-support-panel .workspace-status-badge {
+            color: #000000;
+          }
+
           html[data-theme="dark"] [data-row-actions-menu],
           html[data-theme="dark"] [data-send-menu-panel] {
             background-color: #334155;
@@ -521,6 +525,7 @@ defmodule EdocApiWeb.Layouts do
 
           .workspace-action-btn-primary:hover {
             background-color: #0369a1;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);
           }
 
           .workspace-action-btn-danger {
@@ -530,6 +535,7 @@ defmodule EdocApiWeb.Layouts do
 
           .workspace-action-btn-danger:hover {
             background-color: #9f1239;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);
           }
 
           .workspace-action-btn-neutral {
@@ -539,6 +545,27 @@ defmodule EdocApiWeb.Layouts do
 
           .workspace-action-btn-neutral:hover {
             background-color: #1e293b;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);
+          }
+
+          .workspace-action-btn-warning {
+            background-color: #ea580c;
+            color: #ffffff;
+          }
+
+          .workspace-action-btn-warning:hover {
+            background-color: #c2410c;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);
+          }
+
+          .workspace-action-btn-yellow {
+            background-color: #facc15;
+            color: #111827;
+          }
+
+          .workspace-action-btn-yellow:hover {
+            background-color: #eab308;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.35);
           }
 
           html[data-theme="dark"] .workspace-action-btn-secondary {
@@ -609,6 +636,12 @@ defmodule EdocApiWeb.Layouts do
           }
 
           html[data-theme="dark"] .workspace-form-static-value {
+            background-color: #0f172a;
+            border-color: #475569;
+            color: #f8fafc;
+          }
+
+          html[data-theme="dark"] .workspace-form-currency-readonly {
             background-color: #0f172a;
             border-color: #475569;
             color: #f8fafc;

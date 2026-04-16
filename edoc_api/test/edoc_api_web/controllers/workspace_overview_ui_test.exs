@@ -41,6 +41,8 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*aria-current="page"/
     refute body =~ ~r/<a[^>]*href="\/invoices"[^>]*aria-current="page"/
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-danger")
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
   end
 
   test "workspace navbar inactive links use black text classes", %{conn: conn} do
@@ -1013,6 +1015,35 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "Обзор"
     assert body =~ "Статус"
     assert body =~ "Реквизиты покупателя и оплаты"
+    assert body =~ ~r/<header[^>]*>[\s\S]+workspace-form-detail-grid/
+    assert body =~ ~r/workspace-form-detail-grid[\s\S]+<form[\s\S]+workspace-support-panel/
+
+    refute body =~
+             ~r/<header[^>]*>[\s\S]+href="\/invoices\/#{invoice.id}"[\s\S]+workspace-form-detail-grid/
+
+    assert body =~
+             ~s(href="/invoices/#{invoice.id}" class="workspace-action-btn workspace-action-btn-danger")
+
+    assert body =~
+             ~s(<button type="submit" class="workspace-action-btn workspace-action-btn-success">)
+
+    assert body =~ ~r/>\s*Сохранить\s*</
+    refute body =~ "Сохранить изменения"
+    refute body =~ "Save Changes"
+    assert body =~ "workspace-form-currency-readonly"
+    assert body =~ "dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100"
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-currency-readonly|
+    assert body =~ "workspace-form-items-surface rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/80"
+
+    assert body =~
+             "workspace-form-items-heading text-lg font-semibold text-slate-900 dark:text-slate-100"
+
+    assert body =~
+             "workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"
+
+    assert body =~ "dark:bg-slate-800"
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-items-surface|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-form-item-label|
     refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end
 
@@ -1654,6 +1685,38 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute html =~ ~s(name="_method")
     refute html =~ ~s|return confirm('Mark invoice as paid? It's final.')|
     assert html =~ ~s|return confirm(&quot;Mark invoice as paid? It&#39;s final.&quot;)|
+  end
+
+  test "draft act row actions show green edit action instead of pdf" do
+    act_id = Ecto.UUID.generate()
+
+    actions =
+      EdocApiWeb.ActHTML.act_row_actions(%{
+        id: act_id,
+        status: "draft"
+      })
+
+    assert Enum.any?(
+             actions.secondary,
+             &(&1.label == "Edit" and &1.tone == :success and &1.href == "/acts/#{act_id}/edit")
+           )
+
+    refute Enum.any?(
+             actions.secondary,
+             &(&1.label == "PDF" or Map.get(&1, :href) == "/acts/#{act_id}/pdf")
+           )
+
+    menu =
+      render_component(&EdocApiWeb.CoreComponents.workspace_row_actions/1,
+        primary: actions.primary,
+        secondary: actions.secondary,
+        desktop_mode: :overflow,
+        mobile_mode: :overflow
+      )
+
+    assert menu =~ ~s(href="/acts/#{act_id}/edit")
+    assert menu =~ "text-emerald-700"
+    refute menu =~ ~s(href="/acts/#{act_id}/pdf")
   end
 
   test "buyers, contracts, invoices, and acts use the approved semantic submenu text colors",
