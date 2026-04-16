@@ -145,6 +145,12 @@
         <%= gettext("Back to Acts") %>
       </a>
       <%= if EdocApi.ActStatus.is_draft?(@act) do %>
+        <a
+          href={"/acts/#{@act.id}/edit"}
+          class="workspace-action-btn workspace-action-btn-secondary"
+        >
+          <%= gettext("Edit") %>
+        </a>
         <form action={"/acts/#{@act.id}/issue"} method="post">
           <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
           <button

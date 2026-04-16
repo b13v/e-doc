@@ -133,6 +133,78 @@ defmodule EdocApiWeb.ActsControllerTest do
     end
   end
 
+  describe "edit/update" do
+    test "draft acts can be edited from the show page", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      act = create_act!(user, company, "draft")
+
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Updated Act Buyer",
+          "bin_iin" => "060215385673",
+          "address" => "Updated Buyer Address"
+        })
+
+      show_body =
+        conn
+        |> get("/acts/#{act.id}")
+        |> html_response(200)
+
+      assert show_body =~ ~s(href="/acts/#{act.id}/edit")
+
+      edit_body =
+        conn
+        |> get("/acts/#{act.id}/edit")
+        |> html_response(200)
+
+      assert edit_body =~
+               Gettext.gettext(EdocApiWeb.Gettext, "Edit Act %{number}", number: act.number)
+
+      assert edit_body =~ ~s(action="/acts/#{act.id}")
+      assert edit_body =~ "Services"
+
+      updated_issue_date = Date.utc_today() |> Date.add(-1) |> Date.to_iso8601()
+      updated_actual_date = Date.utc_today() |> Date.to_iso8601()
+
+      conn =
+        put(conn, "/acts/#{act.id}", %{
+          "act" => %{
+            "issue_date" => updated_issue_date,
+            "actual_date" => updated_actual_date,
+            "buyer_id" => buyer.id,
+            "buyer_address" => "Edited Buyer Address",
+            "vat_rate" => "16"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Edited services",
+              "report_info" => "Report A",
+              "code" => "A-2",
+              "qty" => "2",
+              "unit_price" => "250.00",
+              "actual_date" => updated_actual_date
+            }
+          }
+        })
+
+      assert redirected_to(conn) == "/acts/#{act.id}"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(EdocApiWeb.Gettext, "Act updated successfully.")
+
+      updated = Acts.get_act_for_user(user.id, act.id)
+      assert updated.issue_date == Date.from_iso8601!(updated_issue_date)
+      assert updated.actual_date == Date.from_iso8601!(updated_actual_date)
+      assert updated.buyer_id == buyer.id
+      assert updated.buyer_name == ~s("Updated Act Buyer")
+      assert updated.buyer_address == "Edited Buyer Address"
+      assert [%{name: "Edited services", code: "A-2"}] = updated.items
+    end
+  end
+
   describe "create/2" do
     test "shows upgrade prompt when trial document limit is exhausted", %{
       conn: conn,
@@ -435,7 +507,6 @@ defmodule EdocApiWeb.ActsControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                Gettext.gettext(EdocApiWeb.Gettext, "Please select a signed contract.")
     end
-
   end
 
   describe "index pagination" do

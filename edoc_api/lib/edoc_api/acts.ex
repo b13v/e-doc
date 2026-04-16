@@ -286,6 +286,29 @@ defmodule EdocApi.Acts do
     end
   end
 
+  def update_act_for_user(user_id, act_id, attrs)
+      when is_binary(user_id) and is_binary(act_id) and is_map(attrs) do
+    case get_act_for_user(user_id, act_id) do
+      nil ->
+        {:error, :not_found}
+
+      %Act{} = act ->
+        if ActStatus.is_draft?(act) do
+          with %Company{} = company <- Companies.get_company_by_user_id(user_id),
+               {:ok, buyer} <- fetch_buyer(attrs, company.id),
+               {:ok, prepared_items} <- prepare_items(attrs, update_vat_rate(act, attrs)) do
+            update_act_with_items(act, company, buyer, attrs, prepared_items)
+          else
+            nil -> {:error, :business_rule, %{rule: :company_required}}
+            {:error, type, details} -> {:error, type, details}
+            {:error, reason} -> {:error, reason}
+          end
+        else
+          {:error, :business_rule, %{rule: :act_not_editable}}
+        end
+    end
+  end
+
   defp insert_act_items_batch!(act_id, prepared_items) when is_binary(act_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -319,6 +342,63 @@ defmodule EdocApi.Acts do
     Repo.insert_all(ActItem, rows)
     :ok
   end
+
+  defp update_act_with_items(act, company, buyer, attrs, prepared_items) do
+    vat_rate = update_vat_rate(act, attrs)
+
+    act_attrs = %{
+      "number" => act.number,
+      "status" => act.status,
+      "issue_date" => Map.get(attrs, "issue_date"),
+      "actual_date" => blank_to_nil(Map.get(attrs, "actual_date")),
+      "currency" => act.currency || "KZT",
+      "vat_rate" => vat_rate,
+      "seller_name" => company.name,
+      "seller_bin_iin" => company.bin_iin,
+      "seller_address" => company.address,
+      "seller_phone" => company.phone,
+      "buyer_name" => buyer.name,
+      "buyer_bin_iin" => buyer.bin_iin,
+      "buyer_address" => Map.get(attrs, "buyer_address") || buyer.address || "",
+      "buyer_phone" => buyer.phone,
+      "company_id" => act.company_id,
+      "user_id" => act.user_id,
+      "buyer_id" => buyer.id,
+      "contract_id" => act.contract_id
+    }
+
+    Repo.transaction(fn ->
+      case Act.changeset(act, act_attrs) |> Repo.update() do
+        {:ok, updated_act} ->
+          ActItem
+          |> where([item], item.act_id == ^updated_act.id)
+          |> Repo.delete_all()
+
+          insert_act_items_batch!(updated_act.id, prepared_items)
+
+          Repo.preload(updated_act, [:items, :company, :buyer, :contract], force: true)
+
+        {:error, changeset} ->
+          Repo.rollback({:validation, %{changeset: changeset}})
+      end
+    end)
+    |> case do
+      {:ok, act} ->
+        {:ok, act}
+
+      {:error, {:validation, %{changeset: changeset}}} ->
+        {:error, :validation, %{changeset: changeset}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp update_vat_rate(%Act{contract_id: contract_id, vat_rate: vat_rate}, _attrs)
+       when not is_nil(contract_id),
+       do: vat_rate || 0
+
+  defp update_vat_rate(_act, attrs), do: normalize_vat_rate(Map.get(attrs, "vat_rate"))
 
   def next_act_number!(company_id) when is_binary(company_id) do
     last_number =

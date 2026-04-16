@@ -4,6 +4,7 @@ defmodule EdocApiWeb.ActsController do
   plug(:put_view, html: EdocApiWeb.ActHTML)
 
   alias EdocApi.Acts
+  alias EdocApi.ActStatus
   alias EdocApi.Core
   alias EdocApi.Buyers
   alias EdocApi.Companies
@@ -162,6 +163,79 @@ defmodule EdocApiWeb.ActsController do
           act: act,
           current_section: :acts
         )
+    end
+  end
+
+  def edit(conn, %{"id" => id}) do
+    user = current_user(conn)
+
+    case Acts.get_act_for_user(user.id, id) do
+      nil ->
+        conn
+        |> put_flash(:error, gettext("Act not found."))
+        |> redirect(to: "/acts")
+
+      act ->
+        if ActStatus.is_draft?(act) do
+          render_edit(conn, user, act)
+        else
+          conn
+          |> put_flash(:error, gettext("Only draft acts can be edited."))
+          |> redirect(to: "/acts/#{id}")
+        end
+    end
+  end
+
+  def update(conn, %{"id" => id, "act" => act_params} = params) do
+    user = current_user(conn)
+    items_params = Map.get(params, "items", [])
+    attrs = Map.put(act_params, "items", items_params)
+
+    case Acts.update_act_for_user(user.id, id, attrs) do
+      {:ok, act} ->
+        conn
+        |> put_flash(:info, gettext("Act updated successfully."))
+        |> redirect(to: "/acts/#{act.id}")
+
+      {:error, :not_found} ->
+        conn
+        |> put_flash(:error, gettext("Act not found."))
+        |> redirect(to: "/acts")
+
+      {:error, :business_rule, %{rule: :act_not_editable}} ->
+        conn
+        |> put_flash(:error, gettext("Only draft acts can be edited."))
+        |> redirect(to: "/acts/#{id}")
+
+      {:error, :business_rule, %{rule: :items_required}} ->
+        conn
+        |> put_flash(:error, gettext("At least one item is required."))
+        |> redirect(to: "/acts/#{id}/edit")
+
+      {:error, :business_rule, %{rule: :buyer_required}} ->
+        conn
+        |> put_flash(:error, gettext("Please select a buyer."))
+        |> redirect(to: "/acts/#{id}/edit")
+
+      {:error, :validation, %{changeset: changeset}} ->
+        act = Acts.get_act_for_user(user.id, id)
+
+        conn
+        |> put_flash(
+          :error,
+          gettext("Failed to update act: %{details}",
+            details: ErrorHelpers.format_changeset_errors(changeset)
+          )
+        )
+        |> render_edit(user, act)
+
+      {:error, reason} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Failed to update act: %{reason}", reason: inspect(reason))
+        )
+        |> redirect(to: "/acts/#{id}/edit")
     end
   end
 
@@ -354,5 +428,23 @@ defmodule EdocApiWeb.ActsController do
     buyers
     |> Enum.find(&(&1.id == buyer_id))
     |> then(fn buyer -> buyer && buyer.address end)
+  end
+
+  defp render_edit(conn, user, act) do
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        conn
+        |> put_flash(:error, gettext("Please set up your company first."))
+        |> redirect(to: "/company/setup")
+
+      company ->
+        render(conn, :edit,
+          page_title: gettext("Edit Act %{number}", number: act.number),
+          current_section: :acts,
+          act: act,
+          buyers: Buyers.list_buyers_for_company(company.id),
+          units: Core.list_units_of_measurements()
+        )
+    end
   end
 end

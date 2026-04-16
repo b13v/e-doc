@@ -248,6 +248,8 @@ defmodule EdocApiWeb.Router do
     get("/acts/new", ActsController, :new)
     post("/acts", ActsController, :create)
     get("/acts/:id", ActsController, :show)
+    get("/acts/:id/edit", ActsController, :edit)
+    put("/acts/:id", ActsController, :update)
     get("/acts/:id/pdf", ActsController, :pdf)
     post("/acts/:id/issue", ActsController, :issue)
     post("/acts/:id/sign", ActsController, :sign)
