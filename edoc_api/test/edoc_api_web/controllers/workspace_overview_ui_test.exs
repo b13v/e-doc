@@ -494,6 +494,51 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert act_body =~ ~r/<div[^>]*class="[^"]*workspace-document-preview-surface[^"]*"/
   end
 
+  test "document show pages align overview panels with the document preview, not the action header",
+       %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+
+    invoice = insert_invoice!(user, company, %{status: "draft", number: "INV-DETAIL-GRID"})
+    contract = create_contract!(company, %{"status" => "draft", "number" => "C-DETAIL-GRID"})
+
+    buyer =
+      create_buyer_for_acts!(company, %{
+        "name" => "Act Buyer",
+        "bin_iin" => "080215385677",
+        "address" => "Buyer Address"
+      })
+
+    {:ok, act} = create_act_for_overview(user, company, buyer, "draft")
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/#{invoice.id}")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/#{contract.id}")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/#{act.id}")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body] do
+      assert body =~ ~r/<div[^>]*class="[^"]*workspace-document-detail-grid[^"]*"/
+      assert body =~ ~r/<header[^>]*>[\s\S]+workspace-document-detail-grid/
+
+      assert body =~
+               ~r/workspace-document-detail-grid[\s\S]+workspace-document-shell[\s\S]+workspace-support-panel/
+    end
+  end
+
   test "acts overview exposes a signed action for issued acts", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
@@ -1299,7 +1344,12 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
 
     %EdocApi.Core.ContractItem{}
     |> EdocApi.Core.ContractItem.changeset(
-      %{"name" => "Long Contract Service", "qty" => "1", "unit_price" => "123456.78", "code" => "A-1"},
+      %{
+        "name" => "Long Contract Service",
+        "qty" => "1",
+        "unit_price" => "123456.78",
+        "code" => "A-1"
+      },
       contract.id
     )
     |> EdocApi.Repo.insert!()
