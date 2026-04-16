@@ -1145,6 +1145,49 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 
+  test "document new pages align overview panels with the form, not the action header",
+       %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    create_company_bank_account!(company)
+
+    {:ok, _buyer} =
+      EdocApi.Buyers.create_buyer_for_company(company.id, %{
+        "name" => "Overview Buyer",
+        "bin_iin" => "060215385673",
+        "address" => "Buyer Address"
+      })
+
+    invoice_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices/new?invoice_type=direct")
+      |> html_response(200)
+
+    contract_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/contracts/new")
+      |> html_response(200)
+
+    act_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/acts/new?act_type=direct")
+      |> html_response(200)
+
+    for body <- [invoice_body, contract_body, act_body] do
+      assert body =~ ~r/<div[^>]*class="[^"]*workspace-form-detail-grid[^"]*"/
+      assert body =~ ~r/<header[^>]*>[\s\S]+workspace-form-detail-grid/
+      assert body =~ ~r/workspace-form-detail-grid[\s\S]+<form[\s\S]+workspace-support-panel/
+      refute body =~ ~r/<form[^>]*class="[^"]*space-y-6[^"]*"[\s\S]+<input[^>]*type="hidden"/
+
+      assert body =~
+               ~r/<form[^>]*class="[^"]*workspace-form[^"]*"[\s\S]+<input[^>]*type="hidden"[\s\S]+<div[^>]*class="[^"]*space-y-6[^"]*"[\s\S]+<section/
+    end
+  end
+
   test "invoice and act new include explicit dark-theme fallback hooks for mode toggles and items areas",
        %{conn: conn} do
     user = create_user!()
@@ -1214,7 +1257,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert act_contract_body =~ "const removeColumnHtml = lockContractItems"
 
     assert invoice_direct_body =~
-             ~s(<form action="/invoices" method="post" class="workspace-form space-y-6">)
+             ~r/<form action="\/invoices" method="post" class="workspace-form">[\s\S]+<div class="space-y-6">/
 
     for body <- [invoice_direct_body, invoice_contract_body, act_direct_body, act_contract_body] do
       assert body =~ "text-gray-500 dark:text-slate-300"
@@ -1245,7 +1288,9 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> get("/contracts/new")
       |> html_response(200)
 
-    assert body =~ ~s(<form action="/contracts" method="post" class="workspace-form space-y-6">)
+    assert body =~
+             ~r/<form action="\/contracts" method="post" class="workspace-form">[\s\S]+<div class="space-y-6">/
+
     assert body =~ ~r/class="[^"]*workspace-form-static-value[^"]*">[\s]*KZT[\s]*<\/div>/
     assert body =~ ~r/class="[^"]*workspace-form-items-surface[^"]*"/
     assert body =~ ~r/class="[^"]*workspace-form-items-heading[^"]*"/
