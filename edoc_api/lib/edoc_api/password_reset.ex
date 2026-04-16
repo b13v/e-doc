@@ -8,6 +8,7 @@ defmodule EdocApi.PasswordReset do
 
   alias EdocApi.Accounts
   alias EdocApi.Accounts.User
+  alias EdocApi.Accounts.UserCache
   alias EdocApi.EmailSender
   alias EdocApi.PasswordResetToken
   alias EdocApi.Repo
@@ -72,6 +73,7 @@ defmodule EdocApi.PasswordReset do
                 |> Repo.update!()
 
                 Accounts.revoke_all_refresh_tokens(user.id)
+                UserCache.invalidate(user.id)
                 :password_reset
 
               {:error, changeset} ->

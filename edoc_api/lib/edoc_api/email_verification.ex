@@ -8,6 +8,7 @@ defmodule EdocApi.EmailVerification do
 
   alias EdocApi.Repo
   alias EdocApi.Accounts.User
+  alias EdocApi.Accounts.UserCache
   alias EdocApi.EmailVerificationToken
 
   @token_length 32
@@ -88,6 +89,7 @@ defmodule EdocApi.EmailVerification do
             now = DateTime.utc_now() |> DateTime.truncate(:second)
             Repo.update!(Ecto.Changeset.change(db_token, used_at: now))
             Repo.update!(Ecto.Changeset.change(user, verified_at: now))
+            UserCache.invalidate(user.id)
           end)
 
           Logger.info("Email verified successfully for user #{user.id}")

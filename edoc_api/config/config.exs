@@ -97,3 +97,6 @@ config :edoc_api, EdocApi.Auth,
 config :edoc_api, EdocApi.Payments.DictionaryCache,
   enabled: true,
   refresh_ms: parse_positive_env_int.("DICTIONARY_CACHE_REFRESH_MS", 5 * 60 * 1000)
+
+config :edoc_api, EdocApi.Accounts.UserCache,
+  ttl_ms: parse_positive_env_int.("USER_CACHE_TTL_MS", 5 * 60 * 1000)

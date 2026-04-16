@@ -2,6 +2,7 @@ defmodule EdocApi.Accounts do
   import Ecto.Query, warn: false
   alias EdocApi.Repo
   alias EdocApi.Accounts.User
+  alias EdocApi.Accounts.UserCache
   alias EdocApi.Auth.RefreshToken
   alias EdocApi.Core.{Act, Company, Contract, Invoice, TenantMembership}
   alias EdocApi.DocumentDelivery.PublicAccessToken
@@ -37,6 +38,7 @@ defmodule EdocApi.Accounts do
         |> User.profile_changeset(attrs)
         |> Repo.update()
         |> Errors.from_changeset()
+        |> invalidate_cache_on_success(user_id)
     end
   end
 
@@ -55,6 +57,7 @@ defmodule EdocApi.Accounts do
           })
           |> Repo.update()
           |> Errors.from_changeset()
+          |> invalidate_cache_on_success(user_id)
         else
           Errors.business_rule(:invalid_current_password)
         end
@@ -210,10 +213,18 @@ defmodule EdocApi.Accounts do
       end
     end)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:error, :invoice_number_conflict_on_reassign} -> {:error, :invoice_number_conflict_on_reassign}
-      {:error, :reassign_failed} -> {:error, :reassign_failed}
-      {:error, reason} -> {:error, reason}
+      {:ok, result} ->
+        UserCache.invalidate(member_user_id)
+        {:ok, result}
+
+      {:error, :invoice_number_conflict_on_reassign} ->
+        {:error, :invoice_number_conflict_on_reassign}
+
+      {:error, :reassign_failed} ->
+        {:error, :reassign_failed}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -247,6 +258,7 @@ defmodule EdocApi.Accounts do
     user
     |> Ecto.Changeset.change(verified_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update!()
+    |> tap(fn _user -> UserCache.invalidate(id) end)
   end
 
   defp account_locked?(%User{locked_until: nil}), do: false
@@ -260,6 +272,7 @@ defmodule EdocApi.Accounts do
       user
       |> Ecto.Changeset.change(failed_login_attempts: 0, locked_until: nil)
       |> Repo.update!()
+      |> tap(fn _user -> UserCache.invalidate(user.id) end)
     else
       user
     end
@@ -272,6 +285,7 @@ defmodule EdocApi.Accounts do
     user
     |> Ecto.Changeset.change(failed_login_attempts: attempts, locked_until: locked_until)
     |> Repo.update!()
+    |> tap(fn _user -> UserCache.invalidate(user.id) end)
 
     auth_failure_delay()
 
@@ -312,6 +326,18 @@ defmodule EdocApi.Accounts do
     end
   end
 
+  defp invalidate_cache_on_success({:ok, %User{id: user_id}} = result, _fallback_id) do
+    UserCache.invalidate(user_id)
+    result
+  end
+
+  defp invalidate_cache_on_success({:ok, _} = result, fallback_id) do
+    UserCache.invalidate(fallback_id)
+    result
+  end
+
+  defp invalidate_cache_on_success(result, _fallback_id), do: result
+
   defp reassign_company_invoices(company_id, member_user_id, owner_user_id, now) do
     if invoice_number_conflict_on_reassign?(company_id, member_user_id, owner_user_id) do
       {:error, :invoice_number_conflict_on_reassign}
@@ -339,7 +365,8 @@ defmodule EdocApi.Accounts do
   defp delete_membership(company_id, membership_id, member_user_id) do
     case from(m in TenantMembership,
            where:
-             m.id == ^membership_id and m.company_id == ^company_id and m.user_id == ^member_user_id
+             m.id == ^membership_id and m.company_id == ^company_id and
+               m.user_id == ^member_user_id
          )
          |> Repo.delete_all() do
       {1, _} -> :ok
@@ -392,7 +419,8 @@ defmodule EdocApi.Accounts do
     {:ok, Repo.all(from(c in Contract, where: c.company_id == ^company_id, select: c.id))}
   end
 
-  defp delete_public_tokens(member_user_id, document_type, document_ids) when is_list(document_ids) do
+  defp delete_public_tokens(member_user_id, document_type, document_ids)
+       when is_list(document_ids) do
     if document_ids == [] do
       :ok
     else
@@ -409,7 +437,8 @@ defmodule EdocApi.Accounts do
     _ -> {:error, :reassign_failed}
   end
 
-  defp delete_generated_documents(member_user_id, document_type, document_ids) when is_list(document_ids) do
+  defp delete_generated_documents(member_user_id, document_type, document_ids)
+       when is_list(document_ids) do
     if document_ids == [] do
       :ok
     else
