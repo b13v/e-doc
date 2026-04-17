@@ -996,6 +996,13 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "updateBuyerOverview();"
     assert body =~ "updateBankAccountOverview();"
     assert body =~ "Реквизиты покупателя и оплаты"
+    assert body =~
+             ~s(class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300")
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-danger")
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
+    assert body =~ ~r/>\s*Создать счет\s*</
+    refute body =~ "Create"
+    refute body =~ "Create Invoice"
     refute body =~ ~s(<div class="bg-white shadow rounded-lg">)
   end
 
@@ -1149,6 +1156,12 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*aria-current="page"/
     assert body =~ "Обзор"
     assert body =~ "Данные договора"
+    assert body =~ ~s(href="/contracts" class="workspace-action-btn workspace-action-btn-danger")
+    assert body =~ ~s(name="action")
+    assert body =~ ~s(value="draft")
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
+    assert body =~ ~s(value="issue")
+    assert body =~ ~s(class="workspace-action-btn workspace-action-btn-primary")
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 
