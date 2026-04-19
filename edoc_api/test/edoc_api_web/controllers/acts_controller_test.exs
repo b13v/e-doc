@@ -155,6 +155,20 @@ defmodule EdocApiWeb.ActsControllerTest do
 
       assert show_body =~ ~s(href="/acts/#{act.id}/edit")
 
+      assert show_body =~
+               ~s(href="/acts" class="workspace-action-btn workspace-action-btn-yellow")
+
+      assert show_body =~
+               ~s(href="/acts/#{act.id}/edit" class="workspace-action-btn workspace-action-btn-success")
+
+      assert show_body =~
+               ~s(<summary class="workspace-action-btn workspace-action-btn-warning cursor-pointer list-none">)
+
+      assert show_body =~ ".workspace-action-btn-primary:hover {"
+      assert show_body =~ ".workspace-action-btn-danger:hover {"
+      assert show_body =~ ".workspace-action-btn-warning:hover {"
+      assert show_body =~ "box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);"
+
       edit_body =
         conn
         |> get("/acts/#{act.id}/edit")
@@ -165,6 +179,9 @@ defmodule EdocApiWeb.ActsControllerTest do
 
       assert edit_body =~ ~s(action="/acts/#{act.id}")
       assert edit_body =~ "Services"
+      assert edit_body =~ "workspace-form-item-label mb-1 block text-xs"
+      assert edit_body =~ ~s(class="workspace-action-btn workspace-action-btn-danger")
+      assert edit_body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
 
       updated_issue_date = Date.utc_today() |> Date.add(-1) |> Date.to_iso8601()
       updated_actual_date = Date.utc_today() |> Date.to_iso8601()

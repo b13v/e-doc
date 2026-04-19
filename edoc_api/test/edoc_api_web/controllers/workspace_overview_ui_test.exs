@@ -1186,6 +1186,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/<a[^>]*href="\/acts"[^>]*aria-current="page"/
     assert body =~ "Обзор"
     assert body =~ "Тип акта"
+    assert body =~
+             ~s(class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300")
+    assert body =~ ~s(href="/acts" class="workspace-action-btn workspace-action-btn-danger")
+    assert body =~ ~s(<button type="submit" class="workspace-action-btn workspace-action-btn-success">)
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 
@@ -1296,7 +1300,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert act_contract_body =~ ~s(<div class="${priceColumnClass}">)
 
     assert act_contract_body =~
-             ~r/<div class="col-span-1">\s*<label class="workspace-form-item-label block text-xs text-gray-500 dark:text-slate-300">\$\{escapeHtml\(reportInfoLabel\)\}<\/label>\s*<input type="text" name="items\[\$\{idx\}\]\[report_info\]"/s
+             ~r/<div class="col-span-1">\s*<label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300">\$\{escapeHtml\(reportInfoLabel\)\}<\/label>\s*<input type="text" name="items\[\$\{idx\}\]\[report_info\]"/s
 
     assert act_contract_body =~ "const removeColumnHtml = lockContractItems"
 

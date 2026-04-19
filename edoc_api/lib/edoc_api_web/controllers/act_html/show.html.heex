@@ -140,14 +140,14 @@
     <:primary_action>
       <a
         href="/acts"
-        class="workspace-action-btn workspace-action-btn-secondary"
+        class="workspace-action-btn workspace-action-btn-yellow"
       >
         <%= gettext("Back to Acts") %>
       </a>
       <%= if EdocApi.ActStatus.is_draft?(@act) do %>
         <a
           href={"/acts/#{@act.id}/edit"}
-          class="workspace-action-btn workspace-action-btn-secondary"
+          class="workspace-action-btn workspace-action-btn-success"
         >
           <%= gettext("Edit") %>
         </a>
@@ -181,7 +181,7 @@
         data-send-menu-root
         ontoggle="window.positionWorkspaceSendMenu && window.positionWorkspaceSendMenu(this)"
       >
-        <summary class="workspace-action-btn workspace-action-btn-neutral cursor-pointer list-none">
+        <summary class="workspace-action-btn workspace-action-btn-warning cursor-pointer list-none">
           <%= gettext("Send") %>
         </summary>
         <div

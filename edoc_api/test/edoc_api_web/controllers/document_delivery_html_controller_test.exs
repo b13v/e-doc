@@ -59,6 +59,11 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/invoices/#{invoice.id}")
 
       body = html_response(conn, 200)
+      assert body =~ ~s(href="/invoices" class="workspace-action-btn workspace-action-btn-yellow")
+
+      assert body =~
+               ~s(<summary class="workspace-action-btn workspace-action-btn-warning cursor-pointer list-none">)
+
       assert body =~ "data-send-menu-root"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
@@ -79,6 +84,13 @@ defmodule EdocApiWeb.DocumentDeliveryHTMLControllerTest do
       conn = get(conn, "/contracts/#{contract.id}")
 
       body = html_response(conn, 200)
+
+      assert body =~
+               ~s(href="/contracts" class="workspace-action-btn workspace-action-btn-yellow")
+
+      assert body =~
+               ~s(<summary class="workspace-action-btn workspace-action-btn-warning cursor-pointer list-none">)
+
       assert body =~ "data-send-menu-root"
       assert body =~ "Email"
       assert body =~ "WhatsApp"
