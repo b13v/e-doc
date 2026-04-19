@@ -113,6 +113,22 @@ defmodule EdocApiWeb.SessionControllerTest do
              Gettext.gettext(EdocApiWeb.Gettext, "Your session expired. Please sign in again.")
   end
 
+  test "authenticated browser pages are not stored in browser history cache", %{conn: conn} do
+    user = create_user!()
+    Accounts.mark_email_verified!(user.id)
+    create_company!(user)
+
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> get("/company")
+
+    assert html_response(conn, 200)
+    assert get_resp_header(conn, "cache-control") == ["private, no-store, max-age=0"]
+    assert get_resp_header(conn, "pragma") == ["no-cache"]
+    assert get_resp_header(conn, "expires") == ["0"]
+  end
+
   test "html login activates invited memberships", %{conn: conn} do
     owner = create_user!()
     Accounts.mark_email_verified!(owner.id)
@@ -181,7 +197,6 @@ defmodule EdocApiWeb.SessionControllerTest do
 
     refute body =~
              ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
-
   end
 
   test "public asset bundle endpoints referenced by auth pages are available", %{conn: conn} do

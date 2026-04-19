@@ -107,6 +107,7 @@ defmodule EdocApiWeb.Router do
     plug(:put_secure_browser_headers)
     plug(EdocApiWeb.Plugs.HtmxDetect)
     plug(EdocApiWeb.Plugs.AuthenticateSession)
+    plug(EdocApiWeb.Plugs.NoStoreBrowserCache)
     plug(EdocApiWeb.Plugs.HtmxLayout)
   end
 
