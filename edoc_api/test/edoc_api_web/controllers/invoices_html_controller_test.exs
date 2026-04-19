@@ -464,6 +464,13 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       assert body =~
                Gettext.gettext(EdocApiWeb.Gettext, "Overdue invoices are available on Basic.")
 
+      assert body =~
+               ~s(class="overdue-upgrade-card rounded-3xl border border-amber-200 bg-amber-50 px-6 py-10 shadow-sm dark:border-slate-600 dark:bg-slate-950")
+
+      assert body =~ "overdue-upgrade-card"
+      assert body =~ "overdue-upgrade-text"
+      assert body =~ "html[data-theme=\"dark\"] .overdue-upgrade-text"
+      assert body =~ "color: #ffffff !important;"
       refute body =~ invoice.number
     end
 

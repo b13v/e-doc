@@ -364,6 +364,18 @@ defmodule EdocApiWeb.Layouts do
             color: #000000;
           }
 
+          html[data-theme="dark"] .overdue-upgrade-card {
+            background-color: #020617 !important;
+            border-color: #94a3b8 !important;
+          }
+
+          html[data-theme="dark"] .overdue-upgrade-text {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            filter: none !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+          }
+
           html[data-theme="dark"] [data-row-actions-menu],
           html[data-theme="dark"] [data-send-menu-panel] {
             background-color: #334155;
