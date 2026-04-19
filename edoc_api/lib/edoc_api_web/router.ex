@@ -237,6 +237,7 @@ defmodule EdocApiWeb.Router do
     post("/documents/:type/:id/share/:channel", DocumentDeliveryHTMLController, :share)
     get("/invoices", InvoicesController, :index)
     get("/invoices/new", InvoicesController, :new)
+    get("/invoices/overdue", InvoicesController, :overdue)
     post("/invoices", InvoicesController, :create)
     get("/invoices/:id", InvoicesController, :show)
     get("/invoices/:id/edit", InvoicesController, :edit)

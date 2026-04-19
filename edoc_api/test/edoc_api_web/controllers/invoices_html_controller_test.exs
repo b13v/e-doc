@@ -390,7 +390,110 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Draft invoices")
       assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Issued invoices")
       assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Paid invoices")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Overdue invoices")
+      assert body =~ ~s(href="/invoices/overdue")
       assert draft_invoice.id != issued_invoice.id
+    end
+  end
+
+  describe "overdue/2" do
+    test "basic tenant sees overdue issued invoices with paid action", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, _subscription} =
+        Monetization.activate_subscription_for_company(company.id, %{"plan" => "basic"})
+
+      today = Date.utc_today()
+
+      overdue =
+        insert_invoice!(user, company, %{
+          number: "00000002001",
+          status: "issued",
+          due_date: Date.add(today, -2)
+        })
+
+      _paid =
+        insert_invoice!(user, company, %{
+          number: "00000002002",
+          status: "paid",
+          due_date: Date.add(today, -3)
+        })
+
+      _not_overdue =
+        insert_invoice!(user, company, %{
+          number: "00000002003",
+          status: "issued",
+          due_date: Date.add(today, -1)
+        })
+
+      body =
+        conn
+        |> get("/invoices/overdue")
+        |> html_response(200)
+
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Overdue invoices")
+      assert body =~ overdue.number
+      refute body =~ "00000002002"
+      refute body =~ "00000002003"
+      assert body =~ ~s(action="/invoices/#{overdue.id}/pay")
+      assert body =~ Gettext.gettext(EdocApiWeb.Gettext, "Due date")
+    end
+
+    test "starter tenant sees upgrade prompt instead of overdue invoices", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, _subscription} =
+        Monetization.activate_subscription_for_company(company.id, %{"plan" => "starter"})
+
+      invoice =
+        insert_invoice!(user, company, %{
+          number: "00000002004",
+          status: "issued",
+          due_date: Date.add(Date.utc_today(), -2)
+        })
+
+      body =
+        conn
+        |> get("/invoices/overdue")
+        |> html_response(200)
+
+      assert body =~
+               Gettext.gettext(EdocApiWeb.Gettext, "Overdue invoices are available on Basic.")
+
+      refute body =~ invoice.number
+    end
+
+    test "paid overdue invoice no longer appears in overdue query", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, _subscription} =
+        Monetization.activate_subscription_for_company(company.id, %{"plan" => "basic"})
+
+      invoice =
+        insert_invoice!(user, company, %{
+          number: "00000002005",
+          status: "issued",
+          due_date: Date.add(Date.utc_today(), -2)
+        })
+
+      assert Invoicing.count_overdue_invoices_for_user(user.id) == 1
+
+      pay_conn = post(conn, "/invoices/#{invoice.id}/pay", %{})
+      assert redirected_to(pay_conn) == "/invoices/#{invoice.id}"
+      assert Invoicing.count_overdue_invoices_for_user(user.id) == 0
+
+      body =
+        html_conn(conn, user)
+        |> get("/invoices/overdue")
+        |> html_response(200)
+
+      refute body =~ invoice.number
     end
   end
 

@@ -2608,3 +2608,30 @@ msgstr "Редактировать акт № %{number}"
 
 msgid "Save"
 msgstr "Сохранить"
+
+msgid "Overdue invoices"
+msgstr "Просроченные счета"
+
+msgid "Issued invoices more than one day past due and not yet paid."
+msgstr "Выставленные счета, просроченные более чем на один день и еще не оплаченные."
+
+msgid "Back to invoices"
+msgstr "Назад к счетам"
+
+msgid "Basic plan feature"
+msgstr "Функция тарифа Basic"
+
+msgid "Overdue invoices are available on Basic."
+msgstr "Просроченные счета доступны на тарифе Basic."
+
+msgid "Upgrade to Basic to track issued invoices that are past due and still unpaid."
+msgstr "Перейдите на тариф Basic, чтобы отслеживать выставленные просроченные и неоплаченные счета."
+
+msgid "Review tariff"
+msgstr "Посмотреть тариф"
+
+msgid "No overdue invoices."
+msgstr "Нет просроченных счетов."
+
+msgid "Issued invoices will appear here after they are more than one day past due."
+msgstr "Выставленные счета появятся здесь, когда просрочка превысит один день."

@@ -14,6 +14,7 @@ defmodule EdocApiWeb.InvoicesController do
   alias EdocApiWeb.UnifiedErrorHandler
   alias EdocApi.Companies
   alias EdocApi.Buyers
+  alias EdocApi.Monetization
   alias EdocApi.Payments
 
   defp current_user(conn), do: conn.assigns.current_user
@@ -27,6 +28,7 @@ defmodule EdocApiWeb.InvoicesController do
     render(conn, :index,
       invoices: invoices,
       invoice_summary: Invoicing.invoice_summary_for_user(user.id),
+      overdue_count: Invoicing.count_overdue_invoices_for_user(user.id),
       current_section: :invoices,
       page: page,
       page_size: page_size,
@@ -34,6 +36,48 @@ defmodule EdocApiWeb.InvoicesController do
       total_pages: total_pages(total_count, page_size),
       page_title: gettext("Invoices")
     )
+  end
+
+  def overdue(conn, params) do
+    user = current_user(conn)
+    %{page: page, page_size: page_size, offset: offset} = html_pagination_params(params)
+
+    case Companies.get_company_by_user_id(user.id) do
+      nil ->
+        conn
+        |> put_flash(:error, gettext("Please set up your company first."))
+        |> redirect(to: "/company/setup")
+
+      company ->
+        subscription = Monetization.subscription_snapshot(company.id)
+        basic_plan? = subscription.plan == "basic"
+
+        {invoices, total_count} =
+          if basic_plan? do
+            {
+              Invoicing.list_overdue_invoices_for_user(user.id,
+                limit: page_size,
+                offset: offset
+              ),
+              Invoicing.count_overdue_invoices_for_user(user.id)
+            }
+          else
+            {[], 0}
+          end
+
+        render(conn, :overdue,
+          invoices: invoices,
+          overdue_count: total_count,
+          basic_plan?: basic_plan?,
+          subscription: subscription,
+          current_section: :invoices,
+          page: page,
+          page_size: page_size,
+          total_count: total_count,
+          total_pages: total_pages(total_count, page_size),
+          page_title: gettext("Overdue invoices")
+        )
+    end
   end
 
   def show(conn, %{"id" => id}) do

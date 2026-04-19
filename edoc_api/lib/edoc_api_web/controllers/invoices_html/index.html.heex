@@ -120,6 +120,17 @@
           <dt><%= gettext("Paid invoices") %></dt>
           <dd class="font-semibold text-slate-900"><%= @invoice_summary.paid %></dd>
         </div>
+        <div class="border-t border-slate-200 pt-3 dark:border-slate-700">
+          <a
+            href="/invoices/overdue"
+            class="flex items-center justify-between gap-4 rounded-xl px-3 py-2 font-semibold text-amber-700 transition hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-900/30"
+          >
+            <span><%= gettext("Overdue invoices") %></span>
+            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-400/20 dark:text-amber-100">
+              <%= @overdue_count %>
+            </span>
+          </a>
+        </div>
       </dl>
     </.workspace_support_panel>
   </div>

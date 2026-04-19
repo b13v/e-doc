@@ -2608,3 +2608,30 @@ msgstr "№ %{number} актіні өңдеу"
 
 msgid "Save"
 msgstr "Сақтау"
+
+msgid "Overdue invoices"
+msgstr "Мерзімі өткен шоттар"
+
+msgid "Issued invoices more than one day past due and not yet paid."
+msgstr "Төлеу мерзімі бір күннен артық өтіп кеткен және әлі төленбеген қойылған шоттар."
+
+msgid "Back to invoices"
+msgstr "Шоттарға оралу"
+
+msgid "Basic plan feature"
+msgstr "Basic тарифінің мүмкіндігі"
+
+msgid "Overdue invoices are available on Basic."
+msgstr "Мерзімі өткен шоттар Basic тарифінде қолжетімді."
+
+msgid "Upgrade to Basic to track issued invoices that are past due and still unpaid."
+msgstr "Төлеу мерзімі өткен және әлі төленбеген қойылған шоттарды бақылау үшін Basic тарифіне өтіңіз."
+
+msgid "Review tariff"
+msgstr "Тарифті қарау"
+
+msgid "No overdue invoices."
+msgstr "Мерзімі өткен шоттар жоқ."
+
+msgid "Issued invoices will appear here after they are more than one day past due."
+msgstr "Қойылған шоттар төлеу мерзімі бір күннен артық өткеннен кейін осы жерде көрсетіледі."

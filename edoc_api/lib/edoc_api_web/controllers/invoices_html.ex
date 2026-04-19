@@ -3,6 +3,8 @@ defmodule EdocApiWeb.InvoicesHTML do
 
   def issue_date_text(nil), do: "-"
   def issue_date_text(%Date{} = date), do: Calendar.strftime(date, "%d.%m.%Y")
+  def due_date_text(nil), do: "-"
+  def due_date_text(%Date{} = date), do: Calendar.strftime(date, "%d.%m.%Y")
 
   def row_actions(invoice) do
     primary = %{

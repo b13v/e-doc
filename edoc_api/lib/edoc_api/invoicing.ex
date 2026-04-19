@@ -122,11 +122,46 @@ defmodule EdocApi.Invoicing do
     end
   end
 
+  def list_overdue_invoices_for_user(user_id, opts \\ []) when is_binary(user_id) do
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        company_id
+        |> overdue_invoices_query()
+        |> order_by([i], asc: i.due_date, desc: i.inserted_at)
+        |> apply_pagination(opts)
+        |> Repo.all()
+        |> Repo.preload([
+          :items,
+          :bank_snapshot,
+          :contract,
+          :company,
+          :kbe_code,
+          :knp_code,
+          bank_account: [:bank, :kbe_code, :knp_code]
+        ])
+
+      :error ->
+        []
+    end
+  end
+
   def count_invoices_for_user(user_id) when is_binary(user_id) do
     case fetch_company_id(user_id) do
       {:ok, company_id} ->
         Invoice
         |> where([i], i.company_id == ^company_id)
+        |> Repo.aggregate(:count, :id)
+
+      :error ->
+        0
+    end
+  end
+
+  def count_overdue_invoices_for_user(user_id) when is_binary(user_id) do
+    case fetch_company_id(user_id) do
+      {:ok, company_id} ->
+        company_id
+        |> overdue_invoices_query()
         |> Repo.aggregate(:count, :id)
 
       :error ->
@@ -152,6 +187,17 @@ defmodule EdocApi.Invoicing do
       :error ->
         %{draft: 0, issued: 0, paid: 0}
     end
+  end
+
+  defp overdue_invoices_query(company_id) do
+    cutoff_date = Date.utc_today() |> Date.add(-1)
+
+    Invoice
+    |> where(
+      [i],
+      i.company_id == ^company_id and i.status == "issued" and not is_nil(i.due_date) and
+        i.due_date < ^cutoff_date
+    )
   end
 
   def issue_invoice_for_user(user_id, invoice_id) do

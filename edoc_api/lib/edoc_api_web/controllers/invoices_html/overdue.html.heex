@@ -1,0 +1,143 @@
+<section class="space-y-8">
+  <.workspace_page_header
+    title={gettext("Overdue invoices")}
+    support_text={gettext("Issued invoices more than one day past due and not yet paid.")}
+  >
+    <:primary_action>
+      <a
+        href="/invoices"
+        class="inline-flex items-center rounded-full bg-yellow-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-yellow-400"
+      >
+        <%= gettext("Back to invoices") %>
+      </a>
+    </:primary_action>
+  </.workspace_page_header>
+
+  <%= if not @basic_plan? do %>
+    <section class="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-10 shadow-sm dark:border-amber-400/40 dark:bg-amber-950/40">
+      <div class="mx-auto max-w-2xl space-y-4 text-center">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
+          <%= gettext("Basic plan feature") %>
+        </p>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          <%= gettext("Overdue invoices are available on Basic.") %>
+        </h2>
+        <p class="text-sm leading-6 text-slate-700 dark:text-amber-50">
+          <%= gettext("Upgrade to Basic to track issued invoices that are past due and still unpaid.") %>
+        </p>
+        <a
+          href="/company"
+          class="inline-flex items-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+        >
+          <%= gettext("Review tariff") %>
+        </a>
+      </div>
+    </section>
+  <% else %>
+    <div class={["grid gap-6", if(@invoices != [], do: "xl:grid-cols-[minmax(0,1fr)_15rem]")]}>
+      <div class="space-y-4">
+        <.flash_error flash={@flash} />
+
+        <%= if Enum.empty?(@invoices) do %>
+          <.workspace_empty_state
+            title={gettext("No overdue invoices.")}
+            support_text={gettext("Issued invoices will appear here after they are more than one day past due.")}
+            action_label={gettext("Back to invoices")}
+            action_href="/invoices"
+          />
+        <% else %>
+          <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm workspace-table-shell">
+            <div class="overflow-x-auto overflow-y-visible">
+              <table class="min-w-full divide-y divide-stone-200">
+                <thead class="workspace-table-head-surface bg-stone-50/80">
+                  <tr>
+                    <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Number") %>
+                    </th>
+                    <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Buyer") %>
+                    </th>
+                    <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Issue date") %>
+                    </th>
+                    <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Due date") %>
+                    </th>
+                    <th class="workspace-table-heading px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Total") %>
+                    </th>
+                    <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Status") %>
+                    </th>
+                    <th class="workspace-table-heading w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <%= gettext("Actions") %>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 bg-white">
+                  <%= for invoice <- @invoices do %>
+                    <% actions = row_actions(invoice) %>
+                    <tr id={"invoice-#{invoice.id}"} class="workspace-table-row align-top transition hover:bg-stone-50/70">
+                      <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                        <a href={"/invoices/#{invoice.id}"} class="transition hover:text-sky-700">
+                          <%= invoice.number || gettext("Draft") %>
+                        </a>
+                      </td>
+                      <td class="px-6 py-4 text-sm text-slate-600">
+                        <%= invoice.buyer_name %>
+                      </td>
+                      <td class="px-6 py-4 text-sm text-slate-600">
+                        <%= issue_date_text(invoice.issue_date) %>
+                      </td>
+                      <td class="px-6 py-4 text-sm font-medium text-amber-700">
+                        <%= due_date_text(invoice.due_date) %>
+                      </td>
+                      <td class="px-6 py-4 text-right text-sm font-medium text-slate-900">
+                        <%= EdocApiWeb.CoreComponents.format_money(invoice, :total) %>
+                      </td>
+                      <td class="px-6 py-4 text-sm">
+                        <%= EdocApiWeb.CoreComponents.status_badge(invoice.status) %>
+                      </td>
+                      <td class="relative overflow-visible w-px whitespace-nowrap px-6 py-4 text-right">
+                        <.workspace_row_actions
+                          primary={actions.primary}
+                          secondary={actions.secondary}
+                          desktop_mode={:overflow}
+                          mobile_mode={:overflow}
+                        />
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div :if={@total_pages > 1} class="flex items-center justify-between px-2 text-sm text-slate-600">
+            <a
+              href={"/invoices/overdue?page=#{@page - 1}&page_size=#{@page_size}"}
+              class={["rounded-md px-3 py-1.5 font-medium transition", @page > 1 && "text-sky-700 hover:bg-sky-50", @page <= 1 && "pointer-events-none text-slate-400"]}
+            >
+              <%= gettext("Previous") %>
+            </a>
+            <span><%= gettext("Page %{page} of %{total}", page: @page, total: @total_pages) %></span>
+            <a
+              href={"/invoices/overdue?page=#{@page + 1}&page_size=#{@page_size}"}
+              class={["rounded-md px-3 py-1.5 font-medium transition", @page < @total_pages && "text-sky-700 hover:bg-sky-50", @page >= @total_pages && "pointer-events-none text-slate-400"]}
+            >
+              <%= gettext("Next") %>
+            </a>
+          </div>
+        <% end %>
+      </div>
+
+      <.workspace_support_panel :if={@invoices != []} heading={gettext("Overview")}>
+        <dl class="space-y-3 text-sm text-slate-600">
+          <div class="flex items-center justify-between gap-4">
+            <dt><%= gettext("Overdue invoices") %></dt>
+            <dd class="font-semibold text-slate-900"><%= @overdue_count %></dd>
+          </div>
+        </dl>
+      </.workspace_support_panel>
+    </div>
+  <% end %>
+</section>

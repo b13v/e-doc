@@ -111,7 +111,9 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
       paid_invoice =
         create_invoice_with_items!(user, company, %{"contract_id" => used_paid_contract.id})
 
-      assert {:ok, issued_paid_invoice} = Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+      assert {:ok, issued_paid_invoice} =
+               Invoicing.issue_invoice_for_user(user.id, paid_invoice.id)
+
       assert {:ok, _paid} = Invoicing.pay_invoice_for_user(user.id, issued_paid_invoice.id)
 
       contracts = Invoicing.list_invoice_source_contracts_for_user(user.id)
@@ -132,6 +134,65 @@ defmodule EdocApi.Invoicing.InvoiceContractOwnershipTest do
 
       assert {:error, :not_found} =
                Invoicing.get_invoice_source_contract_for_user(user.id, issued_only_contract.id)
+    end
+  end
+
+  describe "overdue invoices" do
+    test "returns only issued unpaid invoices more than one day past due for the company" do
+      owner = create_user!()
+      company = create_company!(owner)
+      create_company_bank_account!(company)
+
+      member = create_user!()
+
+      {:ok, _invite} =
+        Monetization.invite_member(company.id, %{
+          "email" => member.email,
+          "role" => "member"
+        })
+
+      [_membership_id] = Monetization.accept_pending_memberships_for_user(member)
+
+      today = Date.utc_today()
+
+      overdue =
+        insert_invoice!(owner, company, %{
+          number: "00000001001",
+          status: "issued",
+          due_date: Date.add(today, -2)
+        })
+
+      _paid_overdue =
+        insert_invoice!(owner, company, %{
+          number: "00000001002",
+          status: "paid",
+          due_date: Date.add(today, -3)
+        })
+
+      _draft_overdue =
+        insert_invoice!(owner, company, %{
+          number: "00000001003",
+          status: "draft",
+          due_date: Date.add(today, -4)
+        })
+
+      _yesterday_due =
+        insert_invoice!(owner, company, %{
+          number: "00000001004",
+          status: "issued",
+          due_date: Date.add(today, -1)
+        })
+
+      _no_due_date =
+        insert_invoice!(owner, company, %{
+          number: "00000001005",
+          status: "issued",
+          due_date: nil
+        })
+
+      assert [listed] = Invoicing.list_overdue_invoices_for_user(member.id)
+      assert listed.id == overdue.id
+      assert Invoicing.count_overdue_invoices_for_user(member.id) == 1
     end
   end
 end
