@@ -48,7 +48,7 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(30)
+  def timeout(_job), do: :timer.minutes(2)
 
   @doc """
   Enqueue a PDF generation job.

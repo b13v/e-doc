@@ -913,7 +913,7 @@
       }
 
       .footer-brand p {
-        color: var(--gray-400);
+        color: var(--white);
         margin-top: 16px;
         font-size: 14px;
         line-height: 1.7;
@@ -958,7 +958,7 @@
       }
 
       .footer-links a {
-        color: var(--gray-400);
+        color: var(--white);
         text-decoration: none;
         font-size: 14px;
         transition: color 0.2s ease;
@@ -977,7 +977,7 @@
       }
 
       .footer-bottom p {
-        color: var(--gray-500);
+        color: var(--white);
         font-size: 13px;
       }
 
@@ -987,7 +987,7 @@
       }
 
       .footer-bottom-links a {
-        color: var(--gray-500);
+        color: var(--white);
         text-decoration: none;
         font-size: 13px;
       }

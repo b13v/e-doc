@@ -16,15 +16,7 @@ defmodule EdocApiWeb.ActHTML do
     }
 
     secondary =
-      sign_action(act) ++
-        [
-          %{
-            label: gettext("PDF"),
-            transport: :link,
-            method: :get,
-            href: "/acts/#{act.id}/pdf"
-          }
-        ] ++ delete_action(act)
+      sign_action(act) ++ draft_edit_or_pdf_action(act) ++ delete_action(act)
 
     %{primary: primary, secondary: secondary}
   end
@@ -43,6 +35,29 @@ defmodule EdocApiWeb.ActHTML do
   end
 
   defp sign_action(_act), do: []
+
+  defp draft_edit_or_pdf_action(%{status: "draft"} = act) do
+    [
+      %{
+        label: gettext("Edit"),
+        tone: :success,
+        transport: :link,
+        method: :get,
+        href: "/acts/#{act.id}/edit"
+      }
+    ]
+  end
+
+  defp draft_edit_or_pdf_action(act) do
+    [
+      %{
+        label: gettext("PDF"),
+        transport: :link,
+        method: :get,
+        href: "/acts/#{act.id}/pdf"
+      }
+    ]
+  end
 
   defp delete_action(%{status: "draft"} = act) do
     [

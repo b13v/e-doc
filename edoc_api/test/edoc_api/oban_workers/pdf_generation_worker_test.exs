@@ -7,6 +7,10 @@ defmodule EdocApi.ObanWorkers.PdfGenerationWorkerTest do
   alias EdocApi.ObanWorkers.PdfGenerationWorker
   alias EdocApi.Repo
 
+  test "allows complex pdf generation jobs to run for two minutes" do
+    assert PdfGenerationWorker.timeout(%Oban.Job{}) == :timer.minutes(2)
+  end
+
   test "cancels missing document jobs instead of retrying them" do
     user = create_user!()
     document_id = Ecto.UUID.generate()

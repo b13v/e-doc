@@ -218,6 +218,17 @@ defmodule EdocApiWeb.ContractHTMLControllerTest do
     assert body =~
              ~r/адрес: г\. Шымкент, Some Street 1,\s*в лице <strong>Генеральный директор Айдар Сатпаев<\/strong>,\s*действующего на основании <strong>Устав<\/strong>/s
 
+    assert body =~
+             ~s(href="/contracts/#{contract.id}/pdf" class="workspace-action-btn workspace-action-btn-danger")
+
+    assert body =~
+             ~s(<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold dark:text-black)
+
+    assert body =~ "workspace-status-badge"
+
+    assert body =~
+             "html[data-theme=\"dark\"] .workspace-support-panel .workspace-status-badge"
+
     refute body =~ "в лице <strong>директор Мария Ким</strong>"
     refute body =~ "в лице <strong>директор Айдар Сатпаев</strong>"
     refute body =~ "адрес: Buyer Address,"

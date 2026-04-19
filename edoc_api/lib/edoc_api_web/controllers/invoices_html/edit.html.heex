@@ -1,27 +1,21 @@
 <div class="space-y-6">
   <.flash_error flash={@flash} />
 
-  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-    <div class="space-y-6">
-      <.workspace_page_header
-        title={gettext("Edit Invoice %{number}", number: @invoice.number)}
-        class="border-b border-stone-200 pb-6"
-      >
-        <:primary_action>
-          <a
-            href={"/invoices/#{@invoice.id}"}
-            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
-          >
-            <%= gettext("Cancel") %>
-          </a>
-        </:primary_action>
-      </.workspace_page_header>
+  <.workspace_page_header
+    title={gettext("Edit Invoice %{number}", number: @invoice.number)}
+    class="border-b border-stone-200 pb-6"
+  >
+    <:primary_action></:primary_action>
+  </.workspace_page_header>
 
-      <form action={"/invoices/#{@invoice.id}"} method="post" class="workspace-form space-y-6">
+  <div class="workspace-form-detail-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+    <div class="space-y-6">
+      <form action={"/invoices/#{@invoice.id}"} method="post" class="workspace-form">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
         <input type="hidden" name="_method" value="put" />
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="space-y-6">
+          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="space-y-5">
             <div class="space-y-1">
               <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice details") %></h2>
@@ -127,7 +121,7 @@
                   <%= gettext("Currency") %>
                 </label>
                 <input type="hidden" name="invoice[currency]" value={@invoice.currency} />
-                <div class="mt-2 rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm">
+                <div class="workspace-form-currency-readonly mt-2 rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100">
                   <%= @invoice.currency %>
                 </div>
               </div>
@@ -174,7 +168,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 class="text-lg font-semibold text-slate-900"><%= gettext("Invoice Items") %></h2>
+              <h2 class="workspace-form-items-heading text-lg font-semibold text-slate-900 dark:text-slate-100"><%= gettext("Invoice Items") %></h2>
               <button
                 type="button"
                 onclick="addItemRow()"
@@ -184,50 +178,50 @@
               </button>
             </div>
 
-            <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="workspace-form-items-surface rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/80">
               <div id="items-container" class="space-y-2">
                 <%= for {item, index} <- Enum.with_index(@invoice.items) do %>
                   <div class="item-row grid grid-cols-12 gap-2 items-end">
                     <input type="hidden" name={"invoice[items][#{index}][id]"} value={item.id} />
                     <div class="col-span-5">
-                      <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
+                      <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Description") %></label>
                       <input
                         type="text"
                         name={"invoice[items][#{index}][name]"}
                         required
                         value={item.name}
-                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                        class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600"
                       />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-xs text-gray-500"><%= gettext("Invoice item unit") %></label>
+                      <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Invoice item unit") %></label>
                       <input
                         type="text"
                         name={"invoice[items][#{index}][code]"}
                         value={item.code}
-                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                        class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600"
                       />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
+                      <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Qty") %></label>
                       <input
                         type="number"
                         name={"invoice[items][#{index}][qty]"}
                         value={item.qty}
                         min="1"
                         required
-                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                        class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600"
                       />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
+                      <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Unit Price") %></label>
                       <input
                         type="number"
                         name={"invoice[items][#{index}][unit_price]"}
                         step="0.01"
                         value={item.unit_price}
                         required
-                        class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm"
+                        class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600"
                       />
                     </div>
                     <div class="col-span-1">
@@ -250,16 +244,17 @@
         <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
           <a
             href={"/invoices/#{@invoice.id}"}
-            class="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+            class="workspace-action-btn workspace-action-btn-danger"
           >
             <%= gettext("Cancel") %>
           </a>
           <button
             type="submit"
-            class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+            class="workspace-action-btn workspace-action-btn-success"
           >
-            <%= gettext("Save Changes") %>
+            <%= gettext("Save") %>
           </button>
+        </div>
         </div>
       </form>
     </div>
@@ -306,20 +301,20 @@
     newRow.className = 'item-row grid grid-cols-12 gap-2 items-end';
     newRow.innerHTML = `
       <div class="col-span-5">
-        <label class="block text-xs text-gray-500"><%= gettext("Description") %></label>
-        <input type="text" name="invoice[items][${itemIndex}][name]" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Description") %></label>
+        <input type="text" name="invoice[items][${itemIndex}][name]" required class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500"><%= gettext("Invoice item unit") %></label>
-        <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Invoice item unit") %></label>
+        <input type="text" name="invoice[items][${itemIndex}][code]" class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500"><%= gettext("Qty") %></label>
-        <input type="number" name="invoice[items][${itemIndex}][qty]" value="1" min="1" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Qty") %></label>
+        <input type="number" name="invoice[items][${itemIndex}][qty]" value="1" min="1" required class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600" />
       </div>
       <div class="col-span-2">
-        <label class="block text-xs text-gray-500"><%= gettext("Unit Price") %></label>
-        <input type="number" name="invoice[items][${itemIndex}][unit_price]" step="0.01" required class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 px-2 text-sm" />
+        <label class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300"><%= gettext("Unit Price") %></label>
+        <input type="number" name="invoice[items][${itemIndex}][unit_price]" step="0.01" required class="w-full rounded-md border-0 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600" />
       </div>
       <div class="col-span-1">
         <button type="button" onclick="removeItemRow(this)" class="inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50"><%= gettext("Remove") %></button>

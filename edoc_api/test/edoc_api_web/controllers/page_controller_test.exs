@@ -12,6 +12,7 @@ defmodule EdocApiWeb.PageControllerTest do
       assert get_resp_header(conn, "content-type") == ["text/html; charset=utf-8"]
 
       body = html_response(conn, 200)
+      landing_css = File.read!("priv/static/assets/landing.css")
       assert body =~ ">Вход<"
       assert body =~ ~s(href="http://localhost:4000/login")
       assert body =~ ">Регистрация<"
@@ -20,6 +21,10 @@ defmodule EdocApiWeb.PageControllerTest do
       assert body =~ ~r/<a href="\/login"[^>]*class="btn btn-secondary"[^>]*data-i18n="pricing.starter_cta">Выбрать тариф<\/a>/
       assert body =~ ~r/<a href="\/signup"[^>]*class="btn btn-white"[^>]*data-i18n="pricing.base_cta"[^>]*>Начать 14-дневный тест<\/a>/
       assert body =~ ~r/<a href="\/signup"[^>]*class="btn btn-white"[^>]*>[\s\S]*Зарегистрироваться бесплатно[\s\S]*<\/a>/
+      assert body =~ ~s(href="https://wa.me/77027834901")
+      assert body =~ ~s(class="btn btn-outline")
+      assert body =~ ~s(target="_blank")
+      assert body =~ ~s(rel="noopener noreferrer")
       assert body =~ "'.hero-buttons .hero-btn':\n              '<i class=\"fas fa-rocket\"></i>Тегін бастау'"
       assert body =~ "'.pricing-card:nth-child(2) .btn': '14 күндік тестті бастау'"
       assert body =~ "'.cta-buttons .btn-white':\n              '<i class=\"fas fa-user-plus\"></i>Тегін тіркелу'"
@@ -69,11 +74,17 @@ defmodule EdocApiWeb.PageControllerTest do
       assert body =~ ~r/href="#features"[^>]*>Возможности<\/a>/
       assert body =~ ~r/href="#pricing"[^>]*>Цены<\/a>/
       assert body =~ ~r/href="#how-it-works"[^>]*>Как это работает<\/a>/
+      assert body =~ ~r/href="\/about"[^>]*data-i18n="footer.company_about">О нас<\/a>/
+      refute body =~ "Лицензия"
       refute body =~ ">Интеграции<"
       refute body =~ ">API<"
       refute body =~ "© 2024 Edocly"
       assert body =~ ~s(<span id="footer-year"></span>)
       assert body =~ "new Date().getFullYear()"
+      assert landing_css =~ ".footer-brand p {\n        color: var(--white);"
+      assert landing_css =~ ".footer-links a {\n        color: var(--white);"
+      assert landing_css =~ ".footer-bottom p {\n        color: var(--white);"
+      assert landing_css =~ ".footer-bottom-links a {\n        color: var(--white);"
       assert body =~ ~s(data-lang="kk")
       assert body =~ ~s(data-lang="ru")
       assert body =~ "edocly_locale"
