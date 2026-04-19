@@ -60,6 +60,29 @@ defmodule EdocApiWeb.BuyerHTMLControllerTest do
     end
   end
 
+  describe "show/2" do
+    test "uses shared action button styling for back and edit links", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Styled Buyer",
+          "bin_iin" => "080215385677"
+        })
+
+      body =
+        conn
+        |> get("/buyers/#{buyer.id}")
+        |> html_response(200)
+
+      assert body =~ ~s(href="/buyers" class="workspace-action-btn workspace-action-btn-yellow")
+
+      assert body =~
+               ~s(href="/buyers/#{buyer.id}/edit" class="workspace-action-btn workspace-action-btn-success")
+    end
+  end
+
   describe "update/2" do
     test "shows flash error for BIN/IIN checksum failure", %{conn: conn, company: company} do
       {:ok, buyer} =
