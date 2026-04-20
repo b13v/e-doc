@@ -282,49 +282,58 @@ Implement the core application services for subscription state, usage accounting
 ## Tasks
 
 ### Plans API
-- [ ] Implement plan lookup functions.
-- [ ] Implement active plan listing functions.
+- [x] Implement plan lookup functions.
+- [x] Implement active plan listing functions.
 
 ### Subscription API
-- [ ] Implement `get_current_subscription/1`.
-- [ ] Implement subscription creation for new tenants.
-- [ ] Implement activation logic.
-- [ ] Implement suspension logic.
-- [ ] Implement grace-period transition logic.
-- [ ] Implement renewal extension logic.
-- [ ] Implement plan change scheduling logic.
+- [x] Implement `get_current_subscription/1`.
+- [x] Implement subscription creation for new tenants.
+- [x] Implement activation logic.
+- [x] Implement suspension logic.
+- [x] Implement grace-period transition logic.
+- [x] Implement renewal extension logic.
+- [x] Implement plan change scheduling logic.
 
 ### Usage API
-- [ ] Implement `current_document_usage/1`.
-- [ ] Implement `allowed_document_limit/1`.
-- [ ] Implement `allowed_user_limit/1`.
-- [ ] Implement usage counter creation/upsert.
-- [ ] Implement usage event recording.
+- [x] Implement `current_document_usage/1`.
+- [x] Implement `allowed_document_limit/1`.
+- [x] Implement `allowed_user_limit/1`.
+- [x] Implement usage counter creation/upsert.
+- [x] Implement usage event recording.
 
 ### Billing Invoice API
-- [ ] Implement invoice creation for renewals.
-- [ ] Implement invoice creation for upgrades.
-- [ ] Implement invoice status transitions.
-- [ ] Implement overdue marking.
+- [x] Implement invoice creation for renewals.
+- [x] Implement invoice creation for upgrades.
+- [x] Implement invoice status transitions.
+- [x] Implement overdue marking.
 
 ### Payment API
-- [ ] Implement manual payment confirmation service.
-- [ ] Implement payment rejection service.
-- [ ] Implement idempotent protection so the same invoice is not confirmed twice.
+- [x] Implement manual payment confirmation service.
+- [x] Implement payment rejection service.
+- [x] Implement idempotent protection so the same invoice is not confirmed twice.
 
 ## Important Transactional Work
-- [ ] Confirm payment in a DB transaction.
-- [ ] Update invoice + payment + subscription atomically.
-- [ ] Prevent double-activation from repeated admin clicks.
+- [x] Confirm payment in a DB transaction.
+- [x] Update invoice + payment + subscription atomically.
+- [x] Prevent double-activation from repeated admin clicks.
 
 ## Deliverables
-- [ ] billing context functions
-- [ ] tests for service-layer behavior
+- [x] billing context functions
+- [x] tests for service-layer behavior
 
 ## Done Criteria
-- [ ] New tenant can receive a trial subscription.
-- [ ] Payment confirmation extends access correctly.
-- [ ] Suspension/reactivation can be executed from code.
+- [x] New tenant can receive a trial subscription.
+- [x] Payment confirmation extends access correctly.
+- [x] Suspension/reactivation can be executed from code.
+
+## Phase 3 Summary
+- Added service-layer APIs in `EdocApi.Billing` for plan lookup/listing, current subscription lookup, trial creation, subscription state transitions, current-period usage accounting, billing invoice transitions, and payment confirmation/rejection.
+- Payment confirmation is transactional and idempotent: repeated confirmation returns the existing confirmed payment/invoice/subscription state without extending access twice.
+- Added service tests covering the Phase 3 lifecycle paths.
+
+## Phase 3 Open Risks
+- These services are not wired into document enforcement, tenant onboarding, admin screens, or scheduled jobs yet; those are later phases.
+- Payment confirmation currently assumes trusted admin/service callers and does not yet enforce admin authorization in the billing context.
 
 ---
 
@@ -730,7 +739,7 @@ Use this sequence during implementation:
 - [ ] Complete Phase 0 and commit.
 - [ ] Complete Phase 1 and commit.
 - [ ] Complete Phase 2 and run migrations/tests.
-- [ ] Complete Phase 3 and run service tests.
+- [x] Complete Phase 3 and run service tests.
 - [ ] Complete Phase 4 and verify blocked/unblocked flows.
 - [ ] Complete Phase 5 and verify admin flows manually.
 - [ ] Complete Phase 6 and verify tenant billing page manually.
