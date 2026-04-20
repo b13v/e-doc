@@ -110,21 +110,21 @@ Define exact business rules before schema and code changes.
 Introduce the billing domain model in code without yet wiring the full UI/workflows.
 
 ## Tasks
-- [ ] Create a dedicated billing context/module (for example `EdocApi.Billing`).
-- [ ] Define domain responsibilities:
-  - [ ] plans
-  - [ ] subscriptions
-  - [ ] billing invoices
-  - [ ] payments
-  - [ ] usage counters
-  - [ ] admin notes / audit events
-- [ ] Define canonical subscription statuses.
-- [ ] Define canonical billing invoice statuses.
-- [ ] Define canonical payment statuses.
-- [ ] Define a clear separation between:
-  - [ ] subscription state
-  - [ ] payment record state
-  - [ ] usage tracking state
+- [x] Create a dedicated billing context/module (for example `EdocApi.Billing`).
+- [x] Define domain responsibilities:
+  - [x] plans
+  - [x] subscriptions
+  - [x] billing invoices
+  - [x] payments
+  - [x] usage counters
+  - [x] admin notes / audit events
+- [x] Define canonical subscription statuses.
+- [x] Define canonical billing invoice statuses.
+- [x] Define canonical payment statuses.
+- [x] Define a clear separation between:
+  - [x] subscription state
+  - [x] payment record state
+  - [x] usage tracking state
 
 ## Recommended Statuses
 
@@ -149,13 +149,13 @@ Introduce the billing domain model in code without yet wiring the full UI/workfl
 - `rejected`
 
 ## Deliverables
-- [ ] billing domain design notes in `docs/billing_domain.md`
-- [ ] enums/status decisions reflected in code constants/types/modules
+- [x] billing domain design notes in `docs/billing_domain.md`
+- [x] enums/status decisions reflected in code constants/types/modules
 
 ## Done Criteria
-- [ ] Billing domain boundaries are clear.
-- [ ] Status model is finalized.
-- [ ] Code structure for billing context is ready.
+- [x] Billing domain boundaries are clear.
+- [x] Status model is finalized.
+- [x] Code structure for billing context is ready.
 
 ---
 
