@@ -167,110 +167,110 @@ Create all core tables required for billing and admin monitoring.
 ## Tasks
 
 ### Plans
-- [ ] Create `plans` table with fields such as:
-  - [ ] `id`
-  - [ ] `code`
-  - [ ] `name`
-  - [ ] `price_kzt`
-  - [ ] `monthly_document_limit`
-  - [ ] `included_users`
-  - [ ] `is_active`
-  - [ ] timestamps
-- [ ] Add unique index on `code`.
+- [x] Create `plans` table with fields such as:
+  - [x] `id`
+  - [x] `code`
+  - [x] `name`
+  - [x] `price_kzt`
+  - [x] `monthly_document_limit`
+  - [x] `included_users`
+  - [x] `is_active`
+  - [x] timestamps
+- [x] Add unique index on `code`.
 
 ### Subscriptions
-- [ ] Create `subscriptions` table with fields such as:
-  - [ ] `id`
-  - [ ] `tenant_id` or `company_id`
-  - [ ] `plan_id`
-  - [ ] `status`
-  - [ ] `current_period_start`
-  - [ ] `current_period_end`
-  - [ ] `grace_until`
-  - [ ] `extra_user_seats`
-  - [ ] `auto_renew_mode`
-  - [ ] `next_plan_id`
-  - [ ] `change_effective_at`
-  - [ ] `blocked_reason`
-  - [ ] timestamps
-- [ ] Add indexes for tenant/company + status.
-- [ ] Enforce one current active subscription per tenant/company as needed.
+- [x] Create `subscriptions` table with fields such as:
+  - [x] `id`
+  - [x] `tenant_id` or `company_id`
+  - [x] `plan_id`
+  - [x] `status`
+  - [x] `current_period_start`
+  - [x] `current_period_end`
+  - [x] `grace_until`
+  - [x] `extra_user_seats`
+  - [x] `auto_renew_mode`
+  - [x] `next_plan_id`
+  - [x] `change_effective_at`
+  - [x] `blocked_reason`
+  - [x] timestamps
+- [x] Add indexes for tenant/company + status.
+- [x] Enforce one current active subscription per tenant/company as needed.
 
 ### Billing Invoices
-- [ ] Create `billing_invoices` table with fields such as:
-  - [ ] `id`
-  - [ ] `tenant_id`
-  - [ ] `subscription_id`
-  - [ ] `period_start`
-  - [ ] `period_end`
-  - [ ] `plan_snapshot_code`
-  - [ ] `amount_kzt`
-  - [ ] `status`
-  - [ ] `payment_method`
-  - [ ] `kaspi_payment_link`
-  - [ ] `issued_at`
-  - [ ] `due_at`
-  - [ ] `paid_at`
-  - [ ] `activated_by_user_id`
-  - [ ] `note`
-  - [ ] timestamps
-- [ ] Add indexes for tenant/company + status + due date.
+- [x] Create `billing_invoices` table with fields such as:
+  - [x] `id`
+  - [x] `tenant_id`
+  - [x] `subscription_id`
+  - [x] `period_start`
+  - [x] `period_end`
+  - [x] `plan_snapshot_code`
+  - [x] `amount_kzt`
+  - [x] `status`
+  - [x] `payment_method`
+  - [x] `kaspi_payment_link`
+  - [x] `issued_at`
+  - [x] `due_at`
+  - [x] `paid_at`
+  - [x] `activated_by_user_id`
+  - [x] `note`
+  - [x] timestamps
+- [x] Add indexes for tenant/company + status + due date.
 
 ### Payments
-- [ ] Create `payments` table with fields such as:
-  - [ ] `id`
-  - [ ] `tenant_id`
-  - [ ] `billing_invoice_id`
-  - [ ] `amount_kzt`
-  - [ ] `method`
-  - [ ] `status`
-  - [ ] `paid_at`
-  - [ ] `confirmed_at`
-  - [ ] `confirmed_by_user_id`
-  - [ ] `external_reference`
-  - [ ] `proof_attachment_url` (or equivalent)
-  - [ ] timestamps
-- [ ] Add indexes for invoice + status.
+- [x] Create `payments` table with fields such as:
+  - [x] `id`
+  - [x] `tenant_id`
+  - [x] `billing_invoice_id`
+  - [x] `amount_kzt`
+  - [x] `method`
+  - [x] `status`
+  - [x] `paid_at`
+  - [x] `confirmed_at`
+  - [x] `confirmed_by_user_id`
+  - [x] `external_reference`
+  - [x] `proof_attachment_url` (or equivalent)
+  - [x] timestamps
+- [x] Add indexes for invoice + status.
 
 ### Usage Counters
-- [ ] Create `usage_counters` table with fields such as:
-  - [ ] `id`
-  - [ ] `tenant_id`
-  - [ ] `metric`
-  - [ ] `period_start`
-  - [ ] `period_end`
-  - [ ] `value`
-  - [ ] timestamps
-- [ ] Add unique index on `(tenant_id, metric, period_start, period_end)`.
+- [x] Create `usage_counters` table with fields such as:
+  - [x] `id`
+  - [x] `tenant_id`
+  - [x] `metric`
+  - [x] `period_start`
+  - [x] `period_end`
+  - [x] `value`
+  - [x] timestamps
+- [x] Add unique index on `(tenant_id, metric, period_start, period_end)`.
 
 ### Usage Events (recommended)
-- [ ] Create `usage_events` table with fields such as:
-  - [ ] `id`
-  - [ ] `tenant_id`
-  - [ ] `metric`
-  - [ ] `resource_type`
-  - [ ] `resource_id`
-  - [ ] `count`
-  - [ ] timestamps
-- [ ] Add indexes for tenant/company + period.
+- [x] Create `usage_events` table with fields such as:
+  - [x] `id`
+  - [x] `tenant_id`
+  - [x] `metric`
+  - [x] `resource_type`
+  - [x] `resource_id`
+  - [x] `count`
+  - [x] timestamps
+- [x] Add indexes for tenant/company + period.
 
 ### Admin Notes / Audit
-- [ ] Create `admin_notes` or `billing_audit_events` table.
-- [ ] Ensure manual actions are traceable.
+- [x] Create `admin_notes` or `billing_audit_events` table.
+- [x] Ensure manual actions are traceable.
 
 ## Seed Data
-- [ ] Seed `trial`, `starter`, and `basic` plans.
+- [x] Seed `trial`, `starter`, and `basic` plans.
 
 ## Deliverables
-- [ ] migrations
-- [ ] schemas
-- [ ] changesets
-- [ ] seeds for plans
+- [x] migrations
+- [x] schemas
+- [x] changesets
+- [x] seeds for plans
 
 ## Done Criteria
-- [ ] All billing tables exist.
-- [ ] Constraints and indexes are in place.
-- [ ] Plans are seeded in dev/test.
+- [x] All billing tables exist.
+- [x] Constraints and indexes are in place.
+- [x] Plans are seeded in dev/test.
 
 ---
 

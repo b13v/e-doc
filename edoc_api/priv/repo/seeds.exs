@@ -1,9 +1,12 @@
 defmodule EdocApi.Seeds do
   import Ecto.Query, warn: false
+  alias EdocApi.Billing
   alias EdocApi.Repo
   alias EdocApi.Core.UnitOfMeasurement
 
   def run do
+    seed_billing_plans()
+
     csv_path =
       [
         Path.expand("units_of_measurement.csv", File.cwd!()),
@@ -22,6 +25,13 @@ defmodule EdocApi.Seeds do
       |> Enum.map(&to_unit_row/1)
       |> Enum.reject(&is_nil/1)
       |> upsert_units()
+    end
+  end
+
+  defp seed_billing_plans do
+    case Billing.seed_default_plans() do
+      {:ok, %{count: count}} -> IO.puts("Seeded billing plans: #{count} rows processed")
+      {:error, reason} -> IO.puts("Billing plans seed failed: #{inspect(reason)}")
     end
   end
 
