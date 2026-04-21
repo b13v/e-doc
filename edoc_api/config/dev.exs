@@ -13,7 +13,7 @@ config :edoc_api, EdocApi.Repo,
   database: "edoc_api_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 20
+  pool_size: 21
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -73,8 +73,17 @@ config :swoosh, :api_client, false
 # Configure Oban for background jobs
 config :edoc_api, Oban,
   repo: EdocApi.Repo,
-  queues: [default: 10, pdf_generation: 5],
+  queues: [default: 10, pdf_generation: 5, billing: 1],
   plugins: [
     Oban.Plugins.Pruner,
-    Oban.Plugins.Lifeline
+    Oban.Plugins.Lifeline,
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
+        args: %{"action" => "generate_renewal_invoices"}},
+       {"15 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
+        args: %{"action" => "process_overdue_billing"}},
+       {"30 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
+        args: %{"action" => "process_grace_expirations"}}
+     ]}
   ]

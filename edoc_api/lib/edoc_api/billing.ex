@@ -73,6 +73,8 @@ defmodule EdocApi.Billing do
 
   @billable_document_metric "billable_documents"
   @occupied_membership_statuses ["active", "invited", "pending_seat"]
+  @renewal_invoice_lead_days 7
+  @overdue_grace_days 7
 
   @doc "Returns the tenant foreign key used by billing records."
   def tenant_key, do: @tenant_key
@@ -405,6 +407,34 @@ defmodule EdocApi.Billing do
     create_billing_invoice(subscription_or_id, plan_or_code, "renewal", opts)
   end
 
+  @doc """
+  Creates renewal invoices for active subscriptions that are inside the renewal lead window.
+
+  The job is idempotent at the application level: if a non-canceled renewal
+  invoice already exists for the same subscription and renewal period, it is
+  returned in `:skipped` instead of creating a duplicate.
+  """
+  def generate_renewal_invoices(opts \\ []) do
+    now = billing_now(opts)
+    lead_days = Keyword.get(opts, :lead_days, @renewal_invoice_lead_days)
+    horizon = DateTime.add(now, lead_days, :day)
+
+    Subscription
+    |> where([s], s.status == ^SubscriptionStatus.active())
+    |> where([s], s.current_period_end <= ^horizon)
+    |> where([s], s.current_period_end > ^now)
+    |> preload([:plan, :next_plan])
+    |> Repo.all()
+    |> Enum.reduce(%{created: [], skipped: []}, fn subscription, acc ->
+      case create_due_renewal_invoice(subscription) do
+        {:ok, %BillingInvoice{} = invoice} -> update_in(acc.created, &[invoice | &1])
+        {:skipped, %BillingInvoice{} = invoice} -> update_in(acc.skipped, &[invoice | &1])
+        {:error, _changeset} -> update_in(acc.skipped, & &1)
+      end
+    end)
+    |> reverse_lifecycle_result_lists()
+  end
+
   @doc "Creates a draft upgrade billing invoice."
   def create_upgrade_invoice(subscription_or_id, plan_or_code, opts \\ []) do
     create_billing_invoice(subscription_or_id, plan_or_code, "upgrade", opts)
@@ -430,6 +460,48 @@ defmodule EdocApi.Billing do
     invoice_or_id
     |> get_billing_invoice!()
     |> update_billing_invoice(%{status: BillingInvoiceStatus.overdue()})
+  end
+
+  @doc """
+  Marks due sent invoices as overdue and starts a grace period for their subscriptions.
+  """
+  def process_overdue_billing(opts \\ []) do
+    now = billing_now(opts)
+
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.sent())
+    |> where([i], not is_nil(i.due_at) and i.due_at < ^now)
+    |> order_by([i], asc: i.due_at)
+    |> Repo.all()
+    |> Enum.reduce(%{overdue_invoices: [], graced_subscriptions: []}, fn invoice, acc ->
+      {:ok, overdue_invoice} = mark_billing_invoice_overdue(invoice)
+
+      subscription =
+        invoice.subscription_id
+        |> get_subscription!()
+        |> maybe_move_to_overdue_grace(invoice.due_at)
+
+      acc
+      |> update_in([:overdue_invoices], &[overdue_invoice | &1])
+      |> maybe_collect_subscription(:graced_subscriptions, subscription)
+    end)
+    |> reverse_lifecycle_result_lists()
+  end
+
+  @doc "Suspends subscriptions whose billing grace period has expired."
+  def process_grace_expirations(opts \\ []) do
+    now = billing_now(opts)
+
+    Subscription
+    |> where([s], s.status == ^SubscriptionStatus.grace_period())
+    |> where([s], not is_nil(s.grace_until) and s.grace_until < ^now)
+    |> preload([:plan, :next_plan])
+    |> Repo.all()
+    |> Enum.reduce(%{suspended_subscriptions: []}, fn subscription, acc ->
+      {:ok, suspended} = suspend_subscription(subscription, "payment_overdue")
+      update_in(acc.suspended_subscriptions, &[suspended | &1])
+    end)
+    |> reverse_lifecycle_result_lists()
   end
 
   @doc "Creates a pending payment for a billing invoice."
@@ -854,6 +926,52 @@ defmodule EdocApi.Billing do
       })
       |> Repo.insert()
     end
+  end
+
+  defp create_due_renewal_invoice(%Subscription{} = subscription) do
+    period_start = subscription.current_period_end
+    period_end = DateTime.add(period_start, 30, :day)
+
+    existing =
+      BillingInvoice
+      |> where([i], i.subscription_id == ^subscription.id)
+      |> where([i], i.period_start == ^period_start and i.period_end == ^period_end)
+      |> where([i], i.note == "renewal")
+      |> where([i], i.status != ^BillingInvoiceStatus.canceled())
+      |> Repo.one()
+
+    if existing do
+      {:skipped, existing}
+    else
+      plan = subscription.next_plan || subscription.plan
+
+      create_renewal_invoice(subscription, plan,
+        period_start: period_start,
+        period_end: period_end,
+        due_at: subscription.current_period_end
+      )
+    end
+  end
+
+  defp maybe_move_to_overdue_grace(%Subscription{} = subscription, due_at) do
+    if subscription.status in [SubscriptionStatus.active(), SubscriptionStatus.trialing()] do
+      grace_until = DateTime.add(due_at, @overdue_grace_days, :day)
+      {:ok, grace} = move_subscription_to_grace_period(subscription, grace_until)
+      grace
+    else
+      nil
+    end
+  end
+
+  defp maybe_collect_subscription(acc, _key, nil), do: acc
+
+  defp maybe_collect_subscription(acc, key, subscription),
+    do: update_in(acc[key], &[subscription | &1])
+
+  defp reverse_lifecycle_result_lists(result) do
+    Map.new(result, fn {key, value} ->
+      if is_list(value), do: {key, Enum.reverse(value)}, else: {key, value}
+    end)
   end
 
   defp update_subscription(subscription, attrs) do

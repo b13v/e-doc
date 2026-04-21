@@ -520,34 +520,46 @@ Automate invoice generation and subscription state transitions around renewals.
 ## Tasks
 
 ### Renewal Invoice Generation
-- [ ] Create scheduled job to generate renewal invoices before period end.
-- [ ] Recommended lead time: 5 to 7 days before `current_period_end`.
-- [ ] Avoid duplicate invoice generation for the same period.
+- [x] Create scheduled job to generate renewal invoices before period end.
+- [x] Recommended lead time: 5 to 7 days before `current_period_end`.
+- [x] Avoid duplicate invoice generation for the same period.
 
 ### Overdue State Transitions
-- [ ] Mark invoice overdue when `due_at` passes.
-- [ ] Transition subscription to `past_due` or `grace_period` based on product rule.
-- [ ] Transition to `suspended` after grace period expires.
+- [x] Mark invoice overdue when `due_at` passes.
+- [x] Transition subscription to `past_due` or `grace_period` based on product rule.
+- [x] Transition to `suspended` after grace period expires.
 
 ### Recovery Flow
-- [ ] When overdue invoice is confirmed as paid, restore subscription to `active`.
-- [ ] Extend `current_period_end` correctly.
-- [ ] Clear blocked reason where relevant.
+- [x] When overdue invoice is confirmed as paid, restore subscription to `active`.
+- [x] Extend `current_period_end` correctly.
+- [x] Clear blocked reason where relevant.
 
 ### Scheduled Jobs
-- [ ] Add recurring jobs (Oban or equivalent) for:
-  - [ ] invoice generation
-  - [ ] overdue marking
-  - [ ] grace expiry processing
+- [x] Add recurring jobs (Oban or equivalent) for:
+  - [x] invoice generation
+  - [x] overdue marking
+  - [x] grace expiry processing
 
 ## Deliverables
-- [ ] automated renewal jobs
-- [ ] state transition tests
+- [x] automated renewal jobs
+- [x] state transition tests
 
 ## Done Criteria
-- [ ] Renewals are generated automatically.
-- [ ] Unpaid tenants move through overdue lifecycle correctly.
-- [ ] Paid overdue tenants can be reactivated safely.
+- [x] Renewals are generated automatically.
+- [x] Unpaid tenants move through overdue lifecycle correctly.
+- [x] Paid overdue tenants can be reactivated safely.
+
+## Phase 7 Summary
+
+- Added daily Oban billing lifecycle jobs for renewal invoice creation, overdue marking, and grace-expiry suspension.
+- Added idempotent renewal generation with a 7-day lead window and duplicate prevention for the same subscription period.
+- Added overdue processing that moves tenants into a 7-day grace period, then suspends after grace expiration.
+- Existing payment confirmation flow now serves as the recovery path by restoring `active`, extending the paid period, and clearing blocked/grace fields.
+
+## Phase 7 Open Risks
+
+- Renewal invoices are generated as drafts; attaching Kaspi links and sending invoices remains an admin/manual step.
+- The current grace policy allows document creation during the 7-day grace period and blocks only after suspension.
 
 ---
 

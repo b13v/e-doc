@@ -375,6 +375,79 @@ defmodule EdocApi.Billing.ServiceTest do
       assert Repo.get!(BillingInvoice, invoice.id).status == "sent"
       assert Repo.get!(Subscription, subscription.id).status == "trialing"
     end
+
+    test "generates one renewal invoice per subscription period within the lead window" do
+      seed_plans!()
+      company = create_company!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      {:ok, subscription} =
+        Billing.activate_subscription(subscription, "basic",
+          period_start: ~U[2026-04-01 08:00:00Z],
+          period_end: ~U[2026-05-01 08:00:00Z]
+        )
+
+      assert %{created: [invoice], skipped: []} =
+               Billing.generate_renewal_invoices(now: ~U[2026-04-24 08:00:00Z])
+
+      assert invoice.subscription_id == subscription.id
+      assert invoice.company_id == company.id
+      assert invoice.note == "renewal"
+      assert invoice.plan_snapshot_code == "basic"
+      assert invoice.period_start == ~U[2026-05-01 08:00:00Z]
+      assert invoice.period_end == ~U[2026-05-31 08:00:00Z]
+      assert invoice.due_at == ~U[2026-05-01 08:00:00Z]
+
+      assert %{created: [], skipped: [^invoice]} =
+               Billing.generate_renewal_invoices(now: ~U[2026-04-25 08:00:00Z])
+
+      assert Repo.aggregate(BillingInvoice, :count, :id) == 1
+    end
+
+    test "marks overdue billing invoices, moves tenants into grace, and suspends after grace" do
+      seed_plans!()
+      company = create_company!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      {:ok, subscription} =
+        Billing.activate_subscription(subscription, "starter",
+          period_start: ~U[2026-04-01 08:00:00Z],
+          period_end: ~U[2026-05-01 08:00:00Z]
+        )
+
+      {:ok, invoice} =
+        Billing.create_renewal_invoice(subscription, "starter",
+          period_start: ~U[2026-05-01 08:00:00Z],
+          period_end: ~U[2026-05-31 08:00:00Z],
+          due_at: ~U[2026-04-23 08:00:00Z]
+        )
+
+      {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
+
+      assert %{overdue_invoices: [overdue_invoice], graced_subscriptions: [grace]} =
+               Billing.process_overdue_billing(now: ~U[2026-04-24 08:00:00Z])
+
+      assert overdue_invoice.id == invoice.id
+      assert overdue_invoice.status == "overdue"
+      assert grace.id == subscription.id
+      assert grace.status == "grace_period"
+      assert grace.grace_until == ~U[2026-04-30 08:00:00Z]
+      assert grace.blocked_reason == nil
+      assert Billing.can_create_document?(company.id)
+
+      assert %{suspended_subscriptions: []} =
+               Billing.process_grace_expirations(now: ~U[2026-04-29 08:00:00Z])
+
+      assert %{suspended_subscriptions: [suspended]} =
+               Billing.process_grace_expirations(now: ~U[2026-05-01 08:00:00Z])
+
+      assert suspended.id == subscription.id
+      assert suspended.status == "suspended"
+      assert suspended.blocked_reason == "payment_overdue"
+      refute Billing.can_create_document?(company.id)
+    end
   end
 
   defp seed_plans! do
