@@ -660,42 +660,52 @@ Make the system operationally safe and visible.
 ## Tasks
 
 ### Auditability
-- [ ] Log all admin billing actions.
-- [ ] Log subscription status changes.
-- [ ] Log payment confirmation actions with actor and timestamp.
+- [x] Log all admin billing actions.
+- [x] Log subscription status changes.
+- [x] Log payment confirmation actions with actor and timestamp.
 
 ### Reporting
-- [ ] Add admin dashboard cards for:
-  - [ ] active clients
-  - [ ] trial clients
-  - [ ] overdue clients
-  - [ ] suspended clients
-  - [ ] monthly collected revenue
-  - [ ] upcoming renewals
-- [ ] Add lists for:
-  - [ ] invoices due soon
-  - [ ] unpaid invoices
-  - [ ] recently reactivated clients
+- [x] Add admin dashboard cards for:
+  - [x] active clients
+  - [x] trial clients
+  - [x] overdue clients
+  - [x] suspended clients
+  - [x] monthly collected revenue
+  - [x] upcoming renewals
+- [x] Add lists for:
+  - [x] invoices due soon
+  - [x] unpaid invoices
+  - [x] recently reactivated clients
 
 ### Safety and Correctness
-- [ ] Add concurrency tests around payment confirmation.
-- [ ] Add concurrency tests around document usage counting.
-- [ ] Ensure double-submit does not double-charge or double-extend.
-- [ ] Ensure suspension rules are consistently enforced across all entry points.
+- [x] Add concurrency tests around payment confirmation.
+- [x] Add concurrency tests around document usage counting.
+- [x] Ensure double-submit does not double-charge or double-extend.
+- [x] Ensure suspension rules are consistently enforced across all entry points.
 
 ### Documentation
-- [ ] Write internal admin operating guide.
-- [ ] Write customer-facing billing behavior notes.
+- [x] Write internal admin operating guide.
+- [x] Write customer-facing billing behavior notes.
 
 ## Deliverables
-- [ ] reporting widgets or pages
-- [ ] audit logs
-- [ ] internal runbook
+- [x] reporting widgets or pages
+- [x] audit logs
+- [x] internal runbook
 
 ## Done Criteria
-- [ ] Billing actions are traceable.
-- [ ] Operational dashboard is usable.
-- [ ] Core race conditions are covered by tests.
+- [x] Billing actions are traceable.
+- [x] Operational dashboard is usable.
+- [x] Core race conditions are covered by tests.
+
+## Phase 10 Summary
+- Added backoffice dashboard aggregates and operational lists to `/admin/billing/clients`.
+- Added audit logging for admin billing actions, payment confirmations/rejections, and subscription status transitions.
+- Hardened payment confirmation and usage recording behavior to be safe for repeated submits and concurrent attempts.
+- Added billing operations docs for internal admins and customer-facing billing behavior.
+
+## Open Risks / Blockers
+- Dashboard revenue currently computes from `billing_invoices.paid_at` and does not include external accounting reconciliations.
+- Customer-facing billing copy in docs is RU/EN style and may need full RU/KK localized UI content if shown directly in product screens.
 
 ---
 

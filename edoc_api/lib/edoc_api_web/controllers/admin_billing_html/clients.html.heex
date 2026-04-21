@@ -7,6 +7,59 @@
     <a href="/admin/billing/invoices" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Billing Invoices</a>
   </div>
 
+  <section class="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Active clients</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.active_clients %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Trial clients</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.trial_clients %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Overdue clients</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.overdue_clients %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Suspended clients</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.suspended_clients %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Monthly collected</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.monthly_collected_revenue %> KZT</div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Upcoming renewals</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.upcoming_renewals %></div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 xl:grid-cols-3">
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Invoices due soon</h2>
+      <p :if={Enum.empty?(@dashboard.lists.invoices_due_soon)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No sent invoices due in the next 7 days.</p>
+      <div :for={invoice <- Enum.take(@dashboard.lists.invoices_due_soon, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <span class="font-semibold"><%= invoice.company.name %></span> · <%= invoice.amount_kzt %> KZT · <%= date_or_dash(invoice.due_at) %>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Unpaid invoices</h2>
+      <p :if={Enum.empty?(@dashboard.lists.unpaid_invoices)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No unpaid billing invoices.</p>
+      <div :for={invoice <- Enum.take(@dashboard.lists.unpaid_invoices, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <span class="font-semibold"><%= invoice.company.name %></span> · <%= invoice.status %> · <%= invoice.amount_kzt %> KZT
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Recently reactivated clients</h2>
+      <p :if={Enum.empty?(@dashboard.lists.recently_reactivated_clients)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No recent reactivations.</p>
+      <div :for={event <- Enum.take(@dashboard.lists.recently_reactivated_clients, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <span class="font-semibold"><%= event.company.name %></span> · <%= date_or_dash(event.inserted_at) %>
+      </div>
+    </div>
+  </section>
+
   <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
     <table class="min-w-full divide-y divide-stone-200 dark:divide-slate-700">
       <thead class="bg-stone-50 dark:bg-slate-800">

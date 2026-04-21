@@ -364,6 +364,147 @@ defmodule EdocApi.Billing.ServiceTest do
       assert same_invoice.paid_at == paid_invoice.paid_at
       assert same_subscription.current_period_end == active.current_period_end
       assert Repo.aggregate(Payment, :count, :id) == 1
+
+      assert [event] =
+               Repo.all(
+                 from(e in BillingAuditEvent,
+                   where:
+                     e.action == "payment_confirmed" and e.subject_type == "payment" and
+                       e.subject_id == ^payment.id
+                 )
+               )
+
+      assert event.actor_user_id == admin.id
+      assert event.metadata["billing_invoice_id"] == invoice.id
+    end
+
+    test "repeated payment confirmation records one audit event and does not double-extend" do
+      seed_plans!()
+      company = create_company!()
+      admin = TestFixtures.create_user!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      {:ok, invoice} =
+        Billing.create_renewal_invoice(subscription, "starter",
+          period_start: ~U[2026-05-04 08:00:00Z],
+          period_end: ~U[2026-06-04 08:00:00Z],
+          due_at: ~U[2026-04-23 08:00:00Z]
+        )
+
+      {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
+      {:ok, payment} = Billing.create_payment(invoice, method: "manual")
+
+      assert {:ok, first_result} =
+               Billing.confirm_manual_payment(payment, admin.id, now: ~U[2026-04-20 10:00:00Z])
+
+      assert {:ok, second_result} =
+               Billing.confirm_manual_payment(payment, admin.id, now: ~U[2026-04-20 11:00:00Z])
+
+      assert first_result.subscription.current_period_end == ~U[2026-06-04 08:00:00Z]
+      assert second_result.subscription.current_period_end == ~U[2026-06-04 08:00:00Z]
+
+      assert 1 ==
+               Repo.aggregate(
+                 from(e in BillingAuditEvent,
+                   where: e.action == "payment_confirmed" and e.subject_id == ^payment.id
+                 ),
+                 :count,
+                 :id
+               )
+    end
+
+    test "concurrent payment confirmation is idempotent under race" do
+      seed_plans!()
+      company = create_company!()
+      admin = TestFixtures.create_user!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      {:ok, invoice} =
+        Billing.create_renewal_invoice(subscription, "starter",
+          period_start: ~U[2026-05-04 08:00:00Z],
+          period_end: ~U[2026-06-04 08:00:00Z],
+          due_at: ~U[2026-04-23 08:00:00Z]
+        )
+
+      {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
+      {:ok, payment} = Billing.create_payment(invoice, method: "manual")
+
+      t1 =
+        async_with_repo(fn ->
+          Billing.confirm_manual_payment(payment.id, admin.id, now: ~U[2026-04-20 10:00:00Z])
+        end)
+
+      t2 =
+        async_with_repo(fn ->
+          Billing.confirm_manual_payment(payment.id, admin.id, now: ~U[2026-04-20 10:00:00Z])
+        end)
+
+      assert {:ok, _} = Task.await(t1, 5_000)
+      assert {:ok, _} = Task.await(t2, 5_000)
+
+      assert 1 ==
+               Repo.aggregate(
+                 from(e in BillingAuditEvent,
+                   where: e.action == "payment_confirmed" and e.subject_id == ^payment.id
+                 ),
+                 :count,
+                 :id
+               )
+    end
+
+    test "concurrent usage recording allows only one event at quota boundary" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, _event} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
+                 count: 49
+               )
+
+      t1 =
+        async_with_repo(fn ->
+          Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+        end)
+
+      t2 =
+        async_with_repo(fn ->
+          Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+        end)
+
+      results = [Task.await(t1, 5_000), Task.await(t2, 5_000)]
+      success_count = Enum.count(results, &match?({:ok, _}, &1))
+
+      quota_error_count =
+        Enum.count(results, fn
+          {:error, :quota_exceeded, _} -> true
+          _ -> false
+        end)
+
+      assert success_count == 1
+      assert quota_error_count == 1
+      assert Billing.current_document_usage(company.id) == {:ok, 50}
+    end
+
+    test "document usage cannot be recorded beyond quota" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, _event} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
+                 count: 50
+               )
+
+      assert {:error, :quota_exceeded, %{used: 50, limit: 50, remaining: 0}} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+
+      assert Billing.current_document_usage(company.id) == {:ok, 50}
+      assert Repo.aggregate(UsageEvent, :count, :id) == 1
     end
 
     test "paid immediate upgrade invoice moves tenant to higher plan without extending the cycle" do
@@ -502,6 +643,24 @@ defmodule EdocApi.Billing.ServiceTest do
       assert Repo.get!(Subscription, subscription.id).status == "trialing"
     end
 
+    test "status changes are audit logged" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      assert {:ok, suspended} = Billing.suspend_subscription(subscription, "manual_review")
+      assert {:ok, _reactivated} = Billing.reactivate_subscription(suspended)
+
+      events =
+        BillingAuditEvent
+        |> where([e], e.action == "subscription_status_changed")
+        |> order_by([e], asc: e.inserted_at)
+        |> Repo.all()
+
+      assert Enum.map(events, & &1.metadata["to_status"]) == ["suspended", "active"]
+      assert Enum.map(events, & &1.subject_id) == [subscription.id, subscription.id]
+    end
+
     test "generates one renewal invoice per subscription period within the lead window" do
       seed_plans!()
       company = create_company!()
@@ -602,7 +761,12 @@ defmodule EdocApi.Billing.ServiceTest do
       assert_email_sent(to: "three-day@example.com", subject: "Напоминание об оплате Edocly")
       assert_email_sent(to: "due-today@example.com", subject: "Напоминание об оплате Edocly")
 
-      assert Repo.aggregate(BillingAuditEvent, :count, :id) == 3
+      assert 3 ==
+               Repo.aggregate(
+                 from(e in BillingAuditEvent, where: e.action == "billing_reminder_sent"),
+                 :count,
+                 :id
+               )
 
       assert %{
                renewal_7_day: [],
@@ -613,7 +777,12 @@ defmodule EdocApi.Billing.ServiceTest do
                admin_high_value_overdue: []
              } = Billing.send_billing_reminders(now: now)
 
-      assert Repo.aggregate(BillingAuditEvent, :count, :id) == 3
+      assert 3 ==
+               Repo.aggregate(
+                 from(e in BillingAuditEvent, where: e.action == "billing_reminder_sent"),
+                 :count,
+                 :id
+               )
     end
 
     test "sends overdue customer reminders, suspended notices, and internal high-value alerts" do
@@ -691,6 +860,75 @@ defmodule EdocApi.Billing.ServiceTest do
     end
   end
 
+  describe "admin billing reporting" do
+    test "returns dashboard cards and operational lists" do
+      seed_plans!()
+      now = ~U[2026-04-20 08:00:00Z]
+      active_company = company_with_active_plan!("active-report@example.com", "basic", now, 5)
+      due_soon_company = company_with_active_plan!("due-soon-report@example.com", "basic", now, 2)
+      trial_company = create_company!()
+      {:ok, _trial_subscription} = Billing.create_trial_subscription(trial_company.id, now: now)
+
+      suspended_company =
+        company_with_active_plan!("suspended-report@example.com", "starter", now, -1)
+
+      overdue_company = company_with_active_plan!("overdue-report@example.com", "basic", now, -2)
+
+      {:ok, active_subscription} = Billing.get_current_subscription(active_company.id)
+      {:ok, due_soon_subscription} = Billing.get_current_subscription(due_soon_company.id)
+      {:ok, suspended_subscription} = Billing.get_current_subscription(suspended_company.id)
+      {:ok, overdue_subscription} = Billing.get_current_subscription(overdue_company.id)
+
+      {:ok, due_soon_invoice} =
+        Billing.create_renewal_invoice(active_subscription, "basic",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          due_at: DateTime.add(now, 2, :day)
+        )
+
+      {:ok, due_soon_invoice} =
+        Billing.send_billing_invoice(due_soon_invoice, payment_method: "manual", now: now)
+
+      {:ok, paid_invoice} =
+        Billing.create_renewal_invoice(due_soon_subscription, "basic",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          due_at: DateTime.add(now, 2, :day)
+        )
+
+      {:ok, paid_invoice} =
+        Billing.send_billing_invoice(paid_invoice, payment_method: "manual", now: now)
+
+      {:ok, overdue_invoice} =
+        Billing.create_renewal_invoice(overdue_subscription, "basic",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          due_at: DateTime.add(now, -2, :day)
+        )
+
+      {:ok, overdue_invoice} =
+        Billing.send_billing_invoice(overdue_invoice, payment_method: "manual", now: now)
+
+      {:ok, overdue_invoice} = Billing.mark_billing_invoice_overdue(overdue_invoice)
+      {:ok, _suspended} = Billing.suspend_subscription(suspended_subscription, "payment_overdue")
+      {:ok, payment} = Billing.create_payment(paid_invoice, method: "manual")
+      admin = TestFixtures.create_user!()
+      {:ok, _paid} = Billing.confirm_manual_payment(payment, admin, now: now)
+
+      report = Billing.admin_billing_dashboard(now: now)
+
+      assert report.cards.active_clients >= 1
+      assert report.cards.trial_clients >= 1
+      assert report.cards.overdue_clients >= 1
+      assert report.cards.suspended_clients >= 1
+      assert report.cards.monthly_collected_revenue >= 29_900
+      assert report.cards.upcoming_renewals >= 1
+      assert Enum.any?(report.lists.invoices_due_soon, &(&1.id == due_soon_invoice.id))
+      assert Enum.any?(report.lists.unpaid_invoices, &(&1.id == overdue_invoice.id))
+      assert is_list(report.lists.recently_reactivated_clients)
+    end
+  end
+
   defp seed_plans! do
     assert {:ok, %{count: 3}} = Billing.seed_default_plans()
   end
@@ -710,6 +948,15 @@ defmodule EdocApi.Billing.ServiceTest do
     %TenantMembership{}
     |> TenantMembership.changeset(attrs)
     |> Repo.insert!()
+  end
+
+  defp async_with_repo(fun) do
+    parent = self()
+
+    Task.async(fn ->
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, parent, self())
+      fun.()
+    end)
   end
 
   defp company_with_active_plan!(email, plan_code, now, days_until_period_end) do

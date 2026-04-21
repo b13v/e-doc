@@ -6,7 +6,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
 
   alias EdocApi.Accounts
   alias EdocApi.Billing
-  alias EdocApi.Billing.{BillingInvoice, Payment, Subscription}
+  alias EdocApi.Billing.{BillingAuditEvent, BillingInvoice, Payment, Subscription}
   alias EdocApi.Repo
 
   setup %{conn: conn} do
@@ -67,6 +67,10 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "1 / 500"
     assert body =~ "1 / 5"
     assert body =~ "Overdue"
+    assert body =~ "Active clients"
+    assert body =~ "Monthly collected"
+    assert body =~ "Invoices due soon"
+    assert body =~ "Unpaid invoices"
   end
 
   test "platform admin sees client detail with users, invoices, payments, and notes form", %{
@@ -140,6 +144,30 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
 
     assert Repo.get!(Payment, payment.id).status == "confirmed"
     assert Repo.get!(BillingInvoice, invoice.id).status == "paid"
+
+    assert Repo.get_by!(BillingAuditEvent,
+             action: "admin_payment_confirmed",
+             subject_type: "payment",
+             subject_id: payment.id
+           ).actor_user_id == conn.assigns.current_user.id
+  end
+
+  test "platform admin subscription actions are audit logged", %{
+    admin_conn: conn,
+    subscription: subscription
+  } do
+    conn =
+      post(conn, "/admin/billing/subscriptions/#{subscription.id}/suspend", %{
+        "reason" => "manual_review"
+      })
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+
+    assert Repo.get_by!(BillingAuditEvent,
+             action: "admin_subscription_suspended",
+             subject_type: "subscription",
+             subject_id: subscription.id
+           ).metadata["reason"] == "manual_review"
   end
 
   test "platform admin can suspend and reactivate a tenant subscription", %{

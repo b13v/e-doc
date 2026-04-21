@@ -282,18 +282,7 @@ defmodule EdocApi.Billing do
   @doc "Returns the current-period billable document usage."
   def current_document_usage(company_or_id) do
     with {:ok, subscription} <- get_current_subscription(company_or_id) do
-      value =
-        UsageCounter
-        |> where(
-          [c],
-          c.company_id == ^record_id(company_or_id) and c.metric == ^@billable_document_metric and
-            c.period_start == ^subscription.current_period_start and
-            c.period_end == ^subscription.current_period_end
-        )
-        |> select([c], c.value)
-        |> Repo.one()
-
-      {:ok, value || 0}
+      {:ok, current_document_usage_for_subscription(record_id(company_or_id), subscription)}
     end
   end
 
@@ -340,50 +329,81 @@ defmodule EdocApi.Billing do
   def record_document_usage(company_or_id, resource_type, resource_id, opts \\ []) do
     count = Keyword.get(opts, :count, 1)
 
-    with {:ok, subscription} <- get_current_subscription(company_or_id),
-         {:ok, _quota} <- ensure_can_record_document_usage(company_or_id, count) do
+    with {:ok, subscription} <- get_current_subscription(company_or_id) do
       company_id = record_id(company_or_id)
 
       Repo.transaction(fn ->
-        event =
-          %UsageEvent{}
-          |> UsageEvent.changeset(%{
-            company_id: company_id,
-            metric: @billable_document_metric,
-            resource_type: resource_type,
-            resource_id: resource_id,
-            count: count,
-            occurred_at: Keyword.get(opts, :occurred_at),
-            period_start: subscription.current_period_start,
-            period_end: subscription.current_period_end
-          })
-          |> Repo.insert!()
+        subscription =
+          Subscription
+          |> where([s], s.id == ^subscription.id)
+          |> lock("FOR UPDATE")
+          |> Repo.one!()
+          |> Repo.preload([:plan, :next_plan], force: true)
 
-        upsert_usage_counter!(
-          company_id,
-          subscription.current_period_start,
-          subscription.current_period_end,
-          count
-        )
+        with :ok <- ensure_subscription_allows_creation(subscription),
+             {:ok, _quota} <-
+               ensure_can_record_document_usage_locked(company_id, subscription, count) do
+          event =
+            %UsageEvent{}
+            |> UsageEvent.changeset(%{
+              company_id: company_id,
+              metric: @billable_document_metric,
+              resource_type: resource_type,
+              resource_id: resource_id,
+              count: count,
+              occurred_at: Keyword.get(opts, :occurred_at),
+              period_start: subscription.current_period_start,
+              period_end: subscription.current_period_end
+            })
+            |> Repo.insert!()
 
-        event
+          upsert_usage_counter!(
+            company_id,
+            subscription.current_period_start,
+            subscription.current_period_end,
+            count
+          )
+
+          event
+        else
+          {:error, reason, details} -> Repo.rollback({:error, reason, details})
+          {:error, reason} -> Repo.rollback({:error, reason})
+        end
       end)
+      |> case do
+        {:ok, event} -> {:ok, event}
+        {:error, {:error, reason, details}} -> {:error, reason, details}
+        {:error, {:error, reason}} -> {:error, reason}
+        other -> other
+      end
     end
   end
 
-  defp ensure_can_record_document_usage(company_or_id, count) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id),
-         :ok <- ensure_subscription_allows_creation(subscription),
-         {:ok, used} <- current_document_usage(company_or_id) do
-      limit = subscription.plan.monthly_document_limit
-      remaining = max(limit - used, 0)
+  defp ensure_can_record_document_usage_locked(company_id, subscription, count) do
+    used = current_document_usage_for_subscription(company_id, subscription)
+    limit = subscription.plan.monthly_document_limit
+    remaining = max(limit - used, 0)
 
-      if used + count > limit do
-        {:error, :quota_exceeded, document_quota_details(subscription, used, limit, remaining)}
-      else
-        {:ok, document_quota_details(subscription, used, limit, remaining)}
-      end
+    if used + count > limit do
+      {:error, :quota_exceeded, document_quota_details(subscription, used, limit, remaining)}
+    else
+      {:ok, document_quota_details(subscription, used, limit, remaining)}
     end
+  end
+
+  defp current_document_usage_for_subscription(company_id, subscription) do
+    value =
+      UsageCounter
+      |> where(
+        [c],
+        c.company_id == ^company_id and c.metric == ^@billable_document_metric and
+          c.period_start == ^subscription.current_period_start and
+          c.period_end == ^subscription.current_period_end
+      )
+      |> select([c], c.value)
+      |> Repo.one()
+
+    value || 0
   end
 
   @doc "Returns true when the tenant can occupy another user seat."
@@ -646,7 +666,7 @@ defmodule EdocApi.Billing do
     admin_user_id = record_id(admin_user_or_id)
 
     Repo.transaction(fn ->
-      payment = get_payment!(payment_or_id)
+      payment = get_payment_for_update!(payment_or_id)
 
       if payment.status == PaymentStatus.confirmed() do
         invoice = get_billing_invoice!(payment.billing_invoice_id)
@@ -690,6 +710,26 @@ defmodule EdocApi.Billing do
           |> Repo.update!()
           |> Repo.preload([:plan, :next_plan], force: true)
 
+        insert_audit_event!(
+          invoice.company_id,
+          admin_user_id,
+          "payment_confirmed",
+          "payment",
+          confirmed_payment.id,
+          %{
+            billing_invoice_id: invoice.id,
+            subscription_id: subscription.id,
+            amount_kzt: confirmed_payment.amount_kzt,
+            confirmed_at: now
+          }
+        )
+
+        maybe_insert_subscription_status_change!(
+          subscription,
+          active_subscription,
+          %{source: "payment_confirmation", payment_id: confirmed_payment.id, at: now}
+        )
+
         %{payment: confirmed_payment, invoice: paid_invoice, subscription: active_subscription}
       end
     end)
@@ -697,14 +737,33 @@ defmodule EdocApi.Billing do
 
   @doc "Rejects a pending payment without activating the subscription."
   def reject_payment(payment_or_id, admin_user_or_id, opts \\ []) do
-    payment_or_id
-    |> get_payment!()
+    payment = get_payment!(payment_or_id)
+    now = billing_now(opts)
+    admin_user_id = record_id(admin_user_or_id)
+
+    payment
     |> Payment.changeset(%{
       status: PaymentStatus.rejected(),
-      confirmed_at: billing_now(opts),
-      confirmed_by_user_id: record_id(admin_user_or_id)
+      confirmed_at: now,
+      confirmed_by_user_id: admin_user_id
     })
     |> Repo.update()
+    |> case do
+      {:ok, rejected} ->
+        insert_audit_event!(
+          rejected.company_id,
+          admin_user_id,
+          "payment_rejected",
+          "payment",
+          rejected.id,
+          %{rejected_at: now, billing_invoice_id: rejected.billing_invoice_id}
+        )
+
+        {:ok, rejected}
+
+      other ->
+        other
+    end
   end
 
   @doc "Lists client billing summaries for the internal backoffice."
@@ -714,6 +773,33 @@ defmodule EdocApi.Billing do
     |> preload(:user)
     |> Repo.all()
     |> Enum.map(&admin_client_summary/1)
+  end
+
+  @doc "Returns aggregate billing KPIs and operational lists for the internal backoffice."
+  def admin_billing_dashboard(opts \\ []) do
+    now = billing_now(opts)
+
+    month_start =
+      DateTime.new!(Date.beginning_of_month(DateTime.to_date(now)), ~T[00:00:00], "Etc/UTC")
+
+    renewal_horizon = DateTime.add(now, @renewal_invoice_lead_days, :day)
+
+    cards = %{
+      active_clients: subscription_count(SubscriptionStatus.active()),
+      trial_clients: subscription_count(SubscriptionStatus.trialing()),
+      overdue_clients: overdue_client_count(),
+      suspended_clients: subscription_count(SubscriptionStatus.suspended()),
+      monthly_collected_revenue: monthly_collected_revenue(month_start, now),
+      upcoming_renewals: upcoming_renewal_count(now, renewal_horizon)
+    }
+
+    lists = %{
+      invoices_due_soon: invoices_due_soon(now, renewal_horizon),
+      unpaid_invoices: unpaid_billing_invoices(),
+      recently_reactivated_clients: recently_reactivated_clients(now)
+    }
+
+    %{cards: cards, lists: lists}
   end
 
   @doc "Returns one client billing detail for the internal backoffice."
@@ -811,6 +897,27 @@ defmodule EdocApi.Billing do
       subject_type: "company",
       subject_id: company_id,
       metadata: %{note: String.trim(note)}
+    })
+    |> Repo.insert()
+  end
+
+  @doc "Records an operator/admin billing action in the audit stream."
+  def log_admin_billing_action(
+        company_or_id,
+        actor_user_or_id,
+        action,
+        subject_type,
+        subject_id,
+        metadata \\ %{}
+      ) do
+    %BillingAuditEvent{}
+    |> BillingAuditEvent.changeset(%{
+      company_id: record_id(company_or_id),
+      actor_user_id: record_id(actor_user_or_id),
+      action: action,
+      subject_type: subject_type,
+      subject_id: record_id(subject_id),
+      metadata: stringify_metadata_values(metadata)
     })
     |> Repo.insert()
   end
@@ -926,6 +1033,64 @@ defmodule EdocApi.Billing do
       period_end: subscription && subscription.current_period_end,
       overdue_invoices: overdue_invoices
     }
+  end
+
+  defp subscription_count(status) do
+    Subscription
+    |> where([s], s.status == ^status)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp overdue_client_count do
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.overdue())
+    |> select([i], count(fragment("DISTINCT ?", i.company_id)))
+    |> Repo.one()
+  end
+
+  defp monthly_collected_revenue(month_start, now) do
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.paid())
+    |> where([i], not is_nil(i.paid_at) and i.paid_at >= ^month_start and i.paid_at <= ^now)
+    |> select([i], coalesce(sum(i.amount_kzt), 0))
+    |> Repo.one()
+  end
+
+  defp upcoming_renewal_count(now, horizon) do
+    Subscription
+    |> where([s], s.status == ^SubscriptionStatus.active())
+    |> where([s], s.current_period_end > ^now and s.current_period_end <= ^horizon)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp invoices_due_soon(now, horizon) do
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.sent())
+    |> where([i], not is_nil(i.due_at) and i.due_at >= ^now and i.due_at <= ^horizon)
+    |> order_by([i], asc: i.due_at)
+    |> preload(:company)
+    |> Repo.all()
+  end
+
+  defp unpaid_billing_invoices do
+    BillingInvoice
+    |> where([i], i.status in ^[BillingInvoiceStatus.sent(), BillingInvoiceStatus.overdue()])
+    |> order_by([i], asc: i.due_at, desc: i.inserted_at)
+    |> preload(:company)
+    |> Repo.all()
+  end
+
+  defp recently_reactivated_clients(now) do
+    since = DateTime.add(now, -30, :day)
+
+    BillingAuditEvent
+    |> where([e], e.action == "subscription_status_changed")
+    |> where([e], fragment("?->>'to_status' = 'active'", e.metadata))
+    |> where([e], e.inserted_at >= ^since)
+    |> order_by([e], desc: e.inserted_at)
+    |> preload(:company)
+    |> limit(10)
+    |> Repo.all()
   end
 
   defp send_renewal_reminders(now, days_until_due) do
@@ -1125,6 +1290,37 @@ defmodule EdocApi.Billing do
     |> Repo.insert!()
   end
 
+  defp insert_audit_event!(company_id, actor_user_id, action, subject_type, subject_id, metadata) do
+    %BillingAuditEvent{}
+    |> BillingAuditEvent.changeset(%{
+      company_id: company_id,
+      actor_user_id: actor_user_id,
+      action: action,
+      subject_type: subject_type,
+      subject_id: subject_id,
+      metadata: stringify_metadata_values(metadata)
+    })
+    |> Repo.insert!()
+  end
+
+  defp maybe_insert_subscription_status_change!(old_subscription, new_subscription, metadata) do
+    if old_subscription.status != new_subscription.status do
+      insert_audit_event!(
+        new_subscription.company_id,
+        Map.get(metadata, :actor_user_id),
+        "subscription_status_changed",
+        "subscription",
+        new_subscription.id,
+        metadata
+        |> Map.delete(:actor_user_id)
+        |> Map.merge(%{
+          from_status: old_subscription.status,
+          to_status: new_subscription.status
+        })
+      )
+    end
+  end
+
   defp tenant_billing_reminders(subscription, outstanding_invoices) do
     invoice_reminders =
       outstanding_invoices
@@ -1322,6 +1518,17 @@ defmodule EdocApi.Billing do
     |> Subscription.changeset(attrs)
     |> Repo.update()
     |> preload_subscription_result()
+    |> case do
+      {:ok, updated_subscription} ->
+        maybe_insert_subscription_status_change!(subscription, updated_subscription, %{
+          source: "billing_update"
+        })
+
+        {:ok, updated_subscription}
+
+      other ->
+        other
+    end
   end
 
   defp update_billing_invoice(invoice, attrs) do
@@ -1410,6 +1617,15 @@ defmodule EdocApi.Billing do
 
   defp get_payment!(%Payment{id: id}), do: Repo.get!(Payment, id)
   defp get_payment!(id), do: Repo.get!(Payment, id)
+
+  defp get_payment_for_update!(payment_or_id) do
+    payment_id = record_id(payment_or_id)
+
+    Payment
+    |> where([p], p.id == ^payment_id)
+    |> lock("FOR UPDATE")
+    |> Repo.one!()
+  end
 
   defp resolve_plan(%Plan{} = plan), do: {:ok, plan}
   defp resolve_plan(code), do: get_plan_by_code(code)
