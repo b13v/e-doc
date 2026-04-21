@@ -37,11 +37,11 @@ defmodule EdocApiWeb.AdminBillingController do
   def create_upgrade_invoice(conn, %{"id" => subscription_id} = params) do
     plan = params["plan"] || params["plan_code"] || "basic"
 
-    case Billing.create_upgrade_invoice(subscription_id, plan) do
+    case Billing.create_immediate_upgrade_invoice(subscription_id, plan) do
       {:ok, _invoice} ->
         redirect(conn, to: "/admin/billing/invoices")
 
-      {:error, _changeset} ->
+      {:error, _reason} ->
         conn
         |> put_flash(:error, "Could not create upgrade invoice.")
         |> redirect(to: "/admin/billing/clients")
@@ -120,9 +120,36 @@ defmodule EdocApiWeb.AdminBillingController do
     redirect(conn, to: "/admin/billing/clients")
   end
 
+  def schedule_plan_change(conn, %{"id" => subscription_id} = params) do
+    plan = params["plan"] || "starter"
+    effective_at = parse_date_end(params["effective_at"]) || DateTime.utc_now()
+
+    case Billing.schedule_downgrade(subscription_id, plan, effective_at) do
+      {:ok, _subscription} ->
+        redirect(conn, to: "/admin/billing/clients")
+
+      {:error, _reason, _details} ->
+        conn
+        |> put_flash(:error, "Could not schedule plan change.")
+        |> redirect(to: "/admin/billing/clients")
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, "Could not schedule plan change.")
+        |> redirect(to: "/admin/billing/clients")
+    end
+  end
+
   def add_extra_seats(conn, %{"id" => subscription_id} = params) do
-    {:ok, _subscription} = Billing.add_extra_user_seats(subscription_id, params["count"] || "1")
-    redirect(conn, to: "/admin/billing/clients")
+    case Billing.change_extra_user_seats(subscription_id, params["count"] || "0") do
+      {:ok, _subscription} ->
+        redirect(conn, to: "/admin/billing/clients")
+
+      {:error, _reason, _details} ->
+        conn
+        |> put_flash(:error, "Could not update extra seats.")
+        |> redirect(to: "/admin/billing/clients")
+    end
   end
 
   def add_note(conn, %{"id" => company_id, "note" => note}) do

@@ -38,6 +38,23 @@
     </div>
   </section>
 
+  <section
+    :if={@billing.plan && @billing.plan.code == "starter"}
+    class="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-800 dark:bg-blue-950"
+  >
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Upgrade to Basic</h2>
+    <p class="mt-2 text-sm text-gray-700 dark:text-slate-200">
+      Request a Basic plan invoice. After payment is confirmed, the upgrade is applied immediately for the current billing cycle.
+    </p>
+    <form action="/company/billing/upgrade-invoices" method="post" class="mt-4">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <input type="hidden" name="plan" value="basic" />
+      <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        Request Basic upgrade invoice
+      </button>
+    </form>
+  </section>
+
   <section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
     <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Outstanding invoices</h2>
 

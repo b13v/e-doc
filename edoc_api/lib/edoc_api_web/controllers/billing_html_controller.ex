@@ -51,4 +51,24 @@ defmodule EdocApiWeb.BillingHTMLController do
         |> redirect(to: "/company/billing")
     end
   end
+
+  def create_upgrade_invoice(conn, params) do
+    user = conn.assigns.current_user
+    plan = params["plan"] || params["plan_code"] || "basic"
+
+    with company when not is_nil(company) <- Companies.get_company_by_user_id(user.id),
+         {:ok, _invoice} <- Billing.create_upgrade_invoice_for_company(company.id, plan) do
+      conn
+      |> put_flash(:info, "Upgrade invoice request was created.")
+      |> redirect(to: "/company/billing")
+    else
+      nil ->
+        redirect(conn, to: "/company/setup")
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, "Could not create upgrade invoice request.")
+        |> redirect(to: "/company/billing")
+    end
+  end
 end

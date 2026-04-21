@@ -75,6 +75,7 @@ defmodule EdocApi.Billing do
   @occupied_membership_statuses ["active", "invited", "pending_seat"]
   @renewal_invoice_lead_days 7
   @overdue_grace_days 7
+  @plan_rank %{"trial" => 0, "starter" => 1, "basic" => 2}
 
   @doc "Returns the tenant foreign key used by billing records."
   def tenant_key, do: @tenant_key
@@ -243,6 +244,17 @@ defmodule EdocApi.Billing do
         next_plan_id: plan.id,
         change_effective_at: effective_at
       })
+    end
+  end
+
+  @doc "Schedules a downgrade for the next billing cycle when current usage fits the target plan."
+  def schedule_downgrade(subscription_or_id, plan_or_code, effective_at) do
+    with %Subscription{} = subscription <- get_subscription!(subscription_or_id),
+         {:ok, target_plan} <- resolve_plan(plan_or_code),
+         :ok <- ensure_plan_direction(subscription.plan, target_plan, :downgrade),
+         :ok <- ensure_target_plan_can_hold_current_seats(subscription, target_plan),
+         :ok <- ensure_target_plan_can_hold_current_usage(subscription, target_plan) do
+      schedule_plan_change(subscription, target_plan, effective_at)
     end
   end
 
@@ -440,6 +452,28 @@ defmodule EdocApi.Billing do
     create_billing_invoice(subscription_or_id, plan_or_code, "upgrade", opts)
   end
 
+  @doc "Creates an immediate upgrade invoice for the remainder of the current period."
+  def create_immediate_upgrade_invoice(subscription_or_id, plan_or_code, opts \\ []) do
+    with %Subscription{} = subscription <- get_subscription!(subscription_or_id),
+         {:ok, target_plan} <- resolve_plan(plan_or_code),
+         :ok <- ensure_plan_direction(subscription.plan, target_plan, :upgrade) do
+      now = billing_now(opts)
+
+      create_upgrade_invoice(subscription, target_plan,
+        period_start: now,
+        period_end: subscription.current_period_end,
+        due_at: Keyword.get(opts, :due_at)
+      )
+    end
+  end
+
+  @doc "Creates an immediate upgrade invoice scoped to a tenant company."
+  def create_upgrade_invoice_for_company(company_or_id, plan_or_code, opts \\ []) do
+    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+      create_immediate_upgrade_invoice(subscription, plan_or_code, opts)
+    end
+  end
+
   @doc "Marks a draft billing invoice as sent."
   def send_billing_invoice(invoice_or_id, opts \\ []) do
     kaspi_payment_link = Keyword.get(opts, :kaspi_payment_link)
@@ -628,7 +662,9 @@ defmodule EdocApi.Billing do
             current_period_start: invoice.period_start,
             current_period_end: invoice.period_end,
             grace_until: nil,
-            blocked_reason: nil
+            blocked_reason: nil,
+            next_plan_id: nil,
+            change_effective_at: nil
           })
           |> Repo.update!()
           |> Repo.preload([:plan, :next_plan], force: true)
@@ -816,8 +852,22 @@ defmodule EdocApi.Billing do
     subscription = get_subscription!(subscription_or_id)
     count = parse_integer(count, 0)
 
-    subscription
-    |> update_subscription(%{extra_user_seats: subscription.extra_user_seats + max(count, 0)})
+    change_extra_user_seats(subscription, subscription.extra_user_seats + max(count, 0))
+  end
+
+  @doc "Sets the subscription extra seat quantity without dropping below occupied seats."
+  def change_extra_user_seats(subscription_or_id, count) do
+    subscription = get_subscription!(subscription_or_id)
+    target_extra_seats = max(parse_integer(count, 0), 0)
+    target_limit = subscription.plan.included_users + target_extra_seats
+    used = occupied_seat_count(subscription.company_id)
+
+    if used > target_limit do
+      {:error, :seat_limit_reached,
+       %{company_id: subscription.company_id, used: used, target_limit: target_limit}}
+    else
+      update_subscription(subscription, %{extra_user_seats: target_extra_seats})
+    end
   end
 
   defp admin_client_summary(company) do
@@ -972,6 +1022,42 @@ defmodule EdocApi.Billing do
     Map.new(result, fn {key, value} ->
       if is_list(value), do: {key, Enum.reverse(value)}, else: {key, value}
     end)
+  end
+
+  defp ensure_plan_direction(current_plan, target_plan, direction) do
+    current_rank = Map.get(@plan_rank, current_plan.code, -1)
+    target_rank = Map.get(@plan_rank, target_plan.code, -1)
+
+    case direction do
+      :upgrade when target_rank > current_rank -> :ok
+      :downgrade when target_rank < current_rank -> :ok
+      :upgrade -> {:error, :not_an_upgrade}
+      :downgrade -> {:error, :not_a_downgrade}
+    end
+  end
+
+  defp ensure_target_plan_can_hold_current_seats(subscription, target_plan) do
+    used = occupied_seat_count(subscription.company_id)
+    target_limit = target_plan.included_users + subscription.extra_user_seats
+
+    if used > target_limit do
+      {:error, :seat_limit_reached,
+       %{company_id: subscription.company_id, used: used, target_limit: target_limit}}
+    else
+      :ok
+    end
+  end
+
+  defp ensure_target_plan_can_hold_current_usage(subscription, target_plan) do
+    {:ok, used} = current_document_usage(subscription.company_id)
+    target_limit = target_plan.monthly_document_limit
+
+    if used > target_limit do
+      {:error, :document_usage_exceeds_target,
+       %{company_id: subscription.company_id, used: used, target_limit: target_limit}}
+    else
+      :ok
+    end
   end
 
   defp update_subscription(subscription, attrs) do

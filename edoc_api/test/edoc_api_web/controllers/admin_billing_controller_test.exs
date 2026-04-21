@@ -87,7 +87,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/clients/#{company.id}/notes")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/renewal-invoices")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/upgrade-invoices")
-    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/schedule-upgrade")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/schedule-change")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/extra-seats")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/grace-period")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/suspend")
@@ -161,10 +161,54 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert Repo.get!(Subscription, subscription.id).status == "active"
   end
 
+  test "platform admin can decrease extra seats from client detail", %{
+    admin_conn: conn,
+    subscription: subscription
+  } do
+    {:ok, subscription} = Billing.change_extra_user_seats(subscription, 3)
+
+    conn =
+      post(conn, "/admin/billing/subscriptions/#{subscription.id}/extra-seats", %{
+        "count" => "1"
+      })
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+    assert Repo.get!(Subscription, subscription.id).extra_user_seats == 1
+  end
+
+  test "platform admin cannot schedule downgrade when current seats violate target plan", %{
+    admin_conn: conn,
+    company: company,
+    subscription: subscription
+  } do
+    insert_membership(company.id, "extra-one@example.com")
+    insert_membership(company.id, "extra-two@example.com")
+
+    conn =
+      post(conn, "/admin/billing/subscriptions/#{subscription.id}/schedule-change", %{
+        "plan" => "starter",
+        "effective_at" => "2026-06-01"
+      })
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+    assert Repo.get!(Subscription, subscription.id).next_plan_id == nil
+  end
+
   defp html_conn(conn, user) do
     conn
     |> Plug.Test.init_test_session(%{user_id: user.id})
     |> put_private(:plug_skip_csrf_protection, true)
     |> put_req_header("accept", "text/html")
+  end
+
+  defp insert_membership(company_id, email) do
+    %EdocApi.Core.TenantMembership{}
+    |> EdocApi.Core.TenantMembership.changeset(%{
+      company_id: company_id,
+      role: "member",
+      status: "invited",
+      invite_email: email
+    })
+    |> Repo.insert!()
   end
 end

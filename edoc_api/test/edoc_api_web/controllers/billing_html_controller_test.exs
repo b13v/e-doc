@@ -6,7 +6,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
 
   alias EdocApi.Accounts
   alias EdocApi.Billing
-  alias EdocApi.Billing.Payment
+  alias EdocApi.Billing.{BillingInvoice, Payment}
   alias EdocApi.Repo
 
   setup %{conn: conn} do
@@ -93,5 +93,29 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
 
     assert [note] = Billing.list_payment_review_notes(payment.id)
     assert note.metadata["note"] == "Paid by Kaspi transfer"
+  end
+
+  test "tenant can request an upgrade invoice from the billing page", %{
+    conn: conn,
+    company: company
+  } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+    conn =
+      post(conn, "/company/billing/upgrade-invoices", %{
+        "plan" => "basic"
+      })
+
+    assert redirected_to(conn) == "/company/billing"
+
+    invoice =
+      Repo.get_by!(BillingInvoice,
+        company_id: company.id,
+        note: "upgrade",
+        plan_snapshot_code: "basic"
+      )
+
+    assert invoice.status == "draft"
   end
 end

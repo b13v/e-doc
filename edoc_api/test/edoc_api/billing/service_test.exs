@@ -357,6 +357,123 @@ defmodule EdocApi.Billing.ServiceTest do
       assert Repo.aggregate(Payment, :count, :id) == 1
     end
 
+    test "paid immediate upgrade invoice moves tenant to higher plan without extending the cycle" do
+      seed_plans!()
+      company = create_company!()
+      admin = TestFixtures.create_user!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      {:ok, subscription} =
+        Billing.activate_subscription(subscription, "starter",
+          period_start: ~U[2026-04-01 08:00:00Z],
+          period_end: ~U[2026-05-01 08:00:00Z]
+        )
+
+      assert {:ok, invoice} =
+               Billing.create_immediate_upgrade_invoice(subscription, "basic",
+                 now: ~U[2026-04-20 08:00:00Z],
+                 due_at: ~U[2026-04-22 08:00:00Z]
+               )
+
+      assert invoice.note == "upgrade"
+      assert invoice.period_start == ~U[2026-04-20 08:00:00Z]
+      assert invoice.period_end == ~U[2026-05-01 08:00:00Z]
+      assert invoice.amount_kzt == 29_900
+
+      {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
+      {:ok, payment} = Billing.create_payment(invoice, method: "manual")
+
+      assert {:ok, %{subscription: upgraded}} =
+               Billing.confirm_manual_payment(payment, admin.id, now: ~U[2026-04-20 10:00:00Z])
+
+      assert upgraded.plan.code == "basic"
+      assert upgraded.current_period_start == ~U[2026-04-20 08:00:00Z]
+      assert upgraded.current_period_end == ~U[2026-05-01 08:00:00Z]
+      assert Billing.allowed_user_limit(company.id) == {:ok, 5}
+    end
+
+    test "scheduled downgrade is blocked when current seats or usage exceed target plan limits" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, subscription} = Billing.activate_subscription(subscription, "basic")
+
+      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
+      create_membership!(company.id, %{invite_email: "second@example.com", status: "invited"})
+
+      assert {:error, :seat_limit_reached, %{used: 3, target_limit: 2}} =
+               Billing.schedule_downgrade(subscription, "starter", ~U[2026-05-20 08:00:00Z])
+
+      Repo.delete_all(
+        from(m in TenantMembership,
+          where: m.company_id == ^company.id and not is_nil(m.invite_email)
+        )
+      )
+
+      assert {:ok, _event} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
+                 count: 51
+               )
+
+      assert {:error, :document_usage_exceeds_target, %{used: 51, target_limit: 50}} =
+               Billing.schedule_downgrade(subscription, "starter", ~U[2026-05-20 08:00:00Z])
+    end
+
+    test "scheduled downgrade renewal applies target plan and clears pending change on payment" do
+      seed_plans!()
+      company = create_company!()
+      admin = TestFixtures.create_user!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      {:ok, subscription} =
+        Billing.activate_subscription(subscription, "basic",
+          period_start: ~U[2026-04-01 08:00:00Z],
+          period_end: ~U[2026-05-01 08:00:00Z]
+        )
+
+      {:ok, scheduled} =
+        Billing.schedule_downgrade(subscription, "starter", ~U[2026-05-01 08:00:00Z])
+
+      assert scheduled.next_plan.code == "starter"
+
+      assert %{created: [renewal]} =
+               Billing.generate_renewal_invoices(now: ~U[2026-04-25 08:00:00Z])
+
+      assert renewal.plan_snapshot_code == "starter"
+
+      {:ok, renewal} = Billing.send_billing_invoice(renewal, payment_method: "manual")
+      {:ok, payment} = Billing.create_payment(renewal, method: "manual")
+
+      assert {:ok, %{subscription: downgraded}} =
+               Billing.confirm_manual_payment(payment, admin.id, now: ~U[2026-04-26 08:00:00Z])
+
+      assert downgraded.plan.code == "starter"
+      assert downgraded.next_plan_id == nil
+      assert downgraded.change_effective_at == nil
+    end
+
+    test "extra seats can be increased and decreased without dropping below occupied seats" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      assert {:ok, with_seats} = Billing.change_extra_user_seats(subscription, 3)
+      assert with_seats.extra_user_seats == 3
+      assert Billing.allowed_user_limit(company.id) == {:ok, 5}
+
+      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
+      create_membership!(company.id, %{invite_email: "second@example.com", status: "invited"})
+      create_membership!(company.id, %{invite_email: "third@example.com", status: "invited"})
+
+      assert {:error, :seat_limit_reached, %{used: 4, target_limit: 3}} =
+               Billing.change_extra_user_seats(with_seats, 1)
+
+      assert {:ok, reduced} = Billing.change_extra_user_seats(with_seats, 2)
+      assert reduced.extra_user_seats == 2
+      assert Billing.allowed_user_limit(company.id) == {:ok, 4}
+    end
+
     test "rejects a pending payment without activating the subscription" do
       seed_plans!()
       company = create_company!()

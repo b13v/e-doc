@@ -287,6 +287,7 @@ defmodule EdocApiWeb.Router do
     post("/company/setup", CompaniesController, :create_setup)
     get("/company", CompaniesController, :edit)
     get("/company/billing", BillingHTMLController, :show)
+    post("/company/billing/upgrade-invoices", BillingHTMLController, :create_upgrade_invoice)
     post("/company/billing/invoices/:id/payments", BillingHTMLController, :create_payment)
     get("/settings", SettingsController, :edit)
     put("/settings/profile", SettingsController, :update_profile)
@@ -337,6 +338,13 @@ defmodule EdocApiWeb.Router do
 
     post("/billing/subscriptions/:id/grace-period", AdminBillingController, :extend_grace_period)
     post("/billing/subscriptions/:id/schedule-upgrade", AdminBillingController, :schedule_upgrade)
+
+    post(
+      "/billing/subscriptions/:id/schedule-change",
+      AdminBillingController,
+      :schedule_plan_change
+    )
+
     post("/billing/subscriptions/:id/extra-seats", AdminBillingController, :add_extra_seats)
   end
 

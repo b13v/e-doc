@@ -571,33 +571,46 @@ Support plan upgrades and additional user seats.
 ## Tasks
 
 ### Upgrade Flow
-- [ ] Add customer/admin action to request upgrade.
-- [ ] Decide MVP behavior:
-  - [ ] immediate upgrade after payment, or
+- [x] Add customer/admin action to request upgrade.
+- [x] Decide MVP behavior:
+  - [x] immediate upgrade after payment, or
   - [ ] upgrade next cycle
-- [ ] Create upgrade billing invoice.
-- [ ] On payment confirmation, apply upgrade logic.
+- [x] Create upgrade billing invoice.
+- [x] On payment confirmation, apply upgrade logic.
 
 ### Downgrade Flow
-- [ ] Support scheduled downgrade for next billing cycle.
-- [ ] Prevent immediate downgrade if it would violate current active user count or current usage assumptions.
+- [x] Support scheduled downgrade for next billing cycle.
+- [x] Prevent immediate downgrade if it would violate current active user count or current usage assumptions.
 
 ### Extra Seats
-- [ ] Support `extra_user_seats` on subscription.
-- [ ] Add admin action to increase/decrease seats.
-- [ ] Reflect seats in `allowed_user_limit/1`.
+- [x] Support `extra_user_seats` on subscription.
+- [x] Add admin action to increase/decrease seats.
+- [x] Reflect seats in `allowed_user_limit/1`.
 
 ### Optional Proration
-- [ ] If implementing immediate mid-cycle upgrade, decide proration rules.
+- [x] If implementing immediate mid-cycle upgrade, decide proration rules.
 - [ ] Add tests for proration if included.
 
 ## Deliverables
-- [ ] upgrade workflow
-- [ ] seat add-on workflow
+- [x] upgrade workflow
+- [x] seat add-on workflow
 
 ## Done Criteria
-- [ ] Tenant can move to a higher plan via invoice/payment flow.
-- [ ] Additional seats affect user limit correctly.
+- [x] Tenant can move to a higher plan via invoice/payment flow.
+- [x] Additional seats affect user limit correctly.
+
+## Phase 8 Summary
+
+- Added tenant-facing Basic upgrade invoice requests from `/company/billing` and admin-facing immediate upgrade invoice creation.
+- Chose the MVP upgrade policy: paid upgrade invoices apply immediately for the remainder of the current billing cycle, without proration.
+- Added scheduled downgrade support for the next cycle, with guards for occupied seats and current document usage before scheduling.
+- Added admin controls to set extra seats up or down, with guards preventing reductions below occupied seats.
+- Payment confirmation now clears pending scheduled plan-change fields after applying the paid invoice period.
+
+## Phase 8 Open Risks
+
+- Upgrade invoices currently charge full target-plan price for the remainder of the current cycle; real proration is intentionally deferred.
+- Tenant-facing extra-seat purchase/request UI is not implemented; seat changes are admin-controlled in this phase.
 
 ---
 
