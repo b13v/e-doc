@@ -5,6 +5,10 @@ defmodule EdocApiWeb.AdminBillingController do
 
   plug(:put_view, html: EdocApiWeb.AdminBillingHTML)
 
+  def index(conn, _params) do
+    redirect(conn, to: "/admin/billing/clients")
+  end
+
   def clients(conn, _params) do
     render(conn, :clients,
       clients: Billing.list_admin_clients(),

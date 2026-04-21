@@ -153,6 +153,23 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert Companies.get_company_by_user_id(invited.id).id == company.id
   end
 
+  test "platform admin login redirects to billing backoffice without company setup", %{conn: conn} do
+    admin = create_user!(%{"email" => "admin@edocly.com"})
+    Accounts.mark_email_verified!(admin.id)
+
+    admin
+    |> Ecto.Changeset.change(is_platform_admin: true)
+    |> EdocApi.Repo.update!()
+
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{})
+      |> post("/login", %{"email" => admin.email, "password" => "password123"})
+
+    assert redirected_to(conn) == "/admin/billing"
+    assert get_session(conn, :user_id) == admin.id
+  end
+
   test "login with valid csrf and wrong password shows invalid credentials", %{conn: conn} do
     user = create_user!()
     Accounts.mark_email_verified!(user.id)

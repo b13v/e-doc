@@ -22,11 +22,16 @@ defmodule EdocApiWeb.SessionController do
         else
           _ = Monetization.accept_pending_memberships_for_user(user)
 
-          # Check if user has a company set up
           redirect_path =
-            case Companies.get_company_by_user_id(user.id) do
-              nil -> "/company/setup"
-              _company -> "/company"
+            cond do
+              user.is_platform_admin ->
+                "/admin/billing"
+
+              Companies.get_company_by_user_id(user.id) == nil ->
+                "/company/setup"
+
+              true ->
+                "/company"
             end
 
           # Store authenticated user id in session

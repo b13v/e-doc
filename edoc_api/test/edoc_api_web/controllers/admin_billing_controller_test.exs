@@ -73,6 +73,14 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "Unpaid invoices"
   end
 
+  test "platform admin is redirected from /admin/billing to /admin/billing/clients", %{
+    admin_conn: conn
+  } do
+    conn = get(conn, "/admin/billing")
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+  end
+
   test "platform admin sees client detail with users, invoices, payments, and notes form", %{
     admin_conn: conn,
     company: company,

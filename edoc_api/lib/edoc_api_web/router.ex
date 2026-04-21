@@ -307,6 +307,7 @@ defmodule EdocApiWeb.Router do
   scope "/admin", EdocApiWeb do
     pipe_through([:auth_browser, :platform_admin_browser])
 
+    get("/billing", AdminBillingController, :index)
     get("/billing/clients", AdminBillingController, :clients)
     get("/billing/clients/:id", AdminBillingController, :client)
     post("/billing/clients/:id/notes", AdminBillingController, :add_note)
