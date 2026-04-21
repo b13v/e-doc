@@ -620,25 +620,35 @@ Support plan upgrades and additional user seats.
 Reduce missed payments through timely reminders.
 
 ## Tasks
-- [ ] Add reminder notification 7 days before renewal.
-- [ ] Add reminder notification 3 days before renewal.
-- [ ] Add day-of-due reminder.
-- [ ] Add overdue reminder after due date.
-- [ ] Add suspended notice after account suspension.
-- [ ] Add internal admin alert for overdue high-value clients.
+- [x] Add reminder notification 7 days before renewal.
+- [x] Add reminder notification 3 days before renewal.
+- [x] Add day-of-due reminder.
+- [x] Add overdue reminder after due date.
+- [x] Add suspended notice after account suspension.
+- [x] Add internal admin alert for overdue high-value clients.
 
 ## Delivery Channels
-- [ ] email
-- [ ] in-app banner
-- [ ] optional WhatsApp/manual follow-up placeholder
+- [x] email
+- [x] in-app banner
+- [x] optional WhatsApp/manual follow-up placeholder
 
 ## Deliverables
-- [ ] reminder jobs
-- [ ] notification templates
+- [x] reminder jobs
+- [x] notification templates
 
 ## Done Criteria
-- [ ] Reminder cadence works end to end.
-- [ ] Overdue clients receive clear payment instructions.
+- [x] Reminder cadence works end to end.
+- [x] Overdue clients receive clear payment instructions.
+
+## Phase 9 Summary
+- Added `send_billing_reminders` lifecycle processing for 7-day, 3-day, due-day, overdue, suspended, and high-value overdue admin alerts.
+- Reminder sends are idempotent through `billing_audit_events` and are dispatched by the daily billing Oban cron.
+- Tenant billing snapshots now expose in-app reminder banners for overdue payments and suspended subscriptions.
+- Customer emails include payment instructions and route clients back to the billing page or Kaspi link when present.
+
+## Open Risks / Blockers
+- WhatsApp follow-up remains a manual/internal process placeholder; no WhatsApp API integration exists yet.
+- Billing reminder copy is Russian-first for MVP and should be localized if paid billing emails must follow the UI locale.
 
 ---
 

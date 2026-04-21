@@ -23,6 +23,20 @@
     <p class="mt-1">Please pay the outstanding invoice and send the payment reference for review.</p>
   </div>
 
+  <div
+    :for={reminder <- @billing.reminders}
+    class={[
+      "rounded-3xl px-5 py-4 text-sm",
+      if(reminder.severity == :danger,
+        do: "border border-red-200 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-100",
+        else: "border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+      )
+    ]}
+  >
+    <p class="font-semibold"><%= reminder_title(reminder.kind) %></p>
+    <p class="mt-1"><%= reminder.message %></p>
+  </div>
+
   <section class="grid gap-4 md:grid-cols-3">
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400">Current plan</div>

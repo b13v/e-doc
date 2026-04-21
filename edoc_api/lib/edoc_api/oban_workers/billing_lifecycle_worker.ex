@@ -6,6 +6,7 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorker do
   - `generate_renewal_invoices`
   - `process_overdue_billing`
   - `process_grace_expirations`
+  - `send_billing_reminders`
   """
 
   use Oban.Worker, queue: :billing, max_attempts: 3
@@ -33,6 +34,14 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorker do
     args
     |> lifecycle_opts()
     |> Billing.process_grace_expirations()
+
+    :ok
+  end
+
+  def perform(%Oban.Job{args: %{"action" => "send_billing_reminders"} = args}) do
+    args
+    |> lifecycle_opts()
+    |> Billing.send_billing_reminders()
 
     :ok
   end

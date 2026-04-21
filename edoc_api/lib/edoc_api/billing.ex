@@ -22,7 +22,9 @@ defmodule EdocApi.Billing do
     UsageEvent
   }
 
+  alias EdocApi.Accounts.User
   alias EdocApi.Core.{Company, TenantMembership}
+  alias EdocApi.EmailSender
   alias EdocApi.Repo
 
   @responsibilities [
@@ -76,6 +78,11 @@ defmodule EdocApi.Billing do
   @renewal_invoice_lead_days 7
   @overdue_grace_days 7
   @plan_rank %{"trial" => 0, "starter" => 1, "basic" => 2}
+  @renewal_reminder_days %{
+    7 => :renewal_7_day,
+    3 => :renewal_3_day,
+    0 => :renewal_due_today
+  }
 
   @doc "Returns the tenant foreign key used by billing records."
   def tenant_key, do: @tenant_key
@@ -538,6 +545,20 @@ defmodule EdocApi.Billing do
     |> reverse_lifecycle_result_lists()
   end
 
+  @doc "Sends idempotent tenant and internal billing reminders for the current lifecycle date."
+  def send_billing_reminders(opts \\ []) do
+    now = billing_now(opts)
+
+    %{
+      renewal_7_day: send_renewal_reminders(now, 7),
+      renewal_3_day: send_renewal_reminders(now, 3),
+      renewal_due_today: send_renewal_reminders(now, 0),
+      overdue: send_overdue_invoice_reminders(now),
+      suspended: send_suspended_subscription_notices(now),
+      admin_high_value_overdue: send_high_value_overdue_alerts(now)
+    }
+  end
+
   @doc "Creates a pending payment for a billing invoice."
   def create_payment(invoice_or_id, opts \\ []) do
     invoice = get_billing_invoice!(invoice_or_id)
@@ -772,7 +793,8 @@ defmodule EdocApi.Billing do
       plan: subscription && subscription.plan,
       outstanding_invoices: outstanding_invoices,
       blocked?: subscription && subscription.status in ["past_due", "suspended", "canceled"],
-      overdue?: Enum.any?(outstanding_invoices, &(&1.status == "overdue"))
+      overdue?: Enum.any?(outstanding_invoices, &(&1.status == "overdue")),
+      reminders: tenant_billing_reminders(subscription, outstanding_invoices)
     }
   end
 
@@ -904,6 +926,241 @@ defmodule EdocApi.Billing do
       period_end: subscription && subscription.current_period_end,
       overdue_invoices: overdue_invoices
     }
+  end
+
+  defp send_renewal_reminders(now, days_until_due) do
+    stage = Map.fetch!(@renewal_reminder_days, days_until_due)
+    target_date = now |> DateTime.add(days_until_due, :day) |> DateTime.to_date()
+
+    Subscription
+    |> where([s], s.status == ^SubscriptionStatus.active())
+    |> where([s], fragment("date(?)", s.current_period_end) == ^target_date)
+    |> preload([:company, :plan, :next_plan])
+    |> Repo.all()
+    |> Enum.reduce([], fn subscription, sent ->
+      if reminder_already_sent?("subscription", subscription.id, stage) do
+        sent
+      else
+        deliver_customer_reminder(subscription.company, %{
+          stage: Atom.to_string(stage),
+          company_name: subscription.company.name,
+          amount_kzt: subscription.plan.price_kzt,
+          due_at: subscription.current_period_end
+        })
+
+        insert_reminder_event!(
+          subscription.company_id,
+          "subscription",
+          subscription.id,
+          stage,
+          now,
+          %{due_at: subscription.current_period_end, plan_code: subscription.plan.code}
+        )
+
+        [subscription | sent]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp send_overdue_invoice_reminders(now) do
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.overdue())
+    |> preload(:company)
+    |> Repo.all()
+    |> Enum.reduce([], fn invoice, sent ->
+      if reminder_already_sent?("billing_invoice", invoice.id, :overdue) do
+        sent
+      else
+        deliver_customer_reminder(invoice.company, %{
+          stage: "overdue",
+          company_name: invoice.company.name,
+          amount_kzt: invoice.amount_kzt,
+          due_at: invoice.due_at,
+          payment_link: invoice.kaspi_payment_link
+        })
+
+        insert_reminder_event!(
+          invoice.company_id,
+          "billing_invoice",
+          invoice.id,
+          :overdue,
+          now,
+          %{due_at: invoice.due_at, amount_kzt: invoice.amount_kzt}
+        )
+
+        [invoice | sent]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp send_suspended_subscription_notices(now) do
+    Subscription
+    |> where([s], s.status == ^SubscriptionStatus.suspended())
+    |> preload([:company, :plan])
+    |> Repo.all()
+    |> Enum.reduce([], fn subscription, sent ->
+      if reminder_already_sent?("subscription", subscription.id, :suspended) do
+        sent
+      else
+        deliver_customer_reminder(subscription.company, %{
+          stage: "suspended",
+          company_name: subscription.company.name,
+          amount_kzt: subscription.plan.price_kzt,
+          due_at: subscription.grace_until || subscription.current_period_end
+        })
+
+        insert_reminder_event!(
+          subscription.company_id,
+          "subscription",
+          subscription.id,
+          :suspended,
+          now,
+          %{blocked_reason: subscription.blocked_reason}
+        )
+
+        [subscription | sent]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp send_high_value_overdue_alerts(now) do
+    BillingInvoice
+    |> where([i], i.status == ^BillingInvoiceStatus.overdue())
+    |> where([i], i.plan_snapshot_code == "basic" or i.amount_kzt >= 29_900)
+    |> preload(:company)
+    |> Repo.all()
+    |> Enum.reduce([], fn invoice, sent ->
+      if reminder_already_sent?("billing_invoice", invoice.id, :admin_high_value_overdue) do
+        sent
+      else
+        deliver_admin_alert(%{
+          company_name: invoice.company.name,
+          amount_kzt: invoice.amount_kzt,
+          due_at: invoice.due_at
+        })
+
+        insert_reminder_event!(
+          invoice.company_id,
+          "billing_invoice",
+          invoice.id,
+          :admin_high_value_overdue,
+          now,
+          %{amount_kzt: invoice.amount_kzt, plan_code: invoice.plan_snapshot_code}
+        )
+
+        [invoice | sent]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp deliver_customer_reminder(%Company{} = company, attrs) do
+    company
+    |> billing_recipient_emails()
+    |> Enum.each(&EmailSender.send_billing_reminder_email(&1, attrs))
+  end
+
+  defp deliver_admin_alert(attrs) do
+    User
+    |> where([u], u.is_platform_admin == true)
+    |> select([u], u.email)
+    |> Repo.all()
+    |> Enum.uniq()
+    |> Enum.each(&EmailSender.send_billing_admin_alert_email(&1, attrs))
+  end
+
+  defp billing_recipient_emails(%Company{} = company) do
+    membership_emails =
+      TenantMembership
+      |> where([m], m.company_id == ^company.id)
+      |> where([m], m.status == "active" and m.role in ["owner", "admin"])
+      |> join(:inner, [m], u in User, on: u.id == m.user_id)
+      |> select([_m, u], u.email)
+      |> Repo.all()
+
+    company_owner_email =
+      company
+      |> Repo.preload(:user)
+      |> Map.get(:user)
+      |> case do
+        %User{email: email} -> [email]
+        _ -> []
+      end
+
+    (membership_emails ++ company_owner_email)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp reminder_already_sent?(subject_type, subject_id, stage) do
+    stage = Atom.to_string(stage)
+
+    BillingAuditEvent
+    |> where([e], e.action == "billing_reminder_sent")
+    |> where([e], e.subject_type == ^subject_type and e.subject_id == ^subject_id)
+    |> where([e], fragment("?->>'stage' = ?", e.metadata, ^stage))
+    |> Repo.exists?()
+  end
+
+  defp insert_reminder_event!(company_id, subject_type, subject_id, stage, now, metadata) do
+    %BillingAuditEvent{}
+    |> BillingAuditEvent.changeset(%{
+      company_id: company_id,
+      action: "billing_reminder_sent",
+      subject_type: subject_type,
+      subject_id: subject_id,
+      metadata:
+        metadata
+        |> stringify_metadata_values()
+        |> Map.merge(%{
+          stage: Atom.to_string(stage),
+          sent_at: DateTime.to_iso8601(now),
+          channel: "email",
+          in_app: true
+        })
+    })
+    |> Repo.insert!()
+  end
+
+  defp tenant_billing_reminders(subscription, outstanding_invoices) do
+    invoice_reminders =
+      outstanding_invoices
+      |> Enum.filter(&(&1.status == BillingInvoiceStatus.overdue()))
+      |> Enum.map(fn invoice ->
+        %{
+          kind: :overdue_payment,
+          severity: :warning,
+          invoice_id: invoice.id,
+          message: "Billing invoice is overdue. Please pay it or submit payment proof."
+        }
+      end)
+
+    subscription_reminders =
+      case subscription do
+        %Subscription{status: "suspended"} ->
+          [
+            %{
+              kind: :subscription_suspended,
+              severity: :danger,
+              message: "Subscription is suspended until payment is confirmed."
+            }
+          ]
+
+        _ ->
+          []
+      end
+
+    invoice_reminders ++ subscription_reminders
+  end
+
+  defp stringify_metadata_values(metadata) do
+    Map.new(metadata, fn
+      {key, %DateTime{} = value} -> {key, DateTime.to_iso8601(value)}
+      {key, value} -> {key, value}
+    end)
   end
 
   defp maybe_filter_invoice_status(query, nil), do: query

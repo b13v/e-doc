@@ -14,4 +14,8 @@ defmodule EdocApiWeb.BillingHTML do
 
   def status_label(nil), do: "-"
   def status_label(status), do: status
+
+  def reminder_title(:overdue_payment), do: "Payment reminder"
+  def reminder_title(:subscription_suspended), do: "Subscription suspended"
+  def reminder_title(_), do: "Billing reminder"
 end

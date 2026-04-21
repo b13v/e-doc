@@ -56,6 +56,25 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorkerTest do
     assert suspended.blocked_reason == "payment_overdue"
   end
 
+  test "dispatches billing reminder processing" do
+    seed_plans!()
+    company = create_company!()
+    now = ~U[2026-04-20 08:00:00Z]
+    {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+    {:ok, _subscription} =
+      Billing.activate_subscription(subscription, "starter",
+        period_start: ~U[2026-04-01 08:00:00Z],
+        period_end: ~U[2026-04-27 08:00:00Z]
+      )
+
+    assert BillingLifecycleWorker.perform(%Oban.Job{
+             args: %{"action" => "send_billing_reminders", "now" => "2026-04-20T08:00:00Z"}
+           }) == :ok
+
+    assert Repo.get_by!(EdocApi.Billing.BillingAuditEvent, action: "billing_reminder_sent")
+  end
+
   defp seed_plans! do
     assert {:ok, %{count: 3}} = Billing.seed_default_plans()
   end

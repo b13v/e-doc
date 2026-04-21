@@ -1,9 +1,13 @@
 defmodule EdocApi.Billing.ServiceTest do
   use EdocApi.DataCase, async: false
 
+  import Swoosh.TestAssertions
+
+  alias EdocApi.Accounts.User
   alias EdocApi.Billing
 
   alias EdocApi.Billing.{
+    BillingAuditEvent,
     BillingInvoice,
     Payment,
     Plan,
@@ -15,6 +19,11 @@ defmodule EdocApi.Billing.ServiceTest do
   alias EdocApi.Repo
   alias EdocApi.TestFixtures
   alias EdocApi.Core.TenantMembership
+
+  setup do
+    Swoosh.TestAssertions.assert_no_email_sent()
+    :ok
+  end
 
   describe "plans" do
     test "looks up active plans by code and lists active plans in canonical order" do
@@ -567,6 +576,121 @@ defmodule EdocApi.Billing.ServiceTest do
     end
   end
 
+  describe "billing reminders" do
+    test "sends idempotent renewal reminders seven days, three days, and on due date" do
+      seed_plans!()
+      now = ~U[2026-04-20 08:00:00Z]
+
+      seven_day_company = company_with_active_plan!("seven-day@example.com", "basic", now, 7)
+      three_day_company = company_with_active_plan!("three-day@example.com", "starter", now, 3)
+      due_today_company = company_with_active_plan!("due-today@example.com", "starter", now, 0)
+
+      assert %{
+               renewal_7_day: [seven_day],
+               renewal_3_day: [three_day],
+               renewal_due_today: [due_today],
+               overdue: [],
+               suspended: [],
+               admin_high_value_overdue: []
+             } = Billing.send_billing_reminders(now: now)
+
+      assert seven_day.company_id == seven_day_company.id
+      assert three_day.company_id == three_day_company.id
+      assert due_today.company_id == due_today_company.id
+
+      assert_email_sent(to: "seven-day@example.com", subject: "Напоминание об оплате Edocly")
+      assert_email_sent(to: "three-day@example.com", subject: "Напоминание об оплате Edocly")
+      assert_email_sent(to: "due-today@example.com", subject: "Напоминание об оплате Edocly")
+
+      assert Repo.aggregate(BillingAuditEvent, :count, :id) == 3
+
+      assert %{
+               renewal_7_day: [],
+               renewal_3_day: [],
+               renewal_due_today: [],
+               overdue: [],
+               suspended: [],
+               admin_high_value_overdue: []
+             } = Billing.send_billing_reminders(now: now)
+
+      assert Repo.aggregate(BillingAuditEvent, :count, :id) == 3
+    end
+
+    test "sends overdue customer reminders, suspended notices, and internal high-value alerts" do
+      seed_plans!()
+      now = ~U[2026-04-20 08:00:00Z]
+      admin = TestFixtures.create_user!(%{"email" => "billing-admin@example.com"})
+
+      admin
+      |> User.profile_changeset(%{"first_name" => "Billing", "last_name" => "Admin"})
+      |> Ecto.Changeset.put_change(:is_platform_admin, true)
+      |> Repo.update!()
+
+      overdue_company = company_with_active_plan!("overdue-owner@example.com", "basic", now, -2)
+
+      suspended_company =
+        company_with_active_plan!("suspended-owner@example.com", "starter", now, -9)
+
+      {:ok, overdue_subscription} = Billing.get_current_subscription(overdue_company.id)
+      {:ok, suspended_subscription} = Billing.get_current_subscription(suspended_company.id)
+
+      {:ok, overdue_invoice} =
+        Billing.create_renewal_invoice(overdue_subscription, "basic",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          due_at: DateTime.add(now, -2, :day)
+        )
+
+      {:ok, overdue_invoice} =
+        Billing.send_billing_invoice(overdue_invoice, payment_method: "manual", now: now)
+
+      {:ok, overdue_invoice} = Billing.mark_billing_invoice_overdue(overdue_invoice)
+      {:ok, _suspended} = Billing.suspend_subscription(suspended_subscription, "payment_overdue")
+
+      assert %{
+               overdue: [sent_overdue],
+               suspended: [sent_suspended],
+               admin_high_value_overdue: [sent_admin_alert]
+             } = Billing.send_billing_reminders(now: now)
+
+      assert sent_overdue.id == overdue_invoice.id
+      assert sent_suspended.id == suspended_subscription.id
+      assert sent_admin_alert.id == overdue_invoice.id
+
+      assert_email_sent(to: "overdue-owner@example.com", subject: "Просроченный счет Edocly")
+      assert_email_sent(to: "suspended-owner@example.com", subject: "Доступ Edocly приостановлен")
+
+      assert_email_sent(
+        to: "billing-admin@example.com",
+        subject: "Edocly billing alert: overdue Basic client"
+      )
+    end
+
+    test "tenant billing snapshot includes in-app reminder banners" do
+      seed_plans!()
+      now = ~U[2026-04-20 08:00:00Z]
+      company = company_with_active_plan!("banner-owner@example.com", "basic", now, -1)
+      {:ok, subscription} = Billing.get_current_subscription(company.id)
+
+      {:ok, invoice} =
+        Billing.create_renewal_invoice(subscription, "basic",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          due_at: DateTime.add(now, -1, :day)
+        )
+
+      {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
+      {:ok, _invoice} = Billing.mark_billing_invoice_overdue(invoice)
+
+      snapshot = Billing.tenant_billing_snapshot(company.id)
+
+      assert [%{kind: :overdue_payment, severity: :warning, invoice_id: invoice_id}] =
+               snapshot.reminders
+
+      assert invoice_id == invoice.id
+    end
+  end
+
   defp seed_plans! do
     assert {:ok, %{count: 3}} = Billing.seed_default_plans()
   end
@@ -586,5 +710,19 @@ defmodule EdocApi.Billing.ServiceTest do
     %TenantMembership{}
     |> TenantMembership.changeset(attrs)
     |> Repo.insert!()
+  end
+
+  defp company_with_active_plan!(email, plan_code, now, days_until_period_end) do
+    user = TestFixtures.create_user!(%{"email" => email})
+    company = TestFixtures.create_company!(user)
+    {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+    {:ok, _subscription} =
+      Billing.activate_subscription(subscription, plan_code,
+        period_start: DateTime.add(now, -23, :day),
+        period_end: DateTime.add(now, days_until_period_end, :day)
+      )
+
+    company
   end
 end

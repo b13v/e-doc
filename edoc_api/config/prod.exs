@@ -26,7 +26,9 @@ config :edoc_api, Oban,
        {"15 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
         args: %{"action" => "process_overdue_billing"}},
        {"30 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
-        args: %{"action" => "process_grace_expirations"}}
+        args: %{"action" => "process_grace_expirations"}},
+       {"45 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
+        args: %{"action" => "send_billing_reminders"}}
      ]}
   ]
 

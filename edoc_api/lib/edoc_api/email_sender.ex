@@ -8,6 +8,7 @@ defmodule EdocApi.EmailSender do
   @verification_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
   @invite_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
   @password_reset_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
+  @billing_from {"Edocly", System.get_env("EMAIL_FROM") || "noreply@edocapi.com"}
 
   def send_verification_email(recipient_email, token, locale \\ "ru") do
     verification_url = verification_link(token)
@@ -90,6 +91,64 @@ defmodule EdocApi.EmailSender do
     end
   end
 
+  def send_billing_reminder_email(recipient_email, attrs \\ %{}) do
+    stage = Map.get(attrs, :stage, Map.get(attrs, "stage"))
+    company_name = Map.get(attrs, :company_name, Map.get(attrs, "company_name", ""))
+    amount_kzt = Map.get(attrs, :amount_kzt, Map.get(attrs, "amount_kzt"))
+    due_at = Map.get(attrs, :due_at, Map.get(attrs, "due_at"))
+    payment_link = Map.get(attrs, :payment_link, Map.get(attrs, "payment_link"))
+
+    email =
+      new()
+      |> to({nil, recipient_email})
+      |> from(@billing_from)
+      |> subject(billing_reminder_subject(stage))
+      |> html_body(
+        billing_reminder_html_body(stage, company_name, amount_kzt, due_at, payment_link)
+      )
+      |> text_body(
+        billing_reminder_text_body(stage, company_name, amount_kzt, due_at, payment_link)
+      )
+
+    Logger.info("[EMAIL] Sending billing reminder to: #{recipient_email}")
+    Mailer.deliver(email)
+  end
+
+  def send_billing_admin_alert_email(recipient_email, attrs \\ %{}) do
+    company_name = Map.get(attrs, :company_name, Map.get(attrs, "company_name", ""))
+    amount_kzt = Map.get(attrs, :amount_kzt, Map.get(attrs, "amount_kzt"))
+    due_at = Map.get(attrs, :due_at, Map.get(attrs, "due_at"))
+
+    body = """
+    High-value billing alert.
+
+    Client: #{company_name}
+    Amount: #{format_amount(amount_kzt)}
+    Due date: #{format_date(due_at)}
+
+    Open the admin billing page and follow up manually if needed.
+    """
+
+    email =
+      new()
+      |> to({nil, recipient_email})
+      |> from(@billing_from)
+      |> subject("Edocly billing alert: overdue Basic client")
+      |> text_body(body)
+      |> html_body("""
+      <html><body>
+        <h1>High-value billing alert</h1>
+        <p><strong>Client:</strong> #{company_name}</p>
+        <p><strong>Amount:</strong> #{format_amount(amount_kzt)}</p>
+        <p><strong>Due date:</strong> #{format_date(due_at)}</p>
+        <p>Open the admin billing page and follow up manually if needed.</p>
+      </body></html>
+      """)
+
+    Logger.info("[EMAIL] Sending billing admin alert to: #{recipient_email}")
+    Mailer.deliver(email)
+  end
+
   defp verification_link(token) do
     base_url = System.get_env("BASE_URL") || "http://localhost:4000"
     "#{base_url}/verify-email?token=#{token}"
@@ -99,6 +158,82 @@ defmodule EdocApi.EmailSender do
     base_url = System.get_env("BASE_URL") || "http://localhost:4000"
     "#{base_url}/password/reset?token=#{token}"
   end
+
+  defp billing_page_link do
+    base_url = System.get_env("BASE_URL") || "http://localhost:4000"
+    "#{base_url}/company/billing"
+  end
+
+  defp billing_reminder_subject("overdue"), do: "Просроченный счет Edocly"
+  defp billing_reminder_subject("suspended"), do: "Доступ Edocly приостановлен"
+  defp billing_reminder_subject(_), do: "Напоминание об оплате Edocly"
+
+  defp billing_reminder_text_body(stage, company_name, amount_kzt, due_at, payment_link) do
+    {headline, lead} = billing_reminder_copy(stage)
+    payment_url = payment_link || billing_page_link()
+
+    """
+    #{headline}
+
+    Компания: #{company_name}
+    #{lead}
+
+    Сумма: #{format_amount(amount_kzt)}
+    Срок оплаты: #{format_date(due_at)}
+
+    Оплатить или отправить подтверждение оплаты:
+    #{payment_url}
+
+    Если вы уже оплатили счет, отправьте подтверждение в разделе биллинга.
+    """
+  end
+
+  defp billing_reminder_html_body(stage, company_name, amount_kzt, due_at, payment_link) do
+    {headline, lead} = billing_reminder_copy(stage)
+    payment_url = payment_link || billing_page_link()
+
+    """
+    <html>
+      <body>
+        <h1>#{headline}</h1>
+        <p><strong>Компания:</strong> #{company_name}</p>
+        <p>#{lead}</p>
+        <p><strong>Сумма:</strong> #{format_amount(amount_kzt)}</p>
+        <p><strong>Срок оплаты:</strong> #{format_date(due_at)}</p>
+        <p><a href="#{payment_url}">Оплатить или отправить подтверждение оплаты</a></p>
+        <p>Если вы уже оплатили счет, отправьте подтверждение в разделе биллинга.</p>
+      </body>
+    </html>
+    """
+  end
+
+  defp billing_reminder_copy("renewal_7_day"),
+    do:
+      {"До продления подписки осталось 7 дней", "Подготовьте оплату, чтобы доступ не прерывался."}
+
+  defp billing_reminder_copy("renewal_3_day"),
+    do: {"До продления подписки осталось 3 дня", "Проверьте счет и оплатите подписку вовремя."}
+
+  defp billing_reminder_copy("renewal_due_today"),
+    do: {"Сегодня дата продления подписки", "Оплатите счет сегодня, чтобы избежать просрочки."}
+
+  defp billing_reminder_copy("overdue"),
+    do: {"Счет просрочен", "Оплатите счет или отправьте подтверждение оплаты."}
+
+  defp billing_reminder_copy("suspended"),
+    do: {"Доступ приостановлен", "Доступ ограничен до подтверждения оплаты."}
+
+  defp billing_reminder_copy(_),
+    do: {"Напоминание об оплате", "Проверьте состояние подписки и счетов."}
+
+  defp format_amount(nil), do: "-"
+  defp format_amount(amount), do: "#{amount} KZT"
+
+  defp format_date(%DateTime{} = datetime),
+    do: datetime |> DateTime.to_date() |> Date.to_iso8601()
+
+  defp format_date(%Date{} = date), do: Date.to_iso8601(date)
+  defp format_date(_), do: "-"
 
   defp verification_subject("kk"), do: "Edocly email-ды растаңыз"
   defp verification_subject(_), do: "Подтвердите email в Edocly"
