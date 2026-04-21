@@ -12,6 +12,7 @@ defmodule EdocApi.Billing do
   alias EdocApi.Billing.{
     BillingInvoice,
     BillingInvoiceStatus,
+    BillingAuditEvent,
     Payment,
     PaymentStatus,
     Plan,
@@ -21,7 +22,7 @@ defmodule EdocApi.Billing do
     UsageEvent
   }
 
-  alias EdocApi.Core.TenantMembership
+  alias EdocApi.Core.{Company, TenantMembership}
   alias EdocApi.Repo
 
   @responsibilities [
@@ -510,6 +511,219 @@ defmodule EdocApi.Billing do
     })
     |> Repo.update()
   end
+
+  @doc "Lists client billing summaries for the internal backoffice."
+  def list_admin_clients do
+    Company
+    |> order_by([c], asc: c.name)
+    |> preload(:user)
+    |> Repo.all()
+    |> Enum.map(&admin_client_summary/1)
+  end
+
+  @doc "Returns one client billing detail for the internal backoffice."
+  def get_admin_client!(company_id) do
+    company =
+      Company
+      |> Repo.get!(company_id)
+      |> Repo.preload(:user)
+
+    summary = admin_client_summary(company)
+
+    memberships =
+      TenantMembership
+      |> where([m], m.company_id == ^company.id)
+      |> preload(:user)
+      |> order_by([m], asc: m.role, asc: m.invite_email)
+      |> Repo.all()
+
+    invoices =
+      BillingInvoice
+      |> where([i], i.company_id == ^company.id)
+      |> order_by([i], desc: i.inserted_at)
+      |> preload(:payments)
+      |> Repo.all()
+
+    payments =
+      Payment
+      |> where([p], p.company_id == ^company.id)
+      |> order_by([p], desc: p.inserted_at)
+      |> Repo.all()
+
+    notes =
+      BillingAuditEvent
+      |> where([e], e.company_id == ^company.id and e.action == "internal_note")
+      |> order_by([e], desc: e.inserted_at)
+      |> preload(:actor_user)
+      |> Repo.all()
+
+    Map.merge(summary, %{
+      memberships: memberships,
+      invoices: invoices,
+      payments: payments,
+      notes: notes
+    })
+  end
+
+  @doc "Lists billing invoices for backoffice review, optionally filtered by status."
+  def list_admin_billing_invoices(filters \\ %{}) do
+    status = normalize_blank(Map.get(filters, "status") || Map.get(filters, :status))
+
+    BillingInvoice
+    |> maybe_filter_invoice_status(status)
+    |> order_by([i], desc: i.inserted_at)
+    |> preload([:company, :payments])
+    |> Repo.all()
+  end
+
+  @doc "Adds an internal admin note to the billing audit stream."
+  def add_internal_note(company_or_id, actor_user_or_id, note) when is_binary(note) do
+    company_id = record_id(company_or_id)
+    actor_user_id = record_id(actor_user_or_id)
+
+    %BillingAuditEvent{}
+    |> BillingAuditEvent.changeset(%{
+      company_id: company_id,
+      actor_user_id: actor_user_id,
+      action: "internal_note",
+      subject_type: "company",
+      subject_id: company_id,
+      metadata: %{note: String.trim(note)}
+    })
+    |> Repo.insert()
+  end
+
+  @doc "Updates a billing invoice payment link and optional due date without changing status."
+  def update_invoice_payment_link(invoice_or_id, attrs) do
+    invoice_or_id
+    |> get_billing_invoice!()
+    |> update_billing_invoice(%{
+      payment_method:
+        normalize_blank(Map.get(attrs, "payment_method") || Map.get(attrs, :payment_method)),
+      kaspi_payment_link:
+        normalize_blank(
+          Map.get(attrs, "kaspi_payment_link") || Map.get(attrs, :kaspi_payment_link)
+        ),
+      due_at: parse_datetime(Map.get(attrs, "due_at") || Map.get(attrs, :due_at))
+    })
+  end
+
+  @doc "Reactivates a suspended/past-due tenant without changing its current plan or period."
+  def reactivate_subscription(subscription_or_id) do
+    subscription_or_id
+    |> get_subscription!()
+    |> update_subscription(%{
+      status: SubscriptionStatus.active(),
+      grace_until: nil,
+      blocked_reason: nil
+    })
+  end
+
+  @doc "Extends a tenant grace period until the given datetime."
+  def extend_grace_period(subscription_or_id, grace_until) do
+    subscription_or_id
+    |> get_subscription!()
+    |> update_subscription(%{
+      status: SubscriptionStatus.grace_period(),
+      grace_until: grace_until,
+      blocked_reason: nil
+    })
+  end
+
+  @doc "Adds extra user seats to a subscription."
+  def add_extra_user_seats(subscription_or_id, count) do
+    subscription = get_subscription!(subscription_or_id)
+    count = parse_integer(count, 0)
+
+    subscription
+    |> update_subscription(%{extra_user_seats: subscription.extra_user_seats + max(count, 0)})
+  end
+
+  defp admin_client_summary(company) do
+    subscription =
+      case get_current_subscription(company.id) do
+        {:ok, subscription} -> subscription
+        {:error, :not_found} -> nil
+      end
+
+    used_documents =
+      case current_document_usage(company.id) do
+        {:ok, used} -> used
+        _ -> 0
+      end
+
+    document_limit = subscription && subscription.plan.monthly_document_limit
+    user_limit = subscription && subscription.plan.included_users + subscription.extra_user_seats
+    occupied_users = occupied_seat_count(company.id)
+
+    overdue_invoices =
+      BillingInvoice
+      |> where([i], i.company_id == ^company.id and i.status == ^BillingInvoiceStatus.overdue())
+      |> Repo.aggregate(:count, :id)
+
+    %{
+      company: company,
+      subscription: subscription,
+      plan: subscription && subscription.plan,
+      subscription_status: subscription && subscription.status,
+      occupied_users: occupied_users,
+      user_limit: user_limit,
+      used_documents: used_documents,
+      document_limit: document_limit,
+      period_end: subscription && subscription.current_period_end,
+      overdue_invoices: overdue_invoices
+    }
+  end
+
+  defp maybe_filter_invoice_status(query, nil), do: query
+
+  defp maybe_filter_invoice_status(query, status) do
+    where(query, [i], i.status == ^status)
+  end
+
+  defp normalize_blank(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp normalize_blank(value), do: value
+
+  defp parse_datetime(%DateTime{} = datetime), do: datetime
+  defp parse_datetime(nil), do: nil
+
+  defp parse_datetime(value) when is_binary(value) do
+    value = String.trim(value)
+
+    cond do
+      value == "" ->
+        nil
+
+      String.length(value) == 10 ->
+        case Date.from_iso8601(value) do
+          {:ok, date} -> DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+          _ -> nil
+        end
+
+      true ->
+        case DateTime.from_iso8601(value) do
+          {:ok, datetime, _offset} -> DateTime.truncate(datetime, :second)
+          _ -> nil
+        end
+    end
+  end
+
+  defp parse_integer(value, _default) when is_integer(value), do: value
+
+  defp parse_integer(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {integer, _} -> integer
+      :error -> default
+    end
+  end
+
+  defp parse_integer(_value, default), do: default
 
   defp create_billing_invoice(subscription_or_id, plan_or_code, note, opts) do
     with %Subscription{} = subscription <- get_subscription!(subscription_or_id),

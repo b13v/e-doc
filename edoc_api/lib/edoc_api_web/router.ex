@@ -111,6 +111,10 @@ defmodule EdocApiWeb.Router do
     plug(EdocApiWeb.Plugs.HtmxLayout)
   end
 
+  pipeline :platform_admin_browser do
+    plug(EdocApiWeb.Plugs.RequirePlatformAdmin)
+  end
+
   pipeline :auth_browser_json do
     plug(:accepts, ["json"])
     plug(:fetch_session)
@@ -295,6 +299,43 @@ defmodule EdocApiWeb.Router do
     put("/company/bank-accounts/:id", CompanyBankAccountHTMLController, :update)
     put("/company/bank-accounts/:id/set-default", CompaniesController, :set_default_bank_account)
     delete("/company/bank-accounts/:id", CompaniesController, :delete_bank_account)
+  end
+
+  scope "/admin", EdocApiWeb do
+    pipe_through([:auth_browser, :platform_admin_browser])
+
+    get("/billing/clients", AdminBillingController, :clients)
+    get("/billing/clients/:id", AdminBillingController, :client)
+    post("/billing/clients/:id/notes", AdminBillingController, :add_note)
+    get("/billing/invoices", AdminBillingController, :invoices)
+    post("/billing/invoices/:id/send", AdminBillingController, :send_invoice)
+    post("/billing/invoices/:id/payments", AdminBillingController, :create_payment)
+    post("/billing/payments/:id/confirm", AdminBillingController, :confirm_payment)
+    post("/billing/payments/:id/reject", AdminBillingController, :reject_payment)
+
+    post(
+      "/billing/subscriptions/:id/renewal-invoices",
+      AdminBillingController,
+      :create_renewal_invoice
+    )
+
+    post(
+      "/billing/subscriptions/:id/upgrade-invoices",
+      AdminBillingController,
+      :create_upgrade_invoice
+    )
+
+    post("/billing/subscriptions/:id/suspend", AdminBillingController, :suspend_subscription)
+
+    post(
+      "/billing/subscriptions/:id/reactivate",
+      AdminBillingController,
+      :reactivate_subscription
+    )
+
+    post("/billing/subscriptions/:id/grace-period", AdminBillingController, :extend_grace_period)
+    post("/billing/subscriptions/:id/schedule-upgrade", AdminBillingController, :schedule_upgrade)
+    post("/billing/subscriptions/:id/extra-seats", AdminBillingController, :add_extra_seats)
   end
 
   scope "/", EdocApiWeb do

@@ -16,6 +16,7 @@ defmodule EdocApi.Accounts.User do
     field(:verified_at, :utc_datetime)
     field(:failed_login_attempts, :integer, default: 0)
     field(:locked_until, :utc_datetime)
+    field(:is_platform_admin, :boolean, default: false)
 
     has_one(:company, EdocApi.Core.Company)
     has_many(:refresh_tokens, EdocApi.Auth.RefreshToken)

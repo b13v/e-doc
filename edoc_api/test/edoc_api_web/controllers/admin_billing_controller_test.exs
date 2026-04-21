@@ -1,0 +1,151 @@
+defmodule EdocApiWeb.AdminBillingControllerTest do
+  use EdocApiWeb.ConnCase, async: false
+
+  import Ecto.Query, warn: false
+  import EdocApi.TestFixtures
+
+  alias EdocApi.Accounts
+  alias EdocApi.Billing
+  alias EdocApi.Billing.{BillingInvoice, Payment, Subscription}
+  alias EdocApi.Repo
+
+  setup %{conn: conn} do
+    {:ok, _} = Billing.seed_default_plans()
+
+    admin = create_user!(%{"email" => "platform-admin@example.com"})
+    member = create_user!(%{"email" => "tenant-user@example.com"})
+    Accounts.mark_email_verified!(admin.id)
+    Accounts.mark_email_verified!(member.id)
+
+    Repo.update_all(from(u in EdocApi.Accounts.User, where: u.id == ^admin.id),
+      set: [is_platform_admin: true]
+    )
+
+    admin = Accounts.get_user(admin.id)
+    company = create_company!(member, %{"name" => "Backoffice Client"})
+    {:ok, subscription} = Billing.create_trial_subscription(company)
+    {:ok, subscription} = Billing.activate_subscription(subscription, "basic")
+    {:ok, _usage} = Billing.record_document_usage(company, "invoice", Ecto.UUID.generate())
+    {:ok, invoice} = Billing.create_renewal_invoice(subscription, "basic")
+
+    {:ok, sent_invoice} =
+      Billing.send_billing_invoice(invoice, kaspi_payment_link: "https://pay.test/kaspi")
+
+    {:ok, payment} = Billing.create_payment(sent_invoice, method: "kaspi_link")
+
+    admin_conn = html_conn(conn, admin)
+    member_conn = html_conn(conn, member)
+
+    {:ok,
+     admin_conn: admin_conn,
+     member_conn: member_conn,
+     admin: admin,
+     member: member,
+     company: company,
+     subscription: subscription,
+     billing_invoice: sent_invoice,
+     payment: payment}
+  end
+
+  test "non-platform admins are forbidden from the billing backoffice", %{member_conn: conn} do
+    conn = get(conn, "/admin/billing/clients")
+
+    assert html_response(conn, 403) =~ "Forbidden"
+  end
+
+  test "platform admin sees client list with plan, limits, usage, period, and overdue state", %{
+    admin_conn: conn
+  } do
+    body =
+      conn
+      |> get("/admin/billing/clients")
+      |> html_response(200)
+
+    assert body =~ "Backoffice Client"
+    assert body =~ "Basic"
+    assert body =~ "active"
+    assert body =~ "1 / 500"
+    assert body =~ "1 / 5"
+    assert body =~ "Overdue"
+  end
+
+  test "platform admin sees client detail with users, invoices, payments, and notes form", %{
+    admin_conn: conn,
+    company: company,
+    subscription: subscription,
+    member: member
+  } do
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "Backoffice Client"
+    assert body =~ member.email
+    assert body =~ "Invoice History"
+    assert body =~ "Payment History"
+    assert body =~ ~s(action="/admin/billing/clients/#{company.id}/notes")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/renewal-invoices")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/upgrade-invoices")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/schedule-upgrade")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/extra-seats")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/grace-period")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/suspend")
+    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
+  end
+
+  test "platform admin filters billing invoices by status and sees Kaspi link and due date", %{
+    admin_conn: conn,
+    billing_invoice: invoice
+  } do
+    body =
+      conn
+      |> get("/admin/billing/invoices?status=sent")
+      |> html_response(200)
+
+    assert body =~ invoice.id
+    assert body =~ "https://pay.test/kaspi"
+    assert body =~ "sent"
+    assert body =~ ~s(action="/admin/billing/invoices/#{invoice.id}/send")
+    assert body =~ ~s(action="/admin/billing/invoices/#{invoice.id}/payments")
+  end
+
+  test "platform admin can confirm a payment from UI and activate paid invoice", %{
+    admin_conn: conn,
+    payment: payment,
+    billing_invoice: invoice
+  } do
+    conn = post(conn, "/admin/billing/payments/#{payment.id}/confirm")
+
+    assert redirected_to(conn) == "/admin/billing/invoices"
+
+    assert Repo.get!(Payment, payment.id).status == "confirmed"
+    assert Repo.get!(BillingInvoice, invoice.id).status == "paid"
+  end
+
+  test "platform admin can suspend and reactivate a tenant subscription", %{
+    admin_conn: conn,
+    subscription: subscription
+  } do
+    conn =
+      post(conn, "/admin/billing/subscriptions/#{subscription.id}/suspend", %{
+        "reason" => "manual_review"
+      })
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+    assert Repo.get!(Subscription, subscription.id).status == "suspended"
+
+    conn = recycle(conn) |> html_conn(conn.assigns.current_user)
+    conn = post(conn, "/admin/billing/subscriptions/#{subscription.id}/reactivate")
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+    assert Repo.get!(Subscription, subscription.id).status == "active"
+  end
+
+  defp html_conn(conn, user) do
+    conn
+    |> Plug.Test.init_test_session(%{user_id: user.id})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
+  end
+end

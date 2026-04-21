@@ -397,59 +397,70 @@ Provide an internal admin interface to monitor clients and manually control bill
 ## Tasks
 
 ### Admin Auth / Authorization
-- [ ] Decide where admin panel lives.
-- [ ] Restrict admin routes to internal/admin users only.
+- [x] Decide where admin panel lives: `/admin/billing/...`.
+- [x] Restrict admin routes to internal/admin users only via `users.is_platform_admin`.
 
 ### Client List View
-- [ ] Build list page for tenants/clients with columns such as:
-  - [ ] company name
-  - [ ] current plan
-  - [ ] subscription status
-  - [ ] active users / limit
-  - [ ] documents used / limit
-  - [ ] current period end
-  - [ ] overdue state
+- [x] Build list page for tenants/clients with columns such as:
+  - [x] company name
+  - [x] current plan
+  - [x] subscription status
+  - [x] active users / limit
+  - [x] documents used / limit
+  - [x] current period end
+  - [x] overdue state
 
 ### Client Detail View
-- [ ] Build client detail page with sections:
-  - [ ] company info
-  - [ ] subscription info
-  - [ ] usage summary
-  - [ ] user list
-  - [ ] invoice history
-  - [ ] payment history
-  - [ ] internal notes
+- [x] Build client detail page with sections:
+  - [x] company info
+  - [x] subscription info
+  - [x] usage summary
+  - [x] user list
+  - [x] invoice history
+  - [x] payment history
+  - [x] internal notes
 
 ### Billing Invoice List View
-- [ ] Build invoice list with filters:
-  - [ ] draft
-  - [ ] sent
-  - [ ] paid
-  - [ ] overdue
-- [ ] Show Kaspi link availability and invoice due date.
+- [x] Build invoice list with filters:
+  - [x] draft
+  - [x] sent
+  - [x] paid
+  - [x] overdue
+- [x] Show Kaspi link availability and invoice due date.
 
 ### Admin Actions
-- [ ] Add action: create renewal invoice.
-- [ ] Add action: edit/add Kaspi payment link.
-- [ ] Add action: mark invoice as sent.
-- [ ] Add action: confirm payment.
-- [ ] Add action: reject payment.
-- [ ] Add action: activate/reactivate tenant.
-- [ ] Add action: suspend tenant.
-- [ ] Add action: extend grace period.
-- [ ] Add action: schedule upgrade.
-- [ ] Add action: add extra seats.
-- [ ] Add action: add internal note.
+- [x] Add action: create renewal invoice.
+- [x] Add action: edit/add Kaspi payment link.
+- [x] Add action: mark invoice as sent.
+- [x] Add action: confirm payment.
+- [x] Add action: reject payment.
+- [x] Add action: activate/reactivate tenant.
+- [x] Add action: suspend tenant.
+- [x] Add action: extend grace period.
+- [x] Add action: schedule upgrade.
+- [x] Add action: add extra seats.
+- [x] Add action: add internal note.
 
 ## Deliverables
-- [ ] admin billing dashboard
-- [ ] client detail view
-- [ ] invoice/payment views
+- [x] admin billing dashboard
+- [x] client detail view
+- [x] invoice/payment views
 
 ## Done Criteria
-- [ ] Admin can find any client quickly.
-- [ ] Admin can confirm payment from UI.
-- [ ] Admin can see which clients are overdue.
+- [x] Admin can find any client quickly.
+- [x] Admin can confirm payment from UI.
+- [x] Admin can see which clients are overdue.
+
+## Phase 5 Summary
+
+- Added `/admin/billing/...` backoffice routes protected by a new `users.is_platform_admin` flag.
+- Added client list/detail pages with subscription, seat, document, invoice, payment, and internal-note visibility.
+- Added billing invoice list filters and manual actions for Kaspi link/sent state, payments, suspension/reactivation, grace extension, scheduled upgrades, extra seats, renewal invoices, and upgrade invoices.
+
+## Phase 5 Open Risks
+
+- Platform-admin assignment is currently database/manual only; a later operational task should define who can grant or revoke this flag.
+- Backoffice copy is intentionally internal English for now; localizing it can be deferred unless non-technical operators will use it.
 
 ---
 
@@ -751,7 +762,7 @@ Use this sequence during implementation:
 - [ ] Complete Phase 2 and run migrations/tests.
 - [x] Complete Phase 3 and run service tests.
 - [x] Complete Phase 4 and verify blocked/unblocked flows.
-- [ ] Complete Phase 5 and verify admin flows manually.
+- [x] Complete Phase 5 and verify admin flows.
 - [ ] Complete Phase 6 and verify tenant billing page manually.
 - [ ] Complete Phase 7 and verify scheduled renewal lifecycle.
 - [ ] Complete Phase 8 and verify upgrade/seat flow.

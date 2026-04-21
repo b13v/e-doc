@@ -1,0 +1,140 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @client.company.name %></h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">Client billing detail and manual controls.</p>
+    </div>
+    <a href="/admin/billing/clients" class="rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-900">Back to clients</a>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Plan</div>
+      <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= plan_label(@client.plan) %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Subscription</div>
+      <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= value_or_dash(@client.subscription_status) %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Users</div>
+      <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= @client.occupied_users %> / <%= value_or_dash(@client.user_limit) %></div>
+    </div>
+    <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Documents</div>
+      <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= @client.used_documents %> / <%= value_or_dash(@client.document_limit) %></div>
+    </div>
+  </div>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Company Info</h2>
+    <p class="mt-2 text-sm text-gray-700 dark:text-slate-200"><%= @client.company.bin_iin %> · <%= @client.company.email %> · <%= @client.company.phone %></p>
+  </section>
+
+  <section :if={@client.subscription} class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Admin Actions</h2>
+    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/renewal-invoices"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Renewal plan</label>
+        <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <option value="starter">Starter</option>
+          <option value="basic" selected>Basic</option>
+        </select>
+        <button type="submit" class="mt-3 text-sm font-semibold text-blue-700 hover:text-blue-900 dark:text-sky-300">Create renewal invoice</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/upgrade-invoices"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Upgrade plan</label>
+        <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <option value="starter">Starter</option>
+          <option value="basic" selected>Basic</option>
+        </select>
+        <button type="submit" class="mt-3 text-sm font-semibold text-blue-700 hover:text-blue-900 dark:text-sky-300">Create upgrade invoice</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/schedule-upgrade"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Schedule upgrade</label>
+        <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <option value="basic" selected>Basic</option>
+        </select>
+        <input type="date" name="effective_at" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+        <button type="submit" class="mt-3 text-sm font-semibold text-blue-700 hover:text-blue-900 dark:text-sky-300">Schedule</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/extra-seats"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Extra seats</label>
+        <input type="number" min="1" name="count" value="1" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+        <button type="submit" class="mt-3 text-sm font-semibold text-blue-700 hover:text-blue-900 dark:text-sky-300">Add seats</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/grace-period"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Grace until</label>
+        <input type="date" name="grace_until" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+        <button type="submit" class="mt-3 text-sm font-semibold text-amber-700 hover:text-amber-900 dark:text-amber-300">Extend grace</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/suspend"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Suspend reason</label>
+        <input name="reason" value="manual_suspension" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+        <button type="submit" class="mt-3 text-sm font-semibold text-red-700 hover:text-red-900 dark:text-red-300">Suspend</button>
+      </form>
+
+      <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/reactivate"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <p class="text-sm text-stone-700 dark:text-slate-200">Restore active billing access.</p>
+        <button type="submit" class="mt-3 text-sm font-semibold text-green-700 hover:text-green-900 dark:text-green-300">Reactivate</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Users</h2>
+    <table class="mt-4 min-w-full divide-y divide-stone-200 dark:divide-slate-800">
+      <tbody>
+        <%= for membership <- @client.memberships do %>
+          <tr>
+            <td class="py-3 text-sm text-gray-900 dark:text-slate-100"><%= membership_email(membership) %></td>
+            <td class="py-3 text-sm text-gray-700 dark:text-slate-200"><%= membership.role %></td>
+            <td class="py-3 text-sm text-gray-700 dark:text-slate-200"><%= membership.status %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Invoice History</h2>
+    <%= for invoice <- @client.invoices do %>
+      <div class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <%= invoice.id %> · <%= invoice.status %> · <%= invoice.plan_snapshot_code %> · <%= invoice.amount_kzt %> KZT
+      </div>
+    <% end %>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Payment History</h2>
+    <%= for payment <- @client.payments do %>
+      <div class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <%= payment.id %> · <%= payment.status %> · <%= payment.method %> · <%= payment.amount_kzt %> KZT
+      </div>
+    <% end %>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Internal Notes</h2>
+    <form action={"/admin/billing/clients/#{@client.company.id}/notes"} method="post" class="mt-4 space-y-3">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <textarea name="note" class="min-h-24 w-full rounded-xl border border-stone-300 px-3 py-2 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" required></textarea>
+      <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Add note</button>
+    </form>
+    <%= for note <- @client.notes do %>
+      <p class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100"><%= metadata_note(note) %></p>
+    <% end %>
+  </section>
+</div>
