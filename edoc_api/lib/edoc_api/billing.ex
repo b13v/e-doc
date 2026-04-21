@@ -412,12 +412,15 @@ defmodule EdocApi.Billing do
 
   @doc "Marks a draft billing invoice as sent."
   def send_billing_invoice(invoice_or_id, opts \\ []) do
+    kaspi_payment_link = Keyword.get(opts, :kaspi_payment_link)
+    payment_method = Keyword.get(opts, :payment_method) || if kaspi_payment_link, do: "kaspi_link"
+
     invoice_or_id
     |> get_billing_invoice!()
     |> update_billing_invoice(%{
       status: BillingInvoiceStatus.sent(),
-      payment_method: Keyword.get(opts, :payment_method),
-      kaspi_payment_link: Keyword.get(opts, :kaspi_payment_link),
+      payment_method: payment_method,
+      kaspi_payment_link: kaspi_payment_link,
       issued_at: billing_now(opts)
     })
   end
@@ -445,6 +448,69 @@ defmodule EdocApi.Billing do
       proof_attachment_url: Keyword.get(opts, :proof_attachment_url)
     })
     |> Repo.insert()
+  end
+
+  @doc "Attaches a Kaspi payment link and marks the invoice payment method accordingly."
+  def attach_kaspi_payment_link(invoice_or_id, kaspi_payment_link) do
+    invoice_or_id
+    |> get_billing_invoice!()
+    |> update_billing_invoice(%{
+      payment_method: "kaspi_link",
+      kaspi_payment_link: kaspi_payment_link
+    })
+  end
+
+  @doc "Creates a customer-submitted pending payment review with optional proof and note."
+  def create_customer_payment_review(invoice_or_id, attrs) when is_map(attrs) do
+    invoice = get_billing_invoice!(invoice_or_id)
+    method = invoice.payment_method || "manual"
+
+    Repo.transaction(fn ->
+      payment =
+        %Payment{}
+        |> Payment.changeset(%{
+          company_id: invoice.company_id,
+          billing_invoice_id: invoice.id,
+          amount_kzt: invoice.amount_kzt,
+          method: method,
+          status: PaymentStatus.pending_confirmation(),
+          paid_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          external_reference:
+            normalize_blank(
+              Map.get(attrs, "external_reference") || Map.get(attrs, :external_reference)
+            ),
+          proof_attachment_url:
+            normalize_blank(
+              Map.get(attrs, "proof_attachment_url") || Map.get(attrs, :proof_attachment_url)
+            )
+        })
+        |> Repo.insert!()
+
+      note = normalize_blank(Map.get(attrs, "note") || Map.get(attrs, :note))
+
+      if note do
+        %BillingAuditEvent{}
+        |> BillingAuditEvent.changeset(%{
+          company_id: invoice.company_id,
+          action: "payment_review_note",
+          subject_type: "payment",
+          subject_id: payment.id,
+          metadata: %{note: note}
+        })
+        |> Repo.insert!()
+      end
+
+      payment
+    end)
+  end
+
+  @doc "Creates a customer payment review only when the invoice belongs to the company."
+  def create_customer_payment_review_for_company(company_or_id, invoice_id, attrs)
+      when is_binary(invoice_id) and is_map(attrs) do
+    case Repo.get_by(BillingInvoice, id: invoice_id, company_id: record_id(company_or_id)) do
+      nil -> {:error, :not_found}
+      invoice -> create_customer_payment_review(invoice, attrs)
+    end
   end
 
   @doc "Confirms a pending manual payment and activates the paid subscription period."
@@ -576,6 +642,32 @@ defmodule EdocApi.Billing do
     |> Repo.all()
   end
 
+  @doc "Returns tenant-facing billing data for the current company."
+  def tenant_billing_snapshot(company_or_id) do
+    company_id = record_id(company_or_id)
+
+    subscription =
+      case get_current_subscription(company_id) do
+        {:ok, subscription} -> subscription
+        {:error, :not_found} -> nil
+      end
+
+    outstanding_invoices =
+      BillingInvoice
+      |> where([i], i.company_id == ^company_id and i.status in ^["sent", "overdue"])
+      |> order_by([i], asc: i.due_at, desc: i.inserted_at)
+      |> preload(:payments)
+      |> Repo.all()
+
+    %{
+      subscription: subscription,
+      plan: subscription && subscription.plan,
+      outstanding_invoices: outstanding_invoices,
+      blocked?: subscription && subscription.status in ["past_due", "suspended", "canceled"],
+      overdue?: Enum.any?(outstanding_invoices, &(&1.status == "overdue"))
+    }
+  end
+
   @doc "Adds an internal admin note to the billing audit stream."
   def add_internal_note(company_or_id, actor_user_or_id, note) when is_binary(note) do
     company_id = record_id(company_or_id)
@@ -593,17 +685,34 @@ defmodule EdocApi.Billing do
     |> Repo.insert()
   end
 
+  @doc "Lists internal payment-review notes for a payment."
+  def list_payment_review_notes(payment_or_id) do
+    payment_id = record_id(payment_or_id)
+
+    BillingAuditEvent
+    |> where(
+      [e],
+      e.subject_type == "payment" and e.subject_id == ^payment_id and
+        e.action == "payment_review_note"
+    )
+    |> order_by([e], desc: e.inserted_at)
+    |> Repo.all()
+  end
+
   @doc "Updates a billing invoice payment link and optional due date without changing status."
   def update_invoice_payment_link(invoice_or_id, attrs) do
+    kaspi_payment_link =
+      normalize_blank(Map.get(attrs, "kaspi_payment_link") || Map.get(attrs, :kaspi_payment_link))
+
+    payment_method =
+      normalize_blank(Map.get(attrs, "payment_method") || Map.get(attrs, :payment_method)) ||
+        if(kaspi_payment_link, do: "kaspi_link")
+
     invoice_or_id
     |> get_billing_invoice!()
     |> update_billing_invoice(%{
-      payment_method:
-        normalize_blank(Map.get(attrs, "payment_method") || Map.get(attrs, :payment_method)),
-      kaspi_payment_link:
-        normalize_blank(
-          Map.get(attrs, "kaspi_payment_link") || Map.get(attrs, :kaspi_payment_link)
-        ),
+      payment_method: payment_method,
+      kaspi_payment_link: kaspi_payment_link,
       due_at: parse_datetime(Map.get(attrs, "due_at") || Map.get(attrs, :due_at))
     })
   end

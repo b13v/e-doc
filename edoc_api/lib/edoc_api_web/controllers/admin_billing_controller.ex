@@ -51,11 +51,11 @@ defmodule EdocApiWeb.AdminBillingController do
   def send_invoice(conn, %{"id" => invoice_id} = params) do
     attrs = Map.get(params, "invoice", params)
 
-    case Billing.update_invoice_payment_link(invoice_id, attrs) do
+    case Billing.attach_kaspi_payment_link(invoice_id, attrs["kaspi_payment_link"]) do
       {:ok, invoice} ->
         Billing.send_billing_invoice(invoice,
-          payment_method: attrs["payment_method"] || invoice.payment_method,
-          kaspi_payment_link: attrs["kaspi_payment_link"] || invoice.kaspi_payment_link
+          payment_method: invoice.payment_method,
+          kaspi_payment_link: invoice.kaspi_payment_link
         )
 
         redirect(conn, to: "/admin/billing/invoices")

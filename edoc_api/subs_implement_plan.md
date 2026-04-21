@@ -472,32 +472,43 @@ Implement the operational workflow for Kaspi payment links.
 ## Tasks
 
 ### Billing Invoice + Link Flow
-- [ ] Allow admin to attach Kaspi payment link to a billing invoice.
-- [ ] Store payment link safely.
-- [ ] Add validation that payment method is `kaspi_link` when link is present.
-- [ ] Allow copying/opening the link from admin UI.
+- [x] Allow admin to attach Kaspi payment link to a billing invoice.
+- [x] Store payment link safely by trimming blanks and validating http/https URLs.
+- [x] Add validation that payment method is `kaspi_link` when link is present.
+- [x] Allow copying/opening the link from admin UI.
 
 ### Customer-Facing Billing Page
-- [ ] Build tenant billing page showing:
-  - [ ] current plan
-  - [ ] renewal date
-  - [ ] outstanding invoices
-  - [ ] Kaspi payment link
-  - [ ] payment instructions
-- [ ] Show blocked/overdue banners where relevant.
+- [x] Build tenant billing page showing:
+  - [x] current plan
+  - [x] renewal date
+  - [x] outstanding invoices
+  - [x] Kaspi payment link
+  - [x] payment instructions
+- [x] Show blocked/overdue banners where relevant.
 
 ### Payment Confirmation Workflow
-- [ ] Define internal steps for manual reconciliation.
-- [ ] Add optional fields for proof/reference from customer.
-- [ ] Add internal comment/note for payment review.
+- [x] Define internal steps for manual reconciliation.
+- [x] Add optional fields for proof/reference from customer.
+- [x] Add internal comment/note for payment review.
 
 ## Deliverables
-- [ ] tenant billing page
-- [ ] admin Kaspi-link handling flow
+- [x] tenant billing page
+- [x] admin Kaspi-link handling flow
 
 ## Done Criteria
-- [ ] Customer can see outstanding invoice and payment link.
-- [ ] Admin can confirm payment after receiving it.
+- [x] Customer can see outstanding invoice and payment link.
+- [x] Admin can confirm payment after receiving it.
+
+## Phase 6 Summary
+
+- Added a tenant-facing `/company/billing` page showing the current plan, renewal date, outstanding billing invoices, Kaspi payment links, payment instructions, and blocked/overdue banners.
+- Added customer payment-review submission with optional external reference, proof URL, and internal review note.
+- Hardened Kaspi-link handling so billing invoices require `payment_method: "kaspi_link"` when a Kaspi link is stored, and admin UI can open/copy the link.
+
+## Phase 6 Open Risks
+
+- Customer proof is currently a URL field, not a file upload flow.
+- Payment confirmation remains manual from the backoffice; automated Kaspi reconciliation is intentionally deferred.
 
 ---
 
@@ -763,7 +774,7 @@ Use this sequence during implementation:
 - [x] Complete Phase 3 and run service tests.
 - [x] Complete Phase 4 and verify blocked/unblocked flows.
 - [x] Complete Phase 5 and verify admin flows.
-- [ ] Complete Phase 6 and verify tenant billing page manually.
+- [x] Complete Phase 6 and verify tenant billing page.
 - [ ] Complete Phase 7 and verify scheduled renewal lifecycle.
 - [ ] Complete Phase 8 and verify upgrade/seat flow.
 - [ ] Complete Phase 9 and verify reminders.

@@ -49,6 +49,7 @@ defmodule EdocApi.Billing.BillingInvoice do
       :note
     ])
     |> update_change(:plan_snapshot_code, &normalize_code/1)
+    |> update_change(:kaspi_payment_link, &normalize_url/1)
     |> validate_required([
       :company_id,
       :subscription_id,
@@ -60,6 +61,7 @@ defmodule EdocApi.Billing.BillingInvoice do
     ])
     |> validate_inclusion(:status, BillingInvoiceStatus.all())
     |> validate_optional_payment_method()
+    |> validate_kaspi_payment_link()
     |> validate_number(:amount_kzt, greater_than_or_equal_to: 0)
     |> validate_period(:period_start, :period_end)
     |> foreign_key_constraint(:company_id)
@@ -71,6 +73,29 @@ defmodule EdocApi.Billing.BillingInvoice do
     case get_field(changeset, :payment_method) do
       nil -> changeset
       _method -> validate_inclusion(changeset, :payment_method, @payment_methods)
+    end
+  end
+
+  defp validate_kaspi_payment_link(changeset) do
+    link = get_field(changeset, :kaspi_payment_link)
+    method = get_field(changeset, :payment_method)
+
+    cond do
+      is_nil(link) or link == "" ->
+        changeset
+
+      method != "kaspi_link" ->
+        add_error(
+          changeset,
+          :payment_method,
+          "must be kaspi_link when Kaspi payment link is present"
+        )
+
+      not valid_http_url?(link) ->
+        add_error(changeset, :kaspi_payment_link, "must be a valid http or https URL")
+
+      true ->
+        changeset
     end
   end
 
@@ -92,4 +117,27 @@ defmodule EdocApi.Billing.BillingInvoice do
   end
 
   defp normalize_code(value), do: value
+
+  defp normalize_url(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp normalize_url(value), do: value
+
+  defp valid_http_url?(value) when is_binary(value) do
+    case URI.parse(value) do
+      %URI{scheme: scheme, host: host} when scheme in ["http", "https"] and is_binary(host) ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  defp valid_http_url?(_), do: false
 end

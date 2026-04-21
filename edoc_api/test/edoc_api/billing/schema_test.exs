@@ -113,6 +113,25 @@ defmodule EdocApi.Billing.SchemaTest do
       invalid = BillingInvoice.changeset(%BillingInvoice{}, %{status: "paid_by_cash"})
       refute invalid.valid?
       assert "is invalid" in errors_on(invalid).status
+
+      invalid_link_method =
+        BillingInvoice.changeset(%BillingInvoice{}, %{
+          company_id: company.id,
+          subscription_id: subscription.id,
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day),
+          plan_snapshot_code: plan.code,
+          amount_kzt: plan.price_kzt,
+          status: "sent",
+          payment_method: "manual",
+          kaspi_payment_link: "https://pay.kaspi.kz/example"
+        })
+
+      refute invalid_link_method.valid?
+
+      assert "must be kaspi_link when Kaspi payment link is present" in errors_on(
+               invalid_link_method
+             ).payment_method
     end
   end
 

@@ -1,0 +1,111 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100">Billing</h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">Current subscription and outstanding payment invoices.</p>
+    </div>
+    <a href="/company" class="rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-900">Company settings</a>
+  </div>
+
+  <div
+    :if={@billing.blocked?}
+    class="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-100"
+  >
+    <p class="font-semibold">Billing access is restricted</p>
+    <p class="mt-1">Status: <%= status_label(@billing.subscription.status) %>. Reason: <%= @billing.subscription.blocked_reason || "not specified" %>.</p>
+  </div>
+
+  <div
+    :if={@billing.overdue?}
+    class="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+  >
+    <p class="font-semibold">An invoice is overdue.</p>
+    <p class="mt-1">Please pay the outstanding invoice and send the payment reference for review.</p>
+  </div>
+
+  <section class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400">Current plan</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.plan) %></div>
+    </div>
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400">Renewal date</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= if @billing.subscription, do: date_or_dash(@billing.subscription.current_period_end), else: "-" %></div>
+    </div>
+    <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400">Outstanding invoices</div>
+      <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= Enum.count(@billing.outstanding_invoices) %></div>
+    </div>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Outstanding invoices</h2>
+
+    <p :if={Enum.empty?(@billing.outstanding_invoices)} class="mt-4 text-sm text-gray-600 dark:text-slate-300">
+      No outstanding billing invoices.
+    </p>
+
+    <div :for={invoice <- @billing.outstanding_invoices} class="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+      <div class="grid gap-3 md:grid-cols-4">
+        <div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Invoice</div>
+          <div class="mt-1 break-all text-sm font-semibold text-gray-900 dark:text-slate-100"><%= invoice.id %></div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Status</div>
+          <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= invoice.status %></div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Amount</div>
+          <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= invoice.amount_kzt %> KZT</div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Due</div>
+          <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= date_or_dash(invoice.due_at) %></div>
+        </div>
+      </div>
+
+      <div :if={invoice.kaspi_payment_link} class="mt-4 rounded-xl bg-white p-4 dark:bg-slate-900">
+        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Kaspi payment link</div>
+        <a
+          href={invoice.kaspi_payment_link}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-2 inline-flex rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+        >
+          Open Kaspi payment link
+        </a>
+        <p class="mt-2 break-all text-sm text-blue-700 dark:text-sky-300"><%= invoice.kaspi_payment_link %></p>
+      </div>
+
+      <div class="mt-4 rounded-xl bg-white p-4 dark:bg-slate-900">
+        <h3 class="text-sm font-bold text-gray-900 dark:text-slate-100">Payment instructions</h3>
+        <p class="mt-2 text-sm text-gray-700 dark:text-slate-200">
+          Open the Kaspi link, complete the payment, then send the payment reference or proof link below. An administrator will reconcile and confirm the payment.
+        </p>
+
+        <form action={"/company/billing/invoices/#{invoice.id}/payments"} method="post" class="mt-4 grid gap-3 md:grid-cols-3">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+          <input
+            name="payment[external_reference]"
+            placeholder="Payment reference"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+          <input
+            name="payment[proof_attachment_url]"
+            placeholder="Proof URL"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+          <input
+            name="payment[note]"
+            placeholder="Comment for payment review"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+          <button type="submit" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 md:col-span-3">
+            Send payment reference
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>

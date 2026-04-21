@@ -108,6 +108,25 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "sent"
     assert body =~ ~s(action="/admin/billing/invoices/#{invoice.id}/send")
     assert body =~ ~s(action="/admin/billing/invoices/#{invoice.id}/payments")
+    assert body =~ ~s(target="_blank")
+    assert body =~ "Copy link"
+  end
+
+  test "platform admin can attach a Kaspi link and it is stored as kaspi_link method", %{
+    admin_conn: conn,
+    subscription: subscription
+  } do
+    {:ok, invoice} = Billing.create_upgrade_invoice(subscription, "basic")
+
+    conn =
+      post(conn, "/admin/billing/invoices/#{invoice.id}/send", %{
+        "invoice" => %{"kaspi_payment_link" => " https://pay.kaspi.kz/new-link "}
+      })
+
+    assert redirected_to(conn) == "/admin/billing/invoices"
+    updated = Repo.get!(BillingInvoice, invoice.id)
+    assert updated.payment_method == "kaspi_link"
+    assert updated.kaspi_payment_link == "https://pay.kaspi.kz/new-link"
   end
 
   test "platform admin can confirm a payment from UI and activate paid invoice", %{

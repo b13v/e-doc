@@ -125,6 +125,15 @@ defmodule EdocApiWeb.CompaniesControllerTest do
                ~S|<button type="button" onclick="toggleEdit('add-bank-form')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">|
     end
 
+    test "links to the tenant billing page", %{conn: conn} do
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ ~s(href="/company/billing")
+    end
+
     test "renders company bank-account actions as a compact overflow menu", %{
       conn: conn,
       company: company
@@ -633,7 +642,9 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         })
         |> Repo.insert!()
 
-      _owner_invoice = insert_invoice!(Accounts.get_user(owner_id), company, %{number: "99999000001"})
+      _owner_invoice =
+        insert_invoice!(Accounts.get_user(owner_id), company, %{number: "99999000001"})
+
       _member_invoice = insert_invoice!(member, company, %{number: "99999000001"})
 
       conn = delete(conn, "/company/memberships/#{membership.id}")
@@ -657,13 +668,13 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       Accounts.mark_email_verified!(member_user.id)
 
       %TenantMembership{}
-        |> TenantMembership.changeset(%{
-          company_id: company.id,
-          user_id: admin_user.id,
-          role: "admin",
-          status: "active"
-        })
-        |> Repo.insert!()
+      |> TenantMembership.changeset(%{
+        company_id: company.id,
+        user_id: admin_user.id,
+        role: "admin",
+        status: "active"
+      })
+      |> Repo.insert!()
 
       member_membership =
         %TenantMembership{}
@@ -757,6 +768,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         })
 
       assert redirected_to(conn) == "/company"
+
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                "Только владелец или администратор может управлять тарифом и участниками команды."
 
@@ -775,8 +787,10 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         })
 
       assert redirected_to(conn) == "/company"
+
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                "Только владелец или администратор может управлять тарифом и участниками команды."
+
       assert Enum.count(Monetization.list_memberships(company.id)) == before_count
     end
 
@@ -790,8 +804,10 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       conn = delete(conn, "/company/memberships/#{membership_id}")
 
       assert redirected_to(conn) == "/company"
+
       assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                "Только владелец или администратор может управлять тарифом и участниками команды."
+
       assert Enum.count(Monetization.list_memberships(company.id)) == before_count
     end
 
@@ -875,6 +891,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> Enum.find(&(&1.user_id == owner.id and &1.role == "owner"))
 
       assert owner_membership
+
       assert {:ok, _removed} =
                owner_membership
                |> Ecto.Changeset.change(status: "removed", role: "member")

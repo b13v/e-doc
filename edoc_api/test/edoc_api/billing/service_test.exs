@@ -244,6 +244,37 @@ defmodule EdocApi.Billing.ServiceTest do
   end
 
   describe "billing invoices and payments" do
+    test "attaches a normalized Kaspi link and records customer payment review metadata" do
+      seed_plans!()
+      company = create_company!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, subscription} = Billing.create_trial_subscription(company.id, now: now)
+      {:ok, invoice} = Billing.create_renewal_invoice(subscription, "basic", due_at: now)
+
+      assert {:ok, linked_invoice} =
+               Billing.attach_kaspi_payment_link(invoice, " https://pay.kaspi.kz/invoice-1 ")
+
+      assert linked_invoice.payment_method == "kaspi_link"
+      assert linked_invoice.kaspi_payment_link == "https://pay.kaspi.kz/invoice-1"
+
+      assert {:ok, payment} =
+               Billing.create_customer_payment_review(linked_invoice, %{
+                 "external_reference" => "KASPI-REF-123",
+                 "proof_attachment_url" => "https://example.com/proof.png",
+                 "note" => "Paid from company account"
+               })
+
+      assert payment.method == "kaspi_link"
+      assert payment.status == "pending_confirmation"
+      assert payment.external_reference == "KASPI-REF-123"
+      assert payment.proof_attachment_url == "https://example.com/proof.png"
+
+      assert [note] = Billing.list_payment_review_notes(payment.id)
+      assert note.metadata["note"] == "Paid from company account"
+      assert note.subject_type == "payment"
+      assert note.subject_id == payment.id
+    end
+
     test "creates renewal and upgrade invoices, sends them, and marks overdue invoices" do
       seed_plans!()
       company = create_company!()

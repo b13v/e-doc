@@ -286,6 +286,8 @@ defmodule EdocApiWeb.Router do
     get("/company/setup", CompaniesController, :setup)
     post("/company/setup", CompaniesController, :create_setup)
     get("/company", CompaniesController, :edit)
+    get("/company/billing", BillingHTMLController, :show)
+    post("/company/billing/invoices/:id/payments", BillingHTMLController, :create_payment)
     get("/settings", SettingsController, :edit)
     put("/settings/profile", SettingsController, :update_profile)
     put("/settings/password", SettingsController, :update_password)
