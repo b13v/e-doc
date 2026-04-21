@@ -345,37 +345,47 @@ Prevent unpaid or over-limit tenants from continuing billable usage.
 ## Tasks
 
 ### Document Quota Enforcement
-- [ ] Implement `can_create_document?/1`.
-- [ ] Implement `ensure_can_create_document!/1`.
-- [ ] Implement `record_document_usage/3`.
-- [ ] Decide whether usage is counted on draft creation, finalization, or issue.
-- [ ] Apply enforcement at all document entry points.
+- [x] Implement `can_create_document?/1`.
+- [x] Implement `ensure_can_create_document!/1`.
+- [x] Implement `record_document_usage/3`.
+- [x] Decide whether usage is counted on draft creation, finalization, or issue.
+- [x] Apply enforcement at all document entry points.
 
 ### User Seat Enforcement
-- [ ] Implement `can_add_user?/1`.
-- [ ] Implement `ensure_can_add_user!/1`.
-- [ ] Count current active users correctly.
-- [ ] Respect `included_users + extra_user_seats`.
+- [x] Implement `can_add_user?/1`.
+- [x] Implement `ensure_can_add_user!/1`.
+- [x] Count current active users correctly.
+- [x] Respect `included_users + extra_user_seats`.
 
 ### Subscription Standing Enforcement
-- [ ] Block creation when subscription status is `grace_period` if product requires strict block.
-- [ ] Otherwise allow limited grace behavior only if explicitly desired.
-- [ ] Block creation when status is `suspended`.
-- [ ] Ensure read-only access still works.
+- [x] Decide grace-period behavior: allow creation during the Phase 0 grace window.
+- [x] Otherwise allow limited grace behavior only if explicitly desired.
+- [x] Block creation when status is `suspended`.
+- [x] Ensure read-only access still works.
 
 ### App Integration
-- [ ] Add enforcement errors/messages at domain level.
-- [ ] Map domain errors to controller/API responses.
-- [ ] Surface clear upgrade/payment prompts in API response payloads where appropriate.
+- [x] Add enforcement errors/messages at domain level.
+- [x] Map domain errors to controller/API responses.
+- [x] Surface clear upgrade/payment prompts in API response payloads where appropriate.
 
 ## Deliverables
-- [ ] enforcement guards
-- [ ] tests proving blocked/unblocked behavior
+- [x] enforcement guards
+- [x] tests proving blocked/unblocked behavior
 
 ## Done Criteria
-- [ ] Tenant cannot exceed document quota.
-- [ ] Tenant cannot exceed user seat quota.
-- [ ] Suspended tenant cannot create new billable data.
+- [x] Tenant cannot exceed document quota.
+- [x] Tenant cannot exceed user seat quota.
+- [x] Suspended tenant cannot create new billable data.
+
+## Phase 4 Summary
+- Added billing guard APIs for document quota, subscription standing, and user-seat enforcement.
+- Billing document usage is still counted on issue/finalization; draft creation checks the already-used quota before allowing new drafts.
+- Grace-period tenants remain allowed because the Phase 0 policy includes a grace window; `past_due`, `suspended`, and `canceled` tenants are blocked.
+- Bridged the existing `Monetization` API to the new billing guards when a new billing subscription exists, while preserving legacy behavior for tenants that have not migrated.
+
+## Phase 4 Open Risks
+- Controller/UI messages still use the existing `quota_exceeded` response path for document blocks, with `reason: :subscription_restricted` included in details for suspended/past-due billing subscriptions.
+- Seat enforcement is available through Billing and affects existing invite limits via `Monetization.effective_seat_limit/1`; direct invite creation still lives in the legacy membership module until later admin/team phases.
 
 ---
 
@@ -740,7 +750,7 @@ Use this sequence during implementation:
 - [ ] Complete Phase 1 and commit.
 - [ ] Complete Phase 2 and run migrations/tests.
 - [x] Complete Phase 3 and run service tests.
-- [ ] Complete Phase 4 and verify blocked/unblocked flows.
+- [x] Complete Phase 4 and verify blocked/unblocked flows.
 - [ ] Complete Phase 5 and verify admin flows manually.
 - [ ] Complete Phase 6 and verify tenant billing page manually.
 - [ ] Complete Phase 7 and verify scheduled renewal lifecycle.

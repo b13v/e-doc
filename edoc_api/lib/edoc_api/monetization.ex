@@ -3,6 +3,7 @@ defmodule EdocApi.Monetization do
 
   alias EdocApi.Repo
   alias EdocApi.Accounts.User
+  alias EdocApi.Billing
   alias EdocApi.Core.TenantMembership
   alias EdocApi.Core.TenantSubscription
   alias EdocApi.Core.TenantUsageEvent
@@ -22,6 +23,7 @@ defmodule EdocApi.Monetization do
     plan = normalize_plan(Map.get(attrs, "plan") || Map.get(attrs, :plan) || "starter")
     now = now()
     period_start = Map.get(attrs, "period_start") || Map.get(attrs, :period_start) || now
+
     trial_started_at =
       Map.get(attrs, "trial_started_at") ||
         Map.get(attrs, :trial_started_at) ||
@@ -88,8 +90,14 @@ defmodule EdocApi.Monetization do
   end
 
   def effective_seat_limit(company_id) when is_binary(company_id) do
-    subscription = get_or_create_active_subscription!(company_id)
-    plan_seat_limit(subscription.plan)
+    case Billing.allowed_user_limit(company_id) do
+      {:ok, limit} ->
+        limit
+
+      _ ->
+        subscription = get_or_create_active_subscription!(company_id)
+        plan_seat_limit(subscription.plan)
+    end
   end
 
   def validate_plan_change(company_id, target_plan)
@@ -122,7 +130,10 @@ defmodule EdocApi.Monetization do
 
   def list_memberships(company_id) when is_binary(company_id) do
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"]
+    )
     |> preload([:user])
     |> order_by([m], asc: m.inserted_at)
     |> Repo.all()
@@ -292,7 +303,10 @@ defmodule EdocApi.Monetization do
 
   defp occupied_member_count(company_id) when is_binary(company_id) do
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"]
+    )
     |> Repo.aggregate(:count, :id)
   end
 
@@ -300,7 +314,10 @@ defmodule EdocApi.Monetization do
     overflow = max(occupied_member_count(company_id) - seat_limit, 0)
 
     TenantMembership
-    |> where([m], m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"])
+    |> where(
+      [m],
+      m.company_id == ^company_id and m.status in ["active", "invited", "pending_seat"]
+    )
     |> preload([:user])
     |> Repo.all()
     |> Enum.reject(&last_owner?/1)
@@ -375,6 +392,16 @@ defmodule EdocApi.Monetization do
   def consume_document_quota(company_id, document_type, document_id, event_type)
       when is_binary(company_id) and is_binary(document_type) and is_binary(document_id) and
              is_binary(event_type) do
+    case maybe_consume_billing_document_quota(company_id, document_type, document_id) do
+      :fallback_to_legacy ->
+        consume_legacy_document_quota(company_id, document_type, document_id, event_type)
+
+      result ->
+        result
+    end
+  end
+
+  defp consume_legacy_document_quota(company_id, document_type, document_id, event_type) do
     subscription = get_or_create_active_subscription!(company_id) |> roll_paid_period_if_needed()
     now = now()
     limit = document_limit(subscription)
@@ -424,6 +451,16 @@ defmodule EdocApi.Monetization do
   end
 
   def ensure_document_creation_allowed(company_id) when is_binary(company_id) do
+    case maybe_ensure_billing_document_creation_allowed(company_id) do
+      :fallback_to_legacy ->
+        ensure_legacy_document_creation_allowed(company_id)
+
+      result ->
+        result
+    end
+  end
+
+  defp ensure_legacy_document_creation_allowed(company_id) do
     subscription = get_or_create_active_subscription!(company_id) |> roll_paid_period_if_needed()
     used = usage_count(subscription)
     limit = document_limit(subscription)
@@ -446,6 +483,56 @@ defmodule EdocApi.Monetization do
       {:error, details} ->
         {:error, :quota_exceeded, details}
     end
+  end
+
+  defp maybe_ensure_billing_document_creation_allowed(company_id) do
+    case Billing.get_current_subscription(company_id) do
+      {:ok, _subscription} ->
+        Billing.ensure_can_create_document(company_id)
+        |> normalize_billing_document_guard_result()
+
+      {:error, :not_found} ->
+        :fallback_to_legacy
+    end
+  end
+
+  defp maybe_consume_billing_document_quota(company_id, document_type, document_id) do
+    case Billing.get_current_subscription(company_id) do
+      {:ok, _subscription} ->
+        case Billing.record_document_usage(company_id, document_type, document_id) do
+          {:ok, _event} ->
+            {:ok, usage_details_after_billing_record(company_id)}
+
+          {:error, reason, details} ->
+            normalize_billing_document_guard_result({:error, reason, details})
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, :not_found} ->
+        :fallback_to_legacy
+    end
+  end
+
+  defp usage_details_after_billing_record(company_id) do
+    {:ok, used} = Billing.current_document_usage(company_id)
+    {:ok, limit} = Billing.allowed_document_limit(company_id)
+
+    %{
+      used: used,
+      limit: limit,
+      remaining: max(limit - used, 0)
+    }
+  end
+
+  defp normalize_billing_document_guard_result({:ok, details}), do: {:ok, details}
+
+  defp normalize_billing_document_guard_result({:error, :quota_exceeded, details}),
+    do: {:error, :quota_exceeded, details}
+
+  defp normalize_billing_document_guard_result({:error, :subscription_restricted, details}) do
+    {:error, :quota_exceeded, Map.put(details, :reason, :subscription_restricted)}
   end
 
   defp get_or_create_active_subscription!(company_id) do
@@ -482,7 +569,8 @@ defmodule EdocApi.Monetization do
     |> Repo.one()
   end
 
-  defp roll_paid_period_if_needed(%TenantSubscription{plan: "trial"} = subscription), do: subscription
+  defp roll_paid_period_if_needed(%TenantSubscription{plan: "trial"} = subscription),
+    do: subscription
 
   defp roll_paid_period_if_needed(%TenantSubscription{} = subscription) do
     now = now()
@@ -553,7 +641,8 @@ defmodule EdocApi.Monetization do
 
   defp trial_window_end(%TenantSubscription{} = subscription) do
     trial_start =
-      subscription.trial_started_at || subscription.period_start || subscription.inserted_at || now()
+      subscription.trial_started_at || subscription.period_start || subscription.inserted_at ||
+        now()
 
     add_days(trial_start, @trial_time_window_days)
   end

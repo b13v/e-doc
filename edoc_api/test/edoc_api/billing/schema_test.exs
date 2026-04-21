@@ -1,5 +1,5 @@
 defmodule EdocApi.Billing.SchemaTest do
-  use EdocApi.DataCase, async: true
+  use EdocApi.DataCase, async: false
 
   alias EdocApi.Billing
 

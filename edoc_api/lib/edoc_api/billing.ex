@@ -21,6 +21,7 @@ defmodule EdocApi.Billing do
     UsageEvent
   }
 
+  alias EdocApi.Core.TenantMembership
   alias EdocApi.Repo
 
   @responsibilities [
@@ -70,6 +71,7 @@ defmodule EdocApi.Billing do
   ]
 
   @billable_document_metric "billable_documents"
+  @occupied_membership_statuses ["active", "invited", "pending_seat"]
 
   @doc "Returns the tenant foreign key used by billing records."
   def tenant_key, do: @tenant_key
@@ -273,11 +275,52 @@ defmodule EdocApi.Billing do
     end
   end
 
+  @doc "Returns true when the tenant is allowed to create another billable document."
+  def can_create_document?(company_or_id) do
+    case ensure_can_create_document(company_or_id) do
+      {:ok, _quota} -> true
+      {:error, _reason, _details} -> false
+      {:error, _reason} -> false
+    end
+  end
+
+  @doc "Returns current quota details or a domain error explaining why creation is blocked."
+  def ensure_can_create_document(company_or_id) do
+    with {:ok, subscription} <- get_current_subscription(company_or_id),
+         :ok <- ensure_subscription_allows_creation(subscription),
+         {:ok, used} <- current_document_usage(company_or_id) do
+      limit = subscription.plan.monthly_document_limit
+      remaining = max(limit - used, 0)
+
+      if used >= limit do
+        {:error, :quota_exceeded, document_quota_details(subscription, used, limit, remaining)}
+      else
+        {:ok, document_quota_details(subscription, used, limit, remaining)}
+      end
+    end
+  end
+
+  @doc "Raises when document creation is not allowed; returns quota details otherwise."
+  def ensure_can_create_document!(company_or_id) do
+    case ensure_can_create_document(company_or_id) do
+      {:ok, quota} ->
+        quota
+
+      {:error, reason, details} ->
+        raise "billing document creation blocked: #{inspect({reason, details})}"
+
+      {:error, reason} ->
+        raise "billing document creation blocked: #{inspect(reason)}"
+    end
+  end
+
   @doc "Records billable document usage and increments the current-period counter."
   def record_document_usage(company_or_id, resource_type, resource_id, opts \\ []) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    count = Keyword.get(opts, :count, 1)
+
+    with {:ok, subscription} <- get_current_subscription(company_or_id),
+         {:ok, _quota} <- ensure_can_record_document_usage(company_or_id, count) do
       company_id = record_id(company_or_id)
-      count = Keyword.get(opts, :count, 1)
 
       Repo.transaction(fn ->
         event =
@@ -303,6 +346,56 @@ defmodule EdocApi.Billing do
 
         event
       end)
+    end
+  end
+
+  defp ensure_can_record_document_usage(company_or_id, count) do
+    with {:ok, subscription} <- get_current_subscription(company_or_id),
+         :ok <- ensure_subscription_allows_creation(subscription),
+         {:ok, used} <- current_document_usage(company_or_id) do
+      limit = subscription.plan.monthly_document_limit
+      remaining = max(limit - used, 0)
+
+      if used + count > limit do
+        {:error, :quota_exceeded, document_quota_details(subscription, used, limit, remaining)}
+      else
+        {:ok, document_quota_details(subscription, used, limit, remaining)}
+      end
+    end
+  end
+
+  @doc "Returns true when the tenant can occupy another user seat."
+  def can_add_user?(company_or_id) do
+    case ensure_can_add_user(company_or_id) do
+      {:ok, _details} -> true
+      {:error, _reason, _details} -> false
+      {:error, _reason} -> false
+    end
+  end
+
+  @doc "Returns current seat details or a domain error explaining why adding a user is blocked."
+  def ensure_can_add_user(company_or_id) do
+    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+      company_id = record_id(company_or_id)
+      used = occupied_seat_count(company_id)
+      limit = subscription.plan.included_users + subscription.extra_user_seats
+      remaining = max(limit - used, 0)
+      details = seat_quota_details(subscription, used, limit, remaining)
+
+      if used >= limit do
+        {:error, :seat_limit_reached, details}
+      else
+        {:ok, details}
+      end
+    end
+  end
+
+  @doc "Raises when a user seat cannot be added; returns seat details otherwise."
+  def ensure_can_add_user!(company_or_id) do
+    case ensure_can_add_user(company_or_id) do
+      {:ok, details} -> details
+      {:error, reason, details} -> raise "billing seat blocked: #{inspect({reason, details})}"
+      {:error, reason} -> raise "billing seat blocked: #{inspect(reason)}"
     end
   end
 
@@ -473,6 +566,50 @@ defmodule EdocApi.Billing do
       on_conflict: [inc: [value: count], set: [updated_at: now]],
       conflict_target: [:company_id, :metric, :period_start, :period_end]
     )
+  end
+
+  defp ensure_subscription_allows_creation(%Subscription{} = subscription) do
+    if SubscriptionStatus.good_standing?(subscription.status) do
+      :ok
+    else
+      {:error, :subscription_restricted,
+       %{
+         company_id: subscription.company_id,
+         plan: subscription.plan.code,
+         status: subscription.status,
+         blocked_reason: subscription.blocked_reason,
+         period_end: subscription.current_period_end
+       }}
+    end
+  end
+
+  defp document_quota_details(subscription, used, limit, remaining) do
+    %{
+      company_id: subscription.company_id,
+      plan: subscription.plan.code,
+      status: subscription.status,
+      used: used,
+      limit: limit,
+      remaining: remaining,
+      period_end: subscription.current_period_end
+    }
+  end
+
+  defp seat_quota_details(subscription, used, limit, remaining) do
+    %{
+      company_id: subscription.company_id,
+      plan: subscription.plan.code,
+      status: subscription.status,
+      used: used,
+      limit: limit,
+      remaining: remaining
+    }
+  end
+
+  defp occupied_seat_count(company_id) do
+    TenantMembership
+    |> where([m], m.company_id == ^company_id and m.status in ^@occupied_membership_statuses)
+    |> Repo.aggregate(:count, :id)
   end
 
   defp preload_subscription_result({:ok, subscription}) do

@@ -1,5 +1,5 @@
 defmodule EdocApi.Billing.ServiceTest do
-  use EdocApi.DataCase, async: true
+  use EdocApi.DataCase, async: false
 
   alias EdocApi.Billing
 
@@ -14,6 +14,7 @@ defmodule EdocApi.Billing.ServiceTest do
 
   alias EdocApi.Repo
   alias EdocApi.TestFixtures
+  alias EdocApi.Core.TenantMembership
 
   describe "plans" do
     test "looks up active plans by code and lists active plans in canonical order" do
@@ -116,6 +117,129 @@ defmodule EdocApi.Billing.ServiceTest do
       assert counter.period_start == subscription.current_period_start
       assert counter.period_end == subscription.current_period_end
       assert Repo.aggregate(UsageEvent, :count, :id) == 2
+    end
+
+    test "does not record batched usage when count would exceed the document limit" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, _subscription} = Billing.create_trial_subscription(company.id)
+
+      assert {:ok, _event} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
+                 count: 9
+               )
+
+      assert {:error, :quota_exceeded, %{used: 9, limit: 10, remaining: 1}} =
+               Billing.record_document_usage(company.id, "act", Ecto.UUID.generate(), count: 2)
+
+      assert Billing.current_document_usage(company.id) == {:ok, 9}
+      assert Repo.aggregate(UsageEvent, :count, :id) == 1
+    end
+  end
+
+  describe "document creation enforcement" do
+    test "allows creation while usage is below quota and blocks when quota is reached" do
+      seed_plans!()
+      company = create_company!()
+      now = ~U[2026-04-20 08:00:00Z]
+      {:ok, _subscription} = Billing.create_trial_subscription(company.id, now: now)
+
+      assert Billing.can_create_document?(company.id)
+
+      assert {:ok, %{used: 0, limit: 10, remaining: 10, status: "trialing"}} =
+               Billing.ensure_can_create_document(company.id)
+
+      for index <- 1..10 do
+        assert {:ok, _event} =
+                 Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
+                   count: 1,
+                   occurred_at: DateTime.add(now, index, :second)
+                 )
+      end
+
+      refute Billing.can_create_document?(company.id)
+
+      assert {:error, :quota_exceeded,
+              %{used: 10, limit: 10, remaining: 0, plan: "trial", status: "trialing"}} =
+               Billing.ensure_can_create_document(company.id)
+    end
+
+    test "blocks document creation for suspended and past-due tenants but allows grace period" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      assert {:ok, grace} =
+               Billing.move_subscription_to_grace_period(
+                 subscription,
+                 DateTime.utc_now() |> DateTime.add(3, :day) |> DateTime.truncate(:second)
+               )
+
+      assert Billing.can_create_document?(company.id)
+      assert {:ok, %{status: "grace_period"}} = Billing.ensure_can_create_document(company.id)
+
+      assert {:ok, suspended} = Billing.suspend_subscription(grace, "payment_overdue")
+
+      refute Billing.can_create_document?(company.id)
+
+      assert {:error, :subscription_restricted,
+              %{status: "suspended", blocked_reason: "payment_overdue"}} =
+               Billing.ensure_can_create_document(company.id)
+
+      {:ok, past_due} =
+        suspended
+        |> Subscription.changeset(%{status: "past_due", blocked_reason: "payment_past_due"})
+        |> Repo.update()
+
+      refute Billing.can_create_document?(company.id)
+
+      assert {:error, :subscription_restricted,
+              %{status: "past_due", blocked_reason: "payment_past_due"}} =
+               Billing.ensure_can_create_document(past_due.company_id)
+    end
+  end
+
+  describe "seat enforcement" do
+    test "counts active invited and pending memberships against included seats" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      assert Billing.can_add_user?(company.id)
+
+      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
+
+      refute Billing.can_add_user?(company.id)
+
+      assert {:error, :seat_limit_reached, %{used: 2, limit: 2, plan: "trial"}} =
+               Billing.ensure_can_add_user(company.id)
+
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "basic")
+
+      assert Billing.can_add_user?(company.id)
+      assert {:ok, %{used: 2, limit: 5, remaining: 3}} = Billing.ensure_can_add_user(company.id)
+
+      create_membership!(company.id, %{
+        invite_email: "pending@example.com",
+        status: "pending_seat"
+      })
+
+      assert {:ok, %{used: 3, limit: 5, remaining: 2}} = Billing.ensure_can_add_user(company.id)
+    end
+
+    test "respects extra user seats" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+
+      assert {:ok, _subscription} =
+               subscription
+               |> Subscription.changeset(%{extra_user_seats: 1})
+               |> Repo.update()
+
+      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
+
+      assert {:ok, %{used: 2, limit: 3, remaining: 1}} = Billing.ensure_can_add_user(company.id)
     end
   end
 
@@ -229,5 +353,17 @@ defmodule EdocApi.Billing.ServiceTest do
   defp create_company! do
     user = TestFixtures.create_user!()
     TestFixtures.create_company!(user)
+  end
+
+  defp create_membership!(company_id, attrs) do
+    attrs =
+      Map.merge(
+        %{company_id: company_id, role: "member"},
+        attrs
+      )
+
+    %TenantMembership{}
+    |> TenantMembership.changeset(attrs)
+    |> Repo.insert!()
   end
 end
