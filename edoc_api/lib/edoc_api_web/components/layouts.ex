@@ -791,6 +791,93 @@ defmodule EdocApiWeb.Layouts do
   end
 
   @doc """
+  Platform admin navigation for backoffice pages.
+  """
+  def admin_nav(assigns) do
+    assigns =
+      assigns
+      |> Map.put_new(:current_path, "/admin/billing/clients")
+      |> Map.put_new(:nav_context, :admin)
+
+    ~H"""
+    <div class="flex w-full flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:justify-end">
+      <nav class="hidden items-center gap-2 lg:flex" aria-label="Admin menu">
+        <%= for {section, path, label} <- admin_sections() do %>
+          <% active? = admin_section_active?(section, @current_path) %>
+          <a
+            href={path}
+            aria-current={if active?, do: "page", else: nil}
+            class={admin_nav_link_class(active?)}
+          >
+            <%= label %>
+          </a>
+        <% end %>
+      </nav>
+
+      <details class="rounded-2xl bg-white/80 ring-1 ring-stone-200 dark:bg-slate-900/80 dark:ring-slate-700 lg:hidden">
+        <summary class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <span>Admin</span>
+          <span class="text-slate-400 dark:text-slate-500">+</span>
+        </summary>
+        <div class="border-t border-stone-200 px-3 py-3 dark:border-slate-700">
+          <div class="space-y-1">
+            <%= for {section, path, label} <- admin_sections() do %>
+              <% active? = admin_section_active?(section, @current_path) %>
+              <a
+                href={path}
+                aria-current={if active?, do: "page", else: nil}
+                class={[
+                  "block rounded-xl px-3 py-2 text-sm",
+                  if(
+                    active?,
+                    do: "bg-stone-100 font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100",
+                    else: "text-black hover:text-black dark:text-slate-100 dark:hover:text-white"
+                  )
+                ]}
+              >
+                <%= label %>
+              </a>
+            <% end %>
+          </div>
+          <div class="mt-3 border-t border-stone-200 pt-3 dark:border-slate-700">
+            <%= locale_switcher(assigns) %>
+            <%= theme_switcher(assigns, :mobile) %>
+            <a href="/settings" class="workspace-account-email mt-3 block text-sm text-black dark:text-slate-100">
+              <%= @current_user.email %>
+            </a>
+            <form method="post" action="/logout" class="mt-3">
+              <input type="hidden" name="_method" value="delete" />
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="workspace-account-logout w-full rounded-xl border border-stone-200 px-3 py-2 text-left text-sm font-medium text-black dark:border-slate-700 dark:text-slate-100 dark:hover:text-white"
+              >
+                <%= gettext("Logout") %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </details>
+
+      <div class="hidden items-center gap-3 lg:flex">
+        <%= locale_switcher(assigns) %>
+        <%= theme_switcher(assigns, :desktop) %>
+        <div class="flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200 dark:bg-slate-900/85 dark:ring-slate-700">
+          <a href="/settings" class="workspace-account-email text-black dark:text-slate-100"><%= @current_user.email %></a>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_method" value="delete" />
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <button type="submit" class="workspace-account-logout font-medium text-black hover:text-black dark:text-slate-100 dark:hover:text-white">
+              <%= gettext("Logout") %>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   The app layout includes the header and main content area.
   """
   def app(assigns) do
@@ -801,10 +888,14 @@ defmodule EdocApiWeb.Layouts do
           <div class="flex items-center">
             <%= brand_logo(assigns) %>
           </div>
-          <%= if assigns[:current_user] do %>
-            <%= auth_nav(assigns) %>
+          <%= if assigns[:current_user] && assigns[:nav_context] == :admin do %>
+            <%= admin_nav(assigns) %>
           <% else %>
-            <%= public_nav(assigns) %>
+            <%= if assigns[:current_user] do %>
+            <%= auth_nav(assigns) %>
+            <% else %>
+              <%= public_nav(assigns) %>
+            <% end %>
           <% end %>
         </div>
       </div>
@@ -817,8 +908,13 @@ defmodule EdocApiWeb.Layouts do
   end
 
   defp brand_logo(assigns) do
+    assigns =
+      assigns
+      |> Map.put_new(:nav_context, :workspace)
+      |> Map.put(:home_path, if(assigns[:nav_context] == :admin, do: "/admin/billing", else: "/"))
+
     ~H"""
-    <a href="/" class="inline-flex items-center gap-2 text-xl font-extrabold text-[#0066cc] dark:text-sky-400">
+    <a href={@home_path} class="inline-flex items-center gap-2 text-xl font-extrabold text-[#0066cc] dark:text-sky-400">
       <span class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#0066cc] to-[#00a651] text-white shadow-sm">
         <svg
           class="h-5 w-5"
@@ -937,6 +1033,14 @@ defmodule EdocApiWeb.Layouts do
     end
   end
 
+  defp admin_nav_link_class(active?) do
+    if active? do
+      "inline-flex items-center rounded-full bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-slate-900 dark:bg-slate-100 dark:text-slate-950 dark:ring-slate-100"
+    else
+      "inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-black hover:bg-white/70 hover:text-black dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white"
+    end
+  end
+
   defp workspace_sections do
     [
       {:invoices, "/invoices"},
@@ -945,6 +1049,22 @@ defmodule EdocApiWeb.Layouts do
       {:buyers, "/buyers"},
       {:company, "/company"}
     ]
+  end
+
+  defp admin_sections do
+    [
+      {:clients, "/admin/billing/clients", "Clients"},
+      {:billing_invoices, "/admin/billing/invoices", "Billing invoices"}
+    ]
+  end
+
+  defp admin_section_active?(:billing_invoices, current_path) do
+    String.starts_with?(current_path, "/admin/billing/invoices")
+  end
+
+  defp admin_section_active?(:clients, current_path) do
+    current_path in ["/admin", "/admin/billing"] or
+      String.starts_with?(current_path, "/admin/billing/clients")
   end
 
   defp locale_path(locale, current_path) do

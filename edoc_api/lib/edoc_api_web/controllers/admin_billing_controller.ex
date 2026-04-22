@@ -4,6 +4,7 @@ defmodule EdocApiWeb.AdminBillingController do
   alias EdocApi.Billing
 
   plug(:put_view, html: EdocApiWeb.AdminBillingHTML)
+  plug(:put_admin_nav_context)
 
   def index(conn, _params) do
     redirect(conn, to: "/admin/billing/clients")
@@ -283,6 +284,10 @@ defmodule EdocApiWeb.AdminBillingController do
   def add_note(conn, %{"id" => company_id, "note" => note}) do
     {:ok, _event} = Billing.add_internal_note(company_id, conn.assigns.current_user, note)
     redirect(conn, to: "/admin/billing/clients/#{company_id}")
+  end
+
+  defp put_admin_nav_context(conn, _opts) do
+    assign(conn, :nav_context, :admin)
   end
 
   defp audit_admin_action(conn, company_id, action, subject_type, subject_id, metadata \\ %{}) do

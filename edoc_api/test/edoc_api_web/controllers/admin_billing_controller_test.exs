@@ -73,6 +73,23 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "Unpaid invoices"
   end
 
+  test "platform admin billing uses admin navigation instead of tenant workspace navigation", %{
+    admin_conn: conn
+  } do
+    body =
+      conn
+      |> get("/admin/billing/clients")
+      |> html_response(200)
+
+    assert body =~ ~s(href="/admin/billing/clients")
+    assert body =~ ~s(href="/admin/billing/invoices")
+    refute body =~ ~s(href="/invoices")
+    refute body =~ ~s(href="/contracts")
+    refute body =~ ~s(href="/acts")
+    refute body =~ ~s(href="/buyers")
+    refute body =~ ~s(href="/company")
+  end
+
   test "platform admin is redirected from /admin/billing to /admin/billing/clients", %{
     admin_conn: conn
   } do
