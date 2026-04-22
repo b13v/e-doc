@@ -115,17 +115,6 @@
               <% end %>
             </select>
           </div>
-
-          <div>
-            <label for="bank_account_knp_code_id" class="block text-sm font-medium text-gray-700"><%= gettext("KNP code") %> *</label>
-            <select name="bank_account[knp_code_id]" id="bank_account_knp_code_id" required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2 border">
-              <option value=""><%= gettext("Select KNP...") %></option>
-              <%= for knp <- @knp_codes do %>
-                <option value={knp.id}><%= knp.code %> - <%= knp.description %></option>
-              <% end %>
-            </select>
-          </div>
         </div>
       </div>
 

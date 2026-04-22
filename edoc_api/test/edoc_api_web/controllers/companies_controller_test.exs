@@ -30,6 +30,15 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       {:ok, conn: conn, bank: bank, kbe_code: kbe_code, knp_code: knp_code}
     end
 
+    test "does not render KNP code on the company setup form", %{conn: conn} do
+      conn = get(conn, "/company/setup")
+      body = html_response(conn, 200)
+
+      refute body =~ ~s(name="bank_account[knp_code_id]")
+      refute body =~ ~s(id="bank_account_knp_code_id")
+      refute body =~ "KNP code"
+    end
+
     test "shows friendly flash for invalid BIN/IIN", %{
       conn: conn,
       bank: bank,
@@ -84,7 +93,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       conn: conn,
       bank: _bank,
       kbe_code: kbe_code,
-      knp_code: knp_code
+      knp_code: _knp_code
     } do
       user_id = get_session(conn, :user_id)
 
@@ -94,8 +103,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           "bank_account" => %{
             "bank_id" => "",
             "iban" => valid_kz_iban("1234567890"),
-            "kbe_code_id" => kbe_code.id,
-            "knp_code_id" => knp_code.id
+            "kbe_code_id" => kbe_code.id
           }
         })
 
@@ -113,7 +121,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       conn: conn,
       bank: bank,
       kbe_code: kbe_code,
-      knp_code: knp_code
+      knp_code: _knp_code
     } do
       user_id = get_session(conn, :user_id)
 
@@ -123,8 +131,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           "bank_account" => %{
             "bank_id" => bank.id,
             "iban" => valid_kz_iban("1234567890"),
-            "kbe_code_id" => kbe_code.id,
-            "knp_code_id" => knp_code.id
+            "kbe_code_id" => kbe_code.id
           }
         })
 
@@ -136,8 +143,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
          %{
            conn: conn,
            bank: bank,
-           kbe_code: kbe_code,
-           knp_code: knp_code
+           kbe_code: kbe_code
          } do
       company_params = Map.delete(company_attrs(), "phone")
 
@@ -147,12 +153,32 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           "bank_account" => %{
             "bank_id" => bank.id,
             "iban" => valid_kz_iban("1234567890"),
-            "kbe_code_id" => kbe_code.id,
-            "knp_code_id" => knp_code.id
+            "kbe_code_id" => kbe_code.id
           }
         })
 
       assert redirected_to(conn) == "/buyers/new"
+    end
+
+    test "creates company setup without KNP because KNP is invoice-specific", %{
+      conn: conn,
+      bank: bank,
+      kbe_code: kbe_code
+    } do
+      user_id = get_session(conn, :user_id)
+
+      conn =
+        post(conn, "/company/setup", %{
+          "company" => company_attrs(),
+          "bank_account" => %{
+            "bank_id" => bank.id,
+            "iban" => valid_kz_iban("1234567890"),
+            "kbe_code_id" => kbe_code.id
+          }
+        })
+
+      assert redirected_to(conn) == "/buyers/new"
+      assert Companies.get_company_by_user_id(user_id)
     end
   end
 

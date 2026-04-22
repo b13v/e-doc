@@ -22,7 +22,7 @@ defmodule EdocApiWeb.CompaniesController do
     :basis
   ]
 
-  @bank_account_required_fields [:bank_id, :iban, :kbe_code_id, :knp_code_id]
+  @bank_account_required_fields [:bank_id, :iban, :kbe_code_id]
 
   # Setup page for new users (create company)
   def setup(conn, _params) do
@@ -32,13 +32,11 @@ defmodule EdocApiWeb.CompaniesController do
       nil ->
         banks = Payments.list_banks()
         kbe_codes = Payments.list_kbe_codes()
-        knp_codes = Payments.list_knp_codes()
 
         render(conn, :setup,
           company: nil,
           banks: banks,
           kbe_codes: kbe_codes,
-          knp_codes: knp_codes,
           page_title: gettext("Set Up Your Company")
         )
 
@@ -55,7 +53,6 @@ defmodule EdocApiWeb.CompaniesController do
       nil ->
         banks = Payments.list_banks()
         kbe_codes = Payments.list_kbe_codes()
-        knp_codes = Payments.list_knp_codes()
 
         if missing_fields =
              missing_required_params(bank_account_params, @bank_account_required_fields) do
@@ -67,7 +64,6 @@ defmodule EdocApiWeb.CompaniesController do
           |> render(:setup,
             banks: banks,
             kbe_codes: kbe_codes,
-            knp_codes: knp_codes,
             page_title: gettext("Set Up Your Company")
           )
         else
@@ -96,7 +92,6 @@ defmodule EdocApiWeb.CompaniesController do
                     company: company,
                     banks: banks,
                     kbe_codes: kbe_codes,
-                    knp_codes: knp_codes,
                     page_title: gettext("Set Up Your Company")
                   )
               end
@@ -108,7 +103,6 @@ defmodule EdocApiWeb.CompaniesController do
                 changeset: changeset,
                 banks: banks,
                 kbe_codes: kbe_codes,
-                knp_codes: knp_codes,
                 page_title: gettext("Set Up Your Company")
               )
           end
