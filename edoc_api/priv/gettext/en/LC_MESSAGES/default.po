@@ -1293,6 +1293,11 @@ msgstr ""
 msgid "Please fill out this field."
 msgstr "Please fill out this field."
 
+#: lib/edoc_api_web/controllers/companies_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Please fill required fields: %{fields}"
+msgstr "Please fill required fields: %{fields}"
+
 #: lib/edoc_api_web/controllers/acts_controller.ex:109
 #: lib/edoc_api_web/controllers/contract_html_controller.ex:117
 #, elixir-autogen, elixir-format

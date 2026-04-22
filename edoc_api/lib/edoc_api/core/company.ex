@@ -33,13 +33,12 @@ defmodule EdocApi.Core.Company do
     bin_iin
     city
     address
-    phone
     representative_name
     representative_title
     basis
   )a
 
-  @optional_fields ~w(email)a
+  @optional_fields ~w(email phone)a
 
   @doc """
   Variant B (recommended): user_id is NOT accepted from attrs.
@@ -104,7 +103,6 @@ defmodule EdocApi.Core.Company do
 
     cond do
       is_nil(phone) or phone == "" ->
-        # phone у тебя required, но на всякий — не ломаем, а предупреждаем
         add_warning(changeset, :phone, "phone is blank")
 
       not is_binary(phone) ->

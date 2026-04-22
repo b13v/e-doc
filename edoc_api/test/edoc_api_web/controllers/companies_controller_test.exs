@@ -52,6 +52,63 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert html_response(conn, 200) =~ @bin_iin_error
     end
 
+    test "names missing company setup fields in the flash message", %{
+      conn: conn,
+      bank: bank,
+      kbe_code: kbe_code,
+      knp_code: knp_code
+    } do
+      company_params = Map.delete(company_attrs(), "name")
+
+      conn =
+        post(conn, "/company/setup", %{
+          "company" => company_params,
+          "bank_account" => %{
+            "bank_id" => bank.id,
+            "iban" => valid_kz_iban("1234567890"),
+            "kbe_code_id" => kbe_code.id,
+            "knp_code_id" => knp_code.id
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Заполните обязательные поля: Название компании"
+
+      assert body =~ "Заполните обязательные поля: Название компании"
+      refute body =~ "Исправьте ошибки ниже."
+    end
+
+    test "names missing initial bank account fields in the flash message", %{
+      conn: conn,
+      bank: _bank,
+      kbe_code: kbe_code,
+      knp_code: knp_code
+    } do
+      user_id = get_session(conn, :user_id)
+
+      conn =
+        post(conn, "/company/setup", %{
+          "company" => company_attrs(),
+          "bank_account" => %{
+            "bank_id" => "",
+            "iban" => valid_kz_iban("1234567890"),
+            "kbe_code_id" => kbe_code.id,
+            "knp_code_id" => knp_code.id
+          }
+        })
+
+      body = html_response(conn, 200)
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Заполните обязательные поля: Банк"
+
+      assert body =~ "Заполните обязательные поля: Банк"
+      refute body =~ "Failed to create the bank account. Please try again."
+      refute Companies.get_company_by_user_id(user_id)
+    end
+
     test "wraps an unquoted company name in double quotes on setup", %{
       conn: conn,
       bank: bank,
@@ -73,6 +130,29 @@ defmodule EdocApiWeb.CompaniesControllerTest do
 
       assert redirected_to(conn) == "/buyers/new"
       assert Companies.get_company_by_user_id(user_id).name == ~s("Acme LLC")
+    end
+
+    test "creates company setup when phone is omitted because the setup form marks it optional",
+         %{
+           conn: conn,
+           bank: bank,
+           kbe_code: kbe_code,
+           knp_code: knp_code
+         } do
+      company_params = Map.delete(company_attrs(), "phone")
+
+      conn =
+        post(conn, "/company/setup", %{
+          "company" => company_params,
+          "bank_account" => %{
+            "bank_id" => bank.id,
+            "iban" => valid_kz_iban("1234567890"),
+            "kbe_code_id" => kbe_code.id,
+            "knp_code_id" => knp_code.id
+          }
+        })
+
+      assert redirected_to(conn) == "/buyers/new"
     end
   end
 

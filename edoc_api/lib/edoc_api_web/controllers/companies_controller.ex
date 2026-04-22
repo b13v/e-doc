@@ -11,6 +11,19 @@ defmodule EdocApiWeb.CompaniesController do
   alias EdocApi.Repo
   alias EdocApi.Core.CompanyBankAccount
 
+  @company_setup_required_fields [
+    :name,
+    :legal_form,
+    :bin_iin,
+    :city,
+    :address,
+    :representative_name,
+    :representative_title,
+    :basis
+  ]
+
+  @bank_account_required_fields [:bank_id, :iban, :kbe_code_id, :knp_code_id]
+
   # Setup page for new users (create company)
   def setup(conn, _params) do
     user = conn.assigns.current_user
@@ -44,48 +57,61 @@ defmodule EdocApiWeb.CompaniesController do
         kbe_codes = Payments.list_kbe_codes()
         knp_codes = Payments.list_knp_codes()
 
-        # First create the company
-        case Companies.upsert_company_for_user(user.id, company_params) do
-          {:ok, company, _warnings} ->
-            # Then create the bank account
-            bank_account_attrs = Map.put(bank_account_params, "label", gettext("Primary Account"))
+        if missing_fields =
+             missing_required_params(bank_account_params, @bank_account_required_fields) do
+          conn
+          |> put_flash(
+            :error,
+            required_fields_flash_message(missing_fields, &bank_account_field_label/1)
+          )
+          |> render(:setup,
+            banks: banks,
+            kbe_codes: kbe_codes,
+            knp_codes: knp_codes,
+            page_title: gettext("Set Up Your Company")
+          )
+        else
+          # First create the company
+          case Companies.upsert_company_for_user(user.id, company_params) do
+            {:ok, company, _warnings} ->
+              # Then create the bank account
+              bank_account_attrs =
+                Map.put(bank_account_params, "label", gettext("Primary Account"))
 
-            case Payments.create_company_bank_account_for_user(user.id, bank_account_attrs) do
-              {:ok, _bank_account} ->
-                conn
-                |> put_flash(
-                  :info,
-                  gettext(
-                    "Company created successfully. Now add your first buyer to start working with contracts."
+              case Payments.create_company_bank_account_for_user(user.id, bank_account_attrs) do
+                {:ok, _bank_account} ->
+                  conn
+                  |> put_flash(
+                    :info,
+                    gettext(
+                      "Company created successfully. Now add your first buyer to start working with contracts."
+                    )
                   )
-                )
-                |> redirect(to: "/buyers/new")
+                  |> redirect(to: "/buyers/new")
 
-              {:error, _changeset} ->
-                conn
-                |> put_flash(
-                  :error,
-                  gettext("Failed to create the bank account. Please try again.")
-                )
-                |> render(:setup,
-                  company: company,
-                  banks: banks,
-                  kbe_codes: kbe_codes,
-                  knp_codes: knp_codes,
-                  page_title: gettext("Set Up Your Company")
-                )
-            end
+                {:error, changeset} ->
+                  conn
+                  |> put_flash(:error, setup_bank_account_validation_flash_message(changeset))
+                  |> render(:setup,
+                    company: company,
+                    banks: banks,
+                    kbe_codes: kbe_codes,
+                    knp_codes: knp_codes,
+                    page_title: gettext("Set Up Your Company")
+                  )
+              end
 
-          {:error, changeset, _warnings} ->
-            conn
-            |> put_flash(:error, company_validation_flash_message(changeset))
-            |> render(:setup,
-              changeset: changeset,
-              banks: banks,
-              kbe_codes: kbe_codes,
-              knp_codes: knp_codes,
-              page_title: gettext("Set Up Your Company")
-            )
+            {:error, changeset, _warnings} ->
+              conn
+              |> put_flash(:error, company_validation_flash_message(changeset))
+              |> render(:setup,
+                changeset: changeset,
+                banks: banks,
+                kbe_codes: kbe_codes,
+                knp_codes: knp_codes,
+                page_title: gettext("Set Up Your Company")
+              )
+          end
         end
 
       _company ->
@@ -175,7 +201,10 @@ defmodule EdocApiWeb.CompaniesController do
           end
         else
           conn
-          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> put_flash(
+            :error,
+            gettext("Only the owner or an admin can manage the tariff and team members.")
+          )
           |> redirect(to: "/company")
         end
     end
@@ -248,7 +277,10 @@ defmodule EdocApiWeb.CompaniesController do
 
             {:error, :seat_limit_reached, _details} ->
               conn
-              |> put_flash(:error, gettext("No seats available. Upgrade your subscription to invite more users."))
+              |> put_flash(
+                :error,
+                gettext("No seats available. Upgrade your subscription to invite more users.")
+              )
               |> redirect(to: "/company")
 
             {:error, :duplicate_invite, _details} ->
@@ -268,12 +300,18 @@ defmodule EdocApiWeb.CompaniesController do
 
             {:error, %Ecto.Changeset{}} ->
               conn
-              |> put_flash(:error, gettext("Enter a valid email address to invite a team member."))
+              |> put_flash(
+                :error,
+                gettext("Enter a valid email address to invite a team member.")
+              )
               |> redirect(to: "/company")
           end
         else
           conn
-          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> put_flash(
+            :error,
+            gettext("Only the owner or an admin can manage the tariff and team members.")
+          )
           |> redirect(to: "/company")
         end
     end
@@ -332,7 +370,10 @@ defmodule EdocApiWeb.CompaniesController do
           end
         else
           conn
-          |> put_flash(:error, gettext("Only the owner or an admin can manage the tariff and team members."))
+          |> put_flash(
+            :error,
+            gettext("Only the owner or an admin can manage the tariff and team members.")
+          )
           |> redirect(to: "/company")
         end
     end
@@ -425,10 +466,15 @@ defmodule EdocApiWeb.CompaniesController do
   end
 
   defp company_validation_flash_message(changeset) do
-    if Keyword.has_key?(changeset.errors, :bin_iin) do
-      gettext("Invalid BIN/IIN. Please enter a valid 12-digit BIN/IIN.")
-    else
-      gettext("Please correct the errors below.")
+    cond do
+      missing_fields = missing_required_fields(changeset, @company_setup_required_fields) ->
+        required_fields_flash_message(missing_fields, &company_setup_field_label/1)
+
+      Keyword.has_key?(changeset.errors, :bin_iin) ->
+        gettext("Invalid BIN/IIN. Please enter a valid 12-digit BIN/IIN.")
+
+      true ->
+        gettext("Please correct the errors below.")
     end
   end
 
@@ -439,6 +485,56 @@ defmodule EdocApiWeb.CompaniesController do
       "#{bank_account_field_label(field)}: #{Enum.join(errors, ", ")}"
     end)
     |> Enum.join("; ")
+  end
+
+  defp setup_bank_account_validation_flash_message(changeset) do
+    if missing_fields = missing_required_fields(changeset, @bank_account_required_fields) do
+      required_fields_flash_message(missing_fields, &bank_account_field_label/1)
+    else
+      bank_account_validation_flash_message(changeset)
+    end
+  end
+
+  defp missing_required_fields(changeset, field_order) do
+    fields =
+      Enum.filter(field_order, fn field ->
+        changeset.errors
+        |> Keyword.get_values(field)
+        |> Enum.any?(&required_error?/1)
+      end)
+
+    case fields do
+      [] -> nil
+      fields -> fields
+    end
+  end
+
+  defp missing_required_params(params, field_order) do
+    params = Map.new(params)
+
+    fields =
+      Enum.filter(field_order, fn field ->
+        string_key = Atom.to_string(field)
+        value = Map.get(params, string_key, Map.get(params, field))
+
+        is_nil(value) or (is_binary(value) and String.trim(value) == "")
+      end)
+
+    case fields do
+      [] -> nil
+      fields -> fields
+    end
+  end
+
+  defp required_error?({_message, opts}), do: opts[:validation] == :required
+
+  defp required_fields_flash_message(fields, label_fun) do
+    labels =
+      fields
+      |> Enum.map(label_fun)
+      |> Enum.join(", ")
+
+    gettext("Please fill required fields: %{fields}", fields: labels)
   end
 
   defp translate_changeset_error({msg, opts}) do
@@ -452,5 +548,17 @@ defmodule EdocApiWeb.CompaniesController do
   defp bank_account_field_label(:label), do: gettext("Label")
   defp bank_account_field_label(:bank_id), do: gettext("Bank")
   defp bank_account_field_label(:iban), do: gettext("IBAN")
+  defp bank_account_field_label(:kbe_code_id), do: gettext("KBE code")
+  defp bank_account_field_label(:knp_code_id), do: gettext("KNP code")
   defp bank_account_field_label(field), do: Phoenix.Naming.humanize(field)
+
+  defp company_setup_field_label(:name), do: gettext("Company Name")
+  defp company_setup_field_label(:legal_form), do: gettext("Legal Form")
+  defp company_setup_field_label(:bin_iin), do: gettext("BIN/IIN")
+  defp company_setup_field_label(:city), do: gettext("City")
+  defp company_setup_field_label(:address), do: gettext("Address")
+  defp company_setup_field_label(:representative_name), do: gettext("Representative name")
+  defp company_setup_field_label(:representative_title), do: gettext("Representative title")
+  defp company_setup_field_label(:basis), do: gettext("Basis")
+  defp company_setup_field_label(field), do: Phoenix.Naming.humanize(field)
 end
