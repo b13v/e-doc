@@ -73,10 +73,12 @@ As owner/admin on `/company` team management:
 
 Verify:
 - Invite above limit is blocked.
-- If extra seats are added (admin backoffice), invite limit increases accordingly.
 
 Expected:
-- Effective limit = included seats + extra seats.
+- Effective limit comes only from the current plan:
+- Trial: 2 seats.
+- Starter: 2 seats.
+- Basic: 5 seats.
 
 ## 5. Upgrade Workflow (Phase 8)
 
@@ -153,7 +155,6 @@ Perform admin actions:
 - Suspend/reactivate
 - Extend grace
 - Schedule plan change
-- Change extra seats
 
 Verify:
 - Each action produces `billing_audit_events` record with:
@@ -219,4 +220,3 @@ FROM billing_invoices
 WHERE status IN ('sent', 'overdue')
 ORDER BY due_at NULLS LAST;
 ```
-

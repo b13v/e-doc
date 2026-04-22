@@ -81,6 +81,14 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert redirected_to(conn) == "/admin/billing/clients"
   end
 
+  test "platform admin is redirected from /admin to /admin/billing/clients", %{
+    admin_conn: conn
+  } do
+    conn = get(conn, "/admin")
+
+    assert redirected_to(conn) == "/admin/billing/clients"
+  end
+
   test "platform admin sees client detail with users, invoices, payments, and notes form", %{
     admin_conn: conn,
     company: company,
@@ -100,7 +108,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/renewal-invoices")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/upgrade-invoices")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/schedule-change")
-    assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/extra-seats")
+    refute body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/extra-seats")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/grace-period")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/suspend")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
@@ -195,21 +203,6 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
 
     assert redirected_to(conn) == "/admin/billing/clients"
     assert Repo.get!(Subscription, subscription.id).status == "active"
-  end
-
-  test "platform admin can decrease extra seats from client detail", %{
-    admin_conn: conn,
-    subscription: subscription
-  } do
-    {:ok, subscription} = Billing.change_extra_user_seats(subscription, 3)
-
-    conn =
-      post(conn, "/admin/billing/subscriptions/#{subscription.id}/extra-seats", %{
-        "count" => "1"
-      })
-
-    assert redirected_to(conn) == "/admin/billing/clients"
-    assert Repo.get!(Subscription, subscription.id).extra_user_seats == 1
   end
 
   test "platform admin cannot schedule downgrade when current seats violate target plan", %{

@@ -43,6 +43,10 @@ defmodule EdocApi.Billing.SchemaTest do
   end
 
   describe "subscriptions" do
+    test "does not expose subscription extra seats" do
+      refute :extra_user_seats in Subscription.__schema__(:fields)
+    end
+
     test "validates canonical status and tenant period" do
       company = create_company!()
       plan = create_plan!("starter")
@@ -55,7 +59,6 @@ defmodule EdocApi.Billing.SchemaTest do
           status: "active",
           current_period_start: now,
           current_period_end: DateTime.add(now, 30, :day),
-          extra_user_seats: 0,
           auto_renew_mode: "manual"
         })
 

@@ -275,7 +275,7 @@ defmodule EdocApi.Billing do
   @doc "Returns the user-seat limit for the tenant's current plan."
   def allowed_user_limit(company_or_id) do
     with {:ok, subscription} <- get_current_subscription(company_or_id) do
-      {:ok, subscription.plan.included_users + subscription.extra_user_seats}
+      {:ok, subscription.plan.included_users}
     end
   end
 
@@ -420,7 +420,7 @@ defmodule EdocApi.Billing do
     with {:ok, subscription} <- get_current_subscription(company_or_id) do
       company_id = record_id(company_or_id)
       used = occupied_seat_count(company_id)
-      limit = subscription.plan.included_users + subscription.extra_user_seats
+      limit = subscription.plan.included_users
       remaining = max(limit - used, 0)
       details = seat_quota_details(subscription, used, limit, remaining)
 
@@ -976,29 +976,6 @@ defmodule EdocApi.Billing do
     })
   end
 
-  @doc "Adds extra user seats to a subscription."
-  def add_extra_user_seats(subscription_or_id, count) do
-    subscription = get_subscription!(subscription_or_id)
-    count = parse_integer(count, 0)
-
-    change_extra_user_seats(subscription, subscription.extra_user_seats + max(count, 0))
-  end
-
-  @doc "Sets the subscription extra seat quantity without dropping below occupied seats."
-  def change_extra_user_seats(subscription_or_id, count) do
-    subscription = get_subscription!(subscription_or_id)
-    target_extra_seats = max(parse_integer(count, 0), 0)
-    target_limit = subscription.plan.included_users + target_extra_seats
-    used = occupied_seat_count(subscription.company_id)
-
-    if used > target_limit do
-      {:error, :seat_limit_reached,
-       %{company_id: subscription.company_id, used: used, target_limit: target_limit}}
-    else
-      update_subscription(subscription, %{extra_user_seats: target_extra_seats})
-    end
-  end
-
   defp admin_client_summary(company) do
     subscription =
       case get_current_subscription(company.id) do
@@ -1013,7 +990,7 @@ defmodule EdocApi.Billing do
       end
 
     document_limit = subscription && subscription.plan.monthly_document_limit
-    user_limit = subscription && subscription.plan.included_users + subscription.extra_user_seats
+    user_limit = subscription && subscription.plan.included_users
     occupied_users = occupied_seat_count(company.id)
 
     overdue_invoices =
@@ -1398,17 +1375,6 @@ defmodule EdocApi.Billing do
     end
   end
 
-  defp parse_integer(value, _default) when is_integer(value), do: value
-
-  defp parse_integer(value, default) when is_binary(value) do
-    case Integer.parse(value) do
-      {integer, _} -> integer
-      :error -> default
-    end
-  end
-
-  defp parse_integer(_value, default), do: default
-
   defp create_billing_invoice(subscription_or_id, plan_or_code, note, opts) do
     with %Subscription{} = subscription <- get_subscription!(subscription_or_id),
          {:ok, plan} <- resolve_plan(plan_or_code) do
@@ -1491,7 +1457,7 @@ defmodule EdocApi.Billing do
 
   defp ensure_target_plan_can_hold_current_seats(subscription, target_plan) do
     used = occupied_seat_count(subscription.company_id)
-    target_limit = target_plan.included_users + subscription.extra_user_seats
+    target_limit = target_plan.included_users
 
     if used > target_limit do
       {:error, :seat_limit_reached,

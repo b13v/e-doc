@@ -53,7 +53,6 @@ Use `/admin/billing/clients/:id` for manual interventions:
 - Reactivate subscription
 - Extend grace period
 - Schedule plan changes
-- Update extra seats
 
 All actions are written to billing audit events.
 

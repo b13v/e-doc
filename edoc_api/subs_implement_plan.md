@@ -187,7 +187,6 @@ Create all core tables required for billing and admin monitoring.
   - [x] `current_period_start`
   - [x] `current_period_end`
   - [x] `grace_until`
-  - [x] `extra_user_seats`
   - [x] `auto_renew_mode`
   - [x] `next_plan_id`
   - [x] `change_effective_at`
@@ -355,7 +354,7 @@ Prevent unpaid or over-limit tenants from continuing billable usage.
 - [x] Implement `can_add_user?/1`.
 - [x] Implement `ensure_can_add_user!/1`.
 - [x] Count current active users correctly.
-- [x] Respect `included_users + extra_user_seats`.
+- [x] Respect fixed plan seats from `plans.included_users`.
 
 ### Subscription Standing Enforcement
 - [x] Decide grace-period behavior: allow creation during the Phase 0 grace window.
@@ -438,7 +437,6 @@ Provide an internal admin interface to monitor clients and manually control bill
 - [x] Add action: suspend tenant.
 - [x] Add action: extend grace period.
 - [x] Add action: schedule upgrade.
-- [x] Add action: add extra seats.
 - [x] Add action: add internal note.
 
 ## Deliverables
@@ -455,7 +453,7 @@ Provide an internal admin interface to monitor clients and manually control bill
 
 - Added `/admin/billing/...` backoffice routes protected by a new `users.is_platform_admin` flag.
 - Added client list/detail pages with subscription, seat, document, invoice, payment, and internal-note visibility.
-- Added billing invoice list filters and manual actions for Kaspi link/sent state, payments, suspension/reactivation, grace extension, scheduled upgrades, extra seats, renewal invoices, and upgrade invoices.
+- Added billing invoice list filters and manual actions for Kaspi link/sent state, payments, suspension/reactivation, grace extension, scheduled upgrades, renewal invoices, and upgrade invoices.
 
 ## Phase 5 Open Risks
 
@@ -582,10 +580,10 @@ Support plan upgrades and additional user seats.
 - [x] Support scheduled downgrade for next billing cycle.
 - [x] Prevent immediate downgrade if it would violate current active user count or current usage assumptions.
 
-### Extra Seats
-- [x] Support `extra_user_seats` on subscription.
-- [x] Add admin action to increase/decrease seats.
-- [x] Reflect seats in `allowed_user_limit/1`.
+### Seat Limits
+- [x] Enforce fixed plan seats from plan definitions.
+- [x] Trial and Starter allow 2 seats.
+- [x] Basic allows 5 seats.
 
 ### Optional Proration
 - [x] If implementing immediate mid-cycle upgrade, decide proration rules.
@@ -604,13 +602,13 @@ Support plan upgrades and additional user seats.
 - Added tenant-facing Basic upgrade invoice requests from `/company/billing` and admin-facing immediate upgrade invoice creation.
 - Chose the MVP upgrade policy: paid upgrade invoices apply immediately for the remainder of the current billing cycle, without proration.
 - Added scheduled downgrade support for the next cycle, with guards for occupied seats and current document usage before scheduling.
-- Added admin controls to set extra seats up or down, with guards preventing reductions below occupied seats.
+- Removed extra-seat expansion from the product model; seat limits now come only from the selected plan.
 - Payment confirmation now clears pending scheduled plan-change fields after applying the paid invoice period.
 
 ## Phase 8 Open Risks
 
 - Upgrade invoices currently charge full target-plan price for the remainder of the current cycle; real proration is intentionally deferred.
-- Tenant-facing extra-seat purchase/request UI is not implemented; seat changes are admin-controlled in this phase.
+- Extra-seat purchase/request UI is intentionally not implemented because the product only supports fixed plan seat limits.
 
 ---
 

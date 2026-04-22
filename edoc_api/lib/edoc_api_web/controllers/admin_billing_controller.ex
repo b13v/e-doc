@@ -280,29 +280,6 @@ defmodule EdocApiWeb.AdminBillingController do
     end
   end
 
-  def add_extra_seats(conn, %{"id" => subscription_id} = params) do
-    case Billing.change_extra_user_seats(subscription_id, params["count"] || "0") do
-      {:ok, subscription} ->
-        audit_admin_action(
-          conn,
-          subscription.company_id,
-          "admin_extra_seats_updated",
-          "subscription",
-          subscription.id,
-          %{
-            extra_user_seats: subscription.extra_user_seats
-          }
-        )
-
-        redirect(conn, to: "/admin/billing/clients")
-
-      {:error, _reason, _details} ->
-        conn
-        |> put_flash(:error, "Could not update extra seats.")
-        |> redirect(to: "/admin/billing/clients")
-    end
-  end
-
   def add_note(conn, %{"id" => company_id, "note" => note}) do
     {:ok, _event} = Billing.add_internal_note(company_id, conn.assigns.current_user, note)
     redirect(conn, to: "/admin/billing/clients/#{company_id}")

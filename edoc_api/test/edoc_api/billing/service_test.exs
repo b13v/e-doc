@@ -235,21 +235,6 @@ defmodule EdocApi.Billing.ServiceTest do
 
       assert {:ok, %{used: 3, limit: 5, remaining: 2}} = Billing.ensure_can_add_user(company.id)
     end
-
-    test "respects extra user seats" do
-      seed_plans!()
-      company = create_company!()
-      {:ok, subscription} = Billing.create_trial_subscription(company.id)
-
-      assert {:ok, _subscription} =
-               subscription
-               |> Subscription.changeset(%{extra_user_seats: 1})
-               |> Repo.update()
-
-      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
-
-      assert {:ok, %{used: 2, limit: 3, remaining: 1}} = Billing.ensure_can_add_user(company.id)
-    end
   end
 
   describe "billing invoices and payments" do
@@ -603,25 +588,24 @@ defmodule EdocApi.Billing.ServiceTest do
       assert downgraded.change_effective_at == nil
     end
 
-    test "extra seats can be increased and decreased without dropping below occupied seats" do
+    test "user limit comes only from the current plan included seats" do
       seed_plans!()
       company = create_company!()
       {:ok, subscription} = Billing.create_trial_subscription(company.id)
 
-      assert {:ok, with_seats} = Billing.change_extra_user_seats(subscription, 3)
-      assert with_seats.extra_user_seats == 3
-      assert Billing.allowed_user_limit(company.id) == {:ok, 5}
+      assert subscription.plan.code == "trial"
+      assert Billing.allowed_user_limit(company.id) == {:ok, 2}
 
       create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
       create_membership!(company.id, %{invite_email: "second@example.com", status: "invited"})
-      create_membership!(company.id, %{invite_email: "third@example.com", status: "invited"})
 
-      assert {:error, :seat_limit_reached, %{used: 4, target_limit: 3}} =
-               Billing.change_extra_user_seats(with_seats, 1)
+      assert {:error, :seat_limit_reached, %{used: 3, limit: 2}} =
+               Billing.ensure_can_add_user(company.id)
 
-      assert {:ok, reduced} = Billing.change_extra_user_seats(with_seats, 2)
-      assert reduced.extra_user_seats == 2
-      assert Billing.allowed_user_limit(company.id) == {:ok, 4}
+      {:ok, basic} = Billing.activate_subscription(subscription, "basic")
+
+      assert basic.plan.code == "basic"
+      assert Billing.allowed_user_limit(company.id) == {:ok, 5}
     end
 
     test "rejects a pending payment without activating the subscription" do

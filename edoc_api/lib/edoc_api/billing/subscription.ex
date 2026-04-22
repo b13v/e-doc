@@ -13,7 +13,6 @@ defmodule EdocApi.Billing.Subscription do
     field(:current_period_start, :utc_datetime)
     field(:current_period_end, :utc_datetime)
     field(:grace_until, :utc_datetime)
-    field(:extra_user_seats, :integer, default: 0)
     field(:auto_renew_mode, :string, default: "manual")
     field(:change_effective_at, :utc_datetime)
     field(:blocked_reason, :string)
@@ -34,7 +33,6 @@ defmodule EdocApi.Billing.Subscription do
       :current_period_start,
       :current_period_end,
       :grace_until,
-      :extra_user_seats,
       :auto_renew_mode,
       :next_plan_id,
       :change_effective_at,
@@ -50,7 +48,6 @@ defmodule EdocApi.Billing.Subscription do
     ])
     |> validate_inclusion(:status, SubscriptionStatus.all())
     |> validate_inclusion(:auto_renew_mode, @auto_renew_modes)
-    |> validate_number(:extra_user_seats, greater_than_or_equal_to: 0)
     |> validate_period(:current_period_start, :current_period_end)
     |> foreign_key_constraint(:company_id)
     |> foreign_key_constraint(:plan_id)
