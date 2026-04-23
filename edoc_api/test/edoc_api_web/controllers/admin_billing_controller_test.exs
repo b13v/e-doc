@@ -7,6 +7,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Billing
   alias EdocApi.Billing.{BillingAuditEvent, BillingInvoice, Payment, Subscription}
+  alias EdocApi.Monetization
   alias EdocApi.Repo
 
   setup %{conn: conn} do
@@ -71,6 +72,60 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "Monthly collected"
     assert body =~ "Invoices due soon"
     assert body =~ "Unpaid invoices"
+  end
+
+  test "platform admin sees legacy monetization tenants in client list", %{
+    admin_conn: conn
+  } do
+    user = create_user!(%{"email" => "legacy-admin-client@example.com"})
+    Accounts.mark_email_verified!(user.id)
+    company = create_company!(user, %{"name" => "Legacy Admin Client"})
+
+    {:ok, _subscription} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "period_start" => ~U[2026-01-01 00:00:00Z],
+        "period_end" => ~U[2026-01-31 00:00:00Z],
+        "skip_trial" => true
+      })
+
+    body =
+      conn
+      |> get("/admin/billing/clients")
+      |> html_response(200)
+
+    assert body =~ "Legacy Admin Client"
+    assert body =~ "Starter"
+    assert body =~ "active"
+    assert body =~ "1 / 50"
+    assert body =~ "1 / 2"
+    assert body =~ "31.01.2026"
+  end
+
+  test "platform admin sees legacy monetization tenants without created billing invoices", %{
+    admin_conn: conn
+  } do
+    user = create_user!(%{"email" => "legacy-admin-invoices@example.com"})
+    Accounts.mark_email_verified!(user.id)
+    company = create_company!(user, %{"name" => "Legacy Admin Invoice Client"})
+
+    {:ok, _subscription} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic",
+        "period_start" => ~U[2026-01-01 00:00:00Z],
+        "period_end" => ~U[2026-01-31 00:00:00Z],
+        "skip_trial" => true
+      })
+
+    body =
+      conn
+      |> get("/admin/billing/invoices")
+      |> html_response(200)
+
+    assert body =~ "Legacy Admin Invoice Client"
+    assert body =~ "pending_invoice"
+    assert body =~ "Basic"
+    assert body =~ "31.01.2026"
   end
 
   test "platform admin billing uses admin navigation instead of tenant workspace navigation", %{

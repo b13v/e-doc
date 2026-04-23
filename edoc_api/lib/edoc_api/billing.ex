@@ -23,7 +23,7 @@ defmodule EdocApi.Billing do
   }
 
   alias EdocApi.Accounts.User
-  alias EdocApi.Core.{Company, TenantMembership}
+  alias EdocApi.Core.{Company, TenantMembership, TenantSubscription, TenantUsageEvent}
   alias EdocApi.EmailSender
   alias EdocApi.Repo
 
@@ -785,8 +785,8 @@ defmodule EdocApi.Billing do
     renewal_horizon = DateTime.add(now, @renewal_invoice_lead_days, :day)
 
     cards = %{
-      active_clients: subscription_count(SubscriptionStatus.active()),
-      trial_clients: subscription_count(SubscriptionStatus.trialing()),
+      active_clients: active_client_count(),
+      trial_clients: trial_client_count(),
       overdue_clients: overdue_client_count(),
       suspended_clients: subscription_count(SubscriptionStatus.suspended()),
       monthly_collected_revenue: monthly_collected_revenue(month_start, now),
@@ -850,11 +850,14 @@ defmodule EdocApi.Billing do
   def list_admin_billing_invoices(filters \\ %{}) do
     status = normalize_blank(Map.get(filters, "status") || Map.get(filters, :status))
 
-    BillingInvoice
-    |> maybe_filter_invoice_status(status)
-    |> order_by([i], desc: i.inserted_at)
-    |> preload([:company, :payments])
-    |> Repo.all()
+    billing_invoices =
+      BillingInvoice
+      |> maybe_filter_invoice_status(status)
+      |> order_by([i], desc: i.inserted_at)
+      |> preload([:company, :payments])
+      |> Repo.all()
+
+    billing_invoices ++ legacy_pending_billing_invoice_summaries(status)
   end
 
   @doc "Returns tenant-facing billing data for the current company."
@@ -867,6 +870,13 @@ defmodule EdocApi.Billing do
         {:error, :not_found} -> nil
       end
 
+    legacy_subscription =
+      if subscription do
+        nil
+      else
+        latest_legacy_subscription(company_id)
+      end
+
     outstanding_invoices =
       BillingInvoice
       |> where([i], i.company_id == ^company_id and i.status in ^["sent", "overdue"])
@@ -874,14 +884,48 @@ defmodule EdocApi.Billing do
       |> preload(:payments)
       |> Repo.all()
 
+    snapshot_subscription = subscription || legacy_subscription_summary(legacy_subscription)
+
     %{
-      subscription: subscription,
-      plan: subscription && subscription.plan,
+      subscription: snapshot_subscription,
+      plan: tenant_snapshot_plan(subscription, legacy_subscription),
       outstanding_invoices: outstanding_invoices,
-      blocked?: subscription && subscription.status in ["past_due", "suspended", "canceled"],
+      blocked?:
+        snapshot_subscription &&
+          snapshot_subscription.status in ["past_due", "suspended", "canceled"],
       overdue?: Enum.any?(outstanding_invoices, &(&1.status == "overdue")),
       reminders: tenant_billing_reminders(subscription, outstanding_invoices)
     }
+  end
+
+  defp latest_legacy_subscription(company_id) do
+    TenantSubscription
+    |> where([s], s.company_id == ^company_id and s.status in ["active", "past_due"])
+    |> order_by([s], desc: s.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp legacy_subscription_summary(nil), do: nil
+
+  defp legacy_subscription_summary(%TenantSubscription{} = subscription) do
+    %{
+      status: subscription.status,
+      current_period_start: subscription.period_start,
+      current_period_end: subscription.period_end,
+      blocked_reason: nil
+    }
+  end
+
+  defp tenant_snapshot_plan(%Subscription{plan: plan}, _legacy_subscription), do: plan
+  defp tenant_snapshot_plan(nil, nil), do: nil
+
+  defp tenant_snapshot_plan(nil, %TenantSubscription{plan: plan_code}) do
+    plan_code = normalize_code(plan_code)
+
+    @default_plans
+    |> Enum.find(%{code: plan_code, name: String.capitalize(plan_code)}, &(&1.code == plan_code))
+    |> Map.take([:code, :name, :price_kzt, :monthly_document_limit, :included_users])
   end
 
   @doc "Adds an internal admin note to the billing audit stream."
@@ -983,14 +1027,23 @@ defmodule EdocApi.Billing do
         {:error, :not_found} -> nil
       end
 
+    legacy_subscription =
+      if subscription do
+        nil
+      else
+        latest_legacy_subscription(company.id)
+      end
+
+    plan = tenant_snapshot_plan(subscription, legacy_subscription)
+
     used_documents =
       case current_document_usage(company.id) do
         {:ok, used} -> used
-        _ -> 0
+        _ -> legacy_document_usage(legacy_subscription)
       end
 
-    document_limit = subscription && subscription.plan.monthly_document_limit
-    user_limit = subscription && subscription.plan.included_users
+    document_limit = plan && plan.monthly_document_limit
+    user_limit = plan && plan.included_users
     occupied_users = occupied_seat_count(company.id)
 
     overdue_invoices =
@@ -1001,20 +1054,44 @@ defmodule EdocApi.Billing do
     %{
       company: company,
       subscription: subscription,
-      plan: subscription && subscription.plan,
-      subscription_status: subscription && subscription.status,
+      plan: plan,
+      subscription_status:
+        (subscription && subscription.status) ||
+          (legacy_subscription && legacy_subscription.status),
       occupied_users: occupied_users,
       user_limit: user_limit,
       used_documents: used_documents,
       document_limit: document_limit,
-      period_end: subscription && subscription.current_period_end,
+      period_end:
+        (subscription && subscription.current_period_end) ||
+          (legacy_subscription && legacy_subscription.period_end),
       overdue_invoices: overdue_invoices
     }
+  end
+
+  defp active_client_count do
+    subscription_count(SubscriptionStatus.active()) + legacy_paid_client_count()
+  end
+
+  defp trial_client_count do
+    subscription_count(SubscriptionStatus.trialing()) + legacy_trial_client_count()
   end
 
   defp subscription_count(status) do
     Subscription
     |> where([s], s.status == ^status)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp legacy_paid_client_count do
+    legacy_subscriptions_without_current_billing_query()
+    |> where([s], s.status == "active" and s.plan in ["starter", "basic"])
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp legacy_trial_client_count do
+    legacy_subscriptions_without_current_billing_query()
+    |> where([s], s.status == "active" and s.plan == "trial")
     |> Repo.aggregate(:count, :id)
   end
 
@@ -1034,10 +1111,18 @@ defmodule EdocApi.Billing do
   end
 
   defp upcoming_renewal_count(now, horizon) do
-    Subscription
-    |> where([s], s.status == ^SubscriptionStatus.active())
-    |> where([s], s.current_period_end > ^now and s.current_period_end <= ^horizon)
-    |> Repo.aggregate(:count, :id)
+    billing_count =
+      Subscription
+      |> where([s], s.status == ^SubscriptionStatus.active())
+      |> where([s], s.current_period_end > ^now and s.current_period_end <= ^horizon)
+      |> Repo.aggregate(:count, :id)
+
+    legacy_count =
+      legacy_subscriptions_without_current_billing_query()
+      |> where([s], s.status == "active" and s.period_end > ^now and s.period_end <= ^horizon)
+      |> Repo.aggregate(:count, :id)
+
+    billing_count + legacy_count
   end
 
   defp invoices_due_soon(now, horizon) do
@@ -1055,6 +1140,58 @@ defmodule EdocApi.Billing do
     |> order_by([i], asc: i.due_at, desc: i.inserted_at)
     |> preload(:company)
     |> Repo.all()
+  end
+
+  defp legacy_pending_billing_invoice_summaries(nil) do
+    legacy_subscriptions_without_current_billing_query()
+    |> where([s], s.status == "active" and s.plan in ["starter", "basic"])
+    |> join(:inner, [s], c in Company, on: c.id == s.company_id)
+    |> order_by([s, _billing, c], asc: s.period_end, asc: c.name)
+    |> select([s, _billing, c], {s, c})
+    |> Repo.all()
+    |> Enum.map(fn {subscription, company} ->
+      plan = tenant_snapshot_plan(nil, subscription)
+
+      %{
+        id: "pending-#{subscription.id}",
+        company: company,
+        status: "pending_invoice",
+        kaspi_payment_link: nil,
+        due_at: subscription.period_end,
+        payments: [],
+        plan_snapshot_code: subscription.plan,
+        amount_kzt: plan.price_kzt || 0,
+        virtual?: true
+      }
+    end)
+  end
+
+  defp legacy_pending_billing_invoice_summaries("pending_invoice"),
+    do: legacy_pending_billing_invoice_summaries(nil)
+
+  defp legacy_pending_billing_invoice_summaries(_status), do: []
+
+  defp legacy_subscriptions_without_current_billing_query do
+    TenantSubscription
+    |> join(:left, [legacy], billing in Subscription,
+      on:
+        billing.company_id == legacy.company_id and
+          billing.status in ^@current_subscription_statuses
+    )
+    |> where([_legacy, billing], is_nil(billing.id))
+  end
+
+  defp legacy_document_usage(nil), do: 0
+
+  defp legacy_document_usage(%TenantSubscription{} = subscription) do
+    TenantUsageEvent
+    |> where(
+      [u],
+      u.company_id == ^subscription.company_id and
+        u.occurred_at >= ^subscription.period_start and
+        u.occurred_at < ^subscription.period_end
+    )
+    |> Repo.aggregate(:count, :id)
   end
 
   defp recently_reactivated_clients(now) do

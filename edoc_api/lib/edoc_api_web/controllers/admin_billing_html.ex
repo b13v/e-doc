@@ -9,6 +9,16 @@ defmodule EdocApiWeb.AdminBillingHTML do
   def value_or_dash(nil), do: "-"
   def value_or_dash(value), do: value
 
+  def invoice_plan_label(%{plan_snapshot_code: code}) when is_binary(code) do
+    code
+    |> String.capitalize()
+  end
+
+  def invoice_plan_label(_), do: "-"
+
+  def invoice_virtual?(%{virtual?: true}), do: true
+  def invoice_virtual?(_), do: false
+
   def date_or_dash(nil), do: "-"
 
   def date_or_dash(%DateTime{} = datetime) do

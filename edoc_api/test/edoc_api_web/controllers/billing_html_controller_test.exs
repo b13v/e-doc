@@ -7,6 +7,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Billing
   alias EdocApi.Billing.{BillingInvoice, Payment}
+  alias EdocApi.Monetization
   alias EdocApi.Repo
 
   setup %{conn: conn} do
@@ -53,6 +54,33 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     assert body =~ "Open Kaspi payment link"
     assert body =~ "Payment instructions"
     assert body =~ ~s(action="/company/billing/invoices/#{invoice.id}/payments")
+  end
+
+  test "tenant sees legacy monetization plan details when no new billing subscription exists" do
+    user = create_user!(%{"email" => "legacy-tenant-billing@example.com"})
+    Accounts.mark_email_verified!(user.id)
+    company = create_company!(user, %{"name" => "Legacy Tenant Billing Client"})
+
+    {:ok, _legacy_subscription} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "starter",
+        "period_start" => ~U[2026-01-01 00:00:00Z],
+        "period_end" => ~U[2026-01-31 00:00:00Z],
+        "skip_trial" => true
+      })
+
+    body =
+      build_conn()
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> put_private(:plug_skip_csrf_protection, true)
+      |> put_req_header("accept", "text/html")
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Starter"
+    assert body =~ "31.01.2026"
+    assert body =~ "No outstanding billing invoices."
+    refute body =~ "No plan"
   end
 
   test "tenant sees blocked banner for suspended subscriptions", %{
