@@ -70,11 +70,14 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "1 / 5"
     assert body =~ "Overdue"
     assert body =~ "Active clients"
-    assert body =~ ~s(text-stone-500 dark:text-white">Active clients)
+    assert body =~ ~s(admin-billing-card-heading)
     assert body =~ "Monthly collected"
     assert body =~ "Invoices due soon"
     assert body =~ "Unpaid invoices"
-    assert body =~ ~s(text-stone-700 dark:text-white">Company)
+    assert body =~ ~s(admin-billing-table-heading)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-card-heading)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-table-heading)
+    assert body =~ "color: #ffffff !important;"
   end
 
   test "platform admin sees legacy monetization tenants in client list", %{
@@ -223,6 +226,10 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/invoices/#{invoice.id}/payments")
     assert body =~ ~s(target="_blank")
     assert body =~ "Copy link"
+    assert body =~ ~s(admin-billing-invoice-table-heading)
+    assert body =~ ~s(admin-billing-invoice-action-cell)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-invoice-table-heading)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-invoice-action-cell)
   end
 
   test "platform admin can attach a Kaspi link and it is stored as kaspi_link method", %{

@@ -341,6 +341,19 @@ defmodule EdocApiWeb.Layouts do
             color: #000000;
           }
 
+          html[data-theme="dark"] .admin-billing-card-heading,
+          html[data-theme="dark"] .admin-billing-table-heading,
+          html[data-theme="dark"] .admin-billing-invoice-table-heading {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .admin-billing-invoice-action-cell,
+          html[data-theme="dark"] .admin-billing-invoice-action-cell span {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
           html[data-theme="dark"] .workspace-support-panel {
             background-color: var(--workspace-support-bg);
             border-color: var(--workspace-support-border);

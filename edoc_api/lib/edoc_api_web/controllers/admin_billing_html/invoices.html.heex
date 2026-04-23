@@ -22,13 +22,13 @@
     <table class="min-w-full divide-y divide-stone-200 dark:divide-slate-700">
       <thead class="bg-stone-50 dark:bg-slate-800">
         <tr>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Invoice</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Company</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Plan</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Status</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Kaspi Link</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Due</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Actions</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Invoice</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Company</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Plan</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Status</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Kaspi Link</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Due</th>
+          <th class="admin-billing-invoice-table-heading px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-stone-200 dark:divide-slate-800">
@@ -57,7 +57,7 @@
               <% end %>
             </td>
             <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-200"><%= date_or_dash(invoice.due_at) %></td>
-            <td class="space-y-2 px-5 py-4 text-sm">
+            <td class="admin-billing-invoice-action-cell space-y-2 px-5 py-4 text-sm text-gray-700 dark:text-white">
               <%= if invoice_virtual?(invoice) do %>
                 <span class="text-sm text-stone-600 dark:text-slate-300">Create the billing invoice from the client detail page.</span>
               <% else %>
