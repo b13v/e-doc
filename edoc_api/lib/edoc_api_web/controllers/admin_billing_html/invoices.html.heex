@@ -59,7 +59,9 @@
             <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-200"><%= date_or_dash(invoice.due_at) %></td>
             <td class="admin-billing-invoice-action-cell space-y-2 px-5 py-4 text-sm text-gray-700 dark:text-white">
               <%= if invoice_virtual?(invoice) do %>
-                <span class="text-sm text-stone-600 dark:text-slate-300">Create the billing invoice from the client detail page.</span>
+                <a href={"/admin/billing/clients/#{invoice.company.id}"} class="font-semibold text-blue-700 hover:text-blue-900 dark:text-sky-300">
+                  Create from client detail
+                </a>
               <% else %>
                 <form action={"/admin/billing/invoices/#{invoice.id}/send"} method="post" class="space-y-2">
                   <input type="hidden" name="_csrf_token" value={get_csrf_token()} />

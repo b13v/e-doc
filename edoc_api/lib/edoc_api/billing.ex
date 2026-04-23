@@ -838,12 +838,35 @@ defmodule EdocApi.Billing do
       |> preload(:actor_user)
       |> Repo.all()
 
+    legacy_pending_invoice =
+      if summary.subscription do
+        nil
+      else
+        latest_active_billable_legacy_subscription(company.id)
+      end
+
     Map.merge(summary, %{
       memberships: memberships,
       invoices: invoices,
       payments: payments,
-      notes: notes
+      notes: notes,
+      legacy_pending_billing_invoice: legacy_pending_invoice
     })
+  end
+
+  @doc "Creates the missing billing invoice for an active legacy tenant subscription."
+  def create_legacy_pending_billing_invoice(company_or_id) do
+    company_id = record_id(company_or_id)
+
+    with {:ok, legacy_subscription} <- fetch_active_billable_legacy_subscription(company_id),
+         {:ok, subscription} <- ensure_current_subscription_from_legacy(legacy_subscription),
+         :ok <- ensure_no_legacy_pending_invoice(subscription, legacy_subscription) do
+      create_billing_invoice(subscription, legacy_subscription.plan, "legacy_pending",
+        period_start: legacy_subscription.period_start,
+        period_end: legacy_subscription.period_end,
+        due_at: legacy_subscription.period_end
+      )
+    end
   end
 
   @doc "Lists billing invoices for backoffice review, optionally filtered by status."
@@ -904,6 +927,67 @@ defmodule EdocApi.Billing do
     |> order_by([s], desc: s.inserted_at)
     |> limit(1)
     |> Repo.one()
+  end
+
+  defp latest_active_billable_legacy_subscription(company_id) do
+    TenantSubscription
+    |> where([s], s.company_id == ^company_id)
+    |> where([s], s.status == "active" and s.plan in ["starter", "basic"])
+    |> order_by([s], desc: s.period_end, desc: s.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp fetch_active_billable_legacy_subscription(company_id) do
+    case latest_active_billable_legacy_subscription(company_id) do
+      nil -> {:error, :legacy_subscription_not_found}
+      subscription -> {:ok, subscription}
+    end
+  end
+
+  defp ensure_current_subscription_from_legacy(%TenantSubscription{} = legacy_subscription) do
+    case get_current_subscription(legacy_subscription.company_id) do
+      {:ok, subscription} ->
+        {:ok, subscription}
+
+      {:error, :not_found} ->
+        with {:ok, plan} <- resolve_plan(legacy_subscription.plan) do
+          %Subscription{}
+          |> Subscription.changeset(%{
+            company_id: legacy_subscription.company_id,
+            plan_id: plan.id,
+            status: SubscriptionStatus.active(),
+            current_period_start: legacy_subscription.period_start,
+            current_period_end: legacy_subscription.period_end,
+            auto_renew_mode: "manual"
+          })
+          |> Repo.insert()
+          |> preload_subscription_result()
+        end
+    end
+  end
+
+  defp ensure_no_legacy_pending_invoice(
+         %Subscription{} = subscription,
+         %TenantSubscription{} = legacy_subscription
+       ) do
+    existing =
+      BillingInvoice
+      |> where([i], i.company_id == ^legacy_subscription.company_id)
+      |> where([i], i.subscription_id == ^subscription.id)
+      |> where(
+        [i],
+        i.period_start == ^legacy_subscription.period_start and
+          i.period_end == ^legacy_subscription.period_end
+      )
+      |> where([i], i.status != ^BillingInvoiceStatus.canceled())
+      |> Repo.exists?()
+
+    if existing do
+      {:error, :billing_invoice_already_exists}
+    else
+      :ok
+    end
   end
 
   defp legacy_subscription_summary(nil), do: nil

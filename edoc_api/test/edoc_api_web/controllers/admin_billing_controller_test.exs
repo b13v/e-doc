@@ -132,6 +132,63 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "pending_invoice"
     assert body =~ "Basic"
     assert body =~ "31.01.2026"
+    assert body =~ ~s(href="/admin/billing/clients/#{company.id}")
+    assert body =~ "Create from client detail"
+  end
+
+  test "platform admin can see create invoice action for legacy pending billing client", %{
+    admin_conn: conn
+  } do
+    user = create_user!(%{"email" => "legacy-action-admin@example.com"})
+    Accounts.mark_email_verified!(user.id)
+    company = create_company!(user, %{"name" => "Legacy Action Client"})
+
+    {:ok, _subscription} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic",
+        "period_start" => ~U[2026-04-01 00:00:00Z],
+        "period_end" => ~U[2026-05-01 00:00:00Z],
+        "skip_trial" => true
+      })
+
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "Pending billing invoice"
+    assert body =~ ~s(action="/admin/billing/clients/#{company.id}/legacy-invoices")
+    assert body =~ "Create billing invoice"
+  end
+
+  test "platform admin creates billing invoice from legacy pending client", %{
+    admin_conn: conn
+  } do
+    user = create_user!(%{"email" => "legacy-create-admin@example.com"})
+    Accounts.mark_email_verified!(user.id)
+    company = create_company!(user, %{"name" => "Legacy Create Client"})
+
+    {:ok, _subscription} =
+      Monetization.activate_subscription_for_company(company.id, %{
+        "plan" => "basic",
+        "period_start" => ~U[2026-04-01 00:00:00Z],
+        "period_end" => ~U[2026-05-01 00:00:00Z],
+        "skip_trial" => true
+      })
+
+    conn = post(conn, "/admin/billing/clients/#{company.id}/legacy-invoices")
+
+    assert redirected_to(conn) == "/admin/billing/invoices"
+
+    body =
+      conn
+      |> recycle()
+      |> get("/admin/billing/invoices")
+      |> html_response(200)
+
+    assert body =~ "Legacy Create Client"
+    refute body =~ "pending-"
+    refute body =~ "Create from client detail"
   end
 
   test "platform admin billing uses admin navigation instead of tenant workspace navigation", %{

@@ -80,6 +80,29 @@ defmodule EdocApiWeb.AdminBillingController do
     end
   end
 
+  def create_legacy_invoice(conn, %{"id" => company_id}) do
+    case Billing.create_legacy_pending_billing_invoice(company_id) do
+      {:ok, invoice} ->
+        audit_admin_action(
+          conn,
+          invoice.company_id,
+          "admin_legacy_invoice_created",
+          "billing_invoice",
+          invoice.id,
+          %{company_id: company_id}
+        )
+
+        conn
+        |> put_flash(:info, "Billing invoice created.")
+        |> redirect(to: "/admin/billing/invoices")
+
+      {:error, reason} ->
+        conn
+        |> put_flash(:error, legacy_invoice_error_message(reason))
+        |> redirect(to: "/admin/billing/clients/#{company_id}")
+    end
+  end
+
   def send_invoice(conn, %{"id" => invoice_id} = params) do
     attrs = Map.get(params, "invoice", params)
 
@@ -313,6 +336,14 @@ defmodule EdocApiWeb.AdminBillingController do
       :error -> nil
     end
   end
+
+  defp legacy_invoice_error_message(:legacy_subscription_not_found),
+    do: "No active legacy billing plan was found for this client."
+
+  defp legacy_invoice_error_message(:billing_invoice_already_exists),
+    do: "Billing invoice already exists for this client period."
+
+  defp legacy_invoice_error_message(_reason), do: "Could not create billing invoice."
 
   defp parse_date_end(nil), do: nil
 

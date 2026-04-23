@@ -312,6 +312,7 @@ defmodule EdocApiWeb.Router do
     get("/billing/clients", AdminBillingController, :clients)
     get("/billing/clients/:id", AdminBillingController, :client)
     post("/billing/clients/:id/notes", AdminBillingController, :add_note)
+    post("/billing/clients/:id/legacy-invoices", AdminBillingController, :create_legacy_invoice)
     get("/billing/invoices", AdminBillingController, :invoices)
     post("/billing/invoices/:id/send", AdminBillingController, :send_invoice)
     post("/billing/invoices/:id/payments", AdminBillingController, :create_payment)
