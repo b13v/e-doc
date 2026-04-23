@@ -186,6 +186,24 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
   end
 
+  test "platform admin client detail hides removed users from the users pane", %{
+    admin_conn: conn,
+    company: company,
+    member: member
+  } do
+    insert_membership(company.id, "visible-invite@example.com")
+    insert_membership(company.id, "removed-user@example.com", "removed")
+
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ member.email
+    assert body =~ "visible-invite@example.com"
+    refute body =~ "removed-user@example.com"
+  end
+
   test "platform admin filters billing invoices by status and sees Kaspi link and due date", %{
     admin_conn: conn,
     billing_invoice: invoice
@@ -302,12 +320,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     |> put_req_header("accept", "text/html")
   end
 
-  defp insert_membership(company_id, email) do
+  defp insert_membership(company_id, email, status \\ "invited") do
     %EdocApi.Core.TenantMembership{}
     |> EdocApi.Core.TenantMembership.changeset(%{
       company_id: company_id,
       role: "member",
-      status: "invited",
+      status: status,
       invite_email: email
     })
     |> Repo.insert!()

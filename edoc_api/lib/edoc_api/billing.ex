@@ -813,7 +813,7 @@ defmodule EdocApi.Billing do
 
     memberships =
       TenantMembership
-      |> where([m], m.company_id == ^company.id)
+      |> where([m], m.company_id == ^company.id and m.status in ^@occupied_membership_statuses)
       |> preload(:user)
       |> order_by([m], asc: m.role, asc: m.invite_email)
       |> Repo.all()
