@@ -9,27 +9,27 @@
 
   <section class="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Active clients</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Active clients</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.active_clients %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Trial clients</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Trial clients</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.trial_clients %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Overdue clients</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Overdue clients</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.overdue_clients %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Suspended clients</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Suspended clients</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.suspended_clients %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Monthly collected</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Monthly collected</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.monthly_collected_revenue %> KZT</div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Upcoming renewals</div>
+      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-white">Upcoming renewals</div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= @dashboard.cards.upcoming_renewals %></div>
     </div>
   </section>
@@ -39,7 +39,7 @@
       <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Invoices due soon</h2>
       <p :if={Enum.empty?(@dashboard.lists.invoices_due_soon)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No sent invoices due in the next 7 days.</p>
       <div :for={invoice <- Enum.take(@dashboard.lists.invoices_due_soon, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-        <span class="font-semibold"><%= invoice.company.name %></span> · <%= invoice.amount_kzt %> KZT · <%= date_or_dash(invoice.due_at) %>
+        <span class="font-semibold"><%= company_display_name(invoice.company) %></span> · <%= invoice.amount_kzt %> KZT · <%= date_or_dash(invoice.due_at) %>
       </div>
     </div>
 
@@ -47,7 +47,7 @@
       <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Unpaid invoices</h2>
       <p :if={Enum.empty?(@dashboard.lists.unpaid_invoices)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No unpaid billing invoices.</p>
       <div :for={invoice <- Enum.take(@dashboard.lists.unpaid_invoices, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-        <span class="font-semibold"><%= invoice.company.name %></span> · <%= invoice.status %> · <%= invoice.amount_kzt %> KZT
+        <span class="font-semibold"><%= company_display_name(invoice.company) %></span> · <%= invoice.status %> · <%= invoice.amount_kzt %> KZT
       </div>
     </div>
 
@@ -55,7 +55,7 @@
       <h2 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-slate-100">Recently reactivated clients</h2>
       <p :if={Enum.empty?(@dashboard.lists.recently_reactivated_clients)} class="mt-3 text-sm text-gray-600 dark:text-slate-300">No recent reactivations.</p>
       <div :for={event <- Enum.take(@dashboard.lists.recently_reactivated_clients, 5)} class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-        <span class="font-semibold"><%= event.company.name %></span> · <%= date_or_dash(event.inserted_at) %>
+        <span class="font-semibold"><%= company_display_name(event.company) %></span> · <%= date_or_dash(event.inserted_at) %>
       </div>
     </div>
   </section>
@@ -64,20 +64,20 @@
     <table class="min-w-full divide-y divide-stone-200 dark:divide-slate-700">
       <thead class="bg-stone-50 dark:bg-slate-800">
         <tr>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Company</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Plan</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Status</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Users</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Documents</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Period End</th>
-          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-slate-100">Overdue</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Company</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Plan</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Status</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Users</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Documents</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Period End</th>
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-white">Overdue</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-stone-200 dark:divide-slate-800">
         <%= for client <- @clients do %>
           <tr class="hover:bg-stone-50 dark:hover:bg-slate-800">
             <td class="px-5 py-4 text-sm font-semibold text-gray-900 dark:text-slate-100">
-              <a href={"/admin/billing/clients/#{client.company.id}"} class="text-blue-700 hover:text-blue-900 dark:text-sky-300"><%= client.company.name %></a>
+              <a href={"/admin/billing/clients/#{client.company.id}"} class="text-blue-700 hover:text-blue-900 dark:text-sky-300"><%= company_display_name(client.company) %></a>
             </td>
             <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-200"><%= plan_label(client.plan) %></td>
             <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-200"><%= value_or_dash(client.subscription_status) %></td>

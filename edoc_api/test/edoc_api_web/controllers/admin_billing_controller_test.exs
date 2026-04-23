@@ -62,6 +62,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
       |> get("/admin/billing/clients")
       |> html_response(200)
 
+    assert body =~ "ТОО"
     assert body =~ "Backoffice Client"
     assert body =~ "Basic"
     assert body =~ "active"
@@ -69,9 +70,11 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "1 / 5"
     assert body =~ "Overdue"
     assert body =~ "Active clients"
+    assert body =~ ~s(text-stone-500 dark:text-white">Active clients)
     assert body =~ "Monthly collected"
     assert body =~ "Invoices due soon"
     assert body =~ "Unpaid invoices"
+    assert body =~ ~s(text-stone-700 dark:text-white">Company)
   end
 
   test "platform admin sees legacy monetization tenants in client list", %{

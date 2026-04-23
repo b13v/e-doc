@@ -1,6 +1,8 @@
 defmodule EdocApiWeb.AdminBillingHTML do
   use EdocApiWeb, :html
 
+  alias EdocApi.LegalForms
+
   embed_templates("admin_billing_html/*")
 
   def plan_label(nil), do: "No plan"
@@ -29,7 +31,22 @@ defmodule EdocApiWeb.AdminBillingHTML do
   def membership_email(%{user: %{email: email}}), do: email
   def membership_email(_), do: "-"
 
+  def company_display_name(%{name: name} = company) when is_binary(name) do
+    "#{legal_form_short(Map.get(company, :legal_form))} #{name}"
+  end
+
+  def company_display_name(_), do: "-"
+
   def metadata_note(%{metadata: %{"note" => note}}), do: note
   def metadata_note(%{metadata: %{note: note}}), do: note
   def metadata_note(_), do: ""
+
+  defp legal_form_short(legal_form) do
+    case LegalForms.display(legal_form) do
+      "Товарищество с ограниченной ответственностью" -> "ТОО"
+      "Акционерное общество" -> "АО"
+      "Индивидуальный предприниматель" -> "ИП"
+      _ -> "ТОО"
+    end
+  end
 end
