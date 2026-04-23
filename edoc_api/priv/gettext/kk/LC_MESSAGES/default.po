@@ -2640,3 +2640,16 @@ msgstr "Мерзімі өткен шоттар жоқ."
 
 msgid "Issued invoices will appear here after they are more than one day past due."
 msgstr "Қойылған шоттар төлеу мерзімі бір күннен артық өткеннен кейін осы жерде көрсетіледі."
+
+msgid "You have an overdue billing invoice."
+msgstr "Сізде төлеу мерзімі өткен төлем шоты бар."
+
+msgid "You have an unpaid billing invoice."
+msgstr "Сізде төленбеген төлем шоты бар."
+
+#, elixir-autogen, elixir-format
+msgid "Outstanding invoices: %{count}. Open billing to review payment details."
+msgstr "Төленбеген шоттар: %{count}. Төлем мәліметтерін көру үшін төлем бөліміне өтіңіз."
+
+msgid "Open billing"
+msgstr "Төлемді ашу"

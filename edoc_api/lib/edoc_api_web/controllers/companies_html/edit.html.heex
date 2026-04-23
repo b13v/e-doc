@@ -2,6 +2,10 @@
   <% bank_account_params = assigns[:bank_account_params] || %{} %>
   <% show_add_bank_form = assigns[:show_add_bank_form] || false %>
   <% subscription = assigns[:subscription] %>
+  <% billing_snapshot = assigns[:billing_snapshot] %>
+  <% outstanding_billing_invoices =
+    if billing_snapshot, do: billing_snapshot.outstanding_invoices, else: [] %>
+  <% overdue_billing? = Enum.any?(outstanding_billing_invoices, &(&1.status == "overdue")) %>
   <% memberships = assigns[:memberships] || [] %>
   <% downgrade_warning = assigns[:downgrade_warning] %>
   <% can_manage_billing_and_team = assigns[:can_manage_billing_and_team] || false %>
@@ -19,6 +23,43 @@
     end %>
 
   <.flash_error flash={@flash} />
+
+  <%= if not Enum.empty?(outstanding_billing_invoices) do %>
+    <div class={[
+      "company-billing-alert rounded-2xl border px-5 py-4 shadow-sm",
+      if(overdue_billing?,
+        do: "border-red-300 bg-red-50 text-red-950 dark:border-red-500/50 dark:bg-red-950/50 dark:text-red-50",
+        else: "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/50 dark:bg-amber-950/50 dark:text-amber-50"
+      )
+    ]}>
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-base font-semibold">
+            <%= if overdue_billing? do %>
+              <%= gettext("You have an overdue billing invoice.") %>
+            <% else %>
+              <%= gettext("You have an unpaid billing invoice.") %>
+            <% end %>
+          </p>
+          <p class="mt-1 text-sm opacity-90">
+            <%= gettext(
+              "Outstanding invoices: %{count}. Open billing to review payment details.",
+              count: Enum.count(outstanding_billing_invoices)
+            ) %>
+          </p>
+        </div>
+        <a href="/company/billing" class={[
+          "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm",
+          if(overdue_billing?,
+            do: "bg-red-700 hover:bg-red-800",
+            else: "bg-amber-700 hover:bg-amber-800"
+          )
+        ]}>
+          <%= gettext("Open billing") %>
+        </a>
+      </div>
+    </div>
+  <% end %>
 
   <div class="rounded-lg bg-white shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
     <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-800">

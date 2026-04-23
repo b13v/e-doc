@@ -1434,7 +1434,7 @@ msgstr "Выберите банк..."
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Select KBE..."
-msgstr ""
+msgstr "Выберите КБЕ..."
 
 #: lib/edoc_api_web/controllers/companies_html/setup.html.heex:123
 #, elixir-autogen, elixir-format
@@ -2640,3 +2640,16 @@ msgstr "Нет просроченных счетов."
 
 msgid "Issued invoices will appear here after they are more than one day past due."
 msgstr "Выставленные счета появятся здесь, когда просрочка превысит один день."
+
+msgid "You have an overdue billing invoice."
+msgstr "У вас есть просроченный счет на оплату."
+
+msgid "You have an unpaid billing invoice."
+msgstr "У вас есть неоплаченный счет на оплату."
+
+#, elixir-autogen, elixir-format
+msgid "Outstanding invoices: %{count}. Open billing to review payment details."
+msgstr "Неоплаченные счета: %{count}. Откройте раздел оплаты, чтобы посмотреть детали платежа."
+
+msgid "Open billing"
+msgstr "Открыть оплату"

@@ -4,6 +4,7 @@ defmodule EdocApiWeb.CompaniesController do
   import Ecto.Query, warn: false
   require Logger
 
+  alias EdocApi.Billing
   alias EdocApi.Companies
   alias EdocApi.EmailSender
   alias EdocApi.Monetization
@@ -440,6 +441,7 @@ defmodule EdocApiWeb.CompaniesController do
     bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
     banks = Payments.list_banks()
     subscription = Monetization.subscription_snapshot(company.id)
+    billing_snapshot = Billing.tenant_billing_snapshot(company.id)
     memberships = Monetization.list_memberships(company.id)
     can_manage_billing_and_team = Monetization.can_manage_billing_and_team?(company.id, user.id)
 
@@ -449,6 +451,7 @@ defmodule EdocApiWeb.CompaniesController do
         bank_accounts: bank_accounts,
         banks: banks,
         subscription: subscription,
+        billing_snapshot: billing_snapshot,
         memberships: memberships,
         can_manage_billing_and_team: can_manage_billing_and_team,
         current_section: :company,

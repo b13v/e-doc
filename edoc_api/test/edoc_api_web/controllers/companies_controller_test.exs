@@ -6,6 +6,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
   import Swoosh.TestAssertions
 
   alias EdocApi.Accounts
+  alias EdocApi.Billing
   alias EdocApi.Companies
   alias EdocApi.Core.{Bank, CompanyBankAccount, KbeCode, KnpCode}
   alias EdocApi.Core.TenantMembership
@@ -238,6 +239,36 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> html_response(200)
 
       assert body =~ ~s(href="/company/billing")
+    end
+
+    test "shows outstanding billing invoice banner on company page", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, _plans} = Billing.seed_default_plans()
+      {:ok, subscription} = Billing.create_trial_subscription(company)
+      {:ok, subscription} = Billing.activate_subscription(subscription, "basic")
+      {:ok, invoice} = Billing.create_renewal_invoice(subscription, "basic")
+      {:ok, _invoice} = Billing.send_billing_invoice(invoice)
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ "company-billing-alert"
+      assert body =~ "1"
+      assert body =~ ~s(href="/company/billing")
+      assert body =~ "неоплаченный"
+    end
+
+    test "does not show outstanding billing invoice banner when nothing is due", %{conn: conn} do
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      refute body =~ "company-billing-alert"
     end
 
     test "renders company bank-account actions as a compact overflow menu", %{
