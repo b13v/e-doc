@@ -2653,3 +2653,138 @@ msgstr "Неоплаченные счета: %{count}. Откройте разд
 
 msgid "Open billing"
 msgstr "Открыть оплату"
+
+msgid "Billing"
+msgstr "Оплата"
+
+msgid "Current subscription and outstanding payment invoices."
+msgstr "Текущий тариф и неоплаченные счета на оплату."
+
+msgid "Company settings"
+msgstr "Настройки компании"
+
+msgid "Billing access is restricted"
+msgstr "Доступ к оплате ограничен"
+
+msgid "Status: %{status}. Reason: %{reason}."
+msgstr "Статус: %{status}. Причина: %{reason}."
+
+msgid "An invoice is overdue."
+msgstr "Счет просрочен."
+
+msgid "Please pay the outstanding invoice and send the payment reference for review."
+msgstr "Оплатите просроченный счет и отправьте реквизиты платежа на проверку."
+
+msgid "Payment reminder"
+msgstr "Напоминание об оплате"
+
+msgid "Subscription suspended"
+msgstr "Подписка приостановлена"
+
+msgid "Billing reminder"
+msgstr "Напоминание об оплате"
+
+msgid "Billing invoice is overdue. Please pay it or submit payment proof."
+msgstr "Счет на оплату просрочен. Оплатите его или отправьте подтверждение платежа."
+
+msgid "Subscription is suspended until payment is confirmed."
+msgstr "Подписка приостановлена до подтверждения платежа."
+
+msgid "No plan"
+msgstr "Без тарифа"
+
+msgid "Grace period"
+msgstr "Льготный период"
+
+msgid "Past due"
+msgstr "Просрочен"
+
+msgid "Suspended"
+msgstr "Приостановлен"
+
+msgid "Sent"
+msgstr "Отправлен"
+
+msgid "Overdue"
+msgstr "Просрочен"
+
+msgid "Pending confirmation"
+msgstr "Ожидает подтверждения"
+
+msgid "payment overdue"
+msgstr "просрочка оплаты"
+
+msgid "not specified"
+msgstr "не указана"
+
+msgid "Current plan"
+msgstr "Текущий тариф"
+
+msgid "Renewal date"
+msgstr "Дата продления"
+
+msgid "Outstanding invoices"
+msgstr "Неоплаченные счета"
+
+msgid "Upgrade to Basic"
+msgstr "Перейти на Basic"
+
+msgid "Request a Basic plan invoice. After payment is confirmed, the upgrade is applied immediately for the current billing cycle."
+msgstr "Запросите счет на тариф Basic. После подтверждения оплаты повышение тарифа применяется сразу в текущем платежном периоде."
+
+msgid "Request Basic upgrade invoice"
+msgstr "Запросить счет на переход на Basic"
+
+msgid "No outstanding billing invoices."
+msgstr "Нет неоплаченных счетов на оплату."
+
+msgid "Invoice"
+msgstr "Счет"
+
+msgid "Amount"
+msgstr "Сумма"
+
+msgid "Due"
+msgstr "Срок оплаты"
+
+msgid "Kaspi payment link"
+msgstr "Ссылка на оплату Kaspi"
+
+msgid "Open Kaspi payment link"
+msgstr "Открыть ссылку на оплату Kaspi"
+
+msgid "Payment instructions"
+msgstr "Инструкция по оплате"
+
+msgid "Open the Kaspi link, complete the payment, then send the payment reference or proof link below. An administrator will reconcile and confirm the payment."
+msgstr "Откройте ссылку Kaspi, выполните оплату, затем отправьте ниже реквизиты платежа или ссылку на подтверждение. Администратор сверит и подтвердит оплату."
+
+msgid "Payment reference"
+msgstr "Реквизиты платежа"
+
+msgid "Proof URL"
+msgstr "Ссылка на подтверждение"
+
+msgid "Comment for payment review"
+msgstr "Комментарий для проверки платежа"
+
+msgid "Send payment reference"
+msgstr "Отправить реквизиты платежа"
+
+msgid "%{amount} KZT"
+msgstr "%{amount} KZT"
+
+msgid "Payment reference was sent for review."
+msgstr "Реквизиты платежа отправлены на проверку."
+
+msgid "Billing invoice not found."
+msgstr "Счет на оплату не найден."
+
+msgid "Could not send payment reference."
+msgstr "Не удалось отправить реквизиты платежа."
+
+msgid "Upgrade invoice request was created."
+msgstr "Счет на повышение тарифа создан."
+
+msgid "Could not create upgrade invoice request."
+msgstr "Не удалось создать счет на повышение тарифа."

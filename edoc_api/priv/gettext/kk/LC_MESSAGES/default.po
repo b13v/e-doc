@@ -2653,3 +2653,138 @@ msgstr "Төленбеген шоттар: %{count}. Төлем мәліметт
 
 msgid "Open billing"
 msgstr "Төлемді ашу"
+
+msgid "Billing"
+msgstr "Төлем"
+
+msgid "Current subscription and outstanding payment invoices."
+msgstr "Ағымдағы тариф және төленбеген төлем шоттары."
+
+msgid "Company settings"
+msgstr "Компания баптаулары"
+
+msgid "Billing access is restricted"
+msgstr "Төлем бөліміне қолжетімділік шектелген"
+
+msgid "Status: %{status}. Reason: %{reason}."
+msgstr "Мәртебе: %{status}. Себебі: %{reason}."
+
+msgid "An invoice is overdue."
+msgstr "Шоттың төлеу мерзімі өтіп кеткен."
+
+msgid "Please pay the outstanding invoice and send the payment reference for review."
+msgstr "Мерзімі өткен шотты төлеңіз және төлем деректерін тексеруге жіберіңіз."
+
+msgid "Payment reminder"
+msgstr "Төлем туралы еске салу"
+
+msgid "Subscription suspended"
+msgstr "Жазылым тоқтатылды"
+
+msgid "Billing reminder"
+msgstr "Төлем туралы еске салу"
+
+msgid "Billing invoice is overdue. Please pay it or submit payment proof."
+msgstr "Төлем шотының мерзімі өтіп кеткен. Оны төлеңіз немесе төлем дәлелін жіберіңіз."
+
+msgid "Subscription is suspended until payment is confirmed."
+msgstr "Төлем расталғанға дейін жазылым тоқтатылған."
+
+msgid "No plan"
+msgstr "Тариф жоқ"
+
+msgid "Grace period"
+msgstr "Жеңілдік мерзімі"
+
+msgid "Past due"
+msgstr "Мерзімі өткен"
+
+msgid "Suspended"
+msgstr "Тоқтатылған"
+
+msgid "Sent"
+msgstr "Жіберілді"
+
+msgid "Overdue"
+msgstr "Мерзімі өткен"
+
+msgid "Pending confirmation"
+msgstr "Растауды күтуде"
+
+msgid "payment overdue"
+msgstr "төлем мерзімі өткен"
+
+msgid "not specified"
+msgstr "көрсетілмеген"
+
+msgid "Current plan"
+msgstr "Ағымдағы тариф"
+
+msgid "Renewal date"
+msgstr "Ұзарту күні"
+
+msgid "Outstanding invoices"
+msgstr "Төленбеген шоттар"
+
+msgid "Upgrade to Basic"
+msgstr "Basic тарифіне өту"
+
+msgid "Request a Basic plan invoice. After payment is confirmed, the upgrade is applied immediately for the current billing cycle."
+msgstr "Basic тарифіне шот сұратыңыз. Төлем расталғаннан кейін тарифті көтеру ағымдағы төлем кезеңіне бірден қолданылады."
+
+msgid "Request Basic upgrade invoice"
+msgstr "Basic тарифіне өту шотын сұрату"
+
+msgid "No outstanding billing invoices."
+msgstr "Төленбеген төлем шоттары жоқ."
+
+msgid "Invoice"
+msgstr "Шот"
+
+msgid "Amount"
+msgstr "Сома"
+
+msgid "Due"
+msgstr "Төлеу мерзімі"
+
+msgid "Kaspi payment link"
+msgstr "Kaspi төлем сілтемесі"
+
+msgid "Open Kaspi payment link"
+msgstr "Kaspi төлем сілтемесін ашу"
+
+msgid "Payment instructions"
+msgstr "Төлем нұсқаулығы"
+
+msgid "Open the Kaspi link, complete the payment, then send the payment reference or proof link below. An administrator will reconcile and confirm the payment."
+msgstr "Kaspi сілтемесін ашып, төлемді аяқтаңыз, содан кейін төменде төлем деректерін немесе растау сілтемесін жіберіңіз. Әкімші төлемді тексеріп, растайды."
+
+msgid "Payment reference"
+msgstr "Төлем деректері"
+
+msgid "Proof URL"
+msgstr "Растау сілтемесі"
+
+msgid "Comment for payment review"
+msgstr "Төлемді тексеруге арналған түсініктеме"
+
+msgid "Send payment reference"
+msgstr "Төлем деректерін жіберу"
+
+msgid "%{amount} KZT"
+msgstr "%{amount} KZT"
+
+msgid "Payment reference was sent for review."
+msgstr "Төлем деректері тексеруге жіберілді."
+
+msgid "Billing invoice not found."
+msgstr "Төлем шоты табылмады."
+
+msgid "Could not send payment reference."
+msgstr "Төлем деректерін жіберу мүмкін болмады."
+
+msgid "Upgrade invoice request was created."
+msgstr "Тарифті көтеру шоты жасалды."
+
+msgid "Could not create upgrade invoice request."
+msgstr "Тарифті көтеру шотын жасау мүмкін болмады."

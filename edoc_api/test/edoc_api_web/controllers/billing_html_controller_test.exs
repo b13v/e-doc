@@ -47,13 +47,45 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "Billing"
+    assert body =~ "Оплата"
     assert body =~ "Basic"
     assert body =~ invoice.id
     assert body =~ "https://pay.kaspi.kz/customer"
-    assert body =~ "Open Kaspi payment link"
-    assert body =~ "Payment instructions"
+    assert body =~ "Открыть ссылку на оплату Kaspi"
+    assert body =~ "Инструкция по оплате"
     assert body =~ ~s(action="/company/billing/invoices/#{invoice.id}/payments")
+  end
+
+  test "tenant billing page renders russian copy when locale is ru", %{
+    company: company,
+    billing_invoice: invoice
+  } do
+    body =
+      localized_conn(company.user_id, "ru")
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Оплата"
+    assert body =~ "Текущий тариф"
+    assert body =~ "Неоплаченные счета"
+    assert body =~ "Инструкция по оплате"
+    refute body =~ "Billing"
+    refute body =~ "Outstanding invoices"
+    assert body =~ invoice.id
+  end
+
+  test "tenant billing page renders kazakh copy when locale is kk", %{
+    company: company
+  } do
+    body =
+      localized_conn(company.user_id, "kk")
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Төлем"
+    assert body =~ "Ағымдағы тариф"
+    assert body =~ "Төленбеген шоттар"
+    refute body =~ "Billing"
   end
 
   test "tenant sees legacy monetization plan details when no new billing subscription exists" do
@@ -79,7 +111,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
 
     assert body =~ "Starter"
     assert body =~ "31.01.2026"
-    assert body =~ "No outstanding billing invoices."
+    assert body =~ "Нет неоплаченных счетов на оплату."
     refute body =~ "No plan"
   end
 
@@ -94,8 +126,8 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "Billing access is restricted"
-    assert body =~ "payment_overdue"
+    assert body =~ "Доступ к оплате ограничен"
+    assert body =~ "просрочка оплаты"
   end
 
   test "tenant can submit payment reference and proof for admin review", %{
@@ -123,6 +155,26 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     assert note.metadata["note"] == "Paid by Kaspi transfer"
   end
 
+  test "payment submission flash is localized in russian", %{
+    company: company,
+    billing_invoice: invoice
+  } do
+    conn =
+      localized_conn(company.user_id, "ru")
+      |> post("/company/billing/invoices/#{invoice.id}/payments", %{
+        "payment" => %{
+          "external_reference" => "RU-REF-1",
+          "proof_attachment_url" => "https://example.com/proof.png",
+          "note" => "Оплачено"
+        }
+      })
+
+    assert redirected_to(conn) == "/company/billing"
+
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+             "Реквизиты платежа отправлены на проверку."
+  end
+
   test "tenant can request an upgrade invoice from the billing page", %{
     conn: conn,
     company: company
@@ -145,5 +197,28 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       )
 
     assert invoice.status == "draft"
+  end
+
+  test "upgrade invoice request flash is localized in kazakh", %{
+    company: company
+  } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+    conn =
+      localized_conn(company.user_id, "kk")
+      |> post("/company/billing/upgrade-invoices", %{
+        "plan" => "basic"
+      })
+
+    assert redirected_to(conn) == "/company/billing"
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Тарифті көтеру шоты жасалды."
+  end
+
+  defp localized_conn(user_id, locale) do
+    build_conn()
+    |> Plug.Test.init_test_session(%{user_id: user_id, locale: locale})
+    |> put_private(:plug_skip_csrf_protection, true)
+    |> put_req_header("accept", "text/html")
   end
 end

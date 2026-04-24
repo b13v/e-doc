@@ -18,7 +18,7 @@ defmodule EdocApiWeb.BillingHTMLController do
           company: company,
           billing: Billing.tenant_billing_snapshot(company),
           current_section: :company,
-          page_title: "Billing"
+          page_title: gettext("Billing")
         )
     end
   end
@@ -34,7 +34,7 @@ defmodule EdocApiWeb.BillingHTMLController do
              payment_params
            ) do
       conn
-      |> put_flash(:info, "Payment reference was sent for review.")
+      |> put_flash(:info, gettext("Payment reference was sent for review."))
       |> redirect(to: "/company/billing")
     else
       nil ->
@@ -42,12 +42,12 @@ defmodule EdocApiWeb.BillingHTMLController do
 
       {:error, :not_found} ->
         conn
-        |> put_flash(:error, "Billing invoice not found.")
+        |> put_flash(:error, gettext("Billing invoice not found."))
         |> redirect(to: "/company/billing")
 
       {:error, _changeset} ->
         conn
-        |> put_flash(:error, "Could not send payment reference.")
+        |> put_flash(:error, gettext("Could not send payment reference."))
         |> redirect(to: "/company/billing")
     end
   end
@@ -59,7 +59,7 @@ defmodule EdocApiWeb.BillingHTMLController do
     with company when not is_nil(company) <- Companies.get_company_by_user_id(user.id),
          {:ok, _invoice} <- Billing.create_upgrade_invoice_for_company(company.id, plan) do
       conn
-      |> put_flash(:info, "Upgrade invoice request was created.")
+      |> put_flash(:info, gettext("Upgrade invoice request was created."))
       |> redirect(to: "/company/billing")
     else
       nil ->
@@ -67,7 +67,7 @@ defmodule EdocApiWeb.BillingHTMLController do
 
       {:error, _reason} ->
         conn
-        |> put_flash(:error, "Could not create upgrade invoice request.")
+        |> put_flash(:error, gettext("Could not create upgrade invoice request."))
         |> redirect(to: "/company/billing")
     end
   end
