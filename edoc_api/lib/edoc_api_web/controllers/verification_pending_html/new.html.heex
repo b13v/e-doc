@@ -35,7 +35,7 @@
         <button
           id="resend-btn"
           hx-post="/v1/auth/resend-verification"
-          hx-vals={"{\"email\": \"#{@email}\"}"}
+          hx-vals={Jason.encode!(%{email: @email, locale: @locale})}
           hx-swap="none"
           hx-disabled-elt="#resend-btn"
           data-resend-error-message={gettext("Unable to show resend status. Please try again.")}

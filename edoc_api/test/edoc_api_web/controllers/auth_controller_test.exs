@@ -192,6 +192,7 @@ defmodule EdocApiWeb.AuthControllerTest do
         |> post("/v1/auth/resend-verification", %{"email" => user.email})
 
       assert conn.status == 200
+
       assert json_response(conn, 200)["message"] ==
                "Verification email sent. Please check your inbox."
 
@@ -207,6 +208,7 @@ defmodule EdocApiWeb.AuthControllerTest do
         |> post("/v1/auth/resend-verification", %{"email" => user.email})
 
       assert conn.status == 200
+
       assert json_response(conn, 200)["message"] ==
                "Verification email sent. Please check your inbox."
 
@@ -218,6 +220,7 @@ defmodule EdocApiWeb.AuthControllerTest do
         |> post("/v1/auth/resend-verification", %{"email" => user.email})
 
       assert conn.status == 200
+
       assert json_response(conn, 200)["message"] ==
                "Please wait before requesting another verification email."
 
@@ -236,7 +239,9 @@ defmodule EdocApiWeb.AuthControllerTest do
       assert json_response(conn, 200)["status"] == "sent"
 
       {:ok, latest} = EmailVerification.get_latest_token(user.id)
-      cooldown_passed_at = DateTime.add(DateTime.utc_now(), -61, :second) |> DateTime.truncate(:second)
+
+      cooldown_passed_at =
+        DateTime.add(DateTime.utc_now(), -61, :second) |> DateTime.truncate(:second)
 
       from(t in EmailVerificationToken, where: t.id == ^latest.id)
       |> Repo.update_all(set: [inserted_at: cooldown_passed_at])
@@ -264,7 +269,9 @@ defmodule EdocApiWeb.AuthControllerTest do
         assert json_response(conn, 200)["status"] == "sent"
 
         {:ok, latest} = EmailVerification.get_latest_token(user.id)
-        backdated_at = DateTime.add(DateTime.utc_now(), -age_in_seconds, :second) |> DateTime.truncate(:second)
+
+        backdated_at =
+          DateTime.add(DateTime.utc_now(), -age_in_seconds, :second) |> DateTime.truncate(:second)
 
         from(t in EmailVerificationToken, where: t.id == ^latest.id)
         |> Repo.update_all(set: [inserted_at: backdated_at])
@@ -316,6 +323,23 @@ defmodule EdocApiWeb.AuthControllerTest do
 
       assert json_response(conn, 200)["message"] ==
                "Растау хатын қайта сұрамас бұрын сәл күтіңіз."
+    end
+
+    test "returns localized rate-limit message from page locale parameter" do
+      user = create_user!()
+
+      _conn =
+        build_conn()
+        |> post("/v1/auth/resend-verification", %{"email" => user.email, "locale" => "ru"})
+
+      conn =
+        build_conn()
+        |> post("/v1/auth/resend-verification", %{"email" => user.email, "locale" => "ru"})
+
+      assert conn.status == 200
+
+      assert json_response(conn, 200)["message"] ==
+               "Подождите немного перед повторной отправкой письма для подтверждения."
     end
 
     test "returns generic response for unknown email and rate limits repeated requests" do

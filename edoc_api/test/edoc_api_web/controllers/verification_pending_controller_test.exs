@@ -36,6 +36,16 @@ defmodule EdocApiWeb.VerificationPendingControllerTest do
     assert body =~ ~s(hx-on::after-request=)
   end
 
+  test "resend button includes current locale for localized feedback", %{conn: conn} do
+    body =
+      conn
+      |> Plug.Test.init_test_session(%{locale: "kk"})
+      |> get("/verify-email-pending?email=example@example.com")
+      |> html_response(200)
+
+    assert body =~ ~s(&quot;locale&quot;:&quot;kk&quot;)
+  end
+
   test "pending page does not show register-again link", %{conn: conn} do
     conn = get(conn, "/verify-email-pending?email=example@example.com")
     body = html_response(conn, 200)
@@ -47,6 +57,7 @@ defmodule EdocApiWeb.VerificationPendingControllerTest do
     conn = get(conn, "/verify-email-pending")
 
     assert redirected_to(conn) == "/signup"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
              "Пожалуйста, укажите свой адрес электронной почты."
   end
@@ -72,6 +83,7 @@ defmodule EdocApiWeb.VerificationPendingControllerTest do
 
     assert redirected_to(conn) == "/login"
     assert get_session(conn, :session_marker) == "keep-me"
+
     assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
              "Электрондық поштаңыз расталды. Енді жүйеге кіре аласыз."
   end

@@ -1270,10 +1270,23 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       assert body =~ "Мекенжай"
       assert body =~ "Банк шоты туралы ақпарат"
       assert body =~ "Банк"
+      assert body =~ "КБЕ таңдаңыз..."
       refute body =~ "Set Up Your Company"
       refute body =~ "Company Name"
       refute body =~ ~s(>Address<)
       refute body =~ ~s(>Bank Account Information<)
+      refute body =~ "Select KBE..."
+    end
+
+    test "company setup page renders Russian KBE placeholder", %{conn: conn} do
+      fresh_user = create_user!()
+      Accounts.mark_email_verified!(fresh_user.id)
+
+      conn = get(browser_conn(conn, fresh_user, "ru"), "/company/setup")
+      body = html_response(conn, 200)
+
+      assert body =~ "Выберите КБЕ..."
+      refute body =~ "Select KBE..."
     end
 
     test "buyer validation flash is localized in Kazakh", %{conn: conn, user: user} do
