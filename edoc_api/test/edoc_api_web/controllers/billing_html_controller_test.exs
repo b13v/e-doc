@@ -47,7 +47,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "Оплата"
+    assert body =~ "Детали подписки"
     assert body =~ "Basic"
     assert body =~ invoice.id
     assert body =~ "https://pay.kaspi.kz/customer"
@@ -65,7 +65,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "Оплата"
+    assert body =~ "Детали подписки"
     assert body =~ "Текущий тариф"
     assert body =~ "Неоплаченные счета"
     assert body =~ "Инструкция по оплате"
@@ -82,7 +82,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "Төлем"
+    assert body =~ "Жазылым мәліметтері"
     assert body =~ "Ағымдағы тариф"
     assert body =~ "Төленбеген шоттар"
     refute body =~ "Billing"
@@ -175,6 +175,39 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
 
     assert [note] = Billing.list_payment_review_notes(payment.id)
     assert note.metadata["note"] == "Paid by Kaspi transfer"
+  end
+
+  test "tenant sees visible success feedback after submitting payment details", %{
+    conn: conn,
+    billing_invoice: invoice
+  } do
+    body =
+      conn
+      |> post("/company/billing/invoices/#{invoice.id}/payments", %{
+        "payment" => %{
+          "external_reference" => "VISIBLE-SUCCESS-1",
+          "proof_attachment_url" => "https://example.com/proof.png",
+          "note" => "Visible flash check"
+        }
+      })
+      |> recycle()
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Реквизиты платежа отправлены на проверку."
+  end
+
+  test "tenant sees invoice-not-found feedback on billing page", %{conn: conn} do
+    body =
+      conn
+      |> post("/company/billing/invoices/#{Ecto.UUID.generate()}/payments", %{
+        "payment" => %{"external_reference" => "MISSING-INVOICE-1"}
+      })
+      |> recycle()
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Счет на оплату не найден."
   end
 
   test "payment submission flash is localized in russian", %{

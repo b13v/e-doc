@@ -124,6 +124,62 @@
   </section>
 
   <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Submitted payments</h2>
+    <p :if={Enum.empty?(@client.submitted_payments)} class="mt-4 text-sm text-gray-600 dark:text-slate-300">
+      No submitted payment details yet.
+    </p>
+
+    <%= for payment <- @client.submitted_payments do %>
+      <div class="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+        <div class="grid gap-3 md:grid-cols-4">
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Payment</div>
+            <div class="mt-1 break-all font-semibold"><%= payment.id %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Invoice</div>
+            <div class="mt-1 break-all font-semibold"><%= payment.billing_invoice_id %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Invoice status</div>
+            <div class="mt-1 font-semibold"><%= payment.billing_invoice && payment.billing_invoice.status %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Submitted at</div>
+            <div class="mt-1 font-semibold"><%= date_or_dash(payment.inserted_at) %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Payment status</div>
+            <div class="mt-1 font-semibold"><%= payment.status %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Method</div>
+            <div class="mt-1 font-semibold"><%= payment.method %></div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Amount</div>
+            <div class="mt-1 font-semibold"><%= payment.amount_kzt %> KZT</div>
+          </div>
+          <div :if={payment.external_reference}>
+            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Reference</div>
+            <div class="mt-1 break-all font-semibold"><%= payment.external_reference %></div>
+          </div>
+        </div>
+
+        <div :if={payment.proof_attachment_url} class="mt-3">
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Proof URL</div>
+          <div class="mt-1 break-all font-semibold text-blue-700 dark:text-sky-300"><%= payment.proof_attachment_url %></div>
+        </div>
+
+        <div :if={Map.get(@client.submitted_payment_notes, payment.id)} class="mt-3">
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Review note</div>
+          <div class="mt-1"><%= metadata_note(Map.get(@client.submitted_payment_notes, payment.id)) %></div>
+        </div>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
     <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Payment History</h2>
     <%= for payment <- @client.payments do %>
       <div class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">

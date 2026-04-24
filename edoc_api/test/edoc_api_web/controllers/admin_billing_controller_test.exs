@@ -249,6 +249,43 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
   end
 
+  test "platform admin sees a dedicated submitted payments section for tenant reviews", %{
+    admin_conn: conn,
+    company: company,
+    billing_invoice: invoice
+  } do
+    {:ok, payment} =
+      Billing.create_customer_payment_review_for_company(company.id, invoice.id, %{
+        "external_reference" => "KASPI-CHECK-42",
+        "proof_attachment_url" => "https://example.com/proof.png",
+        "note" => "Paid by tenant"
+      })
+
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "Submitted payments"
+    assert body =~ payment.id
+    assert body =~ "KASPI-CHECK-42"
+    assert body =~ "https://example.com/proof.png"
+    assert body =~ "Paid by tenant"
+  end
+
+  test "platform admin sees an empty submitted payments state when there are no tenant reviews", %{
+    admin_conn: conn,
+    company: company
+  } do
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "Submitted payments"
+    assert body =~ "No submitted payment details yet."
+  end
+
   test "platform admin client detail hides removed users from the users pane", %{
     admin_conn: conn,
     company: company,

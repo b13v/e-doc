@@ -831,6 +831,23 @@ defmodule EdocApi.Billing do
       |> order_by([p], desc: p.inserted_at)
       |> Repo.all()
 
+    submitted_payments =
+      Payment
+      |> where(
+        [p],
+        p.company_id == ^company.id and
+          p.status == ^PaymentStatus.pending_confirmation() and
+          not is_nil(p.paid_at)
+      )
+      |> order_by([p], desc: p.inserted_at)
+      |> preload(:billing_invoice)
+      |> Repo.all()
+
+    submitted_payment_notes =
+      submitted_payments
+      |> Enum.map(& &1.id)
+      |> payment_review_notes_by_payment_ids()
+
     notes =
       BillingAuditEvent
       |> where([e], e.company_id == ^company.id and e.action == "internal_note")
@@ -849,9 +866,27 @@ defmodule EdocApi.Billing do
       memberships: memberships,
       invoices: invoices,
       payments: payments,
+      submitted_payments: submitted_payments,
+      submitted_payment_notes: submitted_payment_notes,
       notes: notes,
       legacy_pending_billing_invoice: legacy_pending_invoice
     })
+  end
+
+  defp payment_review_notes_by_payment_ids([]), do: %{}
+
+  defp payment_review_notes_by_payment_ids(payment_ids) do
+    BillingAuditEvent
+    |> where(
+      [e],
+      e.subject_type == "payment" and e.action == "payment_review_note" and
+        e.subject_id in ^payment_ids
+    )
+    |> order_by([e], desc: e.inserted_at)
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn note, acc ->
+      Map.put_new(acc, note.subject_id, note)
+    end)
   end
 
   @doc "Creates the missing billing invoice for an active legacy tenant subscription."
