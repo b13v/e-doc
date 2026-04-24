@@ -46,25 +46,25 @@
 
   <section class="grid gap-4 md:grid-cols-3">
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400"><%= gettext("Current plan") %></div>
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Current plan") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.plan) %></div>
     </div>
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400"><%= gettext("Renewal date") %></div>
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Renewal date") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= if @billing.subscription, do: date_or_dash(@billing.subscription.current_period_end), else: "-" %></div>
     </div>
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-400"><%= gettext("Outstanding invoices") %></div>
+      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Outstanding invoices") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= Enum.count(@billing.outstanding_invoices) %></div>
     </div>
   </section>
 
   <section
     :if={@billing.plan && @billing.plan.code == "starter"}
-    class="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-800 dark:bg-blue-950"
+    class="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-sky-700 dark:bg-sky-900/40"
   >
     <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100"><%= gettext("Upgrade to Basic") %></h2>
-    <p class="mt-2 text-sm text-gray-700 dark:text-slate-200">
+    <p class="mt-2 text-sm text-gray-700 dark:text-slate-100">
       <%= gettext("Request a Basic plan invoice. After payment is confirmed, the upgrade is applied immediately for the current billing cycle.") %>
     </p>
     <form action="/company/billing/upgrade-invoices" method="post" class="mt-4">
@@ -86,25 +86,25 @@
     <div :for={invoice <- @billing.outstanding_invoices} class="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-slate-700 dark:bg-slate-800">
       <div class="grid gap-3 md:grid-cols-4">
         <div>
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400"><%= gettext("Invoice") %></div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Invoice") %></div>
           <div class="mt-1 break-all text-sm font-semibold text-gray-900 dark:text-slate-100"><%= invoice.id %></div>
         </div>
         <div>
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400"><%= gettext("Status") %></div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Status") %></div>
           <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= status_label(invoice.status) %></div>
         </div>
         <div>
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400"><%= gettext("Amount") %></div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Amount") %></div>
           <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= gettext("%{amount} KZT", amount: invoice.amount_kzt) %></div>
         </div>
         <div>
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400"><%= gettext("Due") %></div>
+          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Due") %></div>
           <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= date_or_dash(invoice.due_at) %></div>
         </div>
       </div>
 
       <div :if={invoice.kaspi_payment_link} class="mt-4 rounded-xl bg-white p-4 dark:bg-slate-900">
-        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400"><%= gettext("Kaspi payment link") %></div>
+        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Kaspi payment link") %></div>
         <a
           href={invoice.kaspi_payment_link}
           target="_blank"
@@ -127,17 +127,17 @@
           <input
             name="payment[external_reference]"
             placeholder={gettext("Payment reference")}
-            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-300"
           />
           <input
             name="payment[proof_attachment_url]"
             placeholder={gettext("Proof URL")}
-            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-300"
           />
           <input
             name="payment[note]"
             placeholder={gettext("Comment for payment review")}
-            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-300"
           />
           <button type="submit" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 md:col-span-3">
             <%= gettext("Send payment reference") %>

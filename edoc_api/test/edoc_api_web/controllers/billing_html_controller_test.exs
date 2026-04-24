@@ -88,6 +88,24 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     refute body =~ "Billing"
   end
 
+  test "tenant billing page uses stronger dark mode contrast classes", %{
+    conn: conn,
+    company: company
+  } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+    body =
+      conn
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "dark:text-slate-200"
+    assert body =~ "dark:bg-sky-900/40"
+    refute body =~ "dark:text-slate-400"
+    refute body =~ "dark:bg-blue-950"
+  end
+
   test "tenant sees legacy monetization plan details when no new billing subscription exists" do
     user = create_user!(%{"email" => "legacy-tenant-billing@example.com"})
     Accounts.mark_email_verified!(user.id)
