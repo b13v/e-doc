@@ -46,25 +46,25 @@
 
   <section class="grid gap-4 md:grid-cols-3">
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Current plan") %></div>
+      <div class="company-billing-summary-heading text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-white"><%= gettext("Current plan") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.plan) %></div>
     </div>
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Renewal date") %></div>
+      <div class="company-billing-summary-heading text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-white"><%= gettext("Renewal date") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= if @billing.subscription, do: date_or_dash(@billing.subscription.current_period_end), else: "-" %></div>
     </div>
     <div class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-slate-200"><%= gettext("Outstanding invoices") %></div>
+      <div class="company-billing-summary-heading text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-white"><%= gettext("Outstanding invoices") %></div>
       <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100"><%= Enum.count(@billing.outstanding_invoices) %></div>
     </div>
   </section>
 
   <section
     :if={@billing.plan && @billing.plan.code == "starter"}
-    class="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-sky-700 dark:bg-sky-900/40"
+    class="company-billing-upgrade-card rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-sky-500 dark:bg-sky-800/60"
   >
-    <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100"><%= gettext("Upgrade to Basic") %></h2>
-    <p class="mt-2 text-sm text-gray-700 dark:text-slate-100">
+    <h2 class="company-billing-upgrade-title text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Upgrade to Basic") %></h2>
+    <p class="company-billing-upgrade-copy mt-2 text-sm text-gray-700 dark:text-white">
       <%= gettext("Request a Basic plan invoice. After payment is confirmed, the upgrade is applied immediately for the current billing cycle.") %>
     </p>
     <form action="/company/billing/upgrade-invoices" method="post" class="mt-4">

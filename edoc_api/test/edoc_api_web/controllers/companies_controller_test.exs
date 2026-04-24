@@ -262,7 +262,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "неоплаченный"
     end
 
-    test "renders both company billing links in russian with the same label", %{
+    test "renders context-specific company billing labels in russian", %{
       conn: conn,
       company: company
     } do
@@ -278,21 +278,31 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> get("/company")
         |> html_response(200)
 
-      assert body =~ "Оплата"
+      assert body =~ "Оплатить"
+      assert body =~ "Детали подписки"
       refute body =~ ">Billing<"
-      refute body =~ "Open billing"
+      refute body =~ ">Оплата<"
       assert count_occurrences(body, ~s(href="/company/billing")) >= 2
-      assert count_occurrences(body, "Оплата") >= 2
     end
 
-    test "renders company billing button in kazakh", %{conn: conn, company: company} do
+    test "renders context-specific company billing labels in kazakh", %{
+      conn: conn,
+      company: company
+    } do
+      {:ok, _plans} = Billing.seed_default_plans()
+      {:ok, subscription} = Billing.create_trial_subscription(company)
+      {:ok, subscription} = Billing.activate_subscription(subscription, "basic")
+      {:ok, invoice} = Billing.create_renewal_invoice(subscription, "basic")
+      {:ok, _invoice} = Billing.send_billing_invoice(invoice)
+
       body =
         conn
         |> Plug.Test.init_test_session(%{user_id: company.user_id, locale: "kk"})
         |> get("/company")
         |> html_response(200)
 
-      assert body =~ "Төлем"
+      assert body =~ "Төлеу"
+      assert body =~ "Жазылым мәліметтері"
       refute body =~ ">Billing<"
     end
 

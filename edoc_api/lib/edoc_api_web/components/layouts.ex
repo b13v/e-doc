@@ -389,6 +389,22 @@ defmodule EdocApiWeb.Layouts do
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
           }
 
+          html[data-theme="dark"] .company-billing-summary-heading {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .company-billing-upgrade-card {
+            background-color: rgba(7, 89, 133, 0.7) !important;
+            border-color: #7dd3fc !important;
+          }
+
+          html[data-theme="dark"] .company-billing-upgrade-title,
+          html[data-theme="dark"] .company-billing-upgrade-copy {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
           html[data-theme="dark"] [data-row-actions-menu],
           html[data-theme="dark"] [data-send-menu-panel] {
             background-color: #334155;

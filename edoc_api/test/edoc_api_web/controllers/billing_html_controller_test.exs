@@ -88,7 +88,7 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     refute body =~ "Billing"
   end
 
-  test "tenant billing page uses stronger dark mode contrast classes", %{
+  test "tenant billing page includes explicit dark theme hooks for summary headings and upgrade card", %{
     conn: conn,
     company: company
   } do
@@ -100,10 +100,14 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       |> get("/company/billing")
       |> html_response(200)
 
-    assert body =~ "dark:text-slate-200"
-    assert body =~ "dark:bg-sky-900/40"
-    refute body =~ "dark:text-slate-400"
-    refute body =~ "dark:bg-blue-950"
+    assert body =~ "company-billing-summary-heading"
+    assert body =~ "company-billing-upgrade-card"
+    assert body =~ "company-billing-upgrade-title"
+    assert body =~ "company-billing-upgrade-copy"
+    assert body =~ "html[data-theme=\"dark\"] .company-billing-summary-heading"
+    assert body =~ "html[data-theme=\"dark\"] .company-billing-upgrade-card"
+    assert body =~ "html[data-theme=\"dark\"] .company-billing-upgrade-title"
+    assert body =~ "html[data-theme=\"dark\"] .company-billing-upgrade-copy"
   end
 
   test "tenant sees legacy monetization plan details when no new billing subscription exists" do

@@ -2657,6 +2657,12 @@ msgstr "Открыть оплату"
 msgid "Billing"
 msgstr "Оплата"
 
+msgid "Pay"
+msgstr "Оплатить"
+
+msgid "Subscription details"
+msgstr "Детали подписки"
+
 msgid "Current subscription and outstanding payment invoices."
 msgstr "Текущий тариф и неоплаченные счета на оплату."
 
