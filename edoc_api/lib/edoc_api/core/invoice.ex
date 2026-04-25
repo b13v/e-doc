@@ -7,7 +7,7 @@ defmodule EdocApi.Core.Invoice do
   alias EdocApi.Core.{Contract, CompanyBankAccount, KbeCode, KnpCode}
   alias EdocApi.InvoiceStatus
   alias EdocApi.Validators.{BinIin, Iban, String}
-  alias EdocApi.{Currencies, VatRates}
+  alias EdocApi.{Currencies, LegalForms, VatRates}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -27,6 +27,8 @@ defmodule EdocApi.Core.Invoice do
     field(:buyer_name, :string)
     field(:buyer_bin_iin, :string)
     field(:buyer_address, :string)
+    field(:buyer_city, :string)
+    field(:buyer_legal_form, :string)
 
     field(:subtotal, :decimal)
     field(:vat, :decimal)
@@ -72,6 +74,8 @@ defmodule EdocApi.Core.Invoice do
     knp_code_id
     contract_id
     seller_iban
+    buyer_city
+    buyer_legal_form
   )a
 
   @allowed_statuses InvoiceStatus.all()
@@ -145,6 +149,8 @@ defmodule EdocApi.Core.Invoice do
     |> update_change(:buyer_name, &String.normalize/1)
     |> update_change(:buyer_address, &String.normalize/1)
     |> update_change(:buyer_bin_iin, &BinIin.normalize/1)
+    |> update_change(:buyer_city, &String.normalize/1)
+    |> update_change(:buyer_legal_form, &LegalForms.normalize/1)
   end
 
   # Invoice number format: exactly 11 digits (e.g., 00000000001)

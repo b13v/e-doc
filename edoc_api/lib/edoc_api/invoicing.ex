@@ -7,6 +7,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Errors
   alias EdocApi.Currencies
   alias EdocApi.Companies
+  alias EdocApi.Buyers
   alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Core.Company
@@ -19,6 +20,7 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Core.CompanyBankAccount
   alias EdocApi.InvoiceStatus
   alias EdocApi.ContractStatus
+  alias EdocApi.LegalForms
 
   def get_invoice_for_user(user_id, invoice_id) do
     with {:ok, company_id} <- fetch_company_id(user_id),
@@ -337,6 +339,7 @@ defmodule EdocApi.Invoicing do
           invoice_attrs =
             attrs
             |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+            |> maybe_snapshot_buyer_fields(company_id)
             |> Map.merge(seller_attrs)
             |> Map.put("subtotal", subtotal)
             |> Map.put("number", number)
@@ -430,6 +433,7 @@ defmodule EdocApi.Invoicing do
       invoice_attrs =
         attrs
         |> Map.drop(["items", :items, "subtotal", :subtotal, "vat", :vat, "total", :total])
+        |> maybe_snapshot_buyer_fields(invoice.company_id)
         |> maybe_put_kbe_code_id(
           kbe_code_id || invoice.kbe_code_id || inferred_kbe_code_id(invoice, bank_account)
         )
@@ -456,6 +460,12 @@ defmodule EdocApi.Invoicing do
       bank_account: [:bank, :kbe_code, :knp_code],
       contract: [:buyer]
     ])
+  end
+
+  def invoice_buyer_party_line(%Invoice{} = invoice) do
+    invoice
+    |> resolve_invoice_buyer_party()
+    |> format_invoice_buyer_party()
   end
 
   defp get_bank_account_for_invoice(company_id, nil) do
@@ -611,6 +621,106 @@ defmodule EdocApi.Invoicing do
 
   defp maybe_put_knp_code_id(attrs, nil), do: attrs
   defp maybe_put_knp_code_id(attrs, id), do: Map.put(attrs, "knp_code_id", id)
+
+  defp maybe_snapshot_buyer_fields(attrs, company_id)
+       when is_map(attrs) and is_binary(company_id) do
+    case attrs |> fetch_optional_value("buyer_id", :buyer_id) |> normalize_blank_to_nil() do
+      nil ->
+        attrs
+
+      buyer_id ->
+        case Buyers.get_buyer_for_company(buyer_id, company_id) do
+          nil ->
+            attrs
+
+          buyer ->
+            attrs
+            |> Map.put("buyer_name", buyer.name)
+            |> Map.put("buyer_bin_iin", buyer.bin_iin)
+            |> Map.put("buyer_address", buyer.address || "")
+            |> Map.put("buyer_city", buyer.city || "")
+            |> Map.put("buyer_legal_form", buyer.legal_form || "")
+        end
+    end
+  end
+
+  defp resolve_invoice_buyer_party(%Invoice{} = invoice) do
+    contract = loaded_assoc(invoice.contract)
+    buyer = contract && loaded_assoc(contract.buyer)
+
+    %{
+      bin_iin: trimmed_value(invoice.buyer_bin_iin),
+      name: trimmed_value(invoice.buyer_name),
+      address:
+        first_present([
+          invoice.buyer_address,
+          buyer && buyer.address,
+          contract && Map.get(contract, :buyer_address)
+        ]),
+      city:
+        first_present([
+          Map.get(invoice, :buyer_city),
+          buyer && buyer.city
+        ]),
+      legal_form:
+        first_present([
+          Map.get(invoice, :buyer_legal_form),
+          buyer && buyer.legal_form,
+          contract && Map.get(contract, :buyer_legal_form)
+        ])
+    }
+  end
+
+  defp format_invoice_buyer_party(%{bin_iin: bin_iin, name: name} = party) do
+    [
+      present_fragment(bin_iin, "БИН/ИИН "),
+      party_name_fragment(name, party.legal_form),
+      "Республика Казахстан",
+      present_fragment(party.city, "г. "),
+      trimmed_value(party.address)
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(", ")
+  end
+
+  defp party_name_fragment(nil, nil), do: nil
+  defp party_name_fragment(name, nil), do: name
+  defp party_name_fragment(nil, legal_form), do: maybe_display_legal_form(legal_form)
+
+  defp party_name_fragment(name, legal_form) do
+    case maybe_display_legal_form(legal_form) do
+      nil -> name
+      displayed -> "#{displayed} #{name}"
+    end
+  end
+
+  defp maybe_display_legal_form(value) do
+    case trimmed_value(value) do
+      nil -> nil
+      present -> LegalForms.display(present)
+    end
+  end
+
+  defp present_fragment(value, prefix) do
+    case trimmed_value(value) do
+      nil -> nil
+      present -> prefix <> present
+    end
+  end
+
+  defp first_present(values) when is_list(values) do
+    Enum.find_value(values, &trimmed_value/1)
+  end
+
+  defp loaded_assoc(%Ecto.Association.NotLoaded{}), do: nil
+  defp loaded_assoc(value), do: value
+
+  defp trimmed_value(value) when is_binary(value) do
+    value = String.trim(value)
+    if value == "", do: nil, else: value
+  end
+
+  defp trimmed_value(_), do: nil
 
   defp inferred_kbe_code_id(_invoice, %CompanyBankAccount{kbe_code_id: code_id}), do: code_id
 

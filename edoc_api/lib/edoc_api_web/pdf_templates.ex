@@ -1118,28 +1118,7 @@ defmodule EdocApiWeb.PdfTemplates do
               value when is_binary(value) and value != "" -> LegalForms.display(value)
               _ -> nil
             end %>
-          <% buyer_legal_form =
-            cond do
-              contract && Map.get(contract, :buyer) && is_binary(Map.get(contract.buyer, :legal_form)) &&
-                  Map.get(contract.buyer, :legal_form) != "" ->
-                LegalForms.display(contract.buyer.legal_form)
-
-              contract && is_binary(Map.get(contract, :buyer_legal_form)) &&
-                  Map.get(contract, :buyer_legal_form) != "" ->
-                LegalForms.display(contract.buyer_legal_form)
-
-              true ->
-                nil
-            end %>
-          <% buyer_city =
-            cond do
-              contract && Map.get(contract, :buyer) && is_binary(Map.get(contract.buyer, :city)) &&
-                  String.trim(Map.get(contract.buyer, :city)) != "" ->
-                String.trim(contract.buyer.city)
-
-              true ->
-                nil
-            end %>
+          <% buyer_party_line = EdocApi.Invoicing.invoice_buyer_party_line(@invoice) %>
           <% items = @invoice.items || [] %>
           <% items_count = length(items) %>
           <%= if InvoiceStatus.is_paid?(@invoice) do %>
@@ -1207,9 +1186,7 @@ defmodule EdocApiWeb.PdfTemplates do
                 <tr>
                 <td><strong>Покупатель:</strong></td>
                 <td>
-                БИН/ИИН <%= @invoice.buyer_bin_iin %>,
-                 <%= if buyer_legal_form, do: buyer_legal_form <> " " %><%= @invoice.buyer_name %><%= if buyer_city, do: ", Республика Казахстан, г. " <> buyer_city %>,
-                 <%= @invoice.buyer_address %>
+                <%= buyer_party_line %>
                 </td>
                 </tr>
                 <tr>

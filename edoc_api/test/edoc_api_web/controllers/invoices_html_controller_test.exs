@@ -10,6 +10,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
   alias EdocApi.Invoicing
   alias EdocApi.Monetization
   alias EdocApi.Repo
+  alias EdocApiWeb.PdfTemplates
 
   @bin_iin_error "Failed to create invoice: Buyer bin iin: has invalid checksum"
 
@@ -110,6 +111,47 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       assert Invoicing.count_invoices_for_user(user.id) == 2
       assert Enum.any?(invoices, &(&1.id == existing_invoice.id and &1.number == "00000000001"))
       assert Enum.any?(invoices, &(&1.number == "00000000002"))
+    end
+
+    test "creates a direct invoice with buyer city and legal form snapshot", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Snapshot Buyer",
+          "legal_form" => "Акционерное общество",
+          "bin_iin" => "080215385677",
+          "city" => "Астана",
+          "address" => "Проспект Достык, 12"
+        })
+
+      conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "Direct invoice snapshot",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_id" => buyer.id,
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(conn) =~ "/invoices/"
+
+      [invoice | _] = Invoicing.list_invoices_for_user(user.id)
+
+      assert Map.get(invoice, :buyer_city) == "Астана"
+      assert Map.get(invoice, :buyer_legal_form) == "Акционерное общество"
     end
 
     test "re-renders direct invoice form with translated validation details instead of crashing",
@@ -539,6 +581,119 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
         |> html_response(200)
 
       assert show_body =~ invoice.number
+    end
+  end
+
+  describe "buyer party rendering" do
+    test "renders complete buyer party line on the invoice show page for direct invoices", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Preview Buyer",
+          "legal_form" => "Акционерное общество",
+          "bin_iin" => "080215385677",
+          "city" => "Астана",
+          "address" => "Проспект Мәңгілік Ел, 10"
+        })
+
+      create_conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "Preview invoice",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_id" => buyer.id,
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(create_conn) =~ "/invoices/"
+      [invoice | _] = Invoicing.list_invoices_for_user(user.id)
+
+      body =
+        html_conn(conn, user)
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~
+               "БИН/ИИН #{invoice.buyer_bin_iin}, Акционерное общество &quot;Preview Buyer&quot;, Республика Казахстан, г. Астана, #{invoice.buyer_address}"
+    end
+
+    test "renders the same complete buyer party line in invoice PDF html", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "PDF Buyer",
+          "legal_form" => "Акционерное общество",
+          "bin_iin" => "080215385677",
+          "city" => "Астана",
+          "address" => "Улица Сыганак, 14"
+        })
+
+      create_conn =
+        post(conn, "/invoices", %{
+          "invoice" => %{
+            "invoice_type" => "direct",
+            "service_name" => "PDF invoice",
+            "issue_date" => Date.to_iso8601(Date.utc_today()),
+            "currency" => "KZT",
+            "buyer_id" => buyer.id,
+            "vat_rate" => "0"
+          },
+          "items" => %{
+            "0" => %{
+              "name" => "Service",
+              "qty" => "1",
+              "unit_price" => "100.00"
+            }
+          }
+        })
+
+      assert redirected_to(create_conn) =~ "/invoices/"
+      [invoice | _] = Invoicing.list_invoices_for_user(user.id)
+
+      invoice = Invoicing.get_invoice_for_user(user.id, invoice.id)
+      html = PdfTemplates.invoice_html(invoice)
+
+      assert html =~
+               "БИН/ИИН #{invoice.buyer_bin_iin}, Акционерное общество &quot;PDF Buyer&quot;, Республика Казахстан, г. Астана, #{invoice.buyer_address}"
+    end
+
+    test "keeps punctuation clean when buyer city and legal form are missing", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      invoice =
+        create_invoice_with_items!(user, company, %{
+          "buyer_name" => "Minimal Buyer",
+          "buyer_bin_iin" => "060215385673",
+          "buyer_address" => "Buyer Address"
+        })
+
+      body =
+        html_conn(conn, user)
+        |> get("/invoices/#{invoice.id}")
+        |> html_response(200)
+
+      assert body =~
+               "БИН/ИИН #{invoice.buyer_bin_iin}, #{invoice.buyer_name}, Республика Казахстан, #{invoice.buyer_address}"
+
+      refute body =~ ", ,"
     end
   end
 

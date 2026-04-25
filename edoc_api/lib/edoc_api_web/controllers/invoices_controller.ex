@@ -356,6 +356,8 @@ defmodule EdocApiWeb.InvoicesController do
     |> Map.put("buyer_name", buyer.name)
     |> Map.put("buyer_bin_iin", buyer.bin_iin)
     |> Map.put("buyer_address", buyer.address || "")
+    |> Map.put("buyer_city", buyer.city || "")
+    |> Map.put("buyer_legal_form", buyer.legal_form || "")
     |> Map.put("buyer_company_id", buyer.id)
   end
 

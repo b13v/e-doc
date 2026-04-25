@@ -2,6 +2,7 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
   use EdocApi.DataCase, async: true
 
   alias EdocApi.Invoicing
+  alias EdocApi.Buyers
   import EdocApi.TestFixtures
 
   describe "update_invoice_for_user/3" do
@@ -190,6 +191,34 @@ defmodule EdocApi.Invoicing.InvoiceUpdateTest do
       assert updated_invoice.buyer_bin_iin == "000000000000"
       assert updated_invoice.buyer_address == "New Address"
       assert updated_invoice.vat_rate == 16
+    end
+
+    test "refreshes buyer city and legal form when a direct invoice buyer is changed" do
+      user = create_user!()
+      company = create_company!(user)
+      invoice = create_invoice_with_items!(user, company)
+
+      {:ok, buyer} =
+        Buyers.create_buyer_for_company(company.id, %{
+          "name" => "Updated Snapshot Buyer",
+          "legal_form" => "Акционерное общество",
+          "bin_iin" => "080215385677",
+          "city" => "Астана",
+          "address" => "Проспект Туран, 18"
+        })
+
+      updated_attrs = %{
+        "buyer_id" => buyer.id,
+        "buyer_name" => buyer.name,
+        "buyer_bin_iin" => buyer.bin_iin,
+        "buyer_address" => buyer.address
+      }
+
+      assert {:ok, updated_invoice} =
+               Invoicing.update_invoice_for_user(user.id, invoice.id, updated_attrs)
+
+      assert Map.get(updated_invoice, :buyer_city) == "Астана"
+      assert Map.get(updated_invoice, :buyer_legal_form) == "Акционерное общество"
     end
   end
 end
