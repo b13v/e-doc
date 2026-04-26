@@ -2,9 +2,8 @@
   <% bank_account_params = assigns[:bank_account_params] || %{} %>
   <% show_add_bank_form = assigns[:show_add_bank_form] || false %>
   <% subscription = assigns[:subscription] %>
-  <% billing_snapshot = assigns[:billing_snapshot] %>
-  <% outstanding_billing_invoices =
-    if billing_snapshot, do: billing_snapshot.outstanding_invoices, else: [] %>
+  <% billing_snapshot = assigns[:billing_snapshot] || %{} %>
+  <% outstanding_billing_invoices = Map.get(billing_snapshot, :outstanding_invoices, []) %>
   <% overdue_billing? = Enum.any?(outstanding_billing_invoices, &(&1.status == "overdue")) %>
   <% memberships = assigns[:memberships] || [] %>
   <% can_manage_billing_and_team = assigns[:can_manage_billing_and_team] || false %>
@@ -78,7 +77,7 @@
         <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
           <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Documents Used") %></div>
           <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100">
-            <%= subscription.documents_used %> / <%= subscription.document_limit %>
+            <%= Map.get(billing_snapshot, :used_documents, subscription.documents_used) %> / <%= subscription.document_limit %>
           </div>
         </div>
 

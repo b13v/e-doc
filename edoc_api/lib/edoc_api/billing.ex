@@ -960,6 +960,12 @@ defmodule EdocApi.Billing do
         latest_legacy_subscription(company_id)
       end
 
+    used_documents =
+      case current_document_usage(company_id) do
+        {:ok, used} -> used
+        _ -> legacy_document_usage(legacy_subscription)
+      end
+
     outstanding_invoices =
       BillingInvoice
       |> where([i], i.company_id == ^company_id and i.status in ^["sent", "overdue"])
@@ -972,6 +978,7 @@ defmodule EdocApi.Billing do
     %{
       subscription: snapshot_subscription,
       plan: tenant_snapshot_plan(subscription, legacy_subscription),
+      used_documents: used_documents,
       outstanding_invoices: outstanding_invoices,
       blocked?:
         snapshot_subscription &&

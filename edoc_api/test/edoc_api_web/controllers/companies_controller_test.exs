@@ -478,6 +478,40 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Детали подписки"
     end
 
+    test "renders billing document usage on company settings for billing subscriptions", %{
+      conn: conn,
+      company: company
+    } do
+      assert {:ok, _} = Billing.seed_default_plans()
+
+      {:ok, legacy_subscription} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 50,
+          "included_seat_limit" => 2,
+          "add_on_seat_quantity" => 1
+        })
+
+      {:ok, billing_subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _billing_subscription} = Billing.activate_subscription(billing_subscription, "starter")
+
+      assert {:ok, _event} =
+               Billing.record_document_usage(
+                 company.id,
+                 "invoice",
+                 Ecto.UUID.generate(),
+                 occurred_at: legacy_subscription.period_start
+               )
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ "Starter"
+      assert body =~ "1 / 50"
+    end
+
     test "legacy company subscription route redirects to billing details", %{
       conn: conn,
       company: company
