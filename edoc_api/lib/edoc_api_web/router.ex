@@ -288,6 +288,7 @@ defmodule EdocApiWeb.Router do
     get("/company", CompaniesController, :edit)
     get("/company/billing", BillingHTMLController, :show)
     post("/company/billing/upgrade-invoices", BillingHTMLController, :create_upgrade_invoice)
+    post("/company/billing/downgrades", BillingHTMLController, :create_downgrade)
     post("/company/billing/invoices/:id/payments", BillingHTMLController, :create_payment)
     get("/settings", SettingsController, :edit)
     put("/settings/profile", SettingsController, :update_profile)

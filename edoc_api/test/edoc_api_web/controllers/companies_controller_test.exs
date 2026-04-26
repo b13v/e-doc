@@ -470,13 +470,15 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> get("/company")
         |> html_response(200)
 
-      assert body =~ ~s(action="/company/subscription")
+      refute body =~ ~s(action="/company/subscription")
+      refute body =~ ~s(name="subscription[plan]")
       assert body =~ "Starter"
       assert body =~ "1 / 50"
       assert body =~ "1 / 2"
+      assert body =~ "Детали подписки"
     end
 
-    test "updates subscription plan and add-on seats from company settings", %{
+    test "legacy company subscription route redirects to billing details", %{
       conn: conn,
       company: company
     } do
@@ -488,89 +490,21 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           }
         })
 
-      assert redirected_to(conn) == "/company"
-      assert Monetization.effective_seat_limit(company.id) == 5
+      assert redirected_to(conn) == "/company/billing"
 
-      body =
-        conn
-        |> recycle()
-        |> get("/company")
-        |> html_response(200)
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "Subscription changes are managed on the billing page."
+               )
 
-      assert body =~ "Basic"
-      assert body =~ "1 / 5"
-      refute body =~ ~s(name="subscription[add_on_seat_quantity]")
+      assert Monetization.subscription_snapshot(company.id).plan == "trial"
     end
 
-    test "blocks downgrade with localized russian warning and highlighted memberships", %{
+    test "legacy company subscription route is localized in kazakh", %{
       conn: conn,
       company: company
     } do
-      {:ok, _sub} =
-        Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "basic"
-        })
-
-      {:ok, _first} =
-        Monetization.invite_member(company.id, %{
-          "email" => "first@example.com",
-          "role" => "member"
-        })
-
-      {:ok, second} =
-        Monetization.invite_member(company.id, %{
-          "email" => "second@example.com",
-          "role" => "member"
-        })
-
-      conn =
-        post(conn, "/company/subscription", %{
-          "subscription" => %{
-            "plan" => "starter"
-          }
-        })
-
-      body = html_response(conn, 200)
-
-      assert body =~ "Удалите 1 пользователей перед переходом на Starter."
-
-      assert body =~
-               "Перед применением этого изменения тарифа удалите выделенных участников команды."
-
-      assert count_occurrences(body, "Удалите 1 пользователей перед переходом на Starter.") == 1
-
-      assert count_occurrences(
-               body,
-               "Перед применением этого изменения тарифа удалите выделенных участников команды."
-             ) == 1
-
-      assert body =~ "second@example.com"
-      assert body =~ "bg-amber-50"
-      assert body =~ second.id
-      assert Monetization.subscription_snapshot(company.id).plan == "basic"
-    end
-
-    test "blocks downgrade with localized kazakh warning and highlighted memberships", %{
-      conn: conn,
-      company: company
-    } do
-      {:ok, _sub} =
-        Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "basic"
-        })
-
-      {:ok, _first} =
-        Monetization.invite_member(company.id, %{
-          "email" => "first-kk@example.com",
-          "role" => "member"
-        })
-
-      {:ok, second} =
-        Monetization.invite_member(company.id, %{
-          "email" => "second-kk@example.com",
-          "role" => "member"
-        })
-
       conn =
         conn
         |> Plug.Test.init_test_session(%{
@@ -583,24 +517,12 @@ defmodule EdocApiWeb.CompaniesControllerTest do
           }
         })
 
-      body = html_response(conn, 200)
+      assert redirected_to(conn) == "/company/billing"
 
-      assert body =~ "Starter тарифіне ауысу үшін 1 пайдаланушыны алып тастаңыз."
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               "Тарифті өзгерту жазылым мәліметтері бетінде жасалады."
 
-      assert body =~
-               "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
-
-      assert count_occurrences(body, "Starter тарифіне ауысу үшін 1 пайдаланушыны алып тастаңыз.") ==
-               1
-
-      assert count_occurrences(
-               body,
-               "Осы тариф өзгерісін қолдану алдында белгіленген команда мүшелерін алып тастаңыз."
-             ) == 1
-
-      assert body =~ "second-kk@example.com"
-      assert body =~ second.id
-      assert Monetization.subscription_snapshot(company.id).plan == "basic"
+      assert Monetization.subscription_snapshot(company.id).plan == "trial"
     end
 
     test "renders team membership panel with invited members", %{conn: conn, company: company} do
@@ -1004,25 +926,34 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       refute body =~ ~s(name="membership[email]")
       refute body =~ ~s(name="membership[role]")
       refute body =~ ~S|<button type="submit" class="text-red-600 hover:text-red-800">|
+      assert body =~ "Изменение тарифа выполняется на странице деталей подписки."
 
       assert length(
                Regex.scan(
                  ~r/class="[^"]*rounded-2xl[^"]*dark:text-slate-100[^"]*"[^>]*>\s*Только владелец или администратор может управлять тарифом и участниками команды\./u,
                  body
                )
-             ) >= 2
+             ) >= 1
     end
 
-    test "admin can still update subscription, invite, and remove members", %{
-      admin_conn: conn,
-      company: company
-    } do
+    test "admin is redirected to billing for subscription changes and can still invite and remove members",
+         %{
+           admin_conn: conn,
+           company: company
+         } do
       conn =
         post(conn, "/company/subscription", %{
           "subscription" => %{"plan" => "basic"}
         })
 
-      assert redirected_to(conn) == "/company"
+      assert redirected_to(conn) == "/company/billing"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+               Gettext.gettext(
+                 EdocApiWeb.Gettext,
+                 "Subscription changes are managed on the billing page."
+               )
+
       assert Monetization.subscription_snapshot(company.id).plan == "basic"
 
       invitee_email = "admin-invite-#{System.unique_integer([:positive])}@example.com"
@@ -1085,7 +1016,8 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         |> get("/company")
         |> html_response(200)
 
-      assert body =~ ~s(name="subscription[plan]")
+      assert body =~ ~s(href="/company/billing")
+      refute body =~ ~s(name="subscription[plan]")
       assert body =~ ~s(name="membership[email]")
 
       restored_membership = Monetization.active_membership_for_user(company.id, owner.id)

@@ -3,6 +3,7 @@ defmodule EdocApiWeb.BillingHTMLController do
 
   alias EdocApi.Billing
   alias EdocApi.Companies
+  alias EdocApi.Monetization
 
   plug(:put_view, html: EdocApiWeb.BillingHTML)
 
@@ -17,8 +18,9 @@ defmodule EdocApiWeb.BillingHTMLController do
         render(conn, :show,
           company: company,
           billing: Billing.tenant_billing_snapshot(company),
+          can_manage_billing: Monetization.can_manage_billing_and_team?(company.id, user.id),
           current_section: :company,
-          page_title: gettext("Billing")
+          page_title: gettext("Subscription details")
         )
     end
   end
@@ -68,6 +70,40 @@ defmodule EdocApiWeb.BillingHTMLController do
       {:error, _reason} ->
         conn
         |> put_flash(:error, gettext("Could not create upgrade invoice request."))
+        |> redirect(to: "/company/billing")
+    end
+  end
+
+  def create_downgrade(conn, params) do
+    user = conn.assigns.current_user
+    plan = params["plan"] || params["plan_code"] || "starter"
+
+    with company when not is_nil(company) <- Companies.get_company_by_user_id(user.id),
+         true <- Monetization.can_manage_billing_and_team?(company.id, user.id),
+         {:ok, _subscription} <- Billing.schedule_tenant_downgrade(company.id, plan) do
+      conn
+      |> put_flash(:info, gettext("Starter begins from the next billing cycle."))
+      |> redirect(to: "/company/billing")
+    else
+      nil ->
+        redirect(conn, to: "/company/setup")
+
+      false ->
+        conn
+        |> put_flash(
+          :error,
+          gettext("Only the owner or an admin can manage the tariff and team members.")
+        )
+        |> redirect(to: "/company/billing")
+
+      {:error, :seat_limit_exceeded_on_downgrade, _details} ->
+        conn
+        |> put_flash(:error, gettext("Remove extra team members before switching to Starter."))
+        |> redirect(to: "/company/billing")
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, gettext("Could not schedule downgrade."))
         |> redirect(to: "/company/billing")
     end
   end

@@ -62,7 +62,7 @@
   </section>
 
   <section
-    :if={@billing.plan && @billing.plan.code == "starter"}
+    :if={@can_manage_billing && @billing.plan && @billing.plan.code == "starter"}
     class="company-billing-upgrade-card rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-sky-500 dark:bg-sky-800/60"
   >
     <h2 class="company-billing-upgrade-title text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Upgrade to Basic") %></h2>
@@ -74,6 +74,43 @@
       <input type="hidden" name="plan" value="basic" />
       <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
         <%= gettext("Request Basic upgrade invoice") %>
+      </button>
+    </form>
+  </section>
+
+  <section
+    :if={@can_manage_billing && @billing.plan && @billing.plan.code == "basic" && @billing.subscription && @billing.subscription.next_plan}
+    class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40"
+  >
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Scheduled plan change") %></h2>
+    <p class="mt-2 text-sm text-gray-700 dark:text-emerald-50">
+      <%= gettext("Starter begins from the next billing cycle.") %>
+    </p>
+    <div class="mt-4 grid gap-3 md:grid-cols-2">
+      <div>
+        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Plan") %></div>
+        <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.subscription.next_plan) %></div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Effective from") %></div>
+        <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= date_or_dash(@billing.subscription.change_effective_at) %></div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    :if={@can_manage_billing && @billing.plan && @billing.plan.code == "basic" && (!@billing.subscription || is_nil(@billing.subscription.next_plan))}
+    class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-500/50 dark:bg-amber-950/40"
+  >
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Downgrade to Starter") %></h2>
+    <p class="mt-2 text-sm text-gray-700 dark:text-amber-50">
+      <%= gettext("Starter begins from the next billing cycle.") %>
+    </p>
+    <form action="/company/billing/downgrades" method="post" class="mt-4">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <input type="hidden" name="plan" value="starter" />
+      <button type="submit" class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+        <%= gettext("Downgrade to Starter") %>
       </button>
     </form>
   </section>

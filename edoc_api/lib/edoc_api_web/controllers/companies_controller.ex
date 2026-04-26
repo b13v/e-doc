@@ -166,34 +166,11 @@ defmodule EdocApiWeb.CompaniesController do
 
       company ->
         if Monetization.can_manage_billing_and_team?(company.id, user.id) do
-          attrs = %{
-            "plan" => Map.get(subscription_params, "plan", "starter"),
-            "skip_trial" => true
-          }
+          _plan = Map.get(subscription_params, "plan", "starter")
 
-          case Monetization.validate_plan_change(company.id, attrs["plan"]) do
-            {:ok, _details} ->
-              case Monetization.activate_subscription_for_company(company.id, attrs) do
-                {:ok, _subscription} ->
-                  conn
-                  |> put_flash(:info, gettext("Subscription updated successfully."))
-                  |> redirect(to: "/company")
-
-                {:error, :validation, _details} ->
-                  conn
-                  |> put_flash(:error, gettext("Failed to update the subscription."))
-                  |> redirect(to: "/company")
-
-                {:error, _reason} ->
-                  conn
-                  |> put_flash(:error, gettext("Failed to update the subscription."))
-                  |> redirect(to: "/company")
-              end
-
-            {:error, :seat_limit_exceeded_on_downgrade, details} ->
-              conn
-              |> render_company_settings(user, company, downgrade_warning: details)
-          end
+          conn
+          |> put_flash(:info, gettext("Subscription changes are managed on the billing page."))
+          |> redirect(to: "/company/billing")
         else
           conn
           |> put_flash(

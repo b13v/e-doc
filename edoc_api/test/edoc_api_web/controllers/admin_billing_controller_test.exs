@@ -249,6 +249,21 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
   end
 
+  test "platform admin sees scheduled downgrade state on client detail", %{
+    admin_conn: conn,
+    company: company
+  } do
+    assert {:ok, _subscription} = Billing.schedule_tenant_downgrade(company.id, "starter")
+
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "Scheduled plan change"
+    assert body =~ "Starter"
+  end
+
   test "platform admin sees a dedicated submitted payments section for tenant reviews", %{
     admin_conn: conn,
     company: company,
@@ -273,10 +288,11 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ "Paid by tenant"
   end
 
-  test "platform admin sees an empty submitted payments state when there are no tenant reviews", %{
-    admin_conn: conn,
-    company: company
-  } do
+  test "platform admin sees an empty submitted payments state when there are no tenant reviews",
+       %{
+         admin_conn: conn,
+         company: company
+       } do
     body =
       conn
       |> get("/admin/billing/clients/#{company.id}")

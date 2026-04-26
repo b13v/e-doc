@@ -54,6 +54,8 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     assert body =~ "Открыть ссылку на оплату Kaspi"
     assert body =~ "Инструкция по оплате"
     assert body =~ ~s(action="/company/billing/invoices/#{invoice.id}/payments")
+    assert body =~ "Понизить до Starter"
+    assert body =~ "Starter начнет действовать со следующего расчетного периода."
   end
 
   test "tenant billing page renders russian copy when locale is ru", %{
@@ -88,10 +90,11 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     refute body =~ "Billing"
   end
 
-  test "tenant billing page includes explicit dark theme hooks for summary headings and upgrade card", %{
-    conn: conn,
-    company: company
-  } do
+  test "tenant billing page includes explicit dark theme hooks for summary headings and upgrade card",
+       %{
+         conn: conn,
+         company: company
+       } do
     {:ok, subscription} = Billing.get_current_subscription(company.id)
     {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
 
@@ -254,6 +257,73 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     assert invoice.status == "draft"
   end
 
+  test "upgrade invoice request flash is localized in russian", %{company: company} do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+    conn =
+      localized_conn(company.user_id, "ru")
+      |> post("/company/billing/upgrade-invoices", %{
+        "plan" => "basic"
+      })
+
+    assert redirected_to(conn) == "/company/billing"
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+             "Счет на повышение тарифа запрошен. Ожидайте ссылку для оплаты от администратора системы."
+  end
+
+  test "tenant can schedule downgrade to starter from billing page", %{
+    conn: conn,
+    subscription: subscription
+  } do
+    conn = post(conn, "/company/billing/downgrades", %{"plan" => "starter"})
+
+    assert redirected_to(conn) == "/company/billing"
+
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+             "Starter начнет действовать со следующего расчетного периода."
+
+    subscription = Repo.get!(Billing.Subscription, subscription.id) |> Repo.preload(:next_plan)
+    assert subscription.next_plan.code == "starter"
+    assert subscription.change_effective_at == subscription.current_period_end
+  end
+
+  test "tenant sees scheduled downgrade state on billing page", %{
+    conn: conn,
+    subscription: subscription
+  } do
+    {:ok, _subscription} =
+      Billing.schedule_tenant_downgrade(subscription.company_id, "starter")
+
+    body =
+      conn
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Запланированное изменение тарифа"
+    assert body =~ "Starter начнет действовать со следующего расчетного периода."
+  end
+
+  test "tenant cannot schedule downgrade when occupied seats exceed starter limit", %{
+    conn: conn,
+    company: company,
+    subscription: subscription
+  } do
+    create_membership(company.id, "downgrade-blocked-1@example.com")
+    create_membership(company.id, "downgrade-blocked-2@example.com")
+
+    conn = post(conn, "/company/billing/downgrades", %{"plan" => "starter"})
+
+    assert redirected_to(conn) == "/company/billing"
+
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             "Удалите лишних участников команды перед переходом на Starter."
+
+    subscription = Repo.get!(Billing.Subscription, subscription.id)
+    assert subscription.next_plan_id == nil
+    assert subscription.change_effective_at == nil
+  end
+
   test "upgrade invoice request flash is localized in kazakh", %{
     company: company
   } do
@@ -267,7 +337,8 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
       })
 
     assert redirected_to(conn) == "/company/billing"
-    assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Тарифті көтеру шоты жасалды."
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+             "Тарифті көтеру шоты сұралды. Системе әкімшісінен төлем сілтемесін күтіңіз."
   end
 
   defp localized_conn(user_id, locale) do
@@ -275,5 +346,16 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
     |> Plug.Test.init_test_session(%{user_id: user_id, locale: locale})
     |> put_private(:plug_skip_csrf_protection, true)
     |> put_req_header("accept", "text/html")
+  end
+
+  defp create_membership(company_id, email, status \\ "invited") do
+    %EdocApi.Core.TenantMembership{}
+    |> EdocApi.Core.TenantMembership.changeset(%{
+      company_id: company_id,
+      role: "member",
+      status: status,
+      invite_email: email
+    })
+    |> Repo.insert!()
   end
 end

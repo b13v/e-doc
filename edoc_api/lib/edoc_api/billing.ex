@@ -265,6 +265,31 @@ defmodule EdocApi.Billing do
     end
   end
 
+  @doc "Schedules a tenant-requested downgrade using seat validation only."
+  def schedule_tenant_downgrade(company_or_id, plan_or_code \\ "starter") do
+    with {:ok, subscription} <- get_current_subscription(company_or_id),
+         {:ok, target_plan} <- resolve_plan(plan_or_code),
+         :ok <- ensure_plan_direction(subscription.plan, target_plan, :downgrade),
+         :ok <- ensure_target_plan_can_hold_current_seats(subscription, target_plan) do
+      effective_at = subscription.current_period_end
+
+      if subscription.next_plan_id == target_plan.id and
+           subscription.change_effective_at == effective_at do
+        {:ok, subscription}
+      else
+        schedule_plan_change(subscription, target_plan, effective_at)
+      end
+    end
+    |> case do
+      {:error, :seat_limit_reached, %{used: used, target_limit: target_limit}} ->
+        {:error, :seat_limit_exceeded_on_downgrade,
+         %{occupied_seats: used, seat_limit: target_limit}}
+
+      other ->
+        other
+    end
+  end
+
   @doc "Returns the document limit for the tenant's current plan."
   def allowed_document_limit(company_or_id) do
     with {:ok, subscription} <- get_current_subscription(company_or_id) do

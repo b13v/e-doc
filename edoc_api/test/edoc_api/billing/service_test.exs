@@ -528,31 +528,36 @@ defmodule EdocApi.Billing.ServiceTest do
       assert Billing.allowed_user_limit(company.id) == {:ok, 5}
     end
 
-    test "scheduled downgrade is blocked when current seats or usage exceed target plan limits" do
+    test "schedule_tenant_downgrade uses occupied seats only and ignores current-period usage" do
       seed_plans!()
       company = create_company!()
       {:ok, subscription} = Billing.create_trial_subscription(company.id)
       {:ok, subscription} = Billing.activate_subscription(subscription, "basic")
-
-      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
-      create_membership!(company.id, %{invite_email: "second@example.com", status: "invited"})
-
-      assert {:error, :seat_limit_reached, %{used: 3, target_limit: 2}} =
-               Billing.schedule_downgrade(subscription, "starter", ~U[2026-05-20 08:00:00Z])
-
-      Repo.delete_all(
-        from(m in TenantMembership,
-          where: m.company_id == ^company.id and not is_nil(m.invite_email)
-        )
-      )
 
       assert {:ok, _event} =
                Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate(),
                  count: 51
                )
 
-      assert {:error, :document_usage_exceeds_target, %{used: 51, target_limit: 50}} =
-               Billing.schedule_downgrade(subscription, "starter", ~U[2026-05-20 08:00:00Z])
+      assert {:ok, scheduled} =
+               Billing.schedule_tenant_downgrade(company.id, "starter")
+
+      assert scheduled.id == subscription.id
+      assert scheduled.next_plan.code == "starter"
+      assert scheduled.change_effective_at == subscription.current_period_end
+    end
+
+    test "schedule_tenant_downgrade blocks when occupied seats exceed starter limit" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "basic")
+
+      create_membership!(company.id, %{invite_email: "first@example.com", status: "invited"})
+      create_membership!(company.id, %{invite_email: "second@example.com", status: "invited"})
+
+      assert {:error, :seat_limit_exceeded_on_downgrade, %{occupied_seats: 3, seat_limit: 2}} =
+               Billing.schedule_tenant_downgrade(company.id, "starter")
     end
 
     test "scheduled downgrade renewal applies target plan and clears pending change on payment" do

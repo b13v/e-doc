@@ -1,8 +1,7 @@
 {
-  "pid": 42648,
-  "port": 10267,
-  "token": "fbc5183f-741d-4ee8-856f-a1918968a1cf",
-  "startedAt": "2026-04-09T05:24:52.281Z",
-  "serverPath": "/home/biba/.claude/skills/gstack/browse/src/server.ts",
-  "mode": "launched"
+  "pid": 683852,
+  "port": 56985,
+  "token": "3a86970d-5e36-45ba-97ef-a6b94c11455d",
+  "startedAt": "2026-04-12T17:31:45.066Z",
+  "serverPath": "/home/biba/.codex/skills/gstack/browse/src/server.ts"
 }

@@ -2790,7 +2790,28 @@ msgid "Could not send payment reference."
 msgstr "Төлем деректерін жіберу мүмкін болмады."
 
 msgid "Upgrade invoice request was created."
-msgstr "Тарифті көтеру шоты жасалды."
+msgstr "Тарифті көтеру шоты сұралды. Системе әкімшісінен төлем сілтемесін күтіңіз."
 
 msgid "Could not create upgrade invoice request."
 msgstr "Тарифті көтеру шотын жасау мүмкін болмады."
+
+msgid "Subscription changes are managed on the billing page."
+msgstr "Тарифті өзгерту жазылым мәліметтері бетінде жасалады."
+
+msgid "Downgrade to Starter"
+msgstr "Starter тарифіне төмендету"
+
+msgid "Starter begins from the next billing cycle."
+msgstr "Starter келесі есептік кезеңнен бастап күшіне енеді."
+
+msgid "Scheduled plan change"
+msgstr "Жоспарланған тариф өзгерісі"
+
+msgid "Effective from"
+msgstr "Күшіне енетін күні"
+
+msgid "Remove extra team members before switching to Starter."
+msgstr "Starter тарифіне ауысар алдында артық команда мүшелерін алып тастаңыз."
+
+msgid "Could not schedule downgrade."
+msgstr "Тарифті төмендетуді жоспарлау мүмкін болмады."

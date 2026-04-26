@@ -2790,7 +2790,28 @@ msgid "Could not send payment reference."
 msgstr "Не удалось отправить реквизиты платежа."
 
 msgid "Upgrade invoice request was created."
-msgstr "Счет на повышение тарифа создан."
+msgstr "Счет на повышение тарифа запрошен. Ожидайте ссылку для оплаты от администратора системы."
 
 msgid "Could not create upgrade invoice request."
 msgstr "Не удалось создать счет на повышение тарифа."
+
+msgid "Subscription changes are managed on the billing page."
+msgstr "Изменение тарифа выполняется на странице деталей подписки."
+
+msgid "Downgrade to Starter"
+msgstr "Понизить до Starter"
+
+msgid "Starter begins from the next billing cycle."
+msgstr "Starter начнет действовать со следующего расчетного периода."
+
+msgid "Scheduled plan change"
+msgstr "Запланированное изменение тарифа"
+
+msgid "Effective from"
+msgstr "Действует с"
+
+msgid "Remove extra team members before switching to Starter."
+msgstr "Удалите лишних участников команды перед переходом на Starter."
+
+msgid "Could not schedule downgrade."
+msgstr "Не удалось запланировать понижение тарифа."
