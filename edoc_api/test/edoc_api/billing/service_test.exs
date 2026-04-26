@@ -284,7 +284,7 @@ defmodule EdocApi.Billing.ServiceTest do
 
       assert renewal.status == "draft"
       assert renewal.plan_snapshot_code == "starter"
-      assert renewal.amount_kzt == 9_900
+      assert renewal.amount_kzt == 2_900
 
       assert {:ok, sent} =
                Billing.send_billing_invoice(renewal,
@@ -303,7 +303,7 @@ defmodule EdocApi.Billing.ServiceTest do
 
       assert {:ok, upgrade} = Billing.create_upgrade_invoice(subscription, "basic", due_at: now)
       assert upgrade.note == "upgrade"
-      assert upgrade.amount_kzt == 29_900
+      assert upgrade.amount_kzt == 5_900
     end
 
     test "confirms manual payment atomically and is idempotent on repeated confirmation" do
@@ -514,7 +514,7 @@ defmodule EdocApi.Billing.ServiceTest do
       assert invoice.note == "upgrade"
       assert invoice.period_start == ~U[2026-04-20 08:00:00Z]
       assert invoice.period_end == ~U[2026-05-01 08:00:00Z]
-      assert invoice.amount_kzt == 29_900
+      assert invoice.amount_kzt == 5_900
 
       {:ok, invoice} = Billing.send_billing_invoice(invoice, payment_method: "manual", now: now)
       {:ok, payment} = Billing.create_payment(invoice, method: "manual")
@@ -910,7 +910,7 @@ defmodule EdocApi.Billing.ServiceTest do
       assert report.cards.trial_clients >= 1
       assert report.cards.overdue_clients >= 1
       assert report.cards.suspended_clients >= 1
-      assert report.cards.monthly_collected_revenue >= 29_900
+      assert report.cards.monthly_collected_revenue >= 5_900
       assert report.cards.upcoming_renewals >= 1
       assert Enum.any?(report.lists.invoices_due_soon, &(&1.id == due_soon_invoice.id))
       assert Enum.any?(report.lists.unpaid_invoices, &(&1.id == overdue_invoice.id))

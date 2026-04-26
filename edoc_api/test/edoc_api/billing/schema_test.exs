@@ -38,7 +38,53 @@ defmodule EdocApi.Billing.SchemaTest do
       assert Repo.aggregate(Plan, :count, :id) == 3
       assert Repo.get_by!(Plan, code: "trial").monthly_document_limit == 10
       assert Repo.get_by!(Plan, code: "starter").included_users == 2
+      assert Repo.get_by!(Plan, code: "starter").price_kzt == 2_900
       assert Repo.get_by!(Plan, code: "basic").monthly_document_limit == 500
+      assert Repo.get_by!(Plan, code: "basic").price_kzt == 5_900
+    end
+
+    test "corrects persisted starter/basic prices and draft invoice amounts without rewriting sent invoices" do
+      starter = create_plan!("starter", %{price_kzt: 9_900})
+      basic = create_plan!("basic", %{price_kzt: 29_900, included_users: 5, monthly_document_limit: 500})
+      company = create_company!()
+      subscription = create_subscription!(company, starter)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      draft_starter =
+        insert_billing_invoice!(subscription, %{
+          plan_snapshot_code: "starter",
+          amount_kzt: 9_900,
+          status: "draft",
+          period_start: now,
+          period_end: DateTime.add(now, 30, :day)
+        })
+
+      draft_basic =
+        insert_billing_invoice!(subscription, %{
+          plan_snapshot_code: "basic",
+          amount_kzt: 29_900,
+          status: "draft",
+          period_start: DateTime.add(now, 31, :day),
+          period_end: DateTime.add(now, 61, :day)
+        })
+
+      sent_basic =
+        insert_billing_invoice!(subscription, %{
+          plan_snapshot_code: "basic",
+          amount_kzt: 29_900,
+          status: "sent",
+          period_start: DateTime.add(now, 62, :day),
+          period_end: DateTime.add(now, 92, :day),
+          due_at: DateTime.add(now, 65, :day)
+        })
+
+      run_price_correction_queries!()
+
+      assert Repo.get!(Plan, starter.id).price_kzt == 2_900
+      assert Repo.get!(Plan, basic.id).price_kzt == 5_900
+      assert Repo.get!(BillingInvoice, draft_starter.id).amount_kzt == 2_900
+      assert Repo.get!(BillingInvoice, draft_basic.id).amount_kzt == 5_900
+      assert Repo.get!(BillingInvoice, sent_basic.id).amount_kzt == 29_900
     end
   end
 
@@ -189,7 +235,7 @@ defmodule EdocApi.Billing.SchemaTest do
     TestFixtures.create_company!(user)
   end
 
-  defp create_plan!(code) do
+  defp create_plan!(code, overrides \\ %{}) do
     Repo.insert!(
       Plan.changeset(%Plan{}, %{
         code: code,
@@ -198,7 +244,7 @@ defmodule EdocApi.Billing.SchemaTest do
         monthly_document_limit: 50,
         included_users: 2,
         is_active: true
-      })
+      } |> Map.merge(overrides))
     )
   end
 
@@ -214,6 +260,37 @@ defmodule EdocApi.Billing.SchemaTest do
         current_period_end: DateTime.add(now, 30, :day),
         auto_renew_mode: "manual"
       })
+    )
+  end
+
+  defp insert_billing_invoice!(subscription, attrs) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert!(
+      BillingInvoice.changeset(%BillingInvoice{}, %{
+        company_id: subscription.company_id,
+        subscription_id: subscription.id,
+        period_start: DateTime.add(now, 1, :day),
+        period_end: DateTime.add(now, 31, :day),
+        plan_snapshot_code: subscription.plan_id,
+        amount_kzt: 10_000,
+        status: "draft",
+        due_at: nil,
+        note: "renewal"
+      } |> Map.merge(attrs))
+    )
+  end
+
+  defp run_price_correction_queries! do
+    Repo.query!("UPDATE plans SET price_kzt = 2900, updated_at = NOW() WHERE code = 'starter'")
+    Repo.query!("UPDATE plans SET price_kzt = 5900, updated_at = NOW() WHERE code = 'basic'")
+
+    Repo.query!(
+      "UPDATE billing_invoices SET amount_kzt = 2900, updated_at = NOW() WHERE status = 'draft' AND plan_snapshot_code = 'starter'"
+    )
+
+    Repo.query!(
+      "UPDATE billing_invoices SET amount_kzt = 5900, updated_at = NOW() WHERE status = 'draft' AND plan_snapshot_code = 'basic'"
     )
   end
 end

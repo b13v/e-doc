@@ -50,7 +50,7 @@ defmodule EdocApi.Billing do
     %{
       code: "starter",
       name: "Starter",
-      price_kzt: 9_900,
+      price_kzt: 2_900,
       monthly_document_limit: 50,
       included_users: 2,
       is_active: true
@@ -58,7 +58,7 @@ defmodule EdocApi.Billing do
     %{
       code: "basic",
       name: "Basic",
-      price_kzt: 29_900,
+      price_kzt: 5_900,
       monthly_document_limit: 500,
       included_users: 5,
       is_active: true
@@ -1459,7 +1459,7 @@ defmodule EdocApi.Billing do
   defp send_high_value_overdue_alerts(now) do
     BillingInvoice
     |> where([i], i.status == ^BillingInvoiceStatus.overdue())
-    |> where([i], i.plan_snapshot_code == "basic" or i.amount_kzt >= 29_900)
+    |> where([i], i.plan_snapshot_code == "basic" or i.amount_kzt >= 5_900)
     |> preload(:company)
     |> Repo.all()
     |> Enum.reduce([], fn invoice, sent ->
