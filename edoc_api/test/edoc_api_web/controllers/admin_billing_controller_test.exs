@@ -228,17 +228,37 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     admin_conn: conn,
     company: company,
     subscription: subscription,
-    member: member
+    member: member,
+    billing_invoice: invoice
   } do
+    {:ok, _payment} =
+      Billing.create_customer_payment_review_for_company(company.id, invoice.id, %{
+        "external_reference" => "LAYOUT-REVIEW-1"
+      })
+
     body =
       conn
       |> get("/admin/billing/clients/#{company.id}")
       |> html_response(200)
 
+    assert body =~ "ТОО"
     assert body =~ "Backoffice Client"
+    assert body =~ "Company Info"
+    assert body =~ "БИН/ИИН"
+    assert body =~ "Email"
+    assert body =~ "Телефон"
     assert body =~ member.email
     assert body =~ "Invoice History"
+    assert body =~ "Invoice number"
+    assert body =~ "Tariff"
+    assert body =~ "Due date"
+    assert body =~ "Submitted payments"
+    assert body =~ "Payment status"
+    assert body =~ "Reference"
+    assert body =~ "Submitted at"
     assert body =~ "Payment History"
+    assert body =~ "Method"
+    assert body =~ "Created at"
     assert body =~ ~s(action="/admin/billing/clients/#{company.id}/notes")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/renewal-invoices")
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/upgrade-invoices")
@@ -267,10 +287,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
 
     assert body =~ "admin-billing-client-summary-heading"
     assert body =~ "admin-billing-client-label"
+    assert body =~ "admin-billing-client-table-heading"
     assert body =~ "admin-billing-client-history-text"
     assert body =~ "admin-billing-client-meta-label"
     assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-summary-heading)
     assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-label)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-table-heading)
     assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-history-text)
     assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-meta-label)
     assert body =~ "color: #ffffff !important;"

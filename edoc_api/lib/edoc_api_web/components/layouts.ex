@@ -356,6 +356,7 @@ defmodule EdocApiWeb.Layouts do
 
           html[data-theme="dark"] .admin-billing-client-summary-heading,
           html[data-theme="dark"] .admin-billing-client-label,
+          html[data-theme="dark"] .admin-billing-client-table-heading,
           html[data-theme="dark"] .admin-billing-client-meta-label,
           html[data-theme="dark"] .admin-billing-client-history-text,
           html[data-theme="dark"] .admin-billing-client-history-text span {
