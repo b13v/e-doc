@@ -249,6 +249,33 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     assert body =~ ~s(action="/admin/billing/subscriptions/#{subscription.id}/reactivate")
   end
 
+  test "platform admin client detail uses dedicated dark-mode contrast hooks", %{
+    admin_conn: conn,
+    company: company,
+    billing_invoice: invoice
+  } do
+    {:ok, _payment} =
+      Billing.create_customer_payment_review_for_company(company.id, invoice.id, %{
+        "external_reference" => "DARK-MODE-REVIEW-1",
+        "proof_attachment_url" => "https://example.com/dark-proof.png"
+      })
+
+    body =
+      conn
+      |> get("/admin/billing/clients/#{company.id}")
+      |> html_response(200)
+
+    assert body =~ "admin-billing-client-summary-heading"
+    assert body =~ "admin-billing-client-label"
+    assert body =~ "admin-billing-client-history-text"
+    assert body =~ "admin-billing-client-meta-label"
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-summary-heading)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-label)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-history-text)
+    assert body =~ ~s(html[data-theme="dark"] .admin-billing-client-meta-label)
+    assert body =~ "color: #ffffff !important;"
+  end
+
   test "platform admin sees scheduled downgrade state on client detail", %{
     admin_conn: conn,
     company: company

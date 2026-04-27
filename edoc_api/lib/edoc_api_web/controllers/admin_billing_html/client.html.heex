@@ -9,19 +9,19 @@
 
   <div class="grid gap-4 md:grid-cols-4">
     <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Plan</div>
+      <div class="admin-billing-client-summary-heading text-xs font-semibold uppercase text-stone-500 dark:text-white">Plan</div>
       <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= plan_label(@client.plan) %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Subscription</div>
+      <div class="admin-billing-client-summary-heading text-xs font-semibold uppercase text-stone-500 dark:text-white">Subscription</div>
       <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= value_or_dash(@client.subscription_status) %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Users</div>
+      <div class="admin-billing-client-summary-heading text-xs font-semibold uppercase text-stone-500 dark:text-white">Users</div>
       <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= @client.occupied_users %> / <%= value_or_dash(@client.user_limit) %></div>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-      <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-400">Documents</div>
+      <div class="admin-billing-client-summary-heading text-xs font-semibold uppercase text-stone-500 dark:text-white">Documents</div>
       <div class="mt-2 text-lg font-bold text-gray-900 dark:text-slate-100"><%= @client.used_documents %> / <%= value_or_dash(@client.document_limit) %></div>
     </div>
   </div>
@@ -53,7 +53,7 @@
     <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/renewal-invoices"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Renewal plan</label>
+        <label class="admin-billing-client-label block text-xs font-semibold uppercase text-stone-600 dark:text-slate-100">Renewal plan</label>
         <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
           <option value="starter">Starter</option>
           <option value="basic" selected>Basic</option>
@@ -63,7 +63,7 @@
 
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/upgrade-invoices"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Upgrade plan</label>
+        <label class="admin-billing-client-label block text-xs font-semibold uppercase text-stone-600 dark:text-slate-100">Upgrade plan</label>
         <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
           <option value="starter">Starter</option>
           <option value="basic" selected>Basic</option>
@@ -73,7 +73,7 @@
 
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/schedule-change"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Schedule downgrade</label>
+        <label class="admin-billing-client-label block text-xs font-semibold uppercase text-stone-600 dark:text-slate-100">Schedule downgrade</label>
         <select name="plan" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
           <option value="starter" selected>Starter</option>
         </select>
@@ -83,21 +83,21 @@
 
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/grace-period"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Grace until</label>
+        <label class="admin-billing-client-label block text-xs font-semibold uppercase text-stone-600 dark:text-slate-100">Grace until</label>
         <input type="date" name="grace_until" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
         <button type="submit" class="mt-3 text-sm font-semibold text-amber-700 hover:text-amber-900 dark:text-amber-300">Extend grace</button>
       </form>
 
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/suspend"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <label class="block text-xs font-semibold uppercase text-stone-600 dark:text-slate-300">Suspend reason</label>
+        <label class="admin-billing-client-label block text-xs font-semibold uppercase text-stone-600 dark:text-slate-100">Suspend reason</label>
         <input name="reason" value="manual_suspension" class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
         <button type="submit" class="mt-3 text-sm font-semibold text-red-700 hover:text-red-900 dark:text-red-300">Suspend</button>
       </form>
 
       <form action={"/admin/billing/subscriptions/#{@client.subscription.id}/reactivate"} method="post" class="rounded-2xl bg-stone-50 p-4 dark:bg-slate-800">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-        <p class="text-sm text-stone-700 dark:text-slate-200">Restore active billing access.</p>
+        <p class="admin-billing-client-label text-sm text-stone-700 dark:text-slate-100">Restore active billing access.</p>
         <button type="submit" class="mt-3 text-sm font-semibold text-green-700 hover:text-green-900 dark:text-green-300">Reactivate</button>
       </form>
     </div>
@@ -134,7 +134,7 @@
   <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
     <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Invoice History</h2>
     <%= for invoice <- @client.invoices do %>
-      <div class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+      <div class="admin-billing-client-history-text mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
         <%= invoice.id %> · <%= invoice.status %> · <%= invoice.plan_snapshot_code %> · <%= invoice.amount_kzt %> KZT
       </div>
     <% end %>
@@ -150,46 +150,46 @@
       <div class="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
         <div class="grid gap-3 md:grid-cols-4">
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Payment</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Payment</div>
             <div class="mt-1 break-all font-semibold"><%= payment.id %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Invoice</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Invoice</div>
             <div class="mt-1 break-all font-semibold"><%= payment.billing_invoice_id %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Invoice status</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Invoice status</div>
             <div class="mt-1 font-semibold"><%= payment.billing_invoice && payment.billing_invoice.status %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Submitted at</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Submitted at</div>
             <div class="mt-1 font-semibold"><%= date_or_dash(payment.inserted_at) %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Payment status</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Payment status</div>
             <div class="mt-1 font-semibold"><%= payment.status %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Method</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Method</div>
             <div class="mt-1 font-semibold"><%= payment.method %></div>
           </div>
           <div>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Amount</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Amount</div>
             <div class="mt-1 font-semibold"><%= payment.amount_kzt %> KZT</div>
           </div>
           <div :if={payment.external_reference}>
-            <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Reference</div>
+            <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Reference</div>
             <div class="mt-1 break-all font-semibold"><%= payment.external_reference %></div>
           </div>
         </div>
 
         <div :if={payment.proof_attachment_url} class="mt-3">
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Proof URL</div>
+          <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Proof URL</div>
           <div class="mt-1 break-all font-semibold text-blue-700 dark:text-sky-300"><%= payment.proof_attachment_url %></div>
         </div>
 
         <div :if={Map.get(@client.submitted_payment_notes, payment.id)} class="mt-3">
-          <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-300">Review note</div>
+          <div class="admin-billing-client-meta-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-100">Review note</div>
           <div class="mt-1"><%= metadata_note(Map.get(@client.submitted_payment_notes, payment.id)) %></div>
         </div>
       </div>
@@ -199,7 +199,7 @@
   <section class="rounded-3xl border border-stone-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
     <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Payment History</h2>
     <%= for payment <- @client.payments do %>
-      <div class="mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+      <div class="admin-billing-client-history-text mt-3 rounded-xl bg-stone-50 p-3 text-sm text-gray-800 dark:bg-slate-800 dark:text-slate-100">
         <%= payment.id %> · <%= payment.status %> · <%= payment.method %> · <%= payment.amount_kzt %> KZT
       </div>
     <% end %>

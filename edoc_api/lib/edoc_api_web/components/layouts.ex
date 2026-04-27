@@ -354,6 +354,15 @@ defmodule EdocApiWeb.Layouts do
             opacity: 1 !important;
           }
 
+          html[data-theme="dark"] .admin-billing-client-summary-heading,
+          html[data-theme="dark"] .admin-billing-client-label,
+          html[data-theme="dark"] .admin-billing-client-meta-label,
+          html[data-theme="dark"] .admin-billing-client-history-text,
+          html[data-theme="dark"] .admin-billing-client-history-text span {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
           html[data-theme="dark"] .workspace-support-panel {
             background-color: var(--workspace-support-bg);
             border-color: var(--workspace-support-border);
