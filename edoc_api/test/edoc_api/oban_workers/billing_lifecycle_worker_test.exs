@@ -56,6 +56,28 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorkerTest do
     assert suspended.blocked_reason == "payment_overdue"
   end
 
+  test "dispatches expired upgrade invoice processing" do
+    seed_plans!()
+    company = create_company!()
+    {:ok, subscription} = Billing.create_trial_subscription(company.id)
+    {:ok, subscription} = Billing.activate_subscription(subscription, "starter")
+
+    {:ok, invoice} =
+      Billing.create_upgrade_invoice(subscription, "basic", due_at: ~U[2026-04-20 08:00:00Z])
+
+    {:ok, _invoice} =
+      Billing.send_billing_invoice(invoice,
+        payment_method: "manual",
+        now: ~U[2026-04-20 08:00:00Z]
+      )
+
+    assert BillingLifecycleWorker.perform(%Oban.Job{
+             args: %{"action" => "process_expired_upgrade_invoices", "now" => "2026-04-28T08:00:00Z"}
+           }) == :ok
+
+    assert Repo.get!(BillingInvoice, invoice.id).status == "canceled"
+  end
+
   test "dispatches billing reminder processing" do
     seed_plans!()
     company = create_company!()

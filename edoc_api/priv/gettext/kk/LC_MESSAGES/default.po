@@ -2795,6 +2795,12 @@ msgstr "Тарифті көтеру шоты сұралды. Системе әк
 msgid "Could not create upgrade invoice request."
 msgstr "Тарифті көтеру шотын жасау мүмкін болмады."
 
+msgid "An unpaid upgrade invoice already exists. Please pay it or contact the platform administrator."
+msgstr "Тарифті көтеруге арналған төленбеген шот бұрыннан бар. Оны төлеңіз немесе жүйе әкімшісіне хабарласыңыз."
+
+msgid "The previous upgrade invoice expired. You can request a new one."
+msgstr "Алдыңғы тарифті көтеру шотының мерзімі өтіп кетті. Жаңасын сұрата аласыз."
+
 msgid "Subscription changes are managed on the billing page."
 msgstr "Тарифті өзгерту жазылым мәліметтері бетінде жасалады."
 

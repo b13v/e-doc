@@ -593,6 +593,140 @@ defmodule EdocApi.Billing.ServiceTest do
       assert downgraded.change_effective_at == nil
     end
 
+    test "blocks duplicate upgrade invoice requests for the same tenant and target plan" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic",
+                 due_at: ~U[2026-04-22 08:00:00Z]
+               )
+
+      assert invoice.note == "upgrade"
+
+      assert {:error, :upgrade_invoice_already_open} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+    end
+
+    test "duplicate upgrade request guard applies to draft sent and overdue invoices only" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, draft_invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic",
+                 due_at: ~U[2026-04-22 08:00:00Z]
+               )
+
+      assert {:error, :upgrade_invoice_already_open} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      {:ok, sent_invoice} = Billing.send_billing_invoice(draft_invoice, payment_method: "manual")
+
+      assert {:error, :upgrade_invoice_already_open} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      {:ok, overdue_invoice} = Billing.mark_billing_invoice_overdue(sent_invoice)
+
+      assert {:error, :upgrade_invoice_already_open} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      {:ok, _canceled_invoice} = Billing.cancel_expired_upgrade_invoice(overdue_invoice)
+
+      assert {:ok, replacement_invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      assert replacement_invoice.id != overdue_invoice.id
+    end
+
+    test "renewal invoices do not block upgrade invoice requests" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, _renewal_invoice} =
+               Billing.create_renewal_invoice(subscription, "starter",
+                 period_start: ~U[2026-05-01 08:00:00Z],
+                 period_end: ~U[2026-05-31 08:00:00Z],
+                 due_at: ~U[2026-04-23 08:00:00Z]
+               )
+
+      assert {:ok, upgrade_invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      assert upgrade_invoice.note == "upgrade"
+    end
+
+    test "auto-cancels stale unpaid upgrade invoices after seven days from due_at and records audit metadata" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic",
+                 due_at: ~U[2026-04-20 08:00:00Z]
+               )
+
+      assert %{canceled_invoices: [canceled_invoice]} =
+               Billing.process_expired_upgrade_invoices(now: ~U[2026-04-28 08:00:00Z])
+
+      assert canceled_invoice.id == invoice.id
+      assert canceled_invoice.status == "canceled"
+
+      event =
+        Repo.one!(
+          from(e in BillingAuditEvent,
+            where:
+              e.action == "billing_invoice_canceled" and e.subject_type == "billing_invoice" and
+                e.subject_id == ^invoice.id
+          )
+        )
+
+      assert event.metadata["reason"] == "expired_unpaid_upgrade"
+      assert event.metadata["based_on"] == "due_at"
+      assert event.metadata["expired_at"] == "2026-04-28T08:00:00Z"
+    end
+
+    test "upgrade invoice expiry falls back to issued_at when due_at is absent" do
+      seed_plans!()
+      company = create_company!()
+      {:ok, subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "starter")
+
+      assert {:ok, invoice} =
+               Billing.create_upgrade_invoice_for_company(company.id, "basic")
+
+      assert {:ok, sent_invoice} =
+               Billing.send_billing_invoice(invoice,
+                 payment_method: "manual",
+                 now: ~U[2026-04-20 08:00:00Z]
+               )
+
+      assert %{canceled_invoices: []} =
+               Billing.process_expired_upgrade_invoices(now: ~U[2026-04-27 07:59:59Z])
+
+      assert %{canceled_invoices: [canceled_invoice]} =
+               Billing.process_expired_upgrade_invoices(now: ~U[2026-04-27 08:00:01Z])
+
+      assert canceled_invoice.id == sent_invoice.id
+
+      event =
+        Repo.one!(
+          from(e in BillingAuditEvent,
+            where:
+              e.action == "billing_invoice_canceled" and e.subject_type == "billing_invoice" and
+                e.subject_id == ^sent_invoice.id
+          )
+        )
+
+      assert event.metadata["based_on"] == "issued_at"
+    end
+
     test "user limit comes only from the current plan included seats" do
       seed_plans!()
       company = create_company!()

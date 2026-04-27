@@ -508,7 +508,8 @@ defmodule EdocApi.Billing do
   def create_immediate_upgrade_invoice(subscription_or_id, plan_or_code, opts \\ []) do
     with %Subscription{} = subscription <- get_subscription!(subscription_or_id),
          {:ok, target_plan} <- resolve_plan(plan_or_code),
-         :ok <- ensure_plan_direction(subscription.plan, target_plan, :upgrade) do
+         :ok <- ensure_plan_direction(subscription.plan, target_plan, :upgrade),
+         nil <- find_open_upgrade_invoice(subscription.company_id, target_plan.code) do
       now = billing_now(opts)
 
       create_upgrade_invoice(subscription, target_plan,
@@ -516,6 +517,9 @@ defmodule EdocApi.Billing do
         period_end: subscription.current_period_end,
         due_at: Keyword.get(opts, :due_at)
       )
+    else
+      %BillingInvoice{} -> {:error, :upgrade_invoice_already_open}
+      other -> other
     end
   end
 
@@ -524,6 +528,50 @@ defmodule EdocApi.Billing do
     with {:ok, subscription} <- get_current_subscription(company_or_id) do
       create_immediate_upgrade_invoice(subscription, plan_or_code, opts)
     end
+  end
+
+  @doc "Cancels stale unpaid upgrade invoices that have exceeded the expiry window."
+  def process_expired_upgrade_invoices(opts \\ []) do
+    now = billing_now(opts)
+    threshold = DateTime.add(now, -7, :day)
+
+    canceled_invoices =
+      BillingInvoice
+      |> where([i], i.note == "upgrade")
+      |> where(
+        [i],
+        i.status in ^[
+          BillingInvoiceStatus.draft(),
+          BillingInvoiceStatus.sent(),
+          BillingInvoiceStatus.overdue()
+        ]
+      )
+      |> where(
+        [i],
+        (not is_nil(i.due_at) and i.due_at <= ^threshold) or
+          (is_nil(i.due_at) and not is_nil(i.issued_at) and i.issued_at <= ^threshold)
+      )
+      |> order_by([i], asc: i.due_at, asc: i.issued_at, asc: i.inserted_at)
+      |> Repo.all()
+      |> Enum.map(fn invoice ->
+        {:ok, canceled_invoice} = cancel_expired_upgrade_invoice(invoice, now: now)
+        canceled_invoice
+      end)
+
+    %{canceled_invoices: canceled_invoices}
+  end
+
+  @doc "Returns the latest auto-expired upgrade invoice audit event for a company."
+  def latest_expired_upgrade_invoice_notice(company_or_id) do
+    company_id = record_id(company_or_id)
+
+    BillingAuditEvent
+    |> where([e], e.company_id == ^company_id)
+    |> where([e], e.action == "billing_invoice_canceled" and e.subject_type == "billing_invoice")
+    |> where([e], fragment("?->>'reason' = 'expired_unpaid_upgrade'", e.metadata))
+    |> order_by([e], desc: e.inserted_at)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc "Marks a draft billing invoice as sent."
@@ -1639,6 +1687,30 @@ defmodule EdocApi.Billing do
 
   defp normalize_blank(value), do: value
 
+  def cancel_expired_upgrade_invoice(invoice_or_id, opts \\ []) do
+    invoice = get_billing_invoice!(invoice_or_id)
+    now = billing_now(opts)
+    based_on = if invoice.due_at, do: "due_at", else: "issued_at"
+
+    with {:ok, canceled_invoice} <-
+           update_billing_invoice(invoice, %{status: BillingInvoiceStatus.canceled()}) do
+      insert_audit_event!(
+        canceled_invoice.company_id,
+        nil,
+        "billing_invoice_canceled",
+        "billing_invoice",
+        canceled_invoice.id,
+        %{
+          reason: "expired_unpaid_upgrade",
+          expired_at: now,
+          based_on: based_on
+        }
+      )
+
+      {:ok, canceled_invoice}
+    end
+  end
+
   defp parse_datetime(%DateTime{} = datetime), do: datetime
   defp parse_datetime(nil), do: nil
 
@@ -1765,6 +1837,23 @@ defmodule EdocApi.Billing do
     else
       :ok
     end
+  end
+
+  defp find_open_upgrade_invoice(company_id, plan_code) do
+    BillingInvoice
+    |> where([i], i.company_id == ^company_id)
+    |> where([i], i.note == "upgrade" and i.plan_snapshot_code == ^plan_code)
+    |> where(
+      [i],
+      i.status in ^[
+        BillingInvoiceStatus.draft(),
+        BillingInvoiceStatus.sent(),
+        BillingInvoiceStatus.overdue()
+      ]
+    )
+    |> order_by([i], desc: i.inserted_at)
+    |> limit(1)
+    |> Repo.one()
   end
 
   defp update_subscription(subscription, attrs) do

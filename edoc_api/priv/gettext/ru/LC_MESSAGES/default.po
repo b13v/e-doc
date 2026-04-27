@@ -2795,6 +2795,12 @@ msgstr "Счет на повышение тарифа запрошен. Ожид
 msgid "Could not create upgrade invoice request."
 msgstr "Не удалось создать счет на повышение тарифа."
 
+msgid "An unpaid upgrade invoice already exists. Please pay it or contact the platform administrator."
+msgstr "Неоплаченный счет на повышение тарифа уже существует. Оплатите его или обратитесь к администратору системы."
+
+msgid "The previous upgrade invoice expired. You can request a new one."
+msgstr "Предыдущий счет на повышение тарифа истек. Вы можете запросить новый."
+
 msgid "Subscription changes are managed on the billing page."
 msgstr "Изменение тарифа выполняется на странице деталей подписки."
 

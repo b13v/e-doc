@@ -81,6 +81,8 @@ config :edoc_api, Oban,
      crontab: [
        {"0 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
         args: %{"action" => "generate_renewal_invoices"}},
+       {"10 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
+        args: %{"action" => "process_expired_upgrade_invoices"}},
        {"15 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,
         args: %{"action" => "process_overdue_billing"}},
        {"30 3 * * *", EdocApi.ObanWorkers.BillingLifecycleWorker,

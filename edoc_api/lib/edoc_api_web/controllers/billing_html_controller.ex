@@ -15,6 +15,8 @@ defmodule EdocApiWeb.BillingHTMLController do
         redirect(conn, to: "/company/setup")
 
       company ->
+        conn = maybe_put_expired_upgrade_notice(conn, company.id)
+
         render(conn, :show,
           company: company,
           billing: Billing.tenant_billing_snapshot(company),
@@ -67,6 +69,16 @@ defmodule EdocApiWeb.BillingHTMLController do
       nil ->
         redirect(conn, to: "/company/setup")
 
+      {:error, :upgrade_invoice_already_open} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext(
+            "An unpaid upgrade invoice already exists. Please pay it or contact the platform administrator."
+          )
+        )
+        |> redirect(to: "/company/billing")
+
       {:error, _reason} ->
         conn
         |> put_flash(:error, gettext("Could not create upgrade invoice request."))
@@ -105,6 +117,30 @@ defmodule EdocApiWeb.BillingHTMLController do
         conn
         |> put_flash(:error, gettext("Could not schedule downgrade."))
         |> redirect(to: "/company/billing")
+    end
+  end
+
+  defp maybe_put_expired_upgrade_notice(conn, company_id) do
+    session_key = "seen_expired_upgrade_invoice_notice_id"
+
+    case Billing.latest_expired_upgrade_invoice_notice(company_id) do
+      nil ->
+        conn
+
+      event ->
+        notice_token = "#{company_id}:#{event.subject_id}"
+        seen_subject_id = get_session(conn, session_key)
+
+        if seen_subject_id == notice_token do
+          conn
+        else
+          conn
+          |> put_flash(
+            :info,
+            gettext("The previous upgrade invoice expired. You can request a new one.")
+          )
+          |> put_session(session_key, notice_token)
+        end
     end
   end
 end

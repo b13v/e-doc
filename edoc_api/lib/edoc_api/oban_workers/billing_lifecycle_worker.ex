@@ -4,6 +4,7 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorker do
 
   Supported actions:
   - `generate_renewal_invoices`
+  - `process_expired_upgrade_invoices`
   - `process_overdue_billing`
   - `process_grace_expirations`
   - `send_billing_reminders`
@@ -26,6 +27,14 @@ defmodule EdocApi.ObanWorkers.BillingLifecycleWorker do
     args
     |> lifecycle_opts()
     |> Billing.process_overdue_billing()
+
+    :ok
+  end
+
+  def perform(%Oban.Job{args: %{"action" => "process_expired_upgrade_invoices"} = args}) do
+    args
+    |> lifecycle_opts()
+    |> Billing.process_expired_upgrade_invoices()
 
     :ok
   end

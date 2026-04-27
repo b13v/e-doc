@@ -272,6 +272,94 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
              "Счет на повышение тарифа запрошен. Ожидайте ссылку для оплаты от администратора системы."
   end
 
+  test "tenant cannot request a duplicate unpaid upgrade invoice", %{
+    conn: conn,
+    company: company
+  } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, subscription} = Billing.activate_subscription(subscription, "starter")
+    {:ok, _invoice} = Billing.create_upgrade_invoice(subscription, "basic")
+
+    conn =
+      post(conn, "/company/billing/upgrade-invoices", %{
+        "plan" => "basic"
+      })
+
+    assert redirected_to(conn) == "/company/billing"
+
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+             "Неоплаченный счет на повышение тарифа уже существует. Оплатите его или обратитесь к администратору системы."
+  end
+
+  test "expired upgrade invoice disappears from tenant billing page and tenant can request again",
+       %{
+         conn: conn,
+         company: company
+       } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, subscription} = Billing.activate_subscription(subscription, "starter")
+
+    {:ok, invoice} =
+      Billing.create_upgrade_invoice(subscription, "basic", due_at: ~U[2026-04-20 08:00:00Z])
+
+    {:ok, _sent_invoice} =
+      Billing.send_billing_invoice(invoice,
+        payment_method: "manual",
+        now: ~U[2026-04-20 08:00:00Z]
+      )
+
+    assert %{canceled_invoices: [_]} =
+             Billing.process_expired_upgrade_invoices(now: ~U[2026-04-28 08:00:00Z])
+
+    body =
+      conn
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert body =~ "Предыдущий счет на повышение тарифа истек. Вы можете запросить новый."
+    refute body =~ invoice.id
+
+    conn =
+      localized_conn(company.user_id, "ru")
+      |> post("/company/billing/upgrade-invoices", %{"plan" => "basic"})
+
+    assert redirected_to(conn) == "/company/billing"
+    assert Phoenix.Flash.get(conn.assigns.flash, :info) ==
+             "Счет на повышение тарифа запрошен. Ожидайте ссылку для оплаты от администратора системы."
+  end
+
+  test "expired-upgrade feedback is shown only once on tenant billing page", %{
+    conn: conn,
+    company: company
+  } do
+    {:ok, subscription} = Billing.get_current_subscription(company.id)
+    {:ok, subscription} = Billing.activate_subscription(subscription, "starter")
+
+    {:ok, invoice} =
+      Billing.create_upgrade_invoice(subscription, "basic", due_at: ~U[2026-04-20 08:00:00Z])
+
+    {:ok, _sent_invoice} =
+      Billing.send_billing_invoice(invoice,
+        payment_method: "manual",
+        now: ~U[2026-04-20 08:00:00Z]
+      )
+
+    assert %{canceled_invoices: [_]} =
+             Billing.process_expired_upgrade_invoices(now: ~U[2026-04-28 08:00:00Z])
+
+    first_conn = get(conn, "/company/billing")
+    first_body = html_response(first_conn, 200)
+
+    second_body =
+      first_conn
+      |> recycle()
+      |> get("/company/billing")
+      |> html_response(200)
+
+    assert first_body =~ "Предыдущий счет на повышение тарифа истек. Вы можете запросить новый."
+    refute second_body =~ "Предыдущий счет на повышение тарифа истек. Вы можете запросить новый."
+  end
+
   test "tenant can schedule downgrade to starter from billing page", %{
     conn: conn,
     subscription: subscription
