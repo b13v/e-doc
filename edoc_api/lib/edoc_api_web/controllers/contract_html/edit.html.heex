@@ -20,14 +20,7 @@
         support_text={gettext("Update contract details")}
         class="border-b border-stone-200 pb-6"
       >
-        <:primary_action>
-          <a
-            href={"/contracts/#{@contract.id}"}
-            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
-          >
-            <%= gettext("Cancel") %>
-          </a>
-        </:primary_action>
+        <:primary_action></:primary_action>
       </.workspace_page_header>
 
       <form action={"/contracts/#{@contract.id}"} method="post" class="workspace-form space-y-6">
@@ -306,13 +299,13 @@
         <div class="flex justify-end gap-3">
           <a
             href={"/contracts/#{@contract.id}"}
-            class="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+            class="workspace-action-btn workspace-action-btn-danger"
           >
             <%= gettext("Cancel") %>
           </a>
           <button
             type="submit"
-            class="inline-flex items-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+            class="workspace-action-btn workspace-action-btn-success"
           >
             <%= gettext("Save Changes") %>
           </button>

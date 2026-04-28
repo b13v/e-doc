@@ -8,11 +8,32 @@
   <% memberships = assigns[:memberships] || [] %>
   <% can_manage_billing_and_team = assigns[:can_manage_billing_and_team] || false %>
   <% blocking_ids = MapSet.new() %>
+  <% current_plan_code = Map.get(billing_snapshot, :current_plan_code) || subscription.plan %>
+  <% current_document_limit = Map.get(billing_snapshot, :current_document_limit, subscription.document_limit) %>
+  <% current_seat_limit = Map.get(billing_snapshot, :current_seat_limit, subscription.seat_limit) %>
+  <% used_documents = Map.get(billing_snapshot, :used_documents, subscription.documents_used) %>
+  <% used_seats = Map.get(billing_snapshot, :used_seats, subscription.seats_used) %>
+  <% current_subscription = Map.get(billing_snapshot, :subscription) || %{} %>
+  <% current_period_start =
+    Map.get(current_subscription, :current_period_start) ||
+      Map.get(current_subscription, :period_start) || subscription.period_start %>
+  <% current_period_end =
+    Map.get(current_subscription, :current_period_end) ||
+      Map.get(current_subscription, :period_end) || subscription.period_end %>
+  <% scheduled_plan_code = Map.get(billing_snapshot, :scheduled_plan_code) %>
+  <% scheduled_change_effective_at = Map.get(billing_snapshot, :scheduled_change_effective_at) %>
   <% plan_label =
-    case subscription.plan do
+    case current_plan_code do
       "basic" -> gettext("Basic")
       "starter" -> gettext("Starter")
       _ -> gettext("Trial")
+    end %>
+  <% scheduled_plan_label =
+    case scheduled_plan_code do
+      "basic" -> gettext("Basic")
+      "starter" -> gettext("Starter")
+      "trial" -> gettext("Trial")
+      _ -> nil
     end %>
 
   <.flash_error flash={@flash} />
@@ -77,25 +98,38 @@
         <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
           <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Documents Used") %></div>
           <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100">
-            <%= Map.get(billing_snapshot, :used_documents, subscription.documents_used) %> / <%= subscription.document_limit %>
+            <%= used_documents %> / <%= current_document_limit %>
           </div>
         </div>
 
         <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
           <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Users") %></div>
           <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-slate-100">
-            <%= subscription.seats_used %> / <%= subscription.seat_limit %>
+            <%= used_seats %> / <%= current_seat_limit %>
           </div>
         </div>
 
         <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
           <div class="text-sm font-medium text-gray-900 dark:text-slate-100"><%= gettext("Billing Period") %></div>
           <div class="mt-2 text-sm font-medium text-gray-900 dark:text-slate-100">
-            <%= Calendar.strftime(subscription.period_start, "%d.%m.%Y") %>
+            <%= Calendar.strftime(current_period_start, "%d.%m.%Y") %>
             -
-            <%= Calendar.strftime(subscription.period_end, "%d.%m.%Y") %>
+            <%= Calendar.strftime(current_period_end, "%d.%m.%Y") %>
           </div>
         </div>
+      </div>
+
+      <div
+        :if={scheduled_plan_label && scheduled_change_effective_at}
+        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-50"
+      >
+        <p class="font-semibold"><%= gettext("Scheduled plan change") %></p>
+        <p class="mt-1">
+          <%= gettext("Plan") %>: <%= scheduled_plan_label %>
+        </p>
+        <p class="mt-1">
+          <%= gettext("Effective from") %>: <%= Calendar.strftime(scheduled_change_effective_at, "%d.%m.%Y") %>
+        </p>
       </div>
 
       <div class="company-member-warning rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
@@ -113,7 +147,7 @@
         </p>
       </div>
       <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700 dark:bg-slate-800 dark:text-slate-200">
-        <%= subscription.seats_used %> / <%= subscription.seat_limit %>
+        <%= used_seats %> / <%= current_seat_limit %>
       </span>
     </div>
 

@@ -1023,11 +1023,21 @@ defmodule EdocApi.Billing do
       |> Repo.all()
 
     snapshot_subscription = subscription || legacy_subscription_summary(legacy_subscription)
+    snapshot_plan = tenant_snapshot_plan(subscription, legacy_subscription)
+    used_seats = occupied_seat_count(company_id)
 
     %{
       subscription: snapshot_subscription,
-      plan: tenant_snapshot_plan(subscription, legacy_subscription),
+      plan: snapshot_plan,
+      current_plan_code: snapshot_plan && snapshot_plan.code,
+      current_plan_name: snapshot_plan && snapshot_plan.name,
+      current_document_limit: snapshot_plan && snapshot_plan.monthly_document_limit,
+      current_seat_limit: snapshot_plan && snapshot_plan.included_users,
       used_documents: used_documents,
+      used_seats: used_seats,
+      scheduled_plan_code: subscription && subscription.next_plan && subscription.next_plan.code,
+      scheduled_plan_name: subscription && subscription.next_plan && subscription.next_plan.name,
+      scheduled_change_effective_at: subscription && subscription.change_effective_at,
       outstanding_invoices: outstanding_invoices,
       blocked?:
         snapshot_subscription &&

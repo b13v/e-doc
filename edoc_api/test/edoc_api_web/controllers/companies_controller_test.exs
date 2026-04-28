@@ -512,6 +512,40 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "1 / 50"
     end
 
+    test "keeps current billing plan values on company settings when a downgrade is only scheduled",
+         %{
+           conn: conn,
+           company: company
+         } do
+      assert {:ok, _} = Billing.seed_default_plans()
+
+      {:ok, _legacy_subscription} =
+        Monetization.activate_subscription_for_company(company.id, %{
+          "plan" => "starter",
+          "included_document_limit" => 50,
+          "included_seat_limit" => 2
+        })
+
+      {:ok, billing_subscription} = Billing.create_trial_subscription(company.id)
+      {:ok, _billing_subscription} = Billing.activate_subscription(billing_subscription, "basic")
+      assert {:ok, _scheduled} = Billing.schedule_tenant_downgrade(company.id, "starter")
+
+      {:ok, subscription} = Billing.get_current_subscription(company.id)
+      effective_date = Calendar.strftime(subscription.change_effective_at, "%d.%m.%Y")
+
+      body =
+        conn
+        |> get("/company")
+        |> html_response(200)
+
+      assert body =~ "Basic"
+      assert body =~ "0 / 500"
+      assert body =~ "1 / 5"
+      assert body =~ "Запланированное изменение тарифа"
+      assert body =~ "Starter"
+      assert body =~ effective_date
+    end
+
     test "legacy company subscription route redirects to billing details", %{
       conn: conn,
       company: company

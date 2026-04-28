@@ -362,6 +362,28 @@ defmodule EdocApiWeb.CoreUiLocalizationTest do
       refute body =~ "Item name"
     end
 
+    test "contract edit page uses single bottom action row with red cancel and green save", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      create_company_bank_account!(company)
+      contract = create_contract!(company, %{"status" => "draft", "number" => "CON-EDIT-ACTIONS-1"})
+
+      body =
+        conn
+        |> browser_conn(user, "ru")
+        |> get("/contracts/#{contract.id}/edit")
+        |> html_response(200)
+
+      assert body =~ ~s(href="/contracts/#{contract.id}")
+      assert body =~ "workspace-action-btn workspace-action-btn-danger"
+      assert body =~ "workspace-action-btn workspace-action-btn-success"
+      assert body =~ "Сохранить изменения"
+      refute body =~ ~s(<:primary_action>)
+      refute body =~ "inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+    end
+
     test "contract creation success flash and show heading are localized in Russian", %{
       conn: conn,
       user: user,
