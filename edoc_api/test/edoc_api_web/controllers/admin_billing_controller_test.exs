@@ -403,9 +403,40 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
       })
 
     assert redirected_to(conn) == "/admin/billing/invoices"
+
+    body =
+      conn
+      |> recycle()
+      |> get("/admin/billing/invoices")
+      |> html_response(200)
+
+    assert body =~ "Billing invoice marked as sent."
     updated = Repo.get!(BillingInvoice, invoice.id)
     assert updated.payment_method == "kaspi_link"
     assert updated.kaspi_payment_link == "https://pay.kaspi.kz/new-link"
+  end
+
+  test "platform admin sees a success flash when creating a payment from invoices page", %{
+    admin_conn: conn,
+    subscription: subscription
+  } do
+    {:ok, invoice} = Billing.create_upgrade_invoice(subscription, "basic")
+
+    {:ok, invoice} =
+      Billing.send_billing_invoice(invoice, kaspi_payment_link: "https://pay.test/new-payment")
+
+    conn = post(conn, "/admin/billing/invoices/#{invoice.id}/payments")
+
+    assert redirected_to(conn) == "/admin/billing/invoices"
+
+    body =
+      conn
+      |> recycle()
+      |> get("/admin/billing/invoices")
+      |> html_response(200)
+
+    assert body =~ "Payment created."
+    assert Repo.aggregate(Ecto.assoc(invoice, :payments), :count, :id) == 1
   end
 
   test "platform admin can confirm a payment from UI and activate paid invoice", %{

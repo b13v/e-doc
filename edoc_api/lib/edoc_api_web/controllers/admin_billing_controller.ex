@@ -126,7 +126,9 @@ defmodule EdocApiWeb.AdminBillingController do
           }
         )
 
-        redirect(conn, to: "/admin/billing/invoices")
+        conn
+        |> put_flash(:info, "Billing invoice marked as sent.")
+        |> redirect(to: "/admin/billing/invoices")
 
       {:error, _changeset} ->
         conn
@@ -156,7 +158,9 @@ defmodule EdocApiWeb.AdminBillingController do
           }
         )
 
-        redirect(conn, to: "/admin/billing/invoices")
+        conn
+        |> put_flash(:info, "Payment created.")
+        |> redirect(to: "/admin/billing/invoices")
 
       {:error, _changeset} ->
         conn

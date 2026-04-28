@@ -655,12 +655,13 @@ defmodule EdocApi.Billing do
   @doc "Creates a pending payment for a billing invoice."
   def create_payment(invoice_or_id, opts \\ []) do
     invoice = get_billing_invoice!(invoice_or_id)
+    amount_kzt = keyword_value_or_default(opts, :amount_kzt, invoice.amount_kzt)
 
     %Payment{}
     |> Payment.changeset(%{
       company_id: invoice.company_id,
       billing_invoice_id: invoice.id,
-      amount_kzt: Keyword.get(opts, :amount_kzt, invoice.amount_kzt),
+      amount_kzt: amount_kzt,
       method: Keyword.get(opts, :method, "manual"),
       status: PaymentStatus.pending_confirmation(),
       paid_at: Keyword.get(opts, :paid_at),
@@ -1732,6 +1733,14 @@ defmodule EdocApi.Billing do
           {:ok, datetime, _offset} -> DateTime.truncate(datetime, :second)
           _ -> nil
         end
+    end
+  end
+
+  defp keyword_value_or_default(opts, key, default) do
+    case Keyword.fetch(opts, key) do
+      {:ok, nil} -> default
+      {:ok, value} -> value
+      :error -> default
     end
   end
 
