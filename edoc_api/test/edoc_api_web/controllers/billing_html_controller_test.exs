@@ -390,6 +390,13 @@ defmodule EdocApiWeb.BillingHTMLControllerTest do
 
     assert body =~ "Запланированное изменение тарифа"
     assert body =~ "Starter начнет действовать со следующего расчетного периода."
+    assert body =~ "billing-scheduled-change-card"
+    assert body =~ "billing-scheduled-change-title"
+    assert body =~ "billing-scheduled-change-copy"
+    assert body =~ "billing-scheduled-change-label"
+    assert body =~ "billing-scheduled-change-value"
+    assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-card)
+    assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-title)
   end
 
   test "tenant cannot schedule downgrade when occupied seats exceed starter limit", %{

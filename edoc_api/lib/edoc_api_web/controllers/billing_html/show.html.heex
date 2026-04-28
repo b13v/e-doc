@@ -80,20 +80,20 @@
 
   <section
     :if={@can_manage_billing && @billing.plan && @billing.plan.code == "basic" && @billing.subscription && @billing.subscription.next_plan}
-    class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40"
+    class="billing-scheduled-change-card rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40"
   >
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Scheduled plan change") %></h2>
-    <p class="mt-2 text-sm text-gray-700 dark:text-emerald-50">
+    <h2 class="billing-scheduled-change-title text-lg font-bold text-gray-900 dark:text-white"><%= gettext("Scheduled plan change") %></h2>
+    <p class="billing-scheduled-change-copy mt-2 text-sm text-gray-700 dark:text-emerald-50">
       <%= gettext("Starter begins from the next billing cycle.") %>
     </p>
     <div class="mt-4 grid gap-3 md:grid-cols-2">
       <div>
-        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Plan") %></div>
-        <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.subscription.next_plan) %></div>
+        <div class="billing-scheduled-change-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Plan") %></div>
+        <div class="billing-scheduled-change-value mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= plan_label(@billing.subscription.next_plan) %></div>
       </div>
       <div>
-        <div class="text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Effective from") %></div>
-        <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= date_or_dash(@billing.subscription.change_effective_at) %></div>
+        <div class="billing-scheduled-change-label text-xs font-semibold uppercase text-stone-500 dark:text-slate-200"><%= gettext("Effective from") %></div>
+        <div class="billing-scheduled-change-value mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100"><%= date_or_dash(@billing.subscription.change_effective_at) %></div>
       </div>
     </div>
   </section>

@@ -544,6 +544,12 @@ defmodule EdocApiWeb.CompaniesControllerTest do
       assert body =~ "Запланированное изменение тарифа"
       assert body =~ "Starter"
       assert body =~ effective_date
+      assert body =~ "billing-scheduled-change-card"
+      assert body =~ "billing-scheduled-change-title"
+      assert body =~ "billing-scheduled-change-label"
+      assert body =~ "billing-scheduled-change-value"
+      assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-card)
+      assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-title)
     end
 
     test "legacy company subscription route redirects to billing details", %{

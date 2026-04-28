@@ -311,6 +311,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
 
     assert body =~ "Scheduled plan change"
     assert body =~ "Starter"
+    assert body =~ "billing-scheduled-change-card"
+    assert body =~ "billing-scheduled-change-title"
+    assert body =~ "billing-scheduled-change-label"
+    assert body =~ "billing-scheduled-change-value"
+    assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-card)
+    assert body =~ ~s(html[data-theme="dark"] .billing-scheduled-change-title)
   end
 
   test "platform admin sees a dedicated submitted payments section for tenant reviews", %{

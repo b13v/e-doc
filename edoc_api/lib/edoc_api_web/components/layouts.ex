@@ -415,6 +415,20 @@ defmodule EdocApiWeb.Layouts do
             opacity: 1 !important;
           }
 
+          html[data-theme="dark"] .billing-scheduled-change-card {
+            background-color: rgba(6, 95, 70, 0.72) !important;
+            border-color: #6ee7b7 !important;
+            color: #ffffff !important;
+          }
+
+          html[data-theme="dark"] .billing-scheduled-change-title,
+          html[data-theme="dark"] .billing-scheduled-change-copy,
+          html[data-theme="dark"] .billing-scheduled-change-label,
+          html[data-theme="dark"] .billing-scheduled-change-value {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
           html[data-theme="dark"] [data-row-actions-menu],
           html[data-theme="dark"] [data-send-menu-panel] {
             background-color: #334155;

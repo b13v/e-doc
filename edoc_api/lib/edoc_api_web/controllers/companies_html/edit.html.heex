@@ -121,14 +121,16 @@
 
       <div
         :if={scheduled_plan_label && scheduled_change_effective_at}
-        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-50"
+        class="billing-scheduled-change-card rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-50"
       >
-        <p class="font-semibold"><%= gettext("Scheduled plan change") %></p>
+        <p class="billing-scheduled-change-title font-semibold"><%= gettext("Scheduled plan change") %></p>
         <p class="mt-1">
-          <%= gettext("Plan") %>: <%= scheduled_plan_label %>
+          <span class="billing-scheduled-change-label"><%= gettext("Plan") %>:</span>
+          <span class="billing-scheduled-change-value"><%= scheduled_plan_label %></span>
         </p>
         <p class="mt-1">
-          <%= gettext("Effective from") %>: <%= Calendar.strftime(scheduled_change_effective_at, "%d.%m.%Y") %>
+          <span class="billing-scheduled-change-label"><%= gettext("Effective from") %>:</span>
+          <span class="billing-scheduled-change-value"><%= Calendar.strftime(scheduled_change_effective_at, "%d.%m.%Y") %></span>
         </p>
       </div>
 
