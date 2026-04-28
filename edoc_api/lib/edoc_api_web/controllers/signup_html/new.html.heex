@@ -1,17 +1,53 @@
-<div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-  <div class="sm:mx-auto sm:w-full sm:max-w-md">
-    <h2 class="text-center text-2xl font-bold leading-9 tracking-tight text-gray-900"><%= gettext("Create your account") %></h2>
+<section class="public-auth-shell grid min-h-[calc(100vh-11rem)] gap-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-start">
+  <div class="public-auth-panel order-2 overflow-hidden rounded-[32px] bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-7 py-8 text-white shadow-2xl ring-1 ring-emerald-400/10 lg:order-1 lg:h-full lg:self-stretch lg:px-10 lg:py-10">
+    <span class="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
+      Edocly
+    </span>
+    <h1 class="mt-5 max-w-xl text-4xl font-black leading-tight text-white sm:text-5xl">
+      <%= gettext("Create your account") %>
+    </h1>
+    <p class="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
+      <%= gettext("Edocly is a modern, streamlined invoicing and contract management system designed specifically for businesses in Kazakhstan.") %>
+    </p>
+
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <article class="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur">
+        <p class="text-sm font-semibold text-emerald-200"><%= gettext("For Kazakhstan Businesses") %></p>
+        <p class="mt-2 text-sm leading-6 text-slate-200">
+          <%= gettext("Create and manage professional invoices compliant with Kazakhstan regulations") %>
+        </p>
+      </article>
+      <article class="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur">
+        <p class="text-sm font-semibold text-sky-200"><%= gettext("Key Features") %></p>
+        <p class="mt-2 text-sm leading-6 text-slate-200">
+          <%= gettext("Generate legally-binding contracts with customizable terms") %>
+        </p>
+      </article>
+      <article class="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur sm:col-span-2">
+        <p class="text-sm font-semibold text-cyan-200"><%= gettext("Multi-language support (Kazakh, Russian)") %></p>
+        <p class="mt-2 text-sm leading-6 text-slate-200">
+          <%= gettext("Secure authentication with email verification") %>
+        </p>
+      </article>
+    </div>
   </div>
 
-  <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="bg-white shadow sm:rounded-lg px-6 py-8">
+  <div class="public-auth-card auth-form-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:p-8">
+    <div class="sm:mx-auto sm:w-full">
+      <h2 class="auth-form-title text-3xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("Create your account") %></h2>
+      <p class="auth-form-copy mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <%= gettext("Secure authentication with email verification") %>
+      </p>
+    </div>
+
+    <div class="mt-8">
       <.flash_error flash={@flash} />
 
       <form action="/signup" method="post" class="space-y-6">
         <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
 
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700"><%= gettext("Email address") %></label>
+          <label for="email" class="auth-form-label block text-sm font-medium text-slate-700 dark:text-slate-200"><%= gettext("Email address") %></label>
           <div class="mt-2">
             <input
               id="email"
@@ -20,12 +56,12 @@
               value={assigns[:invited_email] || ""}
               autocomplete="email"
               required
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+              class="auth-form-input block w-full rounded-2xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-slate-950 dark:text-slate-100 dark:ring-slate-600 dark:placeholder:text-slate-400 sm:text-sm sm:leading-6" />
           </div>
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700"><%= gettext("Password") %></label>
+          <label for="password" class="auth-form-label block text-sm font-medium text-slate-700 dark:text-slate-200"><%= gettext("Password") %></label>
           <div class="mt-2">
             <input
               id="password"
@@ -34,13 +70,13 @@
               autocomplete="new-password"
               required
               minlength="8"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+              class="auth-form-input block w-full rounded-2xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-slate-950 dark:text-slate-100 dark:ring-slate-600 dark:placeholder:text-slate-400 sm:text-sm sm:leading-6" />
           </div>
-          <p class="mt-1 text-xs text-gray-500"><%= gettext("Minimum 8 characters") %></p>
+          <p class="auth-form-helper mt-1 text-xs text-gray-500 dark:text-slate-300"><%= gettext("Minimum 8 characters") %></p>
         </div>
 
         <div>
-          <label for="password_confirmation" class="block text-sm font-medium text-gray-700"><%= gettext("Confirm password") %></label>
+          <label for="password_confirmation" class="auth-form-label block text-sm font-medium text-slate-700 dark:text-slate-200"><%= gettext("Confirm password") %></label>
           <div class="mt-2">
             <input
               id="password_confirmation"
@@ -49,13 +85,13 @@
               autocomplete="new-password"
               required
               minlength="8"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3" />
+              class="auth-form-input block w-full rounded-2xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-slate-950 dark:text-slate-100 dark:ring-slate-600 dark:placeholder:text-slate-400 sm:text-sm sm:leading-6" />
           </div>
         </div>
 
         <button
           type="submit"
-          class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          class="auth-form-submit flex w-full justify-center rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
           <%= gettext("Sign Up") %>
         </button>
       </form>
@@ -63,19 +99,19 @@
       <div class="mt-6">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+            <div class="auth-form-divider-line w-full border-t border-gray-300 dark:border-slate-700"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="bg-white px-2 text-gray-500"><%= gettext("Or") %></span>
+            <span class="auth-form-divider-chip bg-white px-2 text-gray-500 dark:bg-slate-900 dark:text-slate-300"><%= gettext("Or") %></span>
           </div>
         </div>
 
         <div class="mt-6 text-center">
-          <a href="/login" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+          <a href="/login" class="auth-form-link text-sm font-medium text-blue-600 hover:text-blue-500">
             <%= gettext("Already have an account? Sign in") %>
           </a>
         </div>
       </div>
     </div>
   </div>
-</div>
+</section>

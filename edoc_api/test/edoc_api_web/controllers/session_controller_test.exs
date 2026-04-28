@@ -191,7 +191,7 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert Phoenix.Flash.get(conn.assigns.flash, :error)
   end
 
-  test "login page includes theme switcher and keeps navbar links visible", %{conn: conn} do
+  test "login page keeps desktop auth panes aligned without viewport over-stretch and has explicit dark-mode auth contrast hooks", %{conn: conn} do
     conn = get(conn, "/login")
     body = html_response(conn, 200)
 
@@ -200,6 +200,36 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert body =~ ~s(href="/password/forgot")
     assert body =~ ~s|window.toggleWorkspaceTheme = function()|
     assert body =~ ~s(>Dark<)
+    assert body =~ ~s(data-public-nav-desktop)
+    assert body =~ ~s(data-public-nav-mobile)
+    assert body =~ ~s(public-auth-shell)
+    assert body =~ ~s(public-auth-panel)
+    assert body =~ ~s(public-auth-card)
+    assert body =~ ~s(lg:items-start)
+    assert body =~ ~s(lg:min-h-0)
+    assert body =~ ~s(lg:self-stretch)
+    assert body =~ ~s(lg:h-full)
+    assert body =~ ~s(auth-form-card)
+    assert body =~ ~s(auth-form-title)
+    assert body =~ ~s(auth-form-label)
+    assert body =~ ~s(auth-form-input)
+    assert body =~ ~s(auth-form-divider-line)
+    assert body =~ ~s(auth-form-link)
+    assert body =~ ~s(auth-form-submit)
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-card|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-title|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-label|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-input|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-divider-line|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-link|
+    assert body =~ ~s|html[data-theme="dark"] .auth-form-submit|
+    assert body =~ "Казахстан"
+    assert body =~ ~s(dark:text-slate-100)
+    assert body =~ ~s(dark:text-slate-200)
+    assert body =~ ~s(dark:bg-slate-950)
+    assert body =~ ~s(dark:ring-slate-600)
+    refute body =~ ~s(public-auth-card order-1 flex)
+    refute body =~ ~s(public-auth-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:h-full)
     refute body =~ ~s(data-theme-lock="light")
 
     assert body =~
@@ -211,6 +241,7 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
     assert body =~ ~s(workspace-locale-inactive)
     assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
+    assert body =~ ~s(href="/signup")
 
     refute body =~
              ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)

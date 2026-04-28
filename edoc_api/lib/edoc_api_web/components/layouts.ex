@@ -387,6 +387,76 @@ defmodule EdocApiWeb.Layouts do
             color: #000000;
           }
 
+          html[data-theme="dark"] .auth-form-card {
+            background-color: #0f172a !important;
+            border-color: #475569 !important;
+            color: #f8fafc !important;
+            --tw-ring-color: rgba(148, 163, 184, 0.55) !important;
+          }
+
+          html[data-theme="dark"] .auth-form-copy,
+          html[data-theme="dark"] .auth-form-title,
+          html[data-theme="dark"] .auth-form-label,
+          html[data-theme="dark"] .auth-form-helper,
+          html[data-theme="dark"] .auth-form-divider-chip,
+          html[data-theme="dark"] .auth-form-divider-line {
+            color: #f8fafc !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-copy,
+          html[data-theme="dark"] .auth-form-helper {
+            color: #cbd5e1 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-divider-line {
+            border-color: #475569 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-divider-chip {
+            background-color: #0f172a !important;
+            color: #e2e8f0 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-input {
+            background-color: #020617 !important;
+            color: #f8fafc !important;
+            border-color: #475569 !important;
+            caret-color: #f8fafc;
+            --tw-ring-color: #475569 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-input::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-input:-webkit-autofill,
+          html[data-theme="dark"] .auth-form-input:-webkit-autofill:hover,
+          html[data-theme="dark"] .auth-form-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f8fafc !important;
+            box-shadow: 0 0 0 1000px #020617 inset !important;
+          }
+
+          html[data-theme="dark"] .auth-form-link {
+            color: #93c5fd !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-link:hover {
+            color: #bfdbfe !important;
+          }
+
+          html[data-theme="dark"] .auth-form-submit {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .auth-form-submit:hover {
+            background-color: #1d4ed8 !important;
+          }
+
           html[data-theme="dark"] .overdue-upgrade-card {
             background-color: #020617 !important;
             border-color: #94a3b8 !important;
@@ -744,18 +814,80 @@ defmodule EdocApiWeb.Layouts do
   Public navigation for unauthenticated users
   """
   def public_nav(assigns) do
-    assigns = Map.put_new(assigns, :nav_context, :public)
+    assigns =
+      assigns
+      |> Map.put_new(:nav_context, :public)
+      |> Map.put_new(:current_path, "/")
+      |> Map.put(:public_mobile_cta, public_mobile_cta(assigns[:current_path] || "/"))
 
     ~H"""
-    <nav class="flex items-center gap-4">
+    <div data-public-nav-desktop class="hidden items-center gap-4 lg:flex">
       <a href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("Home") %></a>
       <a href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("About") %></a>
       <%= locale_switcher(assigns) %>
       <%= theme_switcher(assigns, :desktop) %>
-      <a href="/login" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
-        <%= gettext("Sign In") %>
-      </a>
-    </nav>
+      <%= if @current_path != "/login" do %>
+        <a href="/login" class="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-stone-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-white">
+          <%= gettext("Sign In") %>
+        </a>
+      <% end %>
+      <%= if @current_path != "/signup" do %>
+        <a href="/signup" class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
+          <%= gettext("Sign Up") %>
+        </a>
+      <% end %>
+    </div>
+
+    <div data-public-nav-mobile class="flex items-center gap-2 lg:hidden">
+      <%= if @public_mobile_cta do %>
+        <a
+          href={@public_mobile_cta.path}
+          class="inline-flex h-11 items-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400"
+        >
+          <%= @public_mobile_cta.label %>
+        </a>
+      <% end %>
+
+      <details class="group relative">
+        <summary class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-stone-200 bg-white text-slate-700 shadow-sm transition hover:border-stone-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-white">
+          <span class="sr-only"><%= gettext("Menu") %></span>
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </svg>
+        </summary>
+
+        <div class="absolute right-0 top-full z-20 mt-3 w-72 rounded-[28px] border border-stone-200 bg-white/95 p-4 shadow-2xl ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:ring-white/10">
+          <nav class="space-y-1">
+            <a href="/" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:bg-stone-100 hover:text-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white">
+              <%= gettext("Home") %>
+            </a>
+            <a href="/about" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:bg-stone-100 hover:text-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white">
+              <%= gettext("About") %>
+            </a>
+          </nav>
+
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <%= if @current_path != "/login" do %>
+              <a href="/login" class="inline-flex items-center justify-center rounded-2xl border border-stone-200 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-stone-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white">
+                <%= gettext("Sign In") %>
+              </a>
+            <% end %>
+            <%= if @current_path != "/signup" do %>
+              <a href="/signup" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
+                <%= gettext("Sign Up") %>
+              </a>
+            <% end %>
+          </div>
+
+          <div class="mt-4 border-t border-stone-200 pt-4 dark:border-slate-700">
+            <%= locale_switcher(assigns) %>
+            <%= theme_switcher(assigns, :mobile) %>
+          </div>
+        </div>
+      </details>
+    </div>
     """
   end
 
@@ -934,10 +1066,21 @@ defmodule EdocApiWeb.Layouts do
   The app layout includes the header and main content area.
   """
   def app(assigns) do
+    public_guest? = is_nil(assigns[:current_user])
+
+    assigns = Map.put(assigns, :public_guest?, public_guest?)
+
     ~H"""
     <header class="border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class={[
+          "py-4",
+          if(
+            @public_guest?,
+            do: "flex items-center justify-between gap-4",
+            else: "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+          )
+        ]}>
           <div class="flex items-center">
             <%= brand_logo(assigns) %>
           </div>
@@ -1119,6 +1262,10 @@ defmodule EdocApiWeb.Layouts do
     current_path in ["/admin", "/admin/billing"] or
       String.starts_with?(current_path, "/admin/billing/clients")
   end
+
+  defp public_mobile_cta("/login"), do: %{path: "/signup", label: gettext("Sign Up")}
+  defp public_mobile_cta("/signup"), do: %{path: "/login", label: gettext("Sign In")}
+  defp public_mobile_cta(_current_path), do: %{path: "/signup", label: gettext("Sign Up")}
 
   defp locale_path(locale, current_path) do
     "/locale/#{locale}?return_to=#{URI.encode_www_form(current_path)}"
