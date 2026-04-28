@@ -457,6 +457,55 @@ defmodule EdocApiWeb.Layouts do
             background-color: #1d4ed8 !important;
           }
 
+          html[data-theme="dark"] .about-section-card {
+            background-color: #0f172a !important;
+            border-color: #475569 !important;
+            color: #f8fafc !important;
+          }
+
+          html[data-theme="dark"] .about-section-title {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .about-cta-card {
+            background-color: #082f49 !important;
+            border-color: rgba(125, 211, 252, 0.6) !important;
+            color: #f8fafc !important;
+          }
+
+          html[data-theme="dark"] .about-cta-title,
+          html[data-theme="dark"] .about-cta-copy {
+            color: #f8fafc !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .about-cta-copy {
+            color: #e0f2fe !important;
+          }
+
+          html[data-theme="dark"] .about-cta-primary-link {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .about-cta-primary-link:hover {
+            background-color: #1d4ed8 !important;
+          }
+
+          html[data-theme="dark"] .about-cta-secondary-link {
+            background-color: #f8fafc !important;
+            border-color: #bae6fd !important;
+            color: #0f172a !important;
+            opacity: 1 !important;
+          }
+
+          html[data-theme="dark"] .about-cta-secondary-link:hover {
+            background-color: #e0f2fe !important;
+            color: #020617 !important;
+          }
+
           html[data-theme="dark"] .overdue-upgrade-card {
             background-color: #020617 !important;
             border-color: #94a3b8 !important;

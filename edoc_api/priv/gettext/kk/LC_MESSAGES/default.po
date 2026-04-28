@@ -2821,3 +2821,9 @@ msgstr "Starter тарифіне ауысар алдында артық кома
 
 msgid "Could not schedule downgrade."
 msgstr "Тарифті төмендетуді жоспарлау мүмкін болмады."
+
+msgid "VAT"
+msgstr "ҚҚС"
+
+msgid "Security"
+msgstr "Қауіпсіздік"

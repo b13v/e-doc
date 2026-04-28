@@ -2486,3 +2486,11 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Only the owner or an admin can manage the tariff and team members."
 msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex
+msgid "VAT"
+msgstr ""
+
+#: lib/edoc_api_web/controllers/about_html/index.html.heex
+msgid "Security"
+msgstr ""

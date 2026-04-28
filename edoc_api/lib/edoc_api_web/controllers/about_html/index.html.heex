@@ -25,9 +25,9 @@
   </div>
 
   <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
-    <div class="rounded-[30px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div class="about-section-card rounded-[30px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div class="mb-6">
-        <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("Key Features") %></h2>
+        <h2 class="about-section-title text-3xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("Key Features") %></h2>
       </div>
 
       <div class="about-feature-grid grid gap-4 md:grid-cols-2">
@@ -36,11 +36,11 @@
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("Create and manage professional invoices compliant with Kazakhstan regulations") %></p>
         </article>
         <article class="rounded-[24px] border border-stone-200 bg-stone-50 p-5 dark:border-slate-700 dark:bg-slate-950/60">
-          <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-300">Contracts</p>
+          <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-300"><%= gettext("Contracts") %></p>
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("Generate legally-binding contracts with customizable terms") %></p>
         </article>
         <article class="rounded-[24px] border border-stone-200 bg-stone-50 p-5 dark:border-slate-700 dark:bg-slate-950/60">
-          <p class="text-sm font-semibold text-orange-600 dark:text-orange-300">CRM</p>
+          <p class="text-sm font-semibold text-orange-600 dark:text-orange-300"><%= gettext("Buyers") %></p>
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("Track buyer information and communication history") %></p>
         </article>
         <article class="rounded-[24px] border border-stone-200 bg-stone-50 p-5 dark:border-slate-700 dark:bg-slate-950/60">
@@ -48,19 +48,19 @@
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("PDF generation for all documents") %></p>
         </article>
         <article class="rounded-[24px] border border-stone-200 bg-stone-50 p-5 dark:border-slate-700 dark:bg-slate-950/60">
-          <p class="text-sm font-semibold text-fuchsia-600 dark:text-fuchsia-300">VAT</p>
+          <p class="text-sm font-semibold text-fuchsia-600 dark:text-fuchsia-300"><%= gettext("VAT") %></p>
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("Support for VAT calculations") %></p>
         </article>
         <article class="rounded-[24px] border border-stone-200 bg-stone-50 p-5 dark:border-slate-700 dark:bg-slate-950/60">
-          <p class="text-sm font-semibold text-rose-600 dark:text-rose-300">Security</p>
+          <p class="text-sm font-semibold text-rose-600 dark:text-rose-300"><%= gettext("Security") %></p>
           <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><%= gettext("Secure authentication with email verification") %></p>
         </article>
       </div>
     </div>
 
     <div class="space-y-6">
-      <div class="rounded-[30px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 class="text-2xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("For Kazakhstan Businesses") %></h2>
+      <div class="about-section-card rounded-[30px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <h2 class="about-section-title text-2xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("For Kazakhstan Businesses") %></h2>
         <ul class="mt-5 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
           <li class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60"><%= gettext("BIN/IIN number validation") %></li>
           <li class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60"><%= gettext("Legal entity types (Товарищество с ограниченной ответственностью, Акционерное общество, Индивидуальный предприниматель)") %></li>
@@ -70,15 +70,15 @@
       </div>
 
       <div class="about-cta-card rounded-[30px] border border-blue-200 bg-blue-50 p-6 shadow-sm dark:border-sky-500/40 dark:bg-sky-950/40">
-        <h2 class="text-2xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("Get Started") %></h2>
-        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-200">
+        <h2 class="about-cta-title text-2xl font-black tracking-tight text-slate-950 dark:text-white"><%= gettext("Get Started") %></h2>
+        <p class="about-cta-copy mt-3 text-sm leading-6 text-slate-600 dark:text-slate-200">
           <%= gettext("Ready to streamline your invoicing and contract workflow?") %>
         </p>
         <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-          <a href="/signup" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
+          <a href="/signup" class="about-cta-primary-link inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400">
             <%= gettext("Sign Up") %>
           </a>
-          <a href="/login" class="inline-flex items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-stone-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-white">
+          <a href="/login" class="about-cta-secondary-link inline-flex items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-stone-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-white">
             <%= gettext("Sign In") %>
           </a>
         </div>

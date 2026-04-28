@@ -2821,3 +2821,9 @@ msgstr "Удалите лишних участников команды пере
 
 msgid "Could not schedule downgrade."
 msgstr "Не удалось запланировать понижение тарифа."
+
+msgid "VAT"
+msgstr "НДС"
+
+msgid "Security"
+msgstr "Безопасность"
