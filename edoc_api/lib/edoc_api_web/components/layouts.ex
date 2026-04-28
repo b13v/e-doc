@@ -303,6 +303,28 @@ defmodule EdocApiWeb.Layouts do
             color: #000000;
           }
 
+          .workspace-app-header {
+            background-color: rgba(250, 250, 249, 0.95);
+            border-color: #e7e5e4;
+          }
+
+          html[data-theme="dark"] .workspace-app-header {
+            background-color: rgba(15, 23, 42, 0.95);
+            border-color: #1e293b;
+          }
+
+          .workspace-shell-panel {
+            background-color: rgba(255, 255, 255, 0.85);
+            border-color: #e7e5e4;
+            color: #0f172a;
+          }
+
+          html[data-theme="dark"] .workspace-shell-panel {
+            background-color: rgba(15, 23, 42, 0.9);
+            border-color: #334155;
+            color: #f8fafc;
+          }
+
           html[data-theme="dark"] .border-gray-200,
           html[data-theme="dark"] .border-stone-200 {
             border-color: #334155;
@@ -962,7 +984,7 @@ defmodule EdocApiWeb.Layouts do
         <% end %>
       </nav>
 
-      <details class="rounded-2xl bg-white/80 ring-1 ring-stone-200 dark:bg-slate-900/80 dark:ring-slate-700 lg:hidden">
+      <details class="workspace-shell-panel rounded-2xl bg-white/80 ring-1 ring-stone-200 dark:bg-slate-900/80 dark:ring-slate-700 lg:hidden">
         <summary class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
           <span><%= section_label(@current_section) %></span>
           <span class="text-slate-400 dark:text-slate-500">+</span>
@@ -1009,7 +1031,7 @@ defmodule EdocApiWeb.Layouts do
       <div class="hidden items-center gap-3 lg:flex">
         <%= locale_switcher(assigns) %>
         <%= theme_switcher(assigns, :desktop) %>
-        <div class="flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200 dark:bg-slate-900/85 dark:ring-slate-700">
+        <div class="workspace-shell-panel flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200 dark:bg-slate-900/85 dark:ring-slate-700">
           <a href="/settings" class="workspace-account-email text-black dark:text-black"><%= @current_user.email %></a>
           <form method="post" action="/logout">
             <input type="hidden" name="_method" value="delete" />
@@ -1120,7 +1142,7 @@ defmodule EdocApiWeb.Layouts do
     assigns = Map.put(assigns, :public_guest?, public_guest?)
 
     ~H"""
-    <header class="border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+    <header class="workspace-app-header border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class={[
           "py-4",

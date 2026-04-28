@@ -82,6 +82,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~s|html[data-theme="dark"] .workspace-locale-inactive|
     assert body =~ ~s|html[data-theme="dark"] .workspace-account-email|
     assert body =~ ~s|html[data-theme="dark"] .workspace-account-logout|
+    assert body =~ "workspace-app-header"
+    assert body =~ "workspace-shell-panel"
+    assert body =~ ~s|html[data-theme="dark"] .workspace-app-header|
+    assert body =~ ~s|html[data-theme="dark"] .workspace-shell-panel|
   end
 
   test "company page keeps company nav active with shared styling", %{conn: conn} do
@@ -996,8 +1000,10 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ "updateBuyerOverview();"
     assert body =~ "updateBankAccountOverview();"
     assert body =~ "Реквизиты покупателя и оплаты"
+
     assert body =~
              ~s(class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300")
+
     assert body =~ ~s(class="workspace-action-btn workspace-action-btn-danger")
     assert body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
     assert body =~ ~r/>\s*Создать счет\s*</
@@ -1186,10 +1192,15 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~r/<a[^>]*href="\/acts"[^>]*aria-current="page"/
     assert body =~ "Обзор"
     assert body =~ "Тип акта"
+
     assert body =~
              ~s(class="workspace-form-item-label mb-1 block text-xs text-gray-500 dark:text-slate-300")
+
     assert body =~ ~s(href="/acts" class="workspace-action-btn workspace-action-btn-danger")
-    assert body =~ ~s(<button type="submit" class="workspace-action-btn workspace-action-btn-success">)
+
+    assert body =~
+             ~s(<button type="submit" class="workspace-action-btn workspace-action-btn-success">)
+
     refute body =~ ~s(<div class="bg-white shadow sm:rounded-lg">)
   end
 

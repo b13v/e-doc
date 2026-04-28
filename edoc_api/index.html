@@ -48,9 +48,9 @@
           </div>
 
           <div class="header-actions">
-            <a href="http://localhost:4000/login" class="btn btn-secondary" data-i18n="nav.login">Вход</a>
-            <a href="http://localhost:4000/signup" class="btn btn-primary" data-i18n="nav.signup">Регистрация</a>
-            <button type="button" class="mobile-menu-btn" aria-label="Open menu">
+            <a href="/login" class="btn btn-secondary" data-auth-link="login" data-i18n="nav.login">Вход</a>
+            <a href="/signup" class="btn btn-primary" data-auth-link="signup" data-i18n="nav.signup">Регистрация</a>
+            <button type="button" class="mobile-menu-btn" aria-label="Open menu" aria-expanded="false">
               <i class="fas fa-bars"></i>
             </button>
           </div>
@@ -508,7 +508,7 @@
             <div class="kz-feature-content">
               <h4 data-i18n="kz.bin_title">БИН/ИИН валидация</h4>
               <p data-i18n="kz.bin_body">
-                Автоматическая валиадация БИН для юрлиц и ИИН для ИП согласно
+                Автоматическая валидация БИН для юрлиц и ИИН для ИП согласно
                 реестрам РК.
               </p>
             </div>
@@ -672,7 +672,7 @@
             <ul class="pricing-list">
               <li>
                 <i class="fas fa-check-circle"></i>
-                <span data-i18n="pricing.base_item_1">Все из тарифа Базовый</span>
+                <span data-i18n="pricing.base_item_1">Все из тарифа Стартовый</span>
               </li>
               <li>
                 <i class="fas fa-check-circle"></i>
@@ -761,10 +761,12 @@
               законодательства РК.
             </p>
             <div class="footer-social">
-              <a href="#"><i class="fab fa-facebook-f"></i></a>
-              <a href="#"><i class="fab fa-instagram"></i></a>
-              <a href="#"><i class="fab fa-linkedin-in"></i></a>
-              <a href="#"><i class="fab fa-telegram-plane"></i></a>
+              <span class="footer-social-disabled"><i class="fab fa-facebook-f"></i></span>
+              <span class="footer-social-disabled"><i class="fab fa-instagram"></i></span>
+              <span class="footer-social-disabled"><i class="fab fa-linkedin-in"></i></span>
+              <a href="https://wa.me/77027834901" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+              </a>
             </div>
           </div>
 
@@ -781,19 +783,19 @@
             <h4 data-i18n="footer.company_title">Компания</h4>
             <ul class="footer-links">
               <li><a href="/about" data-i18n="footer.company_about">О нас</a></li>
-              <li><a href="#" data-i18n="footer.company_blog">Блог</a></li>
-              <li><a href="#" data-i18n="footer.company_career">Карьера</a></li>
-              <li><a href="#" data-i18n="footer.company_contacts">Контакты</a></li>
+              <li><span class="footer-link-disabled" data-i18n="footer.company_blog">Блог</span></li>
+              <li><span class="footer-link-disabled" data-i18n="footer.company_career">Карьера</span></li>
+              <li><a href="https://wa.me/77027834901" data-i18n="footer.company_contacts" target="_blank" rel="noopener noreferrer">Контакты</a></li>
             </ul>
           </div>
 
           <div class="footer-column">
             <h4 data-i18n="footer.support_title">Поддержка</h4>
             <ul class="footer-links">
-              <li><a href="#" data-i18n="footer.support_help">Справка</a></li>
-              <li><a href="#" data-i18n="footer.support_docs">Документация</a></li>
-              <li><a href="#" data-i18n="footer.support_faq">Частые вопросы</a></li>
-              <li><a href="#" data-i18n="footer.support_contact">Техподдержка</a></li>
+              <li><span class="footer-link-disabled" data-i18n="footer.support_help">Справка</span></li>
+              <li><span class="footer-link-disabled" data-i18n="footer.support_docs">Документация</span></li>
+              <li><span class="footer-link-disabled" data-i18n="footer.support_faq">Частые вопросы</span></li>
+              <li><a href="https://wa.me/77027834901" data-i18n="footer.support_contact" target="_blank" rel="noopener noreferrer">Техподдержка</a></li>
             </ul>
           </div>
         </div>
@@ -801,8 +803,8 @@
         <div class="footer-bottom">
           <p data-i18n-html="footer.copyright">© <span id="footer-year"></span> Edocly. Все права защищены.</p>
           <div class="footer-bottom-links">
-            <a href="#" data-i18n="footer.privacy">Политика конфиденциальности</a>
-            <a href="#" data-i18n="footer.terms">Условия использования</a>
+            <span class="footer-link-disabled" data-i18n="footer.privacy">Политика конфиденциальности</span>
+            <span class="footer-link-disabled" data-i18n="footer.terms">Условия использования</span>
           </div>
         </div>
       </div>
@@ -831,11 +833,12 @@
         kk: '/locale/kk?return_to=%2Flogin'
       };
       const signupCtaSelectors = [
+        '[data-auth-link="signup"]',
         '.hero-buttons .hero-btn',
         '.pricing-card:nth-child(2) .btn',
         '.cta-buttons .btn-white'
       ];
-      const loginCtaSelectors = ['.pricing-card:nth-child(1) .btn'];
+      const loginCtaSelectors = ['[data-auth-link="login"]', '.pricing-card:nth-child(1) .btn'];
 
       const landingTranslations = {
         ru: {
@@ -894,7 +897,7 @@
               'Учтены все особенности казахстанского законодательства и деловой практики',
             '#kz-features .kz-feature-item:nth-child(1) h4': 'БИН/ИИН валидация',
             '#kz-features .kz-feature-item:nth-child(1) p':
-              'Автоматическая валиадация БИН для юрлиц и ИИН для ИП согласно реестрам РК.',
+              'Автоматическая валидация БИН для юрлиц и ИИН для ИП согласно реестрам РК.',
             '#kz-features .kz-feature-item:nth-child(2) h4': 'Типы юридических лиц',
             '#kz-features .kz-feature-item:nth-child(2) p':
               'Полная поддержка ТОО, АО, ИП и других форм собственности. Корректное оформление реквизитов.',
@@ -944,7 +947,7 @@
             '.pricing-card:nth-child(2) .price-period': '/ месяц',
             '.pricing-card:nth-child(2) .price-note': 'До 500 документов в месяц, 5 пользователей',
             '.pricing-card:nth-child(2) .pricing-list li:nth-child(1)':
-              '<i class="fas fa-check-circle"></i>Все из тарифа Базовый',
+              '<i class="fas fa-check-circle"></i>Все из тарифа Стартовый',
             '.pricing-card:nth-child(2) .pricing-list li:nth-child(2)':
               '<i class="fas fa-check-circle"></i>Общая база контрагентов и роли сотрудников',
             '.pricing-card:nth-child(2) .pricing-list li:nth-child(3)':
@@ -972,16 +975,16 @@
             '.footer-column:nth-child(2) .footer-links li:nth-child(3) a': 'Как это работает',
             '.footer-column:nth-child(3) h4': 'Компания',
             '.footer-column:nth-child(3) .footer-links li:nth-child(1) a': 'О нас',
-            '.footer-column:nth-child(3) .footer-links li:nth-child(2) a': 'Блог',
-            '.footer-column:nth-child(3) .footer-links li:nth-child(3) a': 'Карьера',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(2) .footer-link-disabled': 'Блог',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(3) .footer-link-disabled': 'Карьера',
             '.footer-column:nth-child(3) .footer-links li:nth-child(4) a': 'Контакты',
             '.footer-column:nth-child(4) h4': 'Поддержка',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(1) a': 'Справка',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(2) a': 'Документация',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(3) a': 'Частые вопросы',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(1) .footer-link-disabled': 'Справка',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(2) .footer-link-disabled': 'Документация',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(3) .footer-link-disabled': 'Частые вопросы',
             '.footer-column:nth-child(4) .footer-links li:nth-child(4) a': 'Техподдержка',
-            '.footer-bottom-links a:nth-child(1)': 'Политика конфиденциальности',
-            '.footer-bottom-links a:nth-child(2)': 'Условия использования',
+            '.footer-bottom-links .footer-link-disabled:nth-child(1)': 'Политика конфиденциальности',
+            '.footer-bottom-links .footer-link-disabled:nth-child(2)': 'Условия использования',
             '.footer-bottom p': '© <span id="footer-year"></span> Edocly. Все права защищены.'
           }
         },
@@ -1119,16 +1122,16 @@
             '.footer-column:nth-child(2) .footer-links li:nth-child(3) a': 'Қалай жұмыс істейді',
             '.footer-column:nth-child(3) h4': 'Компания',
             '.footer-column:nth-child(3) .footer-links li:nth-child(1) a': 'Біз туралы',
-            '.footer-column:nth-child(3) .footer-links li:nth-child(2) a': 'Блог',
-            '.footer-column:nth-child(3) .footer-links li:nth-child(3) a': 'Мансап',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(2) .footer-link-disabled': 'Блог',
+            '.footer-column:nth-child(3) .footer-links li:nth-child(3) .footer-link-disabled': 'Мансап',
             '.footer-column:nth-child(3) .footer-links li:nth-child(4) a': 'Байланыс',
             '.footer-column:nth-child(4) h4': 'Қолдау',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(1) a': 'Анықтама',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(2) a': 'Құжаттама',
-            '.footer-column:nth-child(4) .footer-links li:nth-child(3) a': 'Жиі қойылатын сұрақтар',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(1) .footer-link-disabled': 'Анықтама',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(2) .footer-link-disabled': 'Құжаттама',
+            '.footer-column:nth-child(4) .footer-links li:nth-child(3) .footer-link-disabled': 'Жиі қойылатын сұрақтар',
             '.footer-column:nth-child(4) .footer-links li:nth-child(4) a': 'Техникалық қолдау',
-            '.footer-bottom-links a:nth-child(1)': 'Құпиялылық саясаты',
-            '.footer-bottom-links a:nth-child(2)': 'Пайдалану шарттары',
+            '.footer-bottom-links .footer-link-disabled:nth-child(1)': 'Құпиялылық саясаты',
+            '.footer-bottom-links .footer-link-disabled:nth-child(2)': 'Пайдалану шарттары',
             '.footer-bottom p': '© <span id="footer-year"></span> Edocly. Барлық құқықтар қорғалған.'
           }
         }
@@ -1192,11 +1195,9 @@
         const signupPath = signupPathByLocale[locale] || signupPathByLocale.ru;
 
         signupCtaSelectors.forEach((selector) => {
-          const element = document.querySelector(selector);
-
-          if (element) {
+          document.querySelectorAll(selector).forEach((element) => {
             element.setAttribute('href', signupPath);
-          }
+          });
         });
       }
 
@@ -1204,11 +1205,9 @@
         const loginPath = loginPathByLocale[locale] || loginPathByLocale.ru;
 
         loginCtaSelectors.forEach((selector) => {
-          const element = document.querySelector(selector);
-
-          if (element) {
+          document.querySelectorAll(selector).forEach((element) => {
             element.setAttribute('href', loginPath);
-          }
+          });
         });
       }
 
@@ -1248,19 +1247,11 @@
 
       // Mobile menu toggle
       const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-      const nav = document.querySelector('.nav');
 
       if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', () => {
-          nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
-          nav.style.position = 'absolute';
-          nav.style.top = '72px';
-          nav.style.left = '0';
-          nav.style.right = '0';
-          nav.style.background = 'white';
-          nav.style.flexDirection = 'column';
-          nav.style.padding = '20px';
-          nav.style.boxShadow = 'var(--shadow-md)';
+          const isOpen = header.classList.toggle('mobile-menu-open');
+          mobileMenuBtn.setAttribute('aria-expanded', String(isOpen));
         });
       }
     </script>
