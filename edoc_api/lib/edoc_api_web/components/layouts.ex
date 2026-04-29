@@ -929,7 +929,10 @@ defmodule EdocApiWeb.Layouts do
           </svg>
         </summary>
 
-        <div class="absolute right-0 top-full z-20 mt-3 w-72 rounded-[28px] border border-stone-200 bg-white/95 p-4 shadow-2xl ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:ring-white/10">
+        <div
+          data-public-mobile-menu-panel
+          class="absolute right-0 top-full z-50 mt-3 w-72 rounded-[28px] border border-stone-200 bg-white/95 p-4 shadow-2xl ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:ring-white/10"
+        >
           <nav class="space-y-1">
             <a href="/" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:bg-stone-100 hover:text-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white">
               <%= gettext("Home") %>
@@ -1142,7 +1145,7 @@ defmodule EdocApiWeb.Layouts do
     assigns = Map.put(assigns, :public_guest?, public_guest?)
 
     ~H"""
-    <header class="workspace-app-header border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+    <header class="workspace-app-header relative z-50 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class={[
           "py-4",

@@ -37,6 +37,9 @@ defmodule EdocApiWeb.SignupControllerTest do
     assert body =~ ~s|window.toggleWorkspaceTheme = function()|
     assert body =~ ~s(data-public-nav-desktop)
     assert body =~ ~s(data-public-nav-mobile)
+    assert body =~ ~s(workspace-app-header relative z-50)
+    assert body =~ ~s(data-public-mobile-menu-panel)
+    assert body =~ ~s(z-50 mt-3 w-72)
     assert body =~ ~s(public-auth-shell)
     assert body =~ ~s(public-auth-panel)
     assert body =~ ~s(public-auth-card)
@@ -58,8 +61,13 @@ defmodule EdocApiWeb.SignupControllerTest do
     assert body =~ ~s|html[data-theme="dark"] .auth-form-divider-chip|
     assert body =~ ~s|html[data-theme="dark"] .auth-form-link|
     assert body =~ ~s|html[data-theme="dark"] .auth-form-submit|
-    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
-    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
+
+    assert body =~
+             ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
+
+    assert body =~
+             ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
+
     assert body =~ ~s(href="/login")
     assert body =~ "Казахстан"
     assert body =~ ~s(dark:text-slate-100)
@@ -68,11 +76,16 @@ defmodule EdocApiWeb.SignupControllerTest do
     assert body =~ ~s(dark:ring-slate-600)
     assert body =~ ~s(dark:text-slate-300)
     refute body =~ ~s(public-auth-card order-1 flex)
-    refute body =~ ~s(public-auth-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:h-full)
+
+    refute body =~
+             ~s(public-auth-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:h-full)
+
     assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
     assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
     refute body =~ ~s(data-theme-lock="light")
-    refute body =~ ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
+
+    refute body =~
+             ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
   end
 
   test "signup sends russian verification email with Edocly branding by default", %{conn: conn} do

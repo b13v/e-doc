@@ -191,7 +191,8 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert Phoenix.Flash.get(conn.assigns.flash, :error)
   end
 
-  test "login page keeps desktop auth panes aligned without viewport over-stretch and has explicit dark-mode auth contrast hooks", %{conn: conn} do
+  test "login page keeps desktop auth panes aligned without viewport over-stretch and has explicit dark-mode auth contrast hooks",
+       %{conn: conn} do
     conn = get(conn, "/login")
     body = html_response(conn, 200)
 
@@ -202,6 +203,9 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert body =~ ~s(>Dark<)
     assert body =~ ~s(data-public-nav-desktop)
     assert body =~ ~s(data-public-nav-mobile)
+    assert body =~ ~s(workspace-app-header relative z-50)
+    assert body =~ ~s(data-public-mobile-menu-panel)
+    assert body =~ ~s(z-50 mt-3 w-72)
     assert body =~ ~s(public-auth-shell)
     assert body =~ ~s(public-auth-panel)
     assert body =~ ~s(public-auth-card)
@@ -229,7 +233,10 @@ defmodule EdocApiWeb.SessionControllerTest do
     assert body =~ ~s(dark:bg-slate-950)
     assert body =~ ~s(dark:ring-slate-600)
     refute body =~ ~s(public-auth-card order-1 flex)
-    refute body =~ ~s(public-auth-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:h-full)
+
+    refute body =~
+             ~s(public-auth-card order-1 rounded-[30px] border border-stone-200 bg-white/95 p-6 shadow-xl ring-1 ring-stone-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:ring-slate-700/70 lg:order-2 lg:h-full)
+
     refute body =~ ~s(data-theme-lock="light")
 
     assert body =~
