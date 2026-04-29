@@ -45,7 +45,7 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     assert body =~ ~s(class="workspace-action-btn workspace-action-btn-success")
   end
 
-  test "workspace navbar inactive links use black text classes", %{conn: conn} do
+  test "workspace navbar inactive links use readable dark-mode text classes", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)
     company = create_company!(user)
@@ -57,9 +57,23 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
       |> get("/invoices")
       |> html_response(200)
 
-    assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*class="[^"]*dark:text-black[^"]*"/
-    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*class="[^"]*dark:text-black[^"]*"/
+    assert body =~ ~r/<a[^>]*href="\/buyers"[^>]*class="[^"]*dark:text-slate-100[^"]*"/
+    assert body =~ ~r/<a[^>]*href="\/contracts"[^>]*class="[^"]*dark:text-slate-100[^"]*"/
+    refute body =~ ~r/<a[^>]*href="\/buyers"[^>]*class="[^"]*dark:text-black[^"]*"/
+    refute body =~ ~r/<a[^>]*href="\/contracts"[^>]*class="[^"]*dark:text-black[^"]*"/
     assert body =~ ~s|html[data-theme="dark"] .workspace-nav-link-inactive|
+  end
+
+  test "public nav links keep readable contrast in dark mode", %{conn: conn} do
+    body =
+      conn
+      |> get("/login")
+      |> html_response(200)
+
+    assert body =~ "workspace-public-nav-link"
+    refute body =~ ~r/workspace-public-nav-link[^"]*dark:text-black/
+    assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
+    assert body =~ ~s|color: #e2e8f0;|
   end
 
   test "workspace locale and account controls include dark contrast fallback hooks", %{conn: conn} do

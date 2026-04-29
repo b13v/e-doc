@@ -296,11 +296,11 @@ defmodule EdocApiWeb.Layouts do
           }
 
           html[data-theme="dark"] .workspace-public-nav-link {
-            color: #000000;
+            color: #e2e8f0;
           }
 
           html[data-theme="dark"] .workspace-public-nav-link:hover {
-            color: #000000;
+            color: #ffffff;
           }
 
           .workspace-app-header {
@@ -336,27 +336,27 @@ defmodule EdocApiWeb.Layouts do
           }
 
           html[data-theme="dark"] .workspace-nav-link-inactive {
-            color: #000000;
+            color: #e2e8f0;
           }
 
           html[data-theme="dark"] .workspace-nav-link-inactive:hover {
-            color: #000000;
+            color: #ffffff;
           }
 
           html[data-theme="dark"] .workspace-locale-inactive {
-            color: #000000;
+            color: #e2e8f0;
           }
 
           html[data-theme="dark"] .workspace-locale-inactive:hover {
-            color: #000000;
+            color: #ffffff;
           }
 
           html[data-theme="dark"] .workspace-account-email {
-            color: #000000;
+            color: #e2e8f0;
           }
 
           html[data-theme="dark"] .workspace-account-logout {
-            color: #000000;
+            color: #e2e8f0;
           }
 
           html[data-theme="dark"] .workspace-account-logout:hover {
@@ -893,8 +893,8 @@ defmodule EdocApiWeb.Layouts do
 
     ~H"""
     <div data-public-nav-desktop class="hidden items-center gap-4 lg:flex">
-      <a href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("Home") %></a>
-      <a href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"><%= gettext("About") %></a>
+      <a href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"><%= gettext("Home") %></a>
+      <a href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"><%= gettext("About") %></a>
       <%= locale_switcher(assigns) %>
       <%= theme_switcher(assigns, :desktop) %>
       <%= if @current_path != "/login" do %>
@@ -1000,7 +1000,7 @@ defmodule EdocApiWeb.Layouts do
                   if(
                     section == @current_section,
                     do: "bg-stone-100 font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100",
-                    else: "workspace-nav-link-inactive text-black dark:text-black dark:hover:text-black"
+                    else: "workspace-nav-link-inactive text-slate-700 hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
                   )
                 ]}
               >
@@ -1011,7 +1011,7 @@ defmodule EdocApiWeb.Layouts do
           <div class="mt-3 border-t border-stone-200 pt-3 dark:border-slate-700">
             <%= locale_switcher(assigns) %>
             <%= theme_switcher(assigns, :mobile) %>
-            <a href="/settings" class="workspace-account-email mt-3 block text-sm text-black dark:text-black">
+            <a href="/settings" class="workspace-account-email mt-3 block text-sm text-slate-700 dark:text-slate-100">
               <%= @current_user.email %>
             </a>
             <form method="post" action="/logout" class="mt-3">
@@ -1019,7 +1019,7 @@ defmodule EdocApiWeb.Layouts do
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
               <button
                 type="submit"
-                class="workspace-account-logout w-full rounded-xl border border-stone-200 px-3 py-2 text-left text-sm font-medium text-black dark:border-slate-700 dark:text-black dark:hover:text-black"
+                class="workspace-account-logout w-full rounded-xl border border-stone-200 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-100 dark:hover:text-white"
               >
                 <%= gettext("Logout") %>
               </button>
@@ -1032,11 +1032,11 @@ defmodule EdocApiWeb.Layouts do
         <%= locale_switcher(assigns) %>
         <%= theme_switcher(assigns, :desktop) %>
         <div class="workspace-shell-panel flex items-center gap-3 rounded-full bg-white/85 px-3 py-2 text-sm shadow-sm ring-1 ring-stone-200 dark:bg-slate-900/85 dark:ring-slate-700">
-          <a href="/settings" class="workspace-account-email text-black dark:text-black"><%= @current_user.email %></a>
+          <a href="/settings" class="workspace-account-email text-slate-700 dark:text-slate-100"><%= @current_user.email %></a>
           <form method="post" action="/logout">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <button type="submit" class="workspace-account-logout font-medium text-black hover:text-black dark:text-black dark:hover:text-black">
+            <button type="submit" class="workspace-account-logout font-medium text-slate-700 hover:text-slate-900 dark:text-slate-100 dark:hover:text-white">
               <%= gettext("Logout") %>
             </button>
           </form>
@@ -1230,7 +1230,7 @@ defmodule EdocApiWeb.Layouts do
               if(
                 @nav_context == :public,
                 do: "text-slate-600 hover:text-slate-900 dark:text-white dark:hover:text-white",
-                else: "text-black dark:text-black dark:hover:text-black"
+                else: "text-slate-700 hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
               )
           )
         ]}
@@ -1253,7 +1253,7 @@ defmodule EdocApiWeb.Layouts do
               if(
                 @nav_context == :public,
                 do: "text-slate-600 hover:text-slate-900 dark:text-white dark:hover:text-white",
-                else: "text-black dark:text-black dark:hover:text-black"
+                else: "text-slate-700 hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
               )
           )
         ]}
@@ -1296,7 +1296,7 @@ defmodule EdocApiWeb.Layouts do
     if active? do
       "inline-flex items-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700"
     else
-      "workspace-nav-link-inactive inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-black hover:text-black dark:text-black dark:hover:text-black"
+      "workspace-nav-link-inactive inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
     end
   end
 
