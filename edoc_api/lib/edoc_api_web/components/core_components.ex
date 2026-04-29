@@ -33,13 +33,13 @@ defmodule EdocApiWeb.CoreComponents do
     ~H"""
     <header class={["flex flex-col gap-4 md:flex-row md:items-end md:justify-between", @class]}>
       <div class="min-w-0 space-y-2">
-        <h1 class={["font-semibold tracking-tight text-slate-900", @title_class || "text-3xl"]}>
+        <h1 class={["ui-text-primary font-semibold tracking-tight text-slate-900", @title_class || "text-3xl"]}>
           <%= @title %>
         </h1>
-        <p :if={@support_text} class="max-w-2xl text-sm leading-6 text-slate-600">
+        <p :if={@support_text} class="ui-text-secondary max-w-2xl text-sm leading-6 text-slate-600">
           <%= @support_text %>
         </p>
-        <div :if={@secondary_content != []} class="text-sm text-slate-500">
+        <div :if={@secondary_content != []} class="ui-text-muted text-sm text-slate-500">
           <%= render_slot(@secondary_content) %>
         </div>
       </div>
@@ -61,7 +61,7 @@ defmodule EdocApiWeb.CoreComponents do
 
   def workspace_support_panel(assigns) do
     ~H"""
-    <aside class={["workspace-support-panel rounded-2xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-900/95", @class]}>
+    <aside class={["workspace-support-panel ui-card rounded-2xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-900/95", @class]}>
       <div class="space-y-1">
         <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-100">
           <%= @heading %>
@@ -86,14 +86,14 @@ defmodule EdocApiWeb.CoreComponents do
 
   def workspace_empty_state(assigns) do
     ~H"""
-    <section class={["rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm", @class]}>
+    <section class={["ui-card rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm", @class]}>
       <div class="mx-auto max-w-lg space-y-4">
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900"><%= @title %></h2>
-        <p class="text-sm leading-6 text-slate-600"><%= @support_text %></p>
+        <h2 class="ui-text-primary text-2xl font-semibold tracking-tight text-slate-900"><%= @title %></h2>
+        <p class="ui-text-secondary text-sm leading-6 text-slate-600"><%= @support_text %></p>
         <div>
           <a
             href={@action_href}
-            class="inline-flex items-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+            class="ui-button-primary inline-flex items-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
           >
             <%= @action_label %>
           </a>
@@ -123,12 +123,12 @@ defmodule EdocApiWeb.CoreComponents do
         data-row-actions-root
         ontoggle="window.positionWorkspaceRowActions && window.positionWorkspaceRowActions(this)"
       >
-        <summary class="cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
+        <summary class="ui-button-secondary cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
           <%= gettext("Actions") %>
         </summary>
         <div
           data-row-actions-menu
-          class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+          class="ui-card fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
         >
           <div class="flex flex-col items-stretch gap-1">
             <%= for action <- @all_actions do %>
@@ -144,12 +144,12 @@ defmodule EdocApiWeb.CoreComponents do
         data-row-actions-root
         ontoggle="window.positionWorkspaceRowActions && window.positionWorkspaceRowActions(this)"
       >
-        <summary class="cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
+        <summary class="ui-button-secondary cursor-pointer list-none rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900">
           <%= gettext("Actions") %>
         </summary>
         <div
           data-row-actions-menu
-          class="fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+          class="ui-card fixed left-0 top-0 z-[80] hidden min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
         >
           <div class="flex flex-col items-stretch gap-1">
             <%= for action <- @all_actions do %>

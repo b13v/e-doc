@@ -145,6 +145,58 @@ defmodule EdocApiWeb.WorkspaceOverviewUiTest do
     refute body =~ ~s|html[data-theme="dark"] .text-gray-800|
   end
 
+  test "layout exposes semantic premium color tokens and utility classes", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    _company = create_company!(user)
+
+    body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert body =~ "--ui-surface:"
+    assert body =~ "--ui-surface-hover:"
+    assert body =~ "--ui-surface-muted:"
+    assert body =~ "--ui-text-primary:"
+    assert body =~ "--ui-text-secondary:"
+    assert body =~ "--ui-border:"
+    assert body =~ "--ui-accent:"
+    assert body =~ ".ui-surface"
+    assert body =~ ".ui-card"
+    assert body =~ ".ui-table"
+    assert body =~ ".ui-input"
+    assert body =~ ".ui-button-primary"
+    assert body =~ "dark-mode tokens with deep teal"
+  end
+
+  test "representative workspace pages use semantic color utility classes", %{conn: conn} do
+    user = create_user!()
+    EdocApi.Accounts.mark_email_verified!(user.id)
+    company = create_company!(user)
+    _invoice = insert_invoice!(user, company, %{status: "draft", number: nil})
+
+    invoice_index_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/invoices")
+      |> html_response(200)
+
+    company_body =
+      conn
+      |> browser_conn(user, "ru")
+      |> get("/company")
+      |> html_response(200)
+
+    assert invoice_index_body =~ "ui-table"
+    assert invoice_index_body =~ "ui-table-row"
+    assert invoice_index_body =~ "ui-text-muted"
+    assert company_body =~ "ui-surface"
+    assert company_body =~ "ui-card"
+    assert company_body =~ "ui-text-primary"
+  end
+
   test "company page includes dark-theme fallback palette overrides", %{conn: conn} do
     user = create_user!()
     EdocApi.Accounts.mark_email_verified!(user.id)

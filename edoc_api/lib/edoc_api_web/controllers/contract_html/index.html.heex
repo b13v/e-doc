@@ -22,24 +22,24 @@
           action_href="/contracts/new"
         />
       <% else %>
-        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm workspace-table-shell">
+        <div class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm ui-table workspace-table-shell">
           <div class="overflow-x-auto overflow-y-visible">
             <table class="min-w-full divide-y divide-stone-200">
               <thead class="workspace-table-head-surface bg-stone-50/80">
                 <tr>
-                  <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="ui-text-muted workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Number") %>
                   </th>
-                  <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="ui-text-muted workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Buyer") %>
                   </th>
-                  <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="ui-text-muted workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Date") %>
                   </th>
-                  <th class="workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="ui-text-muted workspace-table-heading px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Status") %>
                   </th>
-                  <th class="workspace-table-heading w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <th class="ui-text-muted workspace-table-heading w-px whitespace-nowrap px-6 py-3 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     <%= gettext("Actions") %>
                   </th>
                 </tr>
@@ -47,7 +47,7 @@
               <tbody class="divide-y divide-stone-200 bg-white">
                 <%= for contract <- @contracts do %>
                   <% actions = contract_row_actions(contract) %>
-                  <tr class="workspace-table-row align-top transition hover:bg-stone-50/70">
+                  <tr class="ui-table-row workspace-table-row align-top transition hover:bg-stone-50/70">
                     <td class="px-6 py-4 text-sm font-semibold text-slate-900">
                       <a href={"/contracts/#{contract.id}"} class="transition hover:text-sky-700">
                         <%= contract.number %>

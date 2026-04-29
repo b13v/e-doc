@@ -240,16 +240,32 @@ defmodule EdocApiWeb.Layouts do
           .htmx-request.htmx-indicator { display: inline; }
 
           :root {
-            --workspace-surface-bg: #ffffff;
-            --workspace-surface-border: #e7e5e4;
-            --workspace-text-strong: #0f172a;
-            --workspace-text-muted: #475569;
-            --workspace-support-bg: #f8fafc;
-            --workspace-support-border: #e2e8f0;
-            --workspace-table-head-bg: #f8fafc;
-            --workspace-table-heading: #475569;
-            --workspace-table-row-hover: #f5f5f4;
-            --workspace-shell-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            --ui-page: #f7faf9;
+            --ui-surface: #fbfdfc;
+            --ui-surface-hover: #eef4f2;
+            --ui-surface-muted: #e3ecea;
+            --ui-text-primary: #1f2a28;
+            --ui-text-secondary: #5f6f6b;
+            --ui-text-muted: #8a9a96;
+            --ui-border: #d6e2df;
+            --ui-border-subtle: #e4eeec;
+            --ui-accent: #11a99a;
+            --ui-accent-strong: #07867b;
+            --ui-accent-soft: #dff6f2;
+            --ui-danger: #be123c;
+            --ui-warning: #c75a17;
+            --ui-shadow: 0 16px 40px -28px rgba(16, 60, 50, 0.36);
+            --ui-shadow-sm: 0 1px 2px rgba(16, 60, 50, 0.08);
+            --workspace-surface-bg: var(--ui-surface);
+            --workspace-surface-border: var(--ui-border);
+            --workspace-text-strong: var(--ui-text-primary);
+            --workspace-text-muted: var(--ui-text-secondary);
+            --workspace-support-bg: var(--ui-surface);
+            --workspace-support-border: var(--ui-border);
+            --workspace-table-head-bg: var(--ui-surface-muted);
+            --workspace-table-heading: var(--ui-text-secondary);
+            --workspace-table-row-hover: var(--ui-surface-hover);
+            --workspace-shell-shadow: var(--ui-shadow-sm);
           }
 
           html[data-theme="light"] {
@@ -258,21 +274,152 @@ defmodule EdocApiWeb.Layouts do
 
           html[data-theme="dark"] {
             color-scheme: dark;
-            --workspace-surface-bg: #0f172a;
-            --workspace-surface-border: #334155;
-            --workspace-text-strong: #f8fafc;
-            --workspace-text-muted: #cbd5e1;
-            --workspace-support-bg: #1e293b;
-            --workspace-support-border: #475569;
-            --workspace-table-head-bg: #0f172a;
-            --workspace-table-heading: #f8fafc;
-            --workspace-table-row-hover: #1e293b;
-            --workspace-shell-shadow: 0 1px 2px rgba(2, 6, 23, 0.5);
+            /* dark-mode tokens with deep teal surfaces instead of pure black */
+            --ui-page: #0f1f1c;
+            --ui-surface: #132824;
+            --ui-surface-hover: #1a3732;
+            --ui-surface-muted: #203f39;
+            --ui-text-primary: #f0fbf8;
+            --ui-text-secondary: #c3d8d3;
+            --ui-text-muted: #91aaa4;
+            --ui-border: #31564f;
+            --ui-border-subtle: #25463f;
+            --ui-accent: #3dd6c6;
+            --ui-accent-strong: #76eadf;
+            --ui-accent-soft: #123d37;
+            --ui-danger: #fb7185;
+            --ui-warning: #fdba74;
+            --ui-shadow: 0 18px 50px -28px rgba(0, 0, 0, 0.7);
+            --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+            --workspace-surface-bg: var(--ui-surface);
+            --workspace-surface-border: var(--ui-border);
+            --workspace-text-strong: var(--ui-text-primary);
+            --workspace-text-muted: var(--ui-text-secondary);
+            --workspace-support-bg: var(--ui-surface);
+            --workspace-support-border: var(--ui-border);
+            --workspace-table-head-bg: var(--ui-surface-muted);
+            --workspace-table-heading: var(--ui-text-primary);
+            --workspace-table-row-hover: var(--ui-surface-hover);
+            --workspace-shell-shadow: var(--ui-shadow-sm);
           }
 
           html[data-theme="dark"] body[data-workspace-theme-root] {
-            background-color: #020617;
-            color: #e2e8f0;
+            background-color: var(--ui-page);
+            color: var(--ui-text-primary);
+          }
+
+          body[data-workspace-theme-root] {
+            background:
+              radial-gradient(circle at top left, rgba(17, 169, 154, 0.12), transparent 28rem),
+              var(--ui-page);
+            color: var(--ui-text-primary);
+          }
+
+          .ui-surface {
+            background-color: var(--ui-page);
+            color: var(--ui-text-primary);
+          }
+
+          .ui-card {
+            background-color: var(--ui-surface);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
+            box-shadow: var(--ui-shadow-sm);
+          }
+
+          .ui-card-muted {
+            background-color: var(--ui-surface-muted);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
+          }
+
+          .ui-text-primary { color: var(--ui-text-primary); }
+          .ui-text-secondary { color: var(--ui-text-secondary); }
+          .ui-text-muted { color: var(--ui-text-muted); }
+
+          .ui-table {
+            background-color: var(--ui-surface);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
+            box-shadow: var(--ui-shadow-sm);
+          }
+
+          .ui-table thead,
+          .ui-table-head {
+            background-color: var(--ui-surface-muted);
+          }
+
+          .ui-table tbody tr:nth-child(even) {
+            background-color: color-mix(in srgb, var(--ui-surface-hover) 42%, transparent);
+          }
+
+          .ui-table-row {
+            color: var(--ui-text-primary);
+            transition: background-color 150ms ease, color 150ms ease;
+          }
+
+          .ui-table-row:hover {
+            background-color: var(--ui-surface-hover);
+          }
+
+          .ui-input {
+            background-color: var(--ui-surface);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
+            box-shadow: var(--ui-shadow-sm);
+          }
+
+          .ui-input::placeholder {
+            color: var(--ui-text-muted);
+          }
+
+          .ui-input:focus {
+            border-color: var(--ui-accent);
+            outline: 2px solid color-mix(in srgb, var(--ui-accent) 26%, transparent);
+            outline-offset: 1px;
+          }
+
+          .ui-button-primary,
+          .ui-button-secondary,
+          .ui-button-danger,
+          .ui-button-warning {
+            border-radius: 9999px;
+            transition:
+              background-color 150ms ease,
+              border-color 150ms ease,
+              box-shadow 150ms ease,
+              color 150ms ease;
+          }
+
+          .ui-button-primary {
+            background-color: var(--ui-accent);
+            color: #ffffff;
+          }
+
+          .ui-button-primary:hover {
+            background-color: var(--ui-accent-strong);
+            box-shadow: var(--ui-shadow);
+          }
+
+          .ui-button-secondary {
+            background-color: var(--ui-surface);
+            border: 1px solid var(--ui-border);
+            color: var(--ui-text-primary);
+          }
+
+          .ui-button-secondary:hover {
+            background-color: var(--ui-surface-hover);
+            box-shadow: var(--ui-shadow-sm);
+          }
+
+          .ui-button-danger {
+            background-color: var(--ui-danger);
+            color: #ffffff;
+          }
+
+          .ui-button-warning {
+            background-color: var(--ui-warning);
+            color: #ffffff;
           }
 
           html[data-theme="dark"] .bg-white,
@@ -304,25 +451,25 @@ defmodule EdocApiWeb.Layouts do
           }
 
           .workspace-app-header {
-            background-color: rgba(250, 250, 249, 0.95);
-            border-color: #e7e5e4;
+            background-color: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+            border-color: var(--ui-border);
           }
 
           html[data-theme="dark"] .workspace-app-header {
-            background-color: rgba(15, 23, 42, 0.95);
-            border-color: #1e293b;
+            background-color: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+            border-color: var(--ui-border-subtle);
           }
 
           .workspace-shell-panel {
-            background-color: rgba(255, 255, 255, 0.85);
-            border-color: #e7e5e4;
-            color: #0f172a;
+            background-color: color-mix(in srgb, var(--ui-surface) 88%, transparent);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-shell-panel {
-            background-color: rgba(15, 23, 42, 0.9);
-            border-color: #334155;
-            color: #f8fafc;
+            background-color: color-mix(in srgb, var(--ui-surface) 90%, transparent);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .border-gray-200,
@@ -812,6 +959,9 @@ defmodule EdocApiWeb.Layouts do
           .workspace-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
           .workspace-form select,
           .workspace-form textarea {
+            background-color: var(--ui-surface);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
             transition:
               background-color 150ms ease,
               border-color 150ms ease,
@@ -820,49 +970,65 @@ defmodule EdocApiWeb.Layouts do
           }
 
           .workspace-form label {
-            color: #334155;
+            color: var(--ui-text-secondary);
           }
 
           html[data-theme="dark"] .workspace-form label {
-            color: #e2e8f0;
+            color: var(--ui-text-secondary);
+          }
+
+          .workspace-form-mode-surface {
+            background-color: var(--ui-accent-soft);
+            border-color: color-mix(in srgb, var(--ui-accent) 46%, var(--ui-border));
+          }
+
+          .workspace-form-items-surface {
+            background-color: var(--ui-surface-hover);
+          }
+
+          .workspace-form-static-value,
+          .workspace-form-currency-readonly {
+            background-color: var(--ui-surface-muted);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-form-mode-surface {
-            background-color: #1e293b;
-            border-color: #475569;
+            background-color: var(--ui-accent-soft);
+            border-color: var(--ui-border);
           }
 
           html[data-theme="dark"] .workspace-form-mode-option,
           html[data-theme="dark"] .workspace-form-items-heading {
-            color: #f8fafc;
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-form-items-surface {
-            background-color: #020617;
+            background-color: var(--ui-surface-hover);
           }
 
           html[data-theme="dark"] .workspace-form-static-value {
-            background-color: #0f172a;
-            border-color: #475569;
-            color: #f8fafc;
+            background-color: var(--ui-surface-muted);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-form-currency-readonly {
-            background-color: #0f172a;
-            border-color: #475569;
-            color: #f8fafc;
+            background-color: var(--ui-surface-muted);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-form-item-label {
-            color: #cbd5e1;
+            color: var(--ui-text-secondary);
           }
 
           html[data-theme="dark"] .workspace-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
           html[data-theme="dark"] .workspace-form select,
           html[data-theme="dark"] .workspace-form textarea {
-            background-color: #0f172a;
-            border-color: #475569;
-            color: #f8fafc;
+            background-color: var(--ui-surface);
+            border-color: var(--ui-border);
+            color: var(--ui-text-primary);
           }
 
           html[data-theme="dark"] .workspace-form input::placeholder,
@@ -873,7 +1039,7 @@ defmodule EdocApiWeb.Layouts do
       </head>
       <body
         data-workspace-theme-root
-        class="bg-gray-50 text-gray-800 antialiased transition-colors dark:bg-slate-950 dark:text-slate-100"
+        class="ui-surface bg-gray-50 text-gray-800 antialiased transition-colors dark:bg-slate-950 dark:text-slate-100"
       >
         {@inner_content}
       </body>
@@ -1145,7 +1311,7 @@ defmodule EdocApiWeb.Layouts do
     assigns = Map.put(assigns, :public_guest?, public_guest?)
 
     ~H"""
-    <header class="workspace-app-header relative z-50 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+    <header class="workspace-app-header relative z-50 ui-card border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class={[
           "py-4",
