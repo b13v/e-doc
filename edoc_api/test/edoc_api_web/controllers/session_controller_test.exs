@@ -233,10 +233,10 @@ defmodule EdocApiWeb.SessionControllerTest do
     refute body =~ ~s(data-theme-lock="light")
 
     assert body =~
-             ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+             ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
 
     assert body =~
-             ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+             ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
 
     assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
     assert body =~ ~s(workspace-locale-inactive)

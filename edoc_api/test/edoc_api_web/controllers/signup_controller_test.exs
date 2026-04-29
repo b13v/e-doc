@@ -58,8 +58,8 @@ defmodule EdocApiWeb.SignupControllerTest do
     assert body =~ ~s|html[data-theme="dark"] .auth-form-divider-chip|
     assert body =~ ~s|html[data-theme="dark"] .auth-form-link|
     assert body =~ ~s|html[data-theme="dark"] .auth-form-submit|
-    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
-    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-black dark:hover:text-black"|
+    assert body =~ ~s|href="/" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
+    assert body =~ ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
     assert body =~ ~s(href="/login")
     assert body =~ "Казахстан"
     assert body =~ ~s(dark:text-slate-100)
