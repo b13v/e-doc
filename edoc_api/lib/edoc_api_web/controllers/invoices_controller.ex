@@ -10,11 +10,11 @@ defmodule EdocApiWeb.InvoicesController do
   alias EdocApi.Invoicing
   alias EdocApi.InvoiceStatus
   alias EdocApi.Documents.PdfRequests
+  alias EdocApi.Billing
   alias EdocApiWeb.ErrorHelpers
   alias EdocApiWeb.UnifiedErrorHandler
   alias EdocApi.Companies
   alias EdocApi.Buyers
-  alias EdocApi.Monetization
   alias EdocApi.Payments
 
   defp current_user(conn), do: conn.assigns.current_user
@@ -49,8 +49,8 @@ defmodule EdocApiWeb.InvoicesController do
         |> redirect(to: "/company/setup")
 
       company ->
-        subscription = Monetization.subscription_snapshot(company.id)
-        basic_plan? = subscription.plan == "basic"
+        billing = Billing.tenant_billing_snapshot(company.id)
+        basic_plan? = billing.current_plan_code == "basic"
 
         {invoices, total_count} =
           if basic_plan? do
@@ -69,7 +69,7 @@ defmodule EdocApiWeb.InvoicesController do
           invoices: invoices,
           overdue_count: total_count,
           basic_plan?: basic_plan?,
-          subscription: subscription,
+          subscription: billing.subscription,
           current_section: :invoices,
           page: page,
           page_size: page_size,

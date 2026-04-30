@@ -4,6 +4,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
   import EdocApi.TestFixtures
 
   alias EdocApi.Accounts
+  alias EdocApi.Billing
   alias EdocApi.Buyers
   alias EdocApi.Core.ContractItem
   alias EdocApi.Documents.GeneratedDocument
@@ -514,6 +515,34 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       assert body =~ "html[data-theme=\"dark\"] .overdue-upgrade-text"
       assert body =~ "color: #ffffff !important;"
       refute body =~ invoice.number
+    end
+
+    test "basic tenant with scheduled downgrade still sees overdue invoices", %{
+      conn: conn,
+      user: user,
+      company: company
+    } do
+      {:ok, _plans} = Billing.seed_default_plans()
+      {:ok, subscription} = Billing.create_trial_subscription(company)
+      {:ok, _subscription} = Billing.activate_subscription(subscription, "basic")
+      {:ok, _scheduled_subscription} = Billing.schedule_tenant_downgrade(company.id, "starter")
+
+      overdue =
+        insert_invoice!(user, company, %{
+          number: "00000002005",
+          status: "issued",
+          due_date: Date.add(Date.utc_today(), -2)
+        })
+
+      body =
+        conn
+        |> get("/invoices/overdue")
+        |> html_response(200)
+
+      assert body =~ overdue.number
+
+      refute body =~
+               Gettext.gettext(EdocApiWeb.Gettext, "Overdue invoices are available on Basic.")
     end
 
     test "paid overdue invoice no longer appears in overdue query", %{
