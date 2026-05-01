@@ -5,8 +5,8 @@ defmodule EdocApi.ActsTest do
 
   alias EdocApi.Acts
   alias EdocApi.ActStatus
+  alias EdocApi.Billing
   alias EdocApi.Buyers
-  alias EdocApi.Monetization
   alias EdocApi.Repo
 
   describe "create_act_for_user/3" do
@@ -37,11 +37,10 @@ defmodule EdocApi.ActsTest do
 
       for _ <- 1..10 do
         assert {:ok, _quota} =
-                 Monetization.consume_document_quota(
+                 Billing.record_document_usage(
                    company.id,
                    "invoice",
-                   Ecto.UUID.generate(),
-                   "invoice_issued"
+                   Ecto.UUID.generate()
                  )
       end
 
@@ -172,12 +171,12 @@ defmodule EdocApi.ActsTest do
       company = create_company!(user)
       buyer = create_buyer!(company)
 
-      {:ok, _sub} =
-        EdocApi.Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "starter",
-          "included_document_limit" => 1,
-          "included_seat_limit" => 2
-        })
+      activate_billing_plan!(company, "starter")
+
+      for _ <- 1..49 do
+        assert {:ok, _event} =
+                 Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+      end
 
       act_1 = create_act!(user, company, buyer, ActStatus.draft())
       act_2 = create_act!(user, company, buyer, ActStatus.draft())
@@ -185,7 +184,7 @@ defmodule EdocApi.ActsTest do
       assert {:ok, issued} = Acts.issue_act_for_user(user.id, act_1.id)
       assert issued.status == ActStatus.issued()
 
-      assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 1, limit: 1}}} =
+      assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 50, limit: 50}}} =
                Acts.issue_act_for_user(user.id, act_2.id)
     end
   end

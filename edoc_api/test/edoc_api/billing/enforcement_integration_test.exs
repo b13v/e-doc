@@ -5,7 +5,6 @@ defmodule EdocApi.Billing.EnforcementIntegrationTest do
   alias EdocApi.Core
   alias EdocApi.Core.TenantUsageEvent
   alias EdocApi.Invoicing
-  alias EdocApi.Monetization
   alias EdocApi.Repo
   alias EdocApi.TestFixtures
 
@@ -47,20 +46,21 @@ defmodule EdocApi.Billing.EnforcementIntegrationTest do
       assert Repo.aggregate(TenantUsageEvent, :count, :id) == 0
     end
 
-    test "legacy monetization path still records usage when no new billing subscription exists" do
+    test "compatibility monetization facade records usage in billing not legacy usage events" do
       user = TestFixtures.create_user!()
       company = TestFixtures.create_company!(user)
 
       assert {:ok, %{used: 1, limit: 10, remaining: 9}} =
-               Monetization.consume_document_quota(
+               EdocApi.Monetization.consume_document_quota(
                  company.id,
                  "invoice",
                  Ecto.UUID.generate(),
                  "invoice_issued"
                )
 
-      assert Repo.aggregate(TenantUsageEvent, :count, :id) == 1
-      assert Billing.get_current_subscription(company.id) == {:error, :not_found}
+      assert Repo.aggregate(TenantUsageEvent, :count, :id) == 0
+      assert {:ok, _subscription} = Billing.get_current_subscription(company.id)
+      assert Billing.current_document_usage(company.id) == {:ok, 1}
     end
   end
 

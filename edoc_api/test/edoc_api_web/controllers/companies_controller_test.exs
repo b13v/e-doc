@@ -484,7 +484,7 @@ defmodule EdocApiWeb.CompaniesControllerTest do
     } do
       assert {:ok, _} = Billing.seed_default_plans()
 
-      {:ok, legacy_subscription} =
+      {:ok, _subscription} =
         Monetization.activate_subscription_for_company(company.id, %{
           "plan" => "starter",
           "included_document_limit" => 50,
@@ -493,14 +493,14 @@ defmodule EdocApiWeb.CompaniesControllerTest do
         })
 
       {:ok, billing_subscription} = Billing.create_trial_subscription(company.id)
-      {:ok, _billing_subscription} = Billing.activate_subscription(billing_subscription, "starter")
+      {:ok, billing_subscription} = Billing.activate_subscription(billing_subscription, "starter")
 
       assert {:ok, _event} =
                Billing.record_document_usage(
                  company.id,
                  "invoice",
                  Ecto.UUID.generate(),
-                 occurred_at: legacy_subscription.period_start
+                 occurred_at: billing_subscription.current_period_start
                )
 
       body =

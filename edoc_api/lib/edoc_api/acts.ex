@@ -3,6 +3,7 @@ defmodule EdocApi.Acts do
 
   alias EdocApi.Repo
   alias EdocApi.ActStatus
+  alias EdocApi.Billing
   alias EdocApi.ContractStatus
   alias EdocApi.Core.Act
   alias EdocApi.Core.ActItem
@@ -10,7 +11,6 @@ defmodule EdocApi.Acts do
   alias EdocApi.Core.Contract
   alias EdocApi.Companies
   alias EdocApi.Buyers
-  alias EdocApi.Monetization
 
   def list_acts_for_user(user_id, opts \\ []) when is_binary(user_id) do
     case Companies.get_company_by_user_id(user_id) do
@@ -159,15 +159,15 @@ defmodule EdocApi.Acts do
                      |> Ecto.Changeset.change(status: ActStatus.issued())
                      |> Repo.update(),
                    {:ok, _quota} <-
-                     Monetization.consume_document_quota(
+                     Billing.record_document_usage(
                        act.company_id,
                        "act",
-                       act.id,
-                       "act_issued"
+                       act.id
                      ) do
                 issued
               else
-                {:error, :quota_exceeded, details} ->
+                {:error, reason, details}
+                when reason in [:quota_exceeded, :subscription_restricted] ->
                   Repo.rollback({:business_rule, %{rule: :quota_exceeded, details: details}})
 
                 {:error, changeset} ->
@@ -219,7 +219,7 @@ defmodule EdocApi.Acts do
       when is_binary(user_id) and is_binary(company_id) and is_map(attrs) do
     with %Company{} = company <- Companies.get_company_by_user_id(user_id),
          true <- company.id == company_id,
-         {:ok, _quota} <- Monetization.ensure_document_creation_allowed(company_id),
+         {:ok, _quota} <- Billing.ensure_can_create_document(company_id),
          {:ok, buyer} <- fetch_buyer(attrs, company_id),
          {:ok, contract, vat_rate} <- fetch_optional_contract(attrs, user_id),
          {:ok, prepared_items} <- prepare_items(attrs, vat_rate) do
@@ -275,7 +275,7 @@ defmodule EdocApi.Acts do
       false ->
         {:error, :business_rule, %{rule: :company_required}}
 
-      {:error, :quota_exceeded, details} ->
+      {:error, reason, details} when reason in [:quota_exceeded, :subscription_restricted] ->
         {:error, :business_rule, %{rule: :quota_exceeded, details: details}}
 
       {:error, type, details} ->

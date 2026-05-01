@@ -2,6 +2,7 @@ defmodule EdocApi.TestFixtures do
   import Ecto.Query
 
   alias EdocApi.Accounts
+  alias EdocApi.Billing
   alias EdocApi.Companies
   alias EdocApi.Payments
   alias EdocApi.Invoicing
@@ -59,6 +60,14 @@ defmodule EdocApi.TestFixtures do
     attrs = ensure_company_payment_refs(attrs)
     {:ok, company, _warnings} = Companies.upsert_company_for_user(user.id, company_attrs(attrs))
     company
+  end
+
+  def activate_billing_plan!(company_or_id, plan_code, opts \\ []) do
+    company_id = record_id(company_or_id)
+    {:ok, _plans} = Billing.seed_default_plans()
+    {:ok, subscription} = Billing.ensure_current_subscription_for_company(company_id)
+    {:ok, subscription} = Billing.activate_subscription(subscription, plan_code, opts)
+    subscription
   end
 
   def invoice_attrs(overrides \\ %{}) do
@@ -322,6 +331,9 @@ defmodule EdocApi.TestFixtures do
     check_digits = iban_check_digits("KZ", account_part)
     "KZ" <> check_digits <> account_part
   end
+
+  defp record_id(%{id: id}), do: id
+  defp record_id(id), do: id
 
   defp unique_iban do
     suffix =

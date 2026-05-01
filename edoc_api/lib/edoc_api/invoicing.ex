@@ -5,10 +5,10 @@ defmodule EdocApi.Invoicing do
   alias EdocApi.Repo
   alias EdocApi.RepoHelpers
   alias EdocApi.Errors
+  alias EdocApi.Billing
   alias EdocApi.Currencies
   alias EdocApi.Companies
   alias EdocApi.Buyers
-  alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Core.Company
   alias EdocApi.Core.Contract
@@ -214,16 +214,16 @@ defmodule EdocApi.Invoicing do
 
       case do_issue_invoice(invoice) do
         {:ok, inv} ->
-          case Monetization.consume_document_quota(
+          case Billing.record_document_usage(
                  inv.company_id,
                  "invoice",
-                 inv.id,
-                 "invoice_issued"
+                 inv.id
                ) do
             {:ok, _quota} ->
               {:ok, inv}
 
-            {:error, :quota_exceeded, details} ->
+            {:error, reason, details}
+            when reason in [:quota_exceeded, :subscription_restricted] ->
               RepoHelpers.abort({:business_rule, %{rule: :quota_exceeded, details: details}})
           end
 
@@ -299,7 +299,7 @@ defmodule EdocApi.Invoicing do
       |> fetch_optional_value("knp_code_id", :knp_code_id)
       |> normalize_blank_to_nil()
 
-    case Monetization.ensure_document_creation_allowed(company_id) do
+    case Billing.ensure_can_create_document(company_id) do
       {:ok, _quota} ->
         RepoHelpers.transaction(fn ->
           RepoHelpers.check_or_abort(items_attrs != [], :items_required)
@@ -356,7 +356,7 @@ defmodule EdocApi.Invoicing do
           {:ok, preload_invoice(invoice)}
         end)
 
-      {:error, :quota_exceeded, details} ->
+      {:error, reason, details} when reason in [:quota_exceeded, :subscription_restricted] ->
         {:error, :business_rule, %{rule: :quota_exceeded, details: details}}
     end
   end

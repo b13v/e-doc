@@ -1,9 +1,9 @@
 defmodule EdocApiWeb.ContractControllerTest do
   use EdocApiWeb.ConnCase
 
+  alias EdocApi.Billing
   alias EdocApi.Buyers
   alias EdocApi.Documents.GeneratedDocument
-  alias EdocApi.Monetization
   alias EdocApi.Repo
   import EdocApi.TestFixtures
 
@@ -49,12 +49,12 @@ defmodule EdocApiWeb.ContractControllerTest do
     end
 
     test "returns 422 when document quota is exceeded", %{conn: conn, company: company} do
-      {:ok, _sub} =
-        Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "starter",
-          "included_document_limit" => 1,
-          "included_seat_limit" => 2
-        })
+      activate_billing_plan!(company, "starter")
+
+      for _ <- 1..49 do
+        assert {:ok, _event} =
+                 Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+      end
 
       contract_1 = create_contract!(company)
       contract_2 = create_contract!(company)
@@ -81,11 +81,10 @@ defmodule EdocApiWeb.ContractControllerTest do
 
       for _ <- 1..10 do
         assert {:ok, _quota} =
-                 Monetization.consume_document_quota(
+                 Billing.record_document_usage(
                    company.id,
                    "invoice",
-                   Ecto.UUID.generate(),
-                   "invoice_issued"
+                   Ecto.UUID.generate()
                  )
       end
 

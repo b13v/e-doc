@@ -2,6 +2,7 @@ defmodule EdocApi.Core do
   import Ecto.Query, warn: false
 
   alias EdocApi.Companies
+  alias EdocApi.Billing
   alias EdocApi.Errors
   alias EdocApi.Invoicing
   alias EdocApi.Payments
@@ -12,7 +13,6 @@ defmodule EdocApi.Core do
   alias EdocApi.Core.ContractItem
   alias EdocApi.Core.UnitOfMeasurement
   alias EdocApi.ContractStatus
-  alias EdocApi.Monetization
 
   defdelegate get_company_by_user_id(user_id), to: Companies
   defdelegate upsert_company_for_user(user_id, attrs), to: Companies
@@ -107,7 +107,7 @@ defmodule EdocApi.Core do
       %Company{id: company_id} ->
         attrs = attrs || %{}
 
-        case Monetization.ensure_document_creation_allowed(company_id) do
+        case Billing.ensure_can_create_document(company_id) do
           {:ok, _quota} ->
             RepoHelpers.transaction(fn ->
               with {:ok, contract} <-
@@ -127,7 +127,7 @@ defmodule EdocApi.Core do
             end)
             |> Errors.normalize()
 
-          {:error, :quota_exceeded, details} ->
+          {:error, reason, details} when reason in [:quota_exceeded, :subscription_restricted] ->
             Errors.business_rule(:quota_exceeded, details)
         end
     end
@@ -245,16 +245,16 @@ defmodule EdocApi.Core do
             )
             |> RepoHelpers.update_or_abort()
 
-          case Monetization.consume_document_quota(
+          case Billing.record_document_usage(
                  company_id,
                  "contract",
-                 issued.id,
-                 "contract_issued"
+                 issued.id
                ) do
             {:ok, _quota} ->
               issued
 
-            {:error, :quota_exceeded, details} ->
+            {:error, reason, details}
+            when reason in [:quota_exceeded, :subscription_restricted] ->
               RepoHelpers.abort({:business_rule, %{rule: :quota_exceeded, details: details}})
           end
       end

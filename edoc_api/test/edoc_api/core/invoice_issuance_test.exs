@@ -1,6 +1,7 @@
 defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
   use EdocApi.DataCase, async: true
 
+  alias EdocApi.Billing
   alias EdocApi.Invoicing
   import EdocApi.TestFixtures
 
@@ -110,7 +111,11 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
                 rule: :business_rule,
                 details: %{
                   rule: :contract_must_be_signed_to_issue_invoice,
-                  details: %{invoice_id: invoice_id, contract_id: contract_id, contract_status: "issued"}
+                  details: %{
+                    invoice_id: invoice_id,
+                    contract_id: contract_id,
+                    contract_status: "issued"
+                  }
                 }
               }} =
                Invoicing.issue_invoice_for_user(user.id, invoice.id)
@@ -139,12 +144,12 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
       company = create_company!(user)
       create_company_bank_account!(company)
 
-      {:ok, _sub} =
-        EdocApi.Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "starter",
-          "included_document_limit" => 1,
-          "included_seat_limit" => 2
-        })
+      activate_billing_plan!(company, "starter")
+
+      for _ <- 1..49 do
+        assert {:ok, _event} =
+                 Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+      end
 
       invoice_1 = create_invoice_with_items!(user, company)
       invoice_2 = create_invoice_with_items!(user, company)
@@ -155,7 +160,7 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
       assert {:error, :business_rule,
               %{
                 rule: :quota_exceeded,
-                details: %{company_id: cid, used: 1, limit: 1}
+                details: %{company_id: cid, used: 50, limit: 50}
               }} =
                Invoicing.issue_invoice_for_user(user.id, invoice_2.id)
 
@@ -207,7 +212,11 @@ defmodule EdocApi.Invoicing.InvoiceIssuanceTest do
       assert {:error, :business_rule,
               %{
                 rule: :contract_must_be_signed_to_pay_invoice,
-                details: %{invoice_id: invoice_id, contract_id: contract_id, contract_status: "issued"}
+                details: %{
+                  invoice_id: invoice_id,
+                  contract_id: contract_id,
+                  contract_status: "issued"
+                }
               }} =
                Invoicing.pay_invoice_for_user(user.id, invoice.id)
 

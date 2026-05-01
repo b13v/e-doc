@@ -3,7 +3,7 @@ defmodule EdocApiWeb.BillingHTMLController do
 
   alias EdocApi.Billing
   alias EdocApi.Companies
-  alias EdocApi.Monetization
+  alias EdocApi.TeamMemberships
 
   plug(:put_view, html: EdocApiWeb.BillingHTML)
 
@@ -20,7 +20,7 @@ defmodule EdocApiWeb.BillingHTMLController do
         render(conn, :show,
           company: company,
           billing: Billing.tenant_billing_snapshot(company),
-          can_manage_billing: Monetization.can_manage_billing_and_team?(company.id, user.id),
+          can_manage_billing: TeamMemberships.can_manage_billing_and_team?(company.id, user.id),
           current_section: :company,
           page_title: gettext("Subscription details")
         )
@@ -91,7 +91,7 @@ defmodule EdocApiWeb.BillingHTMLController do
     plan = params["plan"] || params["plan_code"] || "starter"
 
     with company when not is_nil(company) <- Companies.get_company_by_user_id(user.id),
-         true <- Monetization.can_manage_billing_and_team?(company.id, user.id),
+         true <- TeamMemberships.can_manage_billing_and_team?(company.id, user.id),
          {:ok, _subscription} <- Billing.schedule_tenant_downgrade(company.id, plan) do
       conn
       |> put_flash(:info, gettext("Starter begins from the next billing cycle."))

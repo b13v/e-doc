@@ -9,8 +9,8 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
   alias EdocApi.Core.ContractItem
   alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Invoicing
-  alias EdocApi.Monetization
   alias EdocApi.Repo
+  alias EdocApi.TeamMemberships
   alias EdocApiWeb.PdfTemplates
 
   @bin_iin_error "Failed to create invoice: Buyer bin iin: has invalid checksum"
@@ -192,11 +192,10 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
     } do
       for _ <- 1..10 do
         assert {:ok, _quota} =
-                 Monetization.consume_document_quota(
+                 Billing.record_document_usage(
                    company.id,
                    "invoice",
-                   Ecto.UUID.generate(),
-                   "invoice_issued"
+                   Ecto.UUID.generate()
                  )
       end
 
@@ -445,8 +444,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       user: user,
       company: company
     } do
-      {:ok, _subscription} =
-        Monetization.activate_subscription_for_company(company.id, %{"plan" => "basic"})
+      activate_billing_plan!(company, "basic")
 
       today = Date.utc_today()
 
@@ -489,8 +487,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       user: user,
       company: company
     } do
-      {:ok, _subscription} =
-        Monetization.activate_subscription_for_company(company.id, %{"plan" => "starter"})
+      activate_billing_plan!(company, "starter")
 
       invoice =
         insert_invoice!(user, company, %{
@@ -550,8 +547,7 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       user: user,
       company: company
     } do
-      {:ok, _subscription} =
-        Monetization.activate_subscription_for_company(company.id, %{"plan" => "basic"})
+      activate_billing_plan!(company, "basic")
 
       invoice =
         insert_invoice!(user, company, %{
@@ -586,12 +582,12 @@ defmodule EdocApiWeb.InvoicesHTMLControllerTest do
       Accounts.mark_email_verified!(member.id)
 
       {:ok, _invite} =
-        Monetization.invite_member(company.id, %{
+        TeamMemberships.invite_member(company.id, %{
           "email" => member.email,
           "role" => "member"
         })
 
-      [_membership_id] = Monetization.accept_pending_memberships_for_user(member)
+      [_membership_id] = TeamMemberships.accept_pending_memberships_for_user(member)
 
       invoice = create_invoice_with_items!(owner, company)
 

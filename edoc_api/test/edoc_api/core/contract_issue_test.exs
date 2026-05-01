@@ -1,9 +1,9 @@
 defmodule EdocApi.Core.ContractIssueTest do
   use EdocApi.DataCase, async: true
 
+  alias EdocApi.Billing
   alias EdocApi.Core
   alias EdocApi.ContractStatus
-  alias EdocApi.Monetization
   alias EdocApi.Buyers
 
   import EdocApi.TestFixtures
@@ -21,11 +21,10 @@ defmodule EdocApi.Core.ContractIssueTest do
 
     for _ <- 1..10 do
       assert {:ok, _quota} =
-               Monetization.consume_document_quota(
+               Billing.record_document_usage(
                  company.id,
                  "invoice",
-                 Ecto.UUID.generate(),
-                 "invoice_issued"
+                 Ecto.UUID.generate()
                )
     end
 
@@ -63,12 +62,12 @@ defmodule EdocApi.Core.ContractIssueTest do
     user = create_user!()
     company = create_company!(user)
 
-    {:ok, _sub} =
-      EdocApi.Monetization.activate_subscription_for_company(company.id, %{
-        "plan" => "starter",
-        "included_document_limit" => 1,
-        "included_seat_limit" => 2
-      })
+    activate_billing_plan!(company, "starter")
+
+    for _ <- 1..49 do
+      assert {:ok, _event} =
+               Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+    end
 
     contract_1 = create_contract!(company)
     contract_2 = create_contract!(company)
@@ -76,7 +75,7 @@ defmodule EdocApi.Core.ContractIssueTest do
     assert {:ok, issued} = Core.issue_contract_for_user(user.id, contract_1.id)
     assert issued.status == ContractStatus.issued()
 
-    assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 1, limit: 1}}} =
+    assert {:error, :business_rule, %{rule: :quota_exceeded, details: %{used: 50, limit: 50}}} =
              Core.issue_contract_for_user(user.id, contract_2.id)
   end
 

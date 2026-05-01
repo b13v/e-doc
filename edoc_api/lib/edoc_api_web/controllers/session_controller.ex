@@ -3,7 +3,7 @@ defmodule EdocApiWeb.SessionController do
 
   alias EdocApi.Accounts
   alias EdocApi.Companies
-  alias EdocApi.Monetization
+  alias EdocApi.TeamMemberships
 
   def new(conn, _params) do
     render(conn, :new, page_title: gettext("Sign In"))
@@ -20,7 +20,7 @@ defmodule EdocApiWeb.SessionController do
           )
           |> redirect(to: "/verify-email-pending?email=#{email}")
         else
-          _ = Monetization.accept_pending_memberships_for_user(user)
+          _ = TeamMemberships.accept_pending_memberships_for_user(user)
 
           redirect_path =
             cond do

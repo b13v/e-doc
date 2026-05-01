@@ -18,7 +18,7 @@ defmodule EdocApi.Billing.ServiceTest do
 
   alias EdocApi.Repo
   alias EdocApi.TestFixtures
-  alias EdocApi.Core.TenantMembership
+  alias EdocApi.Core.{TenantMembership, TenantSubscription, TenantUsageEvent}
 
   setup do
     Swoosh.TestAssertions.assert_no_email_sent()
@@ -42,6 +42,18 @@ defmodule EdocApi.Billing.ServiceTest do
   end
 
   describe "subscriptions" do
+    test "ensures a trial subscription for a company without billing or legacy subscription" do
+      seed_plans!()
+      company = create_company!()
+
+      assert {:ok, subscription} = Billing.ensure_current_subscription_for_company(company.id)
+
+      assert subscription.status == "trialing"
+      assert subscription.plan.code == "trial"
+      assert {:ok, current} = Billing.get_current_subscription(company.id)
+      assert current.id == subscription.id
+    end
+
     test "creates a trial subscription for a new tenant and returns it as current subscription" do
       seed_plans!()
       company = create_company!()
@@ -99,6 +111,49 @@ defmodule EdocApi.Billing.ServiceTest do
   end
 
   describe "usage" do
+    test "reports legacy document usage after bootstrapping a billing subscription" do
+      seed_plans!()
+      company = create_company!()
+      period_start = ~U[2026-04-01 00:00:00Z]
+      period_end = ~U[2026-05-01 00:00:00Z]
+
+      %TenantSubscription{}
+      |> TenantSubscription.changeset(%{
+        company_id: company.id,
+        plan: "basic",
+        status: "active",
+        period_start: period_start,
+        period_end: period_end,
+        included_document_limit: 500,
+        included_seat_limit: 5
+      })
+      |> Repo.insert!()
+
+      for document_type <- ["invoice", "contract"] do
+        %TenantUsageEvent{}
+        |> TenantUsageEvent.changeset(%{
+          company_id: company.id,
+          event_type: "#{document_type}_issued",
+          document_type: document_type,
+          document_id: Ecto.UUID.generate(),
+          occurred_at: DateTime.add(period_start, 1, :day),
+          period_start: period_start,
+          period_end: period_end
+        })
+        |> Repo.insert!()
+      end
+
+      assert {:ok, subscription} = Billing.ensure_current_subscription_for_company(company.id)
+      assert subscription.plan.code == "basic"
+      assert Billing.current_document_usage(company.id) == {:ok, 2}
+
+      tenant_snapshot = Billing.tenant_billing_snapshot(company.id)
+      admin_summary = Billing.get_admin_client!(company.id)
+
+      assert tenant_snapshot.used_documents == 2
+      assert admin_summary.used_documents == 2
+    end
+
     test "reports plan limits and records document usage with an upserted counter" do
       seed_plans!()
       company = create_company!()

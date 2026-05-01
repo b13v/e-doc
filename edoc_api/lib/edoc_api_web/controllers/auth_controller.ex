@@ -7,13 +7,14 @@ defmodule EdocApiWeb.AuthController do
   alias EdocApi.Auth.Token
   alias EdocApi.EmailVerification
   alias EdocApi.EmailSender
-  alias EdocApi.Monetization
+  alias EdocApi.TeamMemberships
   alias EdocApiWeb.ErrorMapper
 
   def signup(conn, params) do
     with {:ok, user} <- Accounts.register_user(params),
          {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
-         {:ok, _} <- EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
+         {:ok, _} <-
+           EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
       # Avoid leaking verification token in the API response
       :ok
 
@@ -26,7 +27,11 @@ defmodule EdocApiWeb.AuthController do
     else
       {:error, %Ecto.Changeset{} = changeset} ->
         if duplicate_email_error?(changeset) do
-          _ = resend_verification_for_existing_unverified_account(params, conn.assigns[:locale] || "ru")
+          _ =
+            resend_verification_for_existing_unverified_account(
+              params,
+              conn.assigns[:locale] || "ru"
+            )
 
           conn
           |> put_status(:accepted)
@@ -39,7 +44,11 @@ defmodule EdocApiWeb.AuthController do
 
       {:error, :validation, changeset: %Ecto.Changeset{} = changeset} ->
         if duplicate_email_error?(changeset) do
-          _ = resend_verification_for_existing_unverified_account(params, conn.assigns[:locale] || "ru")
+          _ =
+            resend_verification_for_existing_unverified_account(
+              params,
+              conn.assigns[:locale] || "ru"
+            )
 
           conn
           |> put_status(:accepted)
@@ -63,7 +72,7 @@ defmodule EdocApiWeb.AuthController do
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
         if user.verified_at != nil do
-          _ = Monetization.accept_pending_memberships_for_user(user)
+          _ = TeamMemberships.accept_pending_memberships_for_user(user)
 
           with {:ok, access_token, _claims} <- Token.generate_access_token(user.id),
                {:ok, refresh_token} <- Accounts.issue_refresh_token(user.id) do
@@ -166,7 +175,12 @@ defmodule EdocApiWeb.AuthController do
           case EmailVerification.can_resend?(user.id) do
             {:ok, :allowed} ->
               with {:ok, %{token: token}} <- EmailVerification.create_token_for_user(user.id),
-                   {:ok, _} <- EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
+                   {:ok, _} <-
+                     EmailSender.send_verification_email(
+                       user.email,
+                       token,
+                       conn.assigns[:locale] || "ru"
+                     ) do
                 resend_verification_response(conn, :sent)
               else
                 {:error, reason} ->

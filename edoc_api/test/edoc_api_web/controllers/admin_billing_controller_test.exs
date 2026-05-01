@@ -7,7 +7,7 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
   alias EdocApi.Accounts
   alias EdocApi.Billing
   alias EdocApi.Billing.{BillingAuditEvent, BillingInvoice, Payment, Subscription}
-  alias EdocApi.Monetization
+  alias EdocApi.Core.TenantSubscription
   alias EdocApi.Repo
 
   setup %{conn: conn} do
@@ -87,13 +87,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     Accounts.mark_email_verified!(user.id)
     company = create_company!(user, %{"name" => "Legacy Admin Client"})
 
-    {:ok, _subscription} =
-      Monetization.activate_subscription_for_company(company.id, %{
-        "plan" => "starter",
-        "period_start" => ~U[2026-01-01 00:00:00Z],
-        "period_end" => ~U[2026-01-31 00:00:00Z],
-        "skip_trial" => true
-      })
+    create_legacy_subscription!(
+      company,
+      "starter",
+      ~U[2026-01-01 00:00:00Z],
+      ~U[2026-01-31 00:00:00Z]
+    )
 
     body =
       conn
@@ -115,13 +114,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     Accounts.mark_email_verified!(user.id)
     company = create_company!(user, %{"name" => "Legacy Admin Invoice Client"})
 
-    {:ok, _subscription} =
-      Monetization.activate_subscription_for_company(company.id, %{
-        "plan" => "basic",
-        "period_start" => ~U[2026-01-01 00:00:00Z],
-        "period_end" => ~U[2026-01-31 00:00:00Z],
-        "skip_trial" => true
-      })
+    create_legacy_subscription!(
+      company,
+      "basic",
+      ~U[2026-01-01 00:00:00Z],
+      ~U[2026-01-31 00:00:00Z]
+    )
 
     body =
       conn
@@ -143,13 +141,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     Accounts.mark_email_verified!(user.id)
     company = create_company!(user, %{"name" => "Legacy Action Client"})
 
-    {:ok, _subscription} =
-      Monetization.activate_subscription_for_company(company.id, %{
-        "plan" => "basic",
-        "period_start" => ~U[2026-04-01 00:00:00Z],
-        "period_end" => ~U[2026-05-01 00:00:00Z],
-        "skip_trial" => true
-      })
+    create_legacy_subscription!(
+      company,
+      "basic",
+      ~U[2026-04-01 00:00:00Z],
+      ~U[2026-05-01 00:00:00Z]
+    )
 
     body =
       conn
@@ -168,13 +165,12 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
     Accounts.mark_email_verified!(user.id)
     company = create_company!(user, %{"name" => "Legacy Create Client"})
 
-    {:ok, _subscription} =
-      Monetization.activate_subscription_for_company(company.id, %{
-        "plan" => "basic",
-        "period_start" => ~U[2026-04-01 00:00:00Z],
-        "period_end" => ~U[2026-05-01 00:00:00Z],
-        "skip_trial" => true
-      })
+    create_legacy_subscription!(
+      company,
+      "basic",
+      ~U[2026-04-01 00:00:00Z],
+      ~U[2026-05-01 00:00:00Z]
+    )
 
     conn = post(conn, "/admin/billing/clients/#{company.id}/legacy-invoices")
 
@@ -533,6 +529,24 @@ defmodule EdocApiWeb.AdminBillingControllerTest do
       role: "member",
       status: status,
       invite_email: email
+    })
+    |> Repo.insert!()
+  end
+
+  defp create_legacy_subscription!(company, plan, period_start, period_end) do
+    %TenantSubscription{}
+    |> TenantSubscription.changeset(%{
+      company_id: company.id,
+      plan: plan,
+      status: "active",
+      period_start: period_start,
+      period_end: period_end,
+      included_document_limit: if(plan == "basic", do: 500, else: 50),
+      included_seat_limit: if(plan == "basic", do: 5, else: 2),
+      trial_document_limit: 10,
+      trial_started_at: nil,
+      trial_ended_at: nil,
+      skip_trial: true
     })
     |> Repo.insert!()
   end

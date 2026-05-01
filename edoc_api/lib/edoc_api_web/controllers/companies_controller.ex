@@ -7,9 +7,9 @@ defmodule EdocApiWeb.CompaniesController do
   alias EdocApi.Billing
   alias EdocApi.Companies
   alias EdocApi.EmailSender
-  alias EdocApi.Monetization
   alias EdocApi.Payments
   alias EdocApi.Repo
+  alias EdocApi.TeamMemberships
   alias EdocApi.Core.CompanyBankAccount
 
   @company_setup_required_fields [
@@ -71,6 +71,8 @@ defmodule EdocApiWeb.CompaniesController do
           # First create the company
           case Companies.upsert_company_for_user(user.id, company_params) do
             {:ok, company, _warnings} ->
+              _ = Billing.ensure_current_subscription_for_company(company.id)
+
               # Then create the bank account
               bank_account_attrs =
                 Map.put(bank_account_params, "label", gettext("Primary Account"))
@@ -140,8 +142,9 @@ defmodule EdocApiWeb.CompaniesController do
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
-        subscription = Monetization.subscription_snapshot(company.id)
-        memberships = Monetization.list_memberships(company.id)
+        billing_snapshot = Billing.tenant_billing_snapshot(company.id)
+        subscription = company_subscription_from_billing(billing_snapshot)
+        memberships = TeamMemberships.list_memberships(company.id)
 
         conn
         |> put_flash(:error, company_validation_flash_message(changeset))
@@ -150,6 +153,7 @@ defmodule EdocApiWeb.CompaniesController do
           bank_accounts: bank_accounts,
           banks: banks,
           subscription: subscription,
+          billing_snapshot: billing_snapshot,
           memberships: memberships,
           changeset: changeset,
           page_title: gettext("Company Settings")
@@ -165,7 +169,7 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
+        if TeamMemberships.can_manage_billing_and_team?(company.id, user.id) do
           _plan = Map.get(subscription_params, "plan", "starter")
 
           conn
@@ -196,8 +200,9 @@ defmodule EdocApiWeb.CompaniesController do
         company = Companies.get_company_by_user_id(user.id)
         bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
         banks = Payments.list_banks()
-        subscription = Monetization.subscription_snapshot(company.id)
-        memberships = Monetization.list_memberships(company.id)
+        billing_snapshot = Billing.tenant_billing_snapshot(company.id)
+        subscription = company_subscription_from_billing(billing_snapshot)
+        memberships = TeamMemberships.list_memberships(company.id)
 
         conn
         |> put_flash(:error, bank_account_validation_flash_message(changeset))
@@ -206,6 +211,7 @@ defmodule EdocApiWeb.CompaniesController do
           bank_accounts: bank_accounts,
           banks: banks,
           subscription: subscription,
+          billing_snapshot: billing_snapshot,
           memberships: memberships,
           bank_account_changeset: changeset,
           bank_account_params: bank_account_params,
@@ -223,8 +229,8 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
-          case Monetization.invite_member(company.id, membership_params) do
+        if TeamMemberships.can_manage_billing_and_team?(company.id, user.id) do
+          case TeamMemberships.invite_member(company.id, membership_params) do
             {:ok, membership} ->
               _ =
                 case EmailSender.send_membership_invite_email(membership.invite_email, %{
@@ -297,8 +303,8 @@ defmodule EdocApiWeb.CompaniesController do
         redirect(conn, to: "/company/setup")
 
       company ->
-        if Monetization.can_manage_billing_and_team?(company.id, user.id) do
-          case Monetization.remove_membership(company.id, id) do
+        if TeamMemberships.can_manage_billing_and_team?(company.id, user.id) do
+          case TeamMemberships.remove_membership(company.id, id) do
             {:ok, _membership} ->
               conn
               |> put_flash(:info, gettext("Team member removed successfully."))
@@ -417,10 +423,12 @@ defmodule EdocApiWeb.CompaniesController do
   defp render_company_settings(conn, user, company, extra_assigns \\ []) do
     bank_accounts = Payments.list_visible_company_bank_accounts_for_user(user.id)
     banks = Payments.list_banks()
-    subscription = Monetization.subscription_snapshot(company.id)
     billing_snapshot = Billing.tenant_billing_snapshot(company.id)
-    memberships = Monetization.list_memberships(company.id)
-    can_manage_billing_and_team = Monetization.can_manage_billing_and_team?(company.id, user.id)
+    subscription = company_subscription_from_billing(billing_snapshot)
+    memberships = TeamMemberships.list_memberships(company.id)
+
+    can_manage_billing_and_team =
+      TeamMemberships.can_manage_billing_and_team?(company.id, user.id)
 
     assigns =
       [
@@ -525,6 +533,32 @@ defmodule EdocApiWeb.CompaniesController do
   defp bank_account_field_label(:kbe_code_id), do: gettext("KBE code")
   defp bank_account_field_label(:knp_code_id), do: gettext("KNP code")
   defp bank_account_field_label(field), do: Phoenix.Naming.humanize(field)
+
+  defp company_subscription_from_billing(%{} = billing_snapshot) do
+    current_subscription = Map.get(billing_snapshot, :subscription) || %{}
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %{
+      plan: Map.get(billing_snapshot, :current_plan_code) || "trial",
+      status: Map.get(current_subscription, :status) || "trialing",
+      period_start:
+        Map.get(current_subscription, :current_period_start) ||
+          Map.get(current_subscription, :period_start) || now,
+      period_end:
+        Map.get(current_subscription, :current_period_end) ||
+          Map.get(current_subscription, :period_end) || now,
+      documents_used: Map.get(billing_snapshot, :used_documents) || 0,
+      document_limit: Map.get(billing_snapshot, :current_document_limit) || 0,
+      documents_remaining:
+        max(
+          (Map.get(billing_snapshot, :current_document_limit) || 0) -
+            (Map.get(billing_snapshot, :used_documents) || 0),
+          0
+        ),
+      seats_used: Map.get(billing_snapshot, :used_seats) || 0,
+      seat_limit: Map.get(billing_snapshot, :current_seat_limit) || 0
+    }
+  end
 
   defp company_setup_field_label(:name), do: gettext("Company Name")
   defp company_setup_field_label(:legal_form), do: gettext("Legal Form")

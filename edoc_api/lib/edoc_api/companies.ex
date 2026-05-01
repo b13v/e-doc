@@ -4,22 +4,22 @@ defmodule EdocApi.Companies do
   alias EdocApi.Repo
   alias EdocApi.Core.Company
   alias EdocApi.Core.TenantMembership
-  alias EdocApi.Monetization
+  alias EdocApi.TeamMemberships
 
   def get_company_by_user_id(user_id) when is_binary(user_id) do
     case Repo.get_by(Company, user_id: user_id) do
       %Company{} = company ->
-        _ = Monetization.ensure_owner_membership(company.id, user_id)
+        _ = TeamMemberships.ensure_owner_membership(company.id, user_id)
         company
 
       nil ->
-      (TenantMembership
-       |> where([m], m.user_id == ^user_id and m.status == "active")
-       |> order_by([m], asc: m.inserted_at)
-       |> join(:inner, [m], c in Company, on: c.id == m.company_id)
-       |> select([_m, c], c)
-       |> limit(1)
-       |> Repo.one())
+        TenantMembership
+        |> where([m], m.user_id == ^user_id and m.status == "active")
+        |> order_by([m], asc: m.inserted_at)
+        |> join(:inner, [m], c in Company, on: c.id == m.company_id)
+        |> select([_m, c], c)
+        |> limit(1)
+        |> Repo.one()
     end
   end
 
@@ -31,7 +31,7 @@ defmodule EdocApi.Companies do
 
     case Repo.insert_or_update(changeset) do
       {:ok, company} ->
-        _ = Monetization.ensure_owner_membership(company.id, user_id)
+        _ = TeamMemberships.ensure_owner_membership(company.id, user_id)
         {:ok, company, warnings}
 
       {:error, changeset} ->

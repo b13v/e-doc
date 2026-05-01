@@ -167,6 +167,31 @@ defmodule EdocApi.Billing do
     end
   end
 
+  @doc """
+  Ensures a company has a current Billing subscription.
+
+  Existing Billing subscriptions win. Legacy tenant subscriptions are migrated
+  read-only into Billing when present; otherwise a trial subscription is created.
+  """
+  def ensure_current_subscription_for_company(company_or_id) do
+    company_id = record_id(company_or_id)
+    {:ok, _plans} = seed_default_plans()
+
+    case get_current_subscription(company_id) do
+      {:ok, subscription} ->
+        {:ok, subscription}
+
+      {:error, :not_found} ->
+        case latest_legacy_subscription(company_id) do
+          %TenantSubscription{} = legacy_subscription ->
+            ensure_current_subscription_from_legacy(legacy_subscription)
+
+          nil ->
+            create_trial_subscription(company_id)
+        end
+    end
+  end
+
   @doc "Creates a 14-day trial subscription for a tenant."
   def create_trial_subscription(company_or_id, opts \\ []) do
     with {:ok, trial_plan} <- get_plan_by_code("trial"),
@@ -292,21 +317,21 @@ defmodule EdocApi.Billing do
 
   @doc "Returns the document limit for the tenant's current plan."
   def allowed_document_limit(company_or_id) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id) do
       {:ok, subscription.plan.monthly_document_limit}
     end
   end
 
   @doc "Returns the user-seat limit for the tenant's current plan."
   def allowed_user_limit(company_or_id) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id) do
       {:ok, subscription.plan.included_users}
     end
   end
 
   @doc "Returns the current-period billable document usage."
   def current_document_usage(company_or_id) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id) do
       {:ok, current_document_usage_for_subscription(record_id(company_or_id), subscription)}
     end
   end
@@ -322,7 +347,7 @@ defmodule EdocApi.Billing do
 
   @doc "Returns current quota details or a domain error explaining why creation is blocked."
   def ensure_can_create_document(company_or_id) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id),
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id),
          :ok <- ensure_subscription_allows_creation(subscription),
          {:ok, used} <- current_document_usage(company_or_id) do
       limit = subscription.plan.monthly_document_limit
@@ -354,7 +379,7 @@ defmodule EdocApi.Billing do
   def record_document_usage(company_or_id, resource_type, resource_id, opts \\ []) do
     count = Keyword.get(opts, :count, 1)
 
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id) do
       company_id = record_id(company_or_id)
 
       Repo.transaction(fn ->
@@ -417,7 +442,7 @@ defmodule EdocApi.Billing do
   end
 
   defp current_document_usage_for_subscription(company_id, subscription) do
-    value =
+    billing_counter =
       UsageCounter
       |> where(
         [c],
@@ -428,7 +453,12 @@ defmodule EdocApi.Billing do
       |> select([c], c.value)
       |> Repo.one()
 
-    value || 0
+    billing_counter ||
+      legacy_document_usage_for_period(
+        company_id,
+        subscription.current_period_start,
+        subscription.current_period_end
+      )
   end
 
   @doc "Returns true when the tenant can occupy another user seat."
@@ -442,7 +472,7 @@ defmodule EdocApi.Billing do
 
   @doc "Returns current seat details or a domain error explaining why adding a user is blocked."
   def ensure_can_add_user(company_or_id) do
-    with {:ok, subscription} <- get_current_subscription(company_or_id) do
+    with {:ok, subscription} <- ensure_current_subscription_for_company(company_or_id) do
       company_id = record_id(company_or_id)
       used = occupied_seat_count(company_id)
       limit = subscription.plan.included_users
@@ -1394,12 +1424,20 @@ defmodule EdocApi.Billing do
   defp legacy_document_usage(nil), do: 0
 
   defp legacy_document_usage(%TenantSubscription{} = subscription) do
+    legacy_document_usage_for_period(
+      subscription.company_id,
+      subscription.period_start,
+      subscription.period_end
+    )
+  end
+
+  defp legacy_document_usage_for_period(company_id, period_start, period_end) do
     TenantUsageEvent
     |> where(
       [u],
-      u.company_id == ^subscription.company_id and
-        u.occurred_at >= ^subscription.period_start and
-        u.occurred_at < ^subscription.period_end
+      u.company_id == ^company_id and
+        u.occurred_at >= ^period_start and
+        u.occurred_at < ^period_end
     )
     |> Repo.aggregate(:count, :id)
   end
@@ -1911,7 +1949,7 @@ defmodule EdocApi.Billing do
           metric: @billable_document_metric,
           period_start: period_start,
           period_end: period_end,
-          value: count,
+          value: legacy_document_usage_for_period(company_id, period_start, period_end) + count,
           inserted_at: now,
           updated_at: now
         }
@@ -1922,17 +1960,31 @@ defmodule EdocApi.Billing do
   end
 
   defp ensure_subscription_allows_creation(%Subscription{} = subscription) do
-    if SubscriptionStatus.good_standing?(subscription.status) do
-      :ok
-    else
-      {:error, :subscription_restricted,
-       %{
-         company_id: subscription.company_id,
-         plan: subscription.plan.code,
-         status: subscription.status,
-         blocked_reason: subscription.blocked_reason,
-         period_end: subscription.current_period_end
-       }}
+    cond do
+      subscription.status == SubscriptionStatus.trialing() and
+          DateTime.compare(DateTime.utc_now(), subscription.current_period_end) != :lt ->
+        {:error, :subscription_restricted,
+         %{
+           company_id: subscription.company_id,
+           plan: subscription.plan.code,
+           status: subscription.status,
+           blocked_reason: subscription.blocked_reason,
+           period_end: subscription.current_period_end,
+           reason: :trial_time_window_exceeded
+         }}
+
+      SubscriptionStatus.good_standing?(subscription.status) ->
+        :ok
+
+      true ->
+        {:error, :subscription_restricted,
+         %{
+           company_id: subscription.company_id,
+           plan: subscription.plan.code,
+           status: subscription.status,
+           blocked_reason: subscription.blocked_reason,
+           period_end: subscription.current_period_end
+         }}
     end
   end
 

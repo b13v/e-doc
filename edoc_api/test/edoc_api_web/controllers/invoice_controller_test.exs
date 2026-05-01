@@ -2,10 +2,10 @@ defmodule EdocApiWeb.InvoiceControllerTest do
   use EdocApiWeb.ConnCase
 
   import Ecto.Query, only: [from: 2]
-  alias EdocApi.Core.TenantSubscription
+  alias EdocApi.Billing
+  alias EdocApi.Billing.Subscription
   alias EdocApi.Documents.GeneratedDocument
   alias EdocApi.Invoicing
-  alias EdocApi.Monetization
   alias EdocApi.Repo
   import EdocApi.TestFixtures
 
@@ -83,11 +83,10 @@ defmodule EdocApiWeb.InvoiceControllerTest do
 
       for _ <- 1..10 do
         assert {:ok, _quota} =
-                 Monetization.consume_document_quota(
+                 Billing.record_document_usage(
                    company.id,
                    "invoice",
-                   Ecto.UUID.generate(),
-                   "invoice_issued"
+                   Ecto.UUID.generate()
                  )
       end
 
@@ -111,7 +110,7 @@ defmodule EdocApiWeb.InvoiceControllerTest do
 
     test "returns 422 when trial 14-day window is expired", %{conn: conn, company: company} do
       create_company_bank_account!(company)
-      _snapshot = Monetization.subscription_snapshot(company.id)
+      {:ok, _subscription} = Billing.ensure_current_subscription_for_company(company.id)
       expire_trial!(company.id, 15)
 
       conn =
@@ -212,12 +211,12 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       user: user,
       company: company
     } do
-      {:ok, _sub} =
-        Monetization.activate_subscription_for_company(company.id, %{
-          "plan" => "starter",
-          "included_document_limit" => 1,
-          "included_seat_limit" => 2
-        })
+      activate_billing_plan!(company, "starter")
+
+      for _ <- 1..49 do
+        assert {:ok, _event} =
+                 Billing.record_document_usage(company.id, "invoice", Ecto.UUID.generate())
+      end
 
       invoice_1 = create_invoice_with_items!(user, company)
       invoice_2 = create_invoice_with_items!(user, company)
@@ -235,7 +234,7 @@ defmodule EdocApiWeb.InvoiceControllerTest do
       company: company
     } do
       invoice = create_invoice_with_items!(user, company)
-      _snapshot = Monetization.subscription_snapshot(company.id)
+      {:ok, _subscription} = Billing.ensure_current_subscription_for_company(company.id)
       expire_trial!(company.id, 15)
 
       conn = post(conn, "/v1/invoices/#{invoice.id}/issue")
@@ -311,18 +310,13 @@ defmodule EdocApiWeb.InvoiceControllerTest do
     trial_started_at = DateTime.add(now, -days_ago * 86_400, :second)
     trial_period_end = DateTime.add(trial_started_at, 14 * 86_400, :second)
 
-    from(s in TenantSubscription,
-      where: s.company_id == ^company_id and s.status == "active"
+    from(s in Subscription,
+      where: s.company_id == ^company_id and s.status == "trialing"
     )
     |> Repo.update_all(
       set: [
-        plan: "trial",
-        period_start: trial_started_at,
-        period_end: trial_period_end,
-        trial_started_at: trial_started_at,
-        trial_ended_at: nil,
-        included_document_limit: 10,
-        trial_document_limit: 10,
+        current_period_start: trial_started_at,
+        current_period_end: trial_period_end,
         updated_at: now
       ]
     )
