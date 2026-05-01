@@ -490,12 +490,22 @@ defmodule EdocApiWeb.Layouts do
             color: #ffffff;
           }
 
-          html[data-theme="dark"] .workspace-locale-inactive {
-            color: #e2e8f0;
+          html[data-theme="dark"] .workspace-locale-switcher {
+            background-color: #f8fafc;
+            --tw-ring-color: #cbd5e1;
           }
 
-          html[data-theme="dark"] .workspace-locale-inactive:hover {
-            color: #ffffff;
+          html[data-theme="dark"] .workspace-locale-inactive:not(.workspace-locale-active) {
+            color: #0f172a !important;
+          }
+
+          html[data-theme="dark"] .workspace-locale-inactive:not(.workspace-locale-active):hover {
+            color: #0066cc !important;
+          }
+
+          html[data-theme="dark"] .workspace-locale-active {
+            background-color: #ffffff !important;
+            color: #0066cc !important;
           }
 
           html[data-theme="dark"] .workspace-account-email {
@@ -1382,11 +1392,12 @@ defmodule EdocApiWeb.Layouts do
       })
 
     ~H"""
-    <div class="inline-flex items-center rounded-full bg-stone-100 p-1 ring-1 ring-stone-200 dark:bg-slate-800 dark:ring-slate-700">
+    <div class="workspace-locale-switcher inline-flex items-center rounded-full bg-stone-100 p-1 ring-1 ring-stone-200 dark:bg-slate-800 dark:ring-slate-700">
       <a
         href={locale_path("kk", @current_path)}
         class={[
           "workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+          @locale == "kk" && "workspace-locale-active",
           if(
             @locale == "kk",
             do:
@@ -1410,6 +1421,7 @@ defmodule EdocApiWeb.Layouts do
         href={locale_path("ru", @current_path)}
         class={[
           "workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+          @locale == "ru" && "workspace-locale-active",
           if(
             @locale == "ru",
             do:

@@ -246,8 +246,13 @@ defmodule EdocApiWeb.SessionControllerTest do
              ~s|href="/about" class="workspace-public-nav-link font-medium text-gray-600 hover:text-gray-900 dark:text-slate-100 dark:hover:text-white"|
 
     assert body =~ ~s|html[data-theme="dark"] .workspace-public-nav-link|
+    assert body =~ ~s(workspace-locale-switcher)
     assert body =~ ~s(workspace-locale-inactive)
-    assert length(Regex.scan(~r/workspace-locale-inactive[^"]*dark:text-white/, body)) >= 2
+
+    assert body =~
+             ~s|html[data-theme="dark"] .workspace-locale-inactive:not(.workspace-locale-active)|
+
+    assert body =~ ~s|color: #0f172a !important;|
     assert body =~ ~s(href="/signup")
 
     refute body =~
