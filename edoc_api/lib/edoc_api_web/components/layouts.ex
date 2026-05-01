@@ -685,6 +685,32 @@ defmodule EdocApiWeb.Layouts do
             color: #020617 !important;
           }
 
+          .legal-document h2 {
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+          }
+
+          .legal-document p {
+            line-height: 1.75;
+          }
+
+          .legal-document ul {
+            margin-top: 0.75rem;
+            list-style: disc;
+            padding-left: 1.5rem;
+          }
+
+          .legal-document li {
+            margin-top: 0.5rem;
+            line-height: 1.7;
+          }
+
+          html[data-theme="dark"] .legal-document h2 {
+            color: #ffffff !important;
+          }
+
           html[data-theme="dark"] .overdue-upgrade-card {
             background-color: #020617 !important;
             border-color: #94a3b8 !important;

@@ -210,6 +210,8 @@ defmodule EdocApiWeb.Router do
     get("/", PageController, :home)
     get("/locale/:locale", LocaleController, :update)
     get("/about", AboutController, :index)
+    get("/privacy-policy", LegalController, :privacy_policy)
+    get("/terms-of-use", LegalController, :terms_of_use)
     get("/login", SessionController, :new)
     get("/password/forgot", PasswordResetController, :new)
     get("/password/reset", PasswordResetController, :edit)

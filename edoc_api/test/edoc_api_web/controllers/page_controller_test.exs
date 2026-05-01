@@ -106,6 +106,15 @@ defmodule EdocApiWeb.PageControllerTest do
       assert body =~ ~s(href="https://wa.me/77027834901" data-i18n="footer.company_contacts")
       assert body =~ ~s(href="https://wa.me/77027834901" data-i18n="footer.support_contact")
       assert body =~ ~s(class="footer-link-disabled" data-i18n="footer.company_blog")
+
+      assert body =~
+               ~r/href="\/privacy-policy"[^>]*data-i18n="footer.privacy">Политика конфиденциальности<\/a>/
+
+      assert body =~
+               ~r/href="\/terms-of-use"[^>]*data-i18n="footer.terms">Условия использования<\/a>/
+
+      refute body =~ ~s(class="footer-link-disabled" data-i18n="footer.privacy")
+      refute body =~ ~s(class="footer-link-disabled" data-i18n="footer.terms")
       refute body =~ ~s(href="#")
       refute body =~ "Лицензия"
       refute body =~ ">Интеграции<"
@@ -128,6 +137,8 @@ defmodule EdocApiWeb.PageControllerTest do
       assert body =~ "Кіру"
       assert body =~ "Тіркелу"
       assert body =~ "document.cookie"
+      assert body =~ "'.footer-bottom-links a:nth-child(1)': 'Құпиялылық саясаты'"
+      assert body =~ "'.footer-bottom-links a:nth-child(2)': 'Пайдалану шарттары'"
     end
 
     test "redirects authenticated users to invoices", %{conn: conn} do
