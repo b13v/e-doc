@@ -2350,3 +2350,18 @@ msgstr "Current password is incorrect."
 
 msgid "User not found."
 msgstr "User not found."
+
+msgid "By registering, you accept the"
+msgstr "By registering, you accept the"
+
+msgid "Terms of Use"
+msgstr "Terms of Use"
+
+msgid "and the"
+msgstr "and the"
+
+msgid "Privacy Policy"
+msgstr "Privacy Policy"
+
+msgid "You must accept the terms of use and privacy policy."
+msgstr "You must accept the terms of use and privacy policy."

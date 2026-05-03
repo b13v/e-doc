@@ -88,8 +88,38 @@ defmodule EdocApiWeb.SignupControllerTest do
              ~s(workspace-locale-inactive rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-black dark:text-black dark:hover:text-black)
   end
 
-  test "signup sends russian verification email with Edocly branding by default", %{conn: conn} do
-    email = "verify-ru-#{System.unique_integer([:positive])}@example.com"
+  test "signup form requires legal terms acceptance with russian legal links", %{conn: conn} do
+    conn = get(conn, "/signup")
+
+    body = html_response(conn, 200)
+
+    assert body =~ ~s(type="checkbox")
+    assert body =~ ~s(name="legal_terms_accepted")
+    assert body =~ ~s(required)
+    assert body =~ "Регистрируясь, вы принимаете"
+    assert body =~ ~s(href="/terms-of-use")
+    assert body =~ "Условия использования"
+    assert body =~ ~s(href="/privacy-policy")
+    assert body =~ "Политику конфиденциальности"
+  end
+
+  test "signup form localizes legal terms acceptance in kazakh", %{conn: conn} do
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{locale: "kk"})
+      |> get("/signup")
+
+    body = html_response(conn, 200)
+
+    assert body =~ "Тіркелу арқылы сіз"
+    assert body =~ "Пайдалану шарттарын"
+    assert body =~ "Құпиялық саясатын"
+    assert body =~ ~s(href="/terms-of-use")
+    assert body =~ ~s(href="/privacy-policy")
+  end
+
+  test "signup rejects unchecked legal terms acceptance", %{conn: conn} do
+    email = "legal-missing-#{System.unique_integer([:positive])}@example.com"
 
     conn =
       conn
@@ -101,11 +131,36 @@ defmodule EdocApiWeb.SignupControllerTest do
         "password_confirmation" => "password123"
       })
 
+    assert html_response(conn, 200) =~
+             "Необходимо принять условия использования и политику конфиденциальности."
+
+    assert EdocApi.Accounts.get_user_by_email(email) == nil
+  end
+
+  test "signup sends russian verification email with Edocly branding by default", %{conn: conn} do
+    email = "verify-ru-#{System.unique_integer([:positive])}@example.com"
+
+    conn =
+      conn
+      |> put_private(:plug_skip_csrf_protection, true)
+      |> put_req_header("accept", "text/html")
+      |> post("/signup", %{
+        "email" => email,
+        "password" => "password123",
+        "password_confirmation" => "password123",
+        "legal_terms_accepted" => "true"
+      })
+
     assert redirected_to(conn) =~ "/verify-email-pending?email="
     conn = get(conn, redirected_to(conn))
     assert html_response(conn, 200)
 
     assert verification_email_count(email) == 1
+
+    user = EdocApi.Accounts.get_user_by_email(email)
+    assert %DateTime{} = Map.get(user, :terms_accepted_at)
+    assert %DateTime{} = Map.get(user, :privacy_accepted_at)
+    assert Map.get(user, :legal_acceptance_version)
   end
 
   test "signup sends kazakh verification email when locale is kk", %{conn: conn} do
@@ -119,7 +174,8 @@ defmodule EdocApiWeb.SignupControllerTest do
       |> post("/signup", %{
         "email" => email,
         "password" => "password123",
-        "password_confirmation" => "password123"
+        "password_confirmation" => "password123",
+        "legal_terms_accepted" => "true"
       })
 
     assert redirected_to(conn) =~ "/verify-email-pending?email="
@@ -151,7 +207,8 @@ defmodule EdocApiWeb.SignupControllerTest do
       |> post("/signup", %{
         "email" => invited_email,
         "password" => "password123",
-        "password_confirmation" => "password123"
+        "password_confirmation" => "password123",
+        "legal_terms_accepted" => "true"
       })
 
     assert redirected_to(conn) =~

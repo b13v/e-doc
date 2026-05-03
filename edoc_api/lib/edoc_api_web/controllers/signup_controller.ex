@@ -12,21 +12,32 @@ defmodule EdocApiWeb.SignupController do
     render(conn, :new, page_title: gettext("Sign Up"), invited_email: invited_email)
   end
 
-  def create(conn, %{
-        "email" => email,
-        "password" => password,
-        "password_confirmation" => password_confirmation
-      }) do
+  def create(
+        conn,
+        %{
+          "email" => email,
+          "password" => password,
+          "password_confirmation" => password_confirmation
+        } = params
+      ) do
     if password != password_confirmation do
       conn
       |> put_flash(:error, gettext("Passwords do not match."))
       |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
     else
-      case Accounts.register_user(%{"email" => email, "password" => password}) do
+      case Accounts.register_user(%{
+             "email" => email,
+             "password" => password,
+             "legal_terms_accepted" => Map.get(params, "legal_terms_accepted")
+           }) do
         {:ok, user} ->
           {:ok, %{token: token}} = EmailVerification.create_token_for_user(user.id)
 
-          case EmailSender.send_verification_email(user.email, token, conn.assigns[:locale] || "ru") do
+          case EmailSender.send_verification_email(
+                 user.email,
+                 token,
+                 conn.assigns[:locale] || "ru"
+               ) do
             {:ok, _} ->
               Logger.info("Verification email sent to #{masked_email(email)}")
 
@@ -42,7 +53,11 @@ defmodule EdocApiWeb.SignupController do
 
         {:error, :validation, changeset: changeset} ->
           if duplicate_email_error?(changeset) do
-            _ = resend_verification_for_existing_unverified_account(email, conn.assigns[:locale] || "ru")
+            _ =
+              resend_verification_for_existing_unverified_account(
+                email,
+                conn.assigns[:locale] || "ru"
+              )
 
             conn
             |> put_flash(
@@ -56,19 +71,27 @@ defmodule EdocApiWeb.SignupController do
             conn
             |> put_flash(:error, error_message)
             |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
-        end
+          end
 
-      {:error, changeset} ->
-        error_message = format_changeset_errors(changeset)
+        {:error, changeset} ->
+          error_message = format_changeset_errors(changeset)
 
-        conn
-        |> put_flash(:error, error_message)
-        |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
+          conn
+          |> put_flash(:error, error_message)
+          |> render(:new, page_title: gettext("Sign Up"), invited_email: email)
+      end
     end
-  end
   end
 
   defp format_changeset_errors(changeset) do
+    if legal_terms_acceptance_error?(changeset) do
+      gettext("You must accept the terms of use and privacy policy.")
+    else
+      format_generic_changeset_errors(changeset)
+    end
+  end
+
+  defp format_generic_changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
         opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
@@ -76,6 +99,13 @@ defmodule EdocApiWeb.SignupController do
     end)
     |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end)
     |> Enum.join("; ")
+  end
+
+  defp legal_terms_acceptance_error?(%Ecto.Changeset{} = changeset) do
+    Enum.any?(changeset.errors, fn
+      {:legal_terms_accepted, _error} -> true
+      _ -> false
+    end)
   end
 
   defp duplicate_email_error?(%Ecto.Changeset{} = changeset) do
@@ -112,7 +142,10 @@ defmodule EdocApiWeb.SignupController do
           :ok
         else
           {:error, reason} ->
-            Logger.warning("Failed to resend verification email for existing account: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to resend verification email for existing account: #{inspect(reason)}"
+            )
+
             :error
         end
 

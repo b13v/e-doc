@@ -27,7 +27,11 @@ defmodule EdocApi.TestFixtures do
   def create_user!(attrs \\ %{}) do
     attrs =
       Map.merge(
-        %{"email" => unique_email(), "password" => "password123"},
+        %{
+          "email" => unique_email(),
+          "password" => "password123",
+          "legal_terms_accepted" => "true"
+        },
         attrs
       )
 

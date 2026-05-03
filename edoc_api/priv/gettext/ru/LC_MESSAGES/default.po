@@ -2827,3 +2827,18 @@ msgstr "НДС"
 
 msgid "Security"
 msgstr "Безопасность"
+
+msgid "By registering, you accept the"
+msgstr "Регистрируясь, вы принимаете"
+
+msgid "Terms of Use"
+msgstr "Условия использования"
+
+msgid "and the"
+msgstr "и"
+
+msgid "Privacy Policy"
+msgstr "Политику конфиденциальности"
+
+msgid "You must accept the terms of use and privacy policy."
+msgstr "Необходимо принять условия использования и политику конфиденциальности."

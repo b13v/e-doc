@@ -325,7 +325,8 @@ defmodule PdfBenchmark do
 
     attrs = %{
       "email" => email,
-      "password" => "TestPassword123!"
+      "password" => "TestPassword123!",
+      "legal_terms_accepted" => "true"
     }
 
     case Accounts.register_user(attrs) do

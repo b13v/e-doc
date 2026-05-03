@@ -375,7 +375,8 @@ defmodule EdocApiWeb.AuthControllerTest do
         build_conn()
         |> post("/v1/auth/signup", %{
           "email" => existing_user.email,
-          "password" => "another-password-123"
+          "password" => "another-password-123",
+          "legal_terms_accepted" => "true"
         })
 
       assert conn.status == 202
@@ -402,7 +403,8 @@ defmodule EdocApiWeb.AuthControllerTest do
         build_conn()
         |> post("/v1/auth/signup", %{
           "email" => invited_email,
-          "password" => "another-password-123"
+          "password" => "another-password-123",
+          "legal_terms_accepted" => "true"
         })
 
       assert conn.status == 202

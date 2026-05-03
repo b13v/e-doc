@@ -2494,3 +2494,18 @@ msgstr ""
 #: lib/edoc_api_web/controllers/about_html/index.html.heex
 msgid "Security"
 msgstr ""
+
+msgid "By registering, you accept the"
+msgstr ""
+
+msgid "Terms of Use"
+msgstr ""
+
+msgid "and the"
+msgstr ""
+
+msgid "Privacy Policy"
+msgstr ""
+
+msgid "You must accept the terms of use and privacy policy."
+msgstr ""
